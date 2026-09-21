@@ -1,0 +1,37 @@
+# 환경변수 · 비밀값
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# 모델 · 데이터 (용량 큼, 커밋 금지)
+*.pkl
+*.joblib
+*.h5
+*.pt
+data/
+models/
+
+# Node
+node_modules/
+dist/
+build/
+.vite/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
