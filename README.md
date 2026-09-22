@@ -1,16 +1,22 @@
-# (서비스명 미정) — 만성질환 생활습관 챌린지 웹 서비스
+# 파이온 (PAEON) — 고혈압 위험 관리 · 생활습관 챌린지 웹 서비스
 
 AI 헬스케어 6기 파이널 프로젝트 · **3조 김네장**
 
-건강정보를 입력하면 만성질환 위험을 선별하고, 개선 가능한 요인을 생활습관 챌린지로
+건강정보를 입력하면 **고혈압 위험**을 선별하고, 개선 가능한 요인을 생활습관 챌린지로
 연결해 변화를 추적하는 웹 서비스.
+
+고혈압은 뇌졸중의 가장 큰 위험인자다. 파이온은 **생활습관으로 관리하는 예방 단계**를
+담당하고, 고위험으로 분류된 사용자는 참여기업의 **뇌동맥류 AI 검진**으로 연결한다.
+
+> **PAEON** — 그리스 신화에서 "신들의 의사"로 불린 치유의 신.
+> 『일리아스』에서 약초로 신들을 치유했다. 진단보다 앞선 단계, 매일의 관리로 미리 치유한다는 뜻을 담았다.
 
 > ⚠️ 본 서비스가 제공하는 결과는 진단이 아닌 선별 정보입니다. 진단·처방을 대신하지 않습니다.
 
 ## 목차
 
 **프로젝트**
-[팀 구성](#-팀-구성) · [일정](#-일정) · [기술 스택](#-기술-스택) · [기획 문서](#-기획-문서)
+[팀 구성](#-팀-구성) · [일정](#-일정) · [기술 스택](#-기술-스택) · [기획 문서](#-기획-문서) · [로컬 실행](#-로컬-실행)
 
 **팀 규칙**
 [기본 규칙](#1-기본-규칙) · [일정 규칙](#2-일정-규칙) · [막혔을 때](#3-막혔을-때) · [문제가 생기면](#4-문제가-생기면)
@@ -62,6 +68,49 @@ AI 헬스케어 6기 파이널 프로젝트 · **3조 김네장**
 | 화면 목록 · 와이어프레임 | Figma |
 | ERD | `docs/erd.dbml` |
 | API 명세서 | `docs/` |
+
+## 🚀 로컬 실행
+
+Docker Desktop만 있으면 된다. 파이썬을 따로 깔 필요 없다.
+
+```bash
+cp .env.example .env    # 비밀번호 채우기. .env 는 커밋 금지
+docker compose up --build
+```
+
+| 주소 | 용도 |
+|---|---|
+| http://localhost:8000/healthcheck | 서버 상태 확인 |
+| http://localhost:8000/docs | API 문서 (Swagger) |
+
+`app/` 은 볼륨으로 마운트돼 있어서 코드를 고치면 자동으로 다시 뜬다.
+종료는 `docker compose down`, DB까지 날리려면 `docker compose down -v`.
+
+### DB 마이그레이션
+
+모델은 `app/models/` 에 만들고 `app/models/__init__.py` 에서 import 해야
+alembic이 인식한다.
+
+```bash
+docker compose exec fastapi uv run alembic revision --autogenerate -m "변경 내용"
+docker compose exec fastapi uv run alembic upgrade head
+docker compose exec fastapi uv run alembic downgrade -1   # 되돌리기
+```
+
+### 폴더 구조
+
+```text
+app/
+  main.py          앱 진입점
+  core/            설정, DB 연결, 공통 믹스인
+  apis/            라우터 (엔드포인트)
+  schemas/         요청·응답 Pydantic 모델
+  services/        비즈니스 로직
+  repositories/    DB 접근
+  models/          SQLAlchemy 테이블
+alembic/versions/  마이그레이션 파일
+static/            정적 파일
+```
 
 ---
 
