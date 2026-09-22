@@ -14,12 +14,13 @@ venv/
 .ipynb_checkpoints/
 
 # 모델 · 데이터 (용량 큼, 커밋 금지)
+# 앞의 / 없으면 app/models/ 같은 소스 폴더까지 같이 무시된다
 *.pkl
 *.joblib
 *.h5
 *.pt
-data/
-models/
+/data/
+/models/
 
 # Node
 node_modules/
