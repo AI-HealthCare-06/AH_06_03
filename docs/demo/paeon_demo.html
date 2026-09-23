@@ -448,7 +448,7 @@ function scr4(){
           el('span',{cls:'pill',style:'color:var(--'+bB.v+');font-size:12px;margin-left:10px;vertical-align:middle'},bB.t)),
         el('div',{cls:'sub'},'현재 고혈압 위험 신호 · 혈압은 입력에 쓰지 않습니다'),
         bars(cb))),
-    el('div',{cls:'speech'}, el('div',{cls:'who'},'PAEON 코치'),
+    el('div',{cls:'speech'}, el('div',{cls:'who'},'한 줄 해석'),
       el('div',{}, cb[0].label+'이(가) 지금 위험을 가장 크게 올리고 있습니다. 여기부터 바꿔볼까요?')),
     el('p',{cls:'callout',style:'margin-top:14px'},'이 결과는 진단이 아닌 선별 정보입니다. 학습 데이터가 확정되기 전의 잠정 모델입니다.'),
     nav('맞춤 챌린지 보기',()=>go(5))));
@@ -538,7 +538,7 @@ function scr8(){
     el('div',{cls:'callout',style:'margin-top:12px',
       html:'모델 A(10년 장기)도 금연·혈압 변화로 <b>'+Math.round(a0*100)+'% → '+Math.round(a1*100)+'%</b> 움직였습니다. '+
            '다만 10년 뒤 발생을 예측한 값이라 4주 만에 맞았는지 확인할 수 없어, 전·후 비교의 기준은 모델 B 로 둡니다.'}),
-    el('div',{cls:'speech'}, el('div',{cls:'who'},'PAEON 코치'),
+    el('div',{cls:'speech'}, el('div',{cls:'who'},'한 줄 해석'),
       el('div',{}, S.days.size===0?'인증 기록이 없어 변화를 계산할 수 없습니다. 인증 화면에서 며칠 눌러보세요.'
         : moved?moved.n+' 기여도가 1위에서 '+moved.to+'위로 내려갔습니다. 혈압 그래프가 못 하는 얘기입니다.'
         :'아직 순위가 바뀔 만큼은 아닙니다. 다음 4주에 난이도를 한 단계 올려볼까요?')),
