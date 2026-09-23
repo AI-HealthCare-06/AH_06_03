@@ -1,0 +1,363 @@
+<title>PAEON 홈 대시보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* 데스크톱 웹 서비스 기준. 팀 세이지 팔레트를 유지하되 채도를 올렸다.
+   --accent 는 글씨·테두리·버튼 바탕(대비 확보), --accent-vivid 는 글씨가 얹히지 않는
+   막대·링·추이선 전용. 밝기는 vivid 쪽에서 나온다. */
+:root{
+  --bg:#F3FAF2; --surface:#FFFFFF; --surface-2:#E9F6E6; --surface-3:#F8FCF6;
+  --ink:#1F2A20; --muted:#4E5C4D; --faint:#7C8B7A; --ghost:#AEBCAB;
+  --line:#D3E7CD; --line-soft:#E7F2E2;
+  --accent:#2A7849; --accent-vivid:#4FB877; --accent-soft:#D9F2DF;
+  --ok:#2C8F55; --ok-soft:#DCF3E2;
+  --warn:#A8720D; --warn-soft:#FBEFD1;
+  --risk:#C44E36; --risk-soft:#FCE3DB;
+  --shadow:0 1px 2px rgba(31,42,32,.04), 0 10px 28px -20px rgba(31,42,32,.35);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#101510; --surface:#1A211A; --surface-2:#222C21; --surface-3:#1E261D;
+  --ink:#EAF1E7; --muted:#AAB8A8; --faint:#83917F; --ghost:#5E6B5C;
+  --line:#33402F; --line-soft:#283224;
+  --accent:#8FD9A8; --accent-vivid:#5FC98A; --accent-soft:#22362A;
+  --ok:#7FD69A; --ok-soft:#1D2F23;
+  --warn:#E7B565; --warn-soft:#33291A;
+  --risk:#F0937B; --risk-soft:#35221C;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -20px rgba(0,0,0,.9);
+}}
+:root[data-theme="dark"]{
+  --bg:#101510; --surface:#1A211A; --surface-2:#222C21; --surface-3:#1E261D;
+  --ink:#EAF1E7; --muted:#AAB8A8; --faint:#83917F; --ghost:#5E6B5C;
+  --line:#33402F; --line-soft:#283224;
+  --accent:#8FD9A8; --accent-vivid:#5FC98A; --accent-soft:#22362A;
+  --ok:#7FD69A; --ok-soft:#1D2F23;
+  --warn:#E7B565; --warn-soft:#33291A;
+  --risk:#F0937B; --risk-soft:#35221C;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -20px rgba(0,0,0,.9);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans KR",-apple-system,BlinkMacSystemFont,"Malgun Gothic",sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased}
+.num{font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-variant-numeric:tabular-nums}
+h1,h2,h3,h4{margin:0; font-weight:600; letter-spacing:-.01em; text-wrap:balance}
+p{margin:0}
+button{font:inherit; cursor:pointer}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ── 상단 네비 (웹) ── */
+.nav{position:sticky; top:env(safe-area-inset-top,0px); z-index:5;
+  background:var(--surface); border-bottom:1px solid var(--line)}
+.navin{max-width:1180px; margin:0 auto; padding:0 24px; height:60px; display:flex; align-items:center; gap:24px}
+.brand{font-size:18px; font-weight:600; letter-spacing:.14em}
+.menu{display:flex; gap:4px}
+.menu button{border:0; background:none; padding:8px 14px; border-radius:8px; font-size:15px;
+  color:var(--muted); font-weight:500}
+.menu button[data-on="1"]{background:var(--accent-soft); color:var(--accent); font-weight:600}
+.who{margin-left:auto; display:flex; align-items:center; gap:10px; font-size:14px; color:var(--muted)}
+.ava{width:30px; height:30px; border-radius:50%; background:var(--accent-soft); color:var(--accent);
+  display:grid; place-items:center; font-size:13px; font-weight:600}
+
+/* ── 데모 툴바 ── */
+.demo{max-width:1180px; margin:0 auto; padding:14px 24px 0; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.demo .lbl{font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); font-weight:600}
+.switch{display:flex; gap:5px}
+.switch button{border:1px solid var(--line); background:var(--surface); color:var(--muted);
+  border-radius:8px; padding:6px 13px; font-size:13px; font-weight:500}
+.switch button[data-on="1"]{background:var(--accent-soft); border-color:var(--accent); color:var(--ink); font-weight:600}
+.demo .hint{font-size:12.5px; color:var(--faint)}
+
+main{max-width:1180px; margin:0 auto; padding:18px 24px 64px}
+@media (max-width:640px){ .navin,.demo,main{padding-left:16px; padding-right:16px} }
+
+/* ── 히어로 ── */
+.hero{border:1px solid var(--accent-vivid); border-radius:16px; padding:22px 26px; margin-bottom:16px;
+  background:linear-gradient(120deg, var(--accent-soft) 0%, var(--surface-2) 60%, var(--surface) 100%);
+  display:flex; align-items:center; gap:26px; flex-wrap:wrap}
+.hero .txt{flex:1 1 380px; min-width:0}
+.hero h1{font-size:24px; line-height:1.35}
+.hero p{font-size:14.5px; color:var(--muted); margin-top:7px}
+.hero .act{flex:0 0 auto; display:flex; flex-direction:column; gap:6px; align-items:stretch}
+.primary{border:0; border-radius:11px; padding:14px 26px; font-weight:600; font-size:16px;
+  background:var(--accent); color:#FFF; white-space:nowrap}
+:root[data-theme="dark"] .primary{color:#11150F}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .primary{color:#11150F}}
+.hero .sub{font-size:12px; color:var(--muted); text-align:center; max-width:250px}
+
+.cols{display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,1fr); gap:16px; align-items:start}
+@media (max-width:900px){ .cols{grid-template-columns:minmax(0,1fr)} }
+.stack{display:flex; flex-direction:column; gap:16px}
+.sect{font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); font-weight:600; margin-bottom:9px}
+
+.card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px 20px; box-shadow:var(--shadow)}
+
+/* 위험 요약 */
+.pair{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+@media (max-width:480px){ .pair{grid-template-columns:1fr} }
+.big{border:1px solid var(--line); border-radius:13px; padding:16px 18px; background:var(--surface-3)}
+.big .lb{font-size:12.5px; color:var(--faint); display:flex; align-items:center; gap:6px}
+.big .v{font-size:38px; font-weight:600; line-height:1.1; margin-top:4px}
+.big .s{font-size:12.5px; color:var(--muted); margin-top:2px}
+.pill{font-size:11px; font-weight:600; border:1px solid currentColor; border-radius:999px; padding:1px 8px; margin-left:auto}
+.dot{width:8px; height:8px; border-radius:50%; flex:none}
+
+/* 4대 지표 */
+.kpis{display:grid; grid-template-columns:repeat(2,1fr); gap:12px}
+.kpi{border:1px solid var(--line); border-radius:12px; padding:13px 15px; background:var(--surface-3);
+  display:flex; flex-direction:column; gap:3px}
+.kpi .k{font-size:12px; color:var(--faint)}
+.kpi .v{font-size:22px; font-weight:600}
+.kpi .v[data-empty="1"]{color:var(--ghost); font-weight:500}
+.kpi .u{font-size:11.5px; color:var(--faint); font-weight:400}
+.kpi .cta{font-size:12.5px; color:var(--accent); font-weight:600; margin-top:3px}
+
+/* 챌린지 */
+.chalhead{display:flex; align-items:baseline; gap:8px; margin-bottom:9px}
+.chalhead h4{font-size:15px}
+.chalhead .prog{margin-left:auto; font-size:13.5px; color:var(--muted); font-weight:600}
+.trk{height:7px; border-radius:4px; background:var(--line-soft); overflow:hidden}
+.trk i{display:block; height:100%; border-radius:4px; background:var(--accent-vivid)}
+.week{display:flex; gap:7px; margin-top:15px; justify-content:space-between}
+.day{display:flex; flex-direction:column; align-items:center; gap:5px; font-size:11.5px; color:var(--faint)}
+.ring{width:32px; height:32px; border-radius:50%; border:2px solid var(--line); display:grid; place-items:center;
+  font-size:12px; color:var(--ghost)}
+.ring[data-on="1"]{border-color:var(--ok); background:var(--ok-soft); color:var(--ok); font-weight:700}
+.ring[data-on="today"]{border-color:var(--accent-vivid); border-style:dashed; color:var(--accent); background:var(--accent-soft); font-size:10px}
+.streak{font-size:12.5px; color:var(--muted); margin-top:12px; text-align:center}
+
+svg{display:block; width:100%; height:auto; overflow:visible}
+.charthead{display:flex; align-items:baseline; gap:10px; margin-bottom:10px}
+.charthead h3{font-size:15px}
+.charthead .now{margin-left:auto; font-size:24px; font-weight:600}
+.charthead .unit{font-size:12.5px; color:var(--faint); font-weight:400}
+.chartfoot{font-size:12.5px; color:var(--muted); margin-top:8px}
+.cite{font-size:12px; color:var(--faint); margin-top:6px; display:flex; align-items:center; gap:6px}
+.cite::before{content:''; width:3px; height:12px; border-radius:2px; background:var(--accent-vivid); flex:none}
+.srcbadge{display:inline-block; font-size:11.5px; font-weight:600; color:var(--accent);
+  border:1px dashed var(--accent); border-radius:6px; padding:1px 7px; margin-top:8px}
+
+.empty{border:1px dashed var(--line); border-radius:13px; padding:34px 22px; text-align:center; color:var(--muted); background:var(--surface-3)}
+.empty h4{font-size:16px; margin-bottom:5px; color:var(--ink)}
+.empty p{font-size:13.5px}
+.note{background:var(--ink); color:var(--bg); font-size:13px; border-radius:9px; padding:10px 14px; margin-bottom:16px}
+
+/* 근거 패널 */
+.why{display:grid; grid-template-columns:repeat(auto-fit,minmax(272px,1fr)); gap:14px; margin-top:26px}
+.why h3{font-size:12px; letter-spacing:.11em; text-transform:uppercase; color:var(--faint); margin-bottom:10px}
+.src{display:flex; flex-direction:column; gap:10px; font-size:13.5px; color:var(--muted)}
+.src .row{display:grid; grid-template-columns:82px 1fr; gap:10px; align-items:start}
+.from{font-size:11.5px; font-weight:600; color:var(--ink); border:1px solid var(--line); border-radius:5px; padding:1px 6px; text-align:center; white-space:nowrap}
+.src b{color:var(--ink); font-weight:600}
+.idlist{display:flex; flex-wrap:wrap; gap:5px}
+.id{font-size:12px; font-weight:600; border:1px solid var(--line); border-radius:5px; padding:1px 7px; color:var(--muted)}
+.id[data-t="w"]{color:var(--accent); border-color:var(--accent)}
+.avoid{display:flex; flex-direction:column; gap:7px; font-size:13.5px}
+.avoid div{display:flex; gap:8px}
+.avoid s{color:var(--faint); text-decoration-color:var(--risk)}
+.avoid span{color:var(--faint); font-size:12.5px}
+.flag{border:1px solid var(--warn); background:var(--warn-soft); color:var(--warn); border-radius:13px; padding:15px 18px; font-size:13.5px}
+.flag b{display:block; margin-bottom:4px}
+</style>
+
+<nav class="nav"><div class="navin">
+  <span class="brand">PAEON</span>
+  <div class="menu" id="menu"></div>
+  <div class="who"><span>이슬님</span><span class="ava">이</span></div>
+</div></nav>
+
+<div class="demo">
+  <span class="lbl">데모</span>
+  <div class="switch" id="switch"></div>
+  <span class="hint">REQ-DASH-005는 데이터가 없을 때의 화면을 따로 요구합니다. 세 상태를 눌러 비교해보세요.</span>
+</div>
+
+<main id="main"></main>
+
+<script>
+const el=(t,a={},...k)=>{const n=document.createElement(t);
+  for(const[p,v] of Object.entries(a)){ if(p==='cls')n.className=v; else if(p==='html')n.innerHTML=v;
+    else if(p.startsWith('on'))n.addEventListener(p.slice(2),v); else if(v!=null)n.setAttribute(p,v); }
+  k.flat().forEach(c=>c!=null&&n.append(c.nodeType?c:document.createTextNode(c))); return n;};
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+const STATES={
+  empty:{ label:'입력 전',
+    hero:{q:'혈압, 마지막으로 재신 게 언제인가요?', a:'검진 결과지가 있으면 사진 한 장으로 끝납니다. 없으면 직접 입력해도 됩니다.'},
+    kpi:{bmi:null,bp:null,glu:null,chol:null}, risk:null, chal:null, bp:null,
+    cta:'건강정보 입력하기', ctaNote:'입력한 정보는 위험도 예측과 챌린지 추천에만 씁니다.'},
+  active:{ label:'2주차',
+    hero:{q:'국물을 남기면 혈압이 정말 내려갈까요?', a:'소금 섭취를 절반으로 줄이면 수축기 혈압이 평균 4~6mmHg 내려갑니다. 2주째 실천 중이십니다.',
+          cite:'질병관리청 국가건강정보포털 · 고혈압 환자의 식이요법'},
+    kpi:{bmi:'26.4',bp:'138/88',glu:'104',chol:'212'},
+    risk:{pct:41, vasc:58, age:45},
+    chal:{name:'국물 남기기', goal:5, done:3, week:[1,1,0,1,'today',0,0], streak:9,
+          src:'질병관리청 6대 수칙 ③ 나트륨 줄이기'},
+    bp:[145,144,143,141,140,139,138],
+    cta:'오늘 챌린지 인증하기', ctaNote:'2주차 · 남은 기간 14일'},
+  redo:{ label:'4주 완료',
+    hero:{q:'4주가 끝났습니다. 얼마나 달라졌을까요?', a:'시작할 때와 같은 항목을 다시 입력하면 같은 모델로 비교해 드립니다.',
+          cite:'같은 모델 B · 전후 동일 버전으로 계산'},
+    kpi:{bmi:'25.9',bp:'133/85',glu:'101',chol:'208'},
+    risk:{pct:33, vasc:54, age:45},
+    chal:{name:'국물 남기기', goal:5, done:5, week:[1,1,1,1,1,0,1], streak:23,
+          src:'질병관리청 6대 수칙 ③ 나트륨 줄이기'},
+    bp:[145,144,143,141,140,139,138,137,136,135,134,133],
+    cta:'4주 결과 확인하기', ctaNote:'같은 모델에 전·후 데이터를 각각 넣어 비교합니다.'},
+};
+const MENU=['홈','건강정보','챌린지','내 기록'];
+let cur='active', tab=0, note=null;
+const bandOf=p=>p<15?{t:'정상',v:'ok'}:p<30?{t:'경계',v:'warn'}:{t:'위험',v:'risk'};
+
+/* 수축기 혈압 추이 — 단일 계열이라 범례 없이 제목이 계열을 말한다 */
+function chart(series){
+  const W=760,H=210,pl=44,pr=96,pt=14,pb=28, lo=125, hi=150;
+  const X=i=>pl+i*(W-pl-pr)/(series.length-1);
+  const Y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb);
+  const s=['<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="수축기 혈압 추이">'];
+  [130,140,150].forEach(v=>{
+    s.push('<line x1="'+pl+'" y1="'+Y(v).toFixed(1)+'" x2="'+(W-pr)+'" y2="'+Y(v).toFixed(1)+'" stroke="'+cssv('--line-soft')+'" stroke-width="1"/>');
+    s.push('<text x="'+(pl-9)+'" y="'+(Y(v)+4).toFixed(1)+'" text-anchor="end" font-size="12" font-family="IBM Plex Mono, monospace" fill="'+cssv('--faint')+'">'+v+'</text>');
+  });
+  s.push('<line x1="'+pl+'" y1="'+Y(140).toFixed(1)+'" x2="'+(W-pr)+'" y2="'+Y(140).toFixed(1)+'" stroke="'+cssv('--warn')+'" stroke-width="1.5" stroke-dasharray="5 4"/>');
+  s.push('<text x="'+(W-pr+8)+'" y="'+(Y(140)+4).toFixed(1)+'" font-size="12" font-weight="600" fill="'+cssv('--warn')+'">고혈압 140</text>');
+  s.push('<polyline fill="none" stroke="'+cssv('--accent-vivid')+'" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="'+
+    series.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ')+'"/>');
+  series.forEach((v,i)=>{ const last=i===series.length-1;
+    if(i%2===0||last) s.push('<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="'+(last?6:4.5)+'" fill="'+(last?cssv('--accent-vivid'):cssv('--surface'))+'" stroke="'+cssv('--accent-vivid')+'" stroke-width="2.5"><title>'+i+'주 '+v+' mmHg</title></circle>');
+  });
+  [0, Math.floor((series.length-1)/2), series.length-1].forEach(i=>
+    s.push('<text x="'+X(i).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="12" fill="'+cssv('--faint')+'">'+i+'주</text>'));
+  s.push('</svg>'); return s.join('');
+}
+
+function render(){
+  const S=STATES[cur];
+  const m=document.getElementById('menu'); m.textContent='';
+  MENU.forEach((n,i)=>m.append(el('button',{type:'button','data-on':i===tab?'1':'0',
+    onclick:()=>{tab=i; note=null; render();}},n)));
+  const sw=document.getElementById('switch'); sw.textContent='';
+  Object.entries(STATES).forEach(([k,v])=>sw.append(el('button',{type:'button','data-on':k===cur?'1':'0',
+    onclick:()=>{cur=k; tab=0; note=null; render();}},v.label)));
+
+  const main=document.getElementById('main'); main.textContent='';
+  if(note) main.append(el('div',{cls:'note'},note));
+  if(tab!==0){
+    main.append(el('div',{cls:'empty'}, el('h4',{},MENU[tab]),
+      el('p',{},'이 데모는 홈(W08) 화면만 구현했습니다.')));
+    return;
+  }
+  main.append(el('div',{cls:'hero'},
+    el('div',{cls:'txt'}, el('h1',{},S.hero.q), el('p',{},S.hero.a),
+      ),
+    el('div',{cls:'act'},
+      el('button',{cls:'primary', type:'button', onclick:()=>{
+        note = cur==='empty'?'W04 건강정보 입력 화면으로 이동합니다'
+             : cur==='active'?'오늘 인증을 기록했습니다'
+             : 'W11 전·후 비교 화면으로 이동합니다'; render();}}, S.cta),
+      el('p',{cls:'sub'},S.ctaNote))));
+
+  const left=el('div',{cls:'stack'}), right=el('div',{cls:'stack'});
+
+  if(S.risk){
+    const b=bandOf(S.risk.pct);
+    left.append(el('section',{},
+      el('h2',{cls:'sect'},'지금 상태'),
+      el('div',{cls:'pair'},
+        el('div',{cls:'big'},
+          el('div',{cls:'lb'}, el('span',{cls:'dot', style:'background:var(--'+b.v+')'}),'고혈압 위험',
+            el('span',{cls:'pill', style:'color:var(--'+b.v+')'},b.t)),
+          el('div',{cls:'v num', style:'color:var(--'+b.v+')'},S.risk.pct+'%'),
+          el('div',{cls:'s'},'같은 나이 평균 22%')),
+        el('div',{cls:'big'},
+          el('div',{cls:'lb'},'혈관 나이'),
+          el('div',{cls:'v num'},S.risk.vasc+'세'),
+          el('div',{cls:'s'},'실제 '+S.risk.age+'세 · +'+(S.risk.vasc-S.risk.age)+'세')))));
+  } else {
+    left.append(el('div',{cls:'empty'},
+      el('h4',{},'아직 예측할 정보가 없습니다'),
+      el('p',{},'키·몸무게와 혈압을 넣으면 고혈압 위험과 혈관 나이를 계산해 드립니다.')));
+  }
+
+  if(S.bp){
+    const last=S.bp[S.bp.length-1];
+    left.append(el('div',{cls:'card'},
+      el('div',{cls:'charthead'}, el('h3',{},'수축기 혈압'),
+        el('span',{style:'font-size:13px;color:var(--faint)'},'주 1회 측정'),
+        el('span',{cls:'now num'}, String(last), el('span',{cls:'unit'},' mmHg'))),
+      el('div',{html:chart(S.bp)}),
+      el('p',{cls:'chartfoot'},'시작 '+S.bp[0]+' → 지금 '+last+' mmHg · '+(S.bp[0]-last)+' 내려갔습니다'),
+      ));
+  }
+
+  right.append(el('section',{},
+    el('h2',{cls:'sect'},'검진 지표'),
+    el('div',{cls:'kpis', style:'grid-template-columns:1fr'},
+      el('div',{cls:'kpi'},
+        el('div',{cls:'k'},'혈압'),
+        el('div',{cls:'v num','data-empty':S.kpi.bp?null:'1', style:'font-size:30px'},
+          S.kpi.bp||'—/—', S.kpi.bp?el('span',{cls:'u'},' mmHg'):null),
+        S.kpi.bp?el('div',{cls:'u'},'고혈압과 가장 직접 연관된 지표')
+               :el('div',{cls:'cta'},'입력하기 ›')),
+      el('button',{cls:'kpi', type:'button', style:'text-align:left',
+        onclick:()=>{tab=1; note=null; render();}},
+        el('div',{cls:'k'},'BMI · 공복혈당 · 총콜레스테롤'),
+        el('div',{cls:'cta'},'건강정보에서 보기 ›')))));
+
+  if(S.chal){
+    const c=S.chal;
+    right.append(el('div',{cls:'card'},
+      el('div',{cls:'chalhead'}, el('h4',{},c.name),
+        el('span',{cls:'prog num'}, c.done+' / '+c.goal+'일')),
+      el('div',{cls:'trk'}, el('i',{style:'width:'+Math.round(c.done/c.goal*100)+'%'})),
+      el('div',{cls:'week'}, ['월','화','수','목','금','토','일'].map((d,i)=>
+        el('div',{cls:'day'},
+          el('div',{cls:'ring','data-on':c.week[i]===1?'1':(c.week[i]==='today'?'today':'0')},
+            c.week[i]===1?'✓':(c.week[i]==='today'?'오늘':'')), d))),
+      el('p',{cls:'streak'},'연속 기록 '+c.streak+'일')));
+  }
+  main.append(el('div',{cls:'cols'}, left, right));
+  main.append(whyPanel());
+}
+
+const SOURCES=[
+  ['웰체크','<b>빈값 자리표시자</b> — 값이 없을 때 “—/— mmHg”로 비워둡니다. 입력 전 상태에서 확인해보세요.'],
+  ['웰체크','<b>요일별 원형 스트릭</b> — 복약 캘린더의 원형 표식을 챌린지 인증으로 옮겼습니다.'],
+  ['필라이즈','<b>진행률 “현재 / 목표” 병기</b> — 막대만 두지 않고 “3 / 5일”을 함께 적습니다.'],
+  ['MyWell+','<b>질문형 헤드라인</b> — 상태마다 질문이 바뀌고, 그 답이 곧 옆의 주 버튼입니다.'],
+  ['나만의닥터','<b>카드 정보 구조만</b> — 아이콘 + 제목 + 현재값 + 다음 행동. 리워드 버튼은 뺐습니다.'],
+  ['MyWell+','<b>지표를 따로 보여주기</b> — 질환별 지수를 아이콘으로 나눠 둔 방식. 위험 점수와 혈관 나이를 한 덩어리로 뭉치지 않습니다.'],
+  ['질병관리청','<b>출처 표기는 챌린지 선택 화면에서만</b> — 회의에서 “5가지 카테고리는 모두 근거가 있으니 출처를 우측에 표시”로 정했고, 대시보드에서는 시각적으로 부적절하다고 보아 뺐습니다.'],
+  ['Hello Heart','<b>140 기준선</b> — 추이선에 고혈압 기준을 점선으로 깔아, 내려가는 것 자체가 증거가 됩니다.'],
+];
+const AVOIDED=[['포인트 · 쿠폰','“10원 받기” 같은 외재적 보상'],['이벤트 배너','“응원선물 100% 증정” 톤'],
+  ['전환유도 CTA','빈 상태에서 다른 서비스로 보내기'],['정보 과밀 나열','카테고리 8개 그리드'],
+  ['등급제 (브론즈 · 실버 · 골드)','초록 · 노랑 · 빨강 3단계로 대체 — 회의 합의'],
+  ['지표 4개 나열','고혈압과 가장 연관된 혈압 하나만 — 회의 결정'],
+  ['대시보드 출처 표기','챌린지 선택 화면으로 이동 — 회의 결정']];
+function whyPanel(){
+  return el('div',{cls:'why'},
+    el('div',{cls:'card'}, el('h3',{},'추적성'),
+      el('div',{cls:'idlist'},
+        ['W08'].map(i=>el('span',{cls:'id','data-t':'w'},i)),
+        ['REQ-DASH-001','REQ-DASH-004','REQ-DASH-005','REQ-DASH-006','REQ-DASH-007',
+         'REQ-DASH-008','REQ-DASH-009','REQ-DASH-010','REQ-DASH-011','NFR-DASH-001',
+         'REQ-PRED-004','REQ-PRED-007','NFR-ACC-003'].map(i=>el('span',{cls:'id'},i)))),
+    el('div',{cls:'card'}, el('h3',{},'어디서 가져왔나'),
+      el('div',{cls:'src'}, SOURCES.map(([f,t])=>el('div',{cls:'row'},
+        el('span',{cls:'from'},f), el('span',{html:t}))))),
+    el('div',{cls:'card'}, el('h3',{},'일부러 뺀 것'),
+      el('div',{cls:'avoid'}, AVOIDED.map(([a,b])=>el('div',{},
+        el('s',{},a), el('span',{},b))))),
+    el('div',{cls:'card'}, el('h3',{},'웹으로 옮기면서 바꾼 것'),
+      el('div',{cls:'avoid'},
+        el('div',{}, el('s',{},'하단 탭 4개'), el('span',{},'→ 상단 네비게이션')),
+        el('div',{}, el('s',{},'바텀시트'), el('span',{},'→ 모달 다이얼로그')),
+        el('div',{}, el('s',{},'1열 세로 스크롤'), el('span',{},'→ 2열 그리드 · 900px 아래에서 1열')),
+        el('div',{}, el('s',{},'작은 스파크라인'), el('span',{},'→ 12주 추이를 한 번에')))),
+    el('div',{cls:'flag'}, el('b',{},'팀에서 정해야 할 충돌 1건'),
+      '회의록에는 “리워드 제공 · 그룹 챌린지”가 있고, UI 리서치 결론 1번은 “포인트 · 쿠폰 · 커뮤니티 미션 배제”입니다. 지금은 UI 리서치 쪽을 따랐습니다.'));
+}
+render();
+</script>
