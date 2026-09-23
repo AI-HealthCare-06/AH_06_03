@@ -208,27 +208,27 @@ const vasc=x=>{const r=contrib(A_F,x).filter(f=>f.k!=='age').reduce((s,f)=>s+f.c
 const band=r=>r<0.15?{t:'정상',v:'ok'}:r<0.30?{t:'경계',v:'warn'}:{t:'위험',v:'risk'};
 
 /* ══ 챌린지 — 고정 2 + 카테고리 1개 안에서 2개 ══ */
-const FIX_SMOKE={id:'f1',t:'금연 유지 (전자담배 포함)',d:'6대 수칙에 전자담배가 따로 명시됩니다',src:'질병관리청 6대 수칙 ⑤'};
-const FIX_DRINK={id:'f2',t:'표준잔 지키기 · 남 2 / 여 1',d:'초과 입력 시 경고와 함께 해당 일차를 실패로 처리합니다',src:'질병관리청 6대 수칙 ⑤'};
-const SALT_ALT=[{id:'f3',t:'국물 남기기 주 5회',d:'국·찌개·라면은 한 번에 염분이 많이 들어갑니다',src:'질병관리청 6대 수칙 ③'},
-                {id:'f4',t:'라면 주 1회 이하',d:'단일 식품 중 염분이 가장 눈에 띕니다',src:'질병관리청 6대 수칙 ③'}];
+const FIX_SMOKE={id:'f1',t:'금연 유지 (전자담배 포함)',d:'6대 수칙에 전자담배가 따로 명시됩니다'};
+const FIX_DRINK={id:'f2',t:'표준잔 지키기 · 남 2 / 여 1',d:'초과 입력 시 경고와 함께 해당 일차를 실패로 처리합니다'};
+const SALT_ALT=[{id:'f3',t:'국물 남기기 주 5회',d:'국·찌개·라면은 한 번에 염분이 많이 들어갑니다'},
+                {id:'f4',t:'라면 주 1회 이하',d:'단일 식품 중 염분이 가장 눈에 띕니다'}];
 const CATS=[
- {id:'salt',n:'나트륨 줄이기',src:'질병관리청 6대 수칙 ③ — 하루 소금 6g 이하, 절반으로 줄이면 수축기 4~6mmHg 감소',ms:[
+ {id:'salt',n:'나트륨 줄이기',ms:[
   {id:'s1',t:'국물 남기기 주 5회',lv:'하',eff:{salt:-3}},
   {id:'s2',t:'김치 한 끼 1접시 이하',lv:'중',eff:{salt:-2}},
   {id:'s3',t:'찌개 대신 구이·찜 주 3회',lv:'중',eff:{salt:-2}}]},
- {id:'act',n:'신체 활동',src:'질병관리청 6대 수칙 ② — 주 150분, 규칙적 유산소로 수축기 5~7mmHg 감소',ms:[
+ {id:'act',n:'신체 활동',ms:[
   {id:'a1',t:'앉아서 발뒤꿈치 들기 주 5일',lv:'하',eff:{act:50}},
   {id:'a2',t:'하루 30분 걷기 주 5일',lv:'중',eff:{act:150}},
   {id:'a3',t:'저항운동 주 2회',lv:'상',eff:{act:60}}]},
- {id:'out',n:'외식 · 배달 조절',src:'통계청 온라인쇼핑동향조사 · 미국 CDC — 외식을 상위 개념으로, 배달은 하위 채널',ms:[
+ {id:'out',n:'외식 · 배달 조절',ms:[
   {id:'o1',t:'배달 앱 주 2회 줄이기',lv:'하',eff:{eatout:-2}},
   {id:'o2',t:'집밥 저염식 주 3회',lv:'중',eff:{eatout:-3,salt:-1}},
   {id:'o3',t:'외식할 때 "덜 짜게" 요청',lv:'하',eff:{salt:-1}}]},
- {id:'morn',n:'아침 식사',src:'학습 데이터 — 아침 식사 여부가 10년 뒤 고혈압 발생과 연관',ms:[
+ {id:'morn',n:'아침 식사',ms:[
   {id:'m1',t:'아침 거르지 않기 주 5일',lv:'중',eff:{}},
   {id:'m2',t:'아침은 밥 대신 샌드위치',lv:'하',eff:{}}]},
- {id:'wt',n:'체중 관리',src:'질병관리청 6대 수칙 ① — 표준체중 초과 시 5kg 감량만으로 뚜렷한 혈압 감소',ms:[
+ {id:'wt',n:'체중 관리',ms:[
   {id:'w1',t:'4주 −1kg',lv:'상',eff:{bmi:-0.35}},
   {id:'w2',t:'저녁 밥 2/3공기',lv:'중',eff:{bmi:-0.2}},
   {id:'w3',t:'야식 없는 날 주 5일',lv:'하',eff:{bmi:-0.15}}]},
@@ -280,10 +280,10 @@ const SIDE=[
  [['W06'],['REQ-PRED-001','REQ-PRED-003','REQ-PRED-006','NFR-SAFE-001','NFR-ACC-003'],[
    ['카드 2개로 나눔','왼쪽은 모델 A(10년 장기), 오른쪽은 모델 B(현재 식습관 신호)입니다. 하나로 합산하지 않습니다.'],
    ['모델 B는 혈압을 안 씁니다','혈압으로 고혈압을 맞히면 예측이 아니라 판정입니다. 혈압은 따로 추적합니다.']]],
- [['W09'],['REQ-CHAL-001','REQ-CHAL-003','REQ-CHAL-008','REQ-CHAL-009','REQ-CHAL-011'],[
+ [['W09'],['REQ-CHAL-001','REQ-CHAL-003','REQ-CHAL-008','REQ-CHAL-009'],[
    ['고정 2 + 선택 1','고정은 흡연 한 칸, 음주 한 칸. 해당이 없으면 나트륨 미션이 그 자리를 채웁니다.'],
    ['카테고리 제한 없음','선택 미션은 어느 카테고리에서든 1개만 고릅니다. 한 사이클 총 3개.'],
-   ['출처는 여기에만','대시보드에는 표시하지 않습니다 (REQ-CHAL-011).']]],
+   ]],
  [['W10'],['REQ-CHAL-004','REQ-CHAL-006','REQ-NOTI-001'],[
    ['주 단위 목표','하루 단위가 아니라 주 몇 회로 셉니다.'],
    ['인증한 만큼만','28일 중 누른 비율만큼만 생활습관이 바뀐 것으로 계산합니다.']]],
@@ -461,7 +461,7 @@ function scr5(){
     body.append(el('div',{},
       el('div',{style:'display:flex;align-items:baseline;gap:9px;margin-bottom:8px'},
         el('h4',{style:'font-size:15px'},c.n),
-        el('span',{style:'font-size:12px;color:var(--accent)'},'근거 · '+c.src)),
+        ),
       el('div',{style:'display:flex;flex-direction:column;gap:8px'}, c.ms.map(m=>{
         const on=S.picks.has(m.id), full=!on&&n>=1;
         return el('div',{cls:'slot','data-k':'pick','data-on':on?'1':'0',style:full?'opacity:.45':'',
@@ -476,7 +476,7 @@ function scr5(){
     el('div',{style:'display:flex;flex-direction:column;gap:9px'}, fx.map(m=>
       el('div',{cls:'slot','data-k':'fixed'}, el('span',{cls:'mk'},'📌'),
         el('span',{}, el('div',{cls:'st'}, m.t, el('span',{cls:'badge',style:'color:var(--accent)'},m.from)),
-          el('div',{cls:'sd'},m.d), el('div',{cls:'src'},'근거 · '+m.src))))),
+          el('div',{cls:'sd'},m.d))))),
     el('p',{cls:'sect',style:'margin-top:22px'},'선택 미션 1개 — 카테고리 제한 없음'),
     body,
     el('p',{style:'margin-top:12px;font-size:13px;color:var(--faint)'},'선택 '+n+' / 1  ·  총 '+(2+n)+' / 3개'),
