@@ -1,0 +1,488 @@
+<title>PAEON 초기 설문</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#F3FAF2; --surface:#FFFFFF; --surface-2:#E9F6E6; --surface-3:#F8FCF6;
+  --ink:#1F2A20; --muted:#4E5C4D; --faint:#7C8B7A; --ghost:#AEBCAB;
+  --line:#D3E7CD; --line-soft:#E7F2E2;
+  --accent:#2A7849; --accent-vivid:#4FB877; --accent-soft:#D9F2DF;
+  --ok:#2C8F55; --ok-soft:#DCF3E2;
+  --warn:#A8720D; --warn-soft:#FBEFD1;
+  --risk:#C44E36; --risk-soft:#FCE3DB;
+  --shadow:0 1px 2px rgba(31,42,32,.04), 0 10px 28px -20px rgba(31,42,32,.35);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#101510; --surface:#1A211A; --surface-2:#222C21; --surface-3:#1E261D;
+  --ink:#EAF1E7; --muted:#AAB8A8; --faint:#83917F; --ghost:#5E6B5C;
+  --line:#33402F; --line-soft:#283224;
+  --accent:#8FD9A8; --accent-vivid:#5FC98A; --accent-soft:#22362A;
+  --ok:#7FD69A; --ok-soft:#1D2F23;
+  --warn:#E7B565; --warn-soft:#33291A;
+  --risk:#F0937B; --risk-soft:#35221C;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -20px rgba(0,0,0,.9);
+}}
+:root[data-theme="dark"]{
+  --bg:#101510; --surface:#1A211A; --surface-2:#222C21; --surface-3:#1E261D;
+  --ink:#EAF1E7; --muted:#AAB8A8; --faint:#83917F; --ghost:#5E6B5C;
+  --line:#33402F; --line-soft:#283224;
+  --accent:#8FD9A8; --accent-vivid:#5FC98A; --accent-soft:#22362A;
+  --ok:#7FD69A; --ok-soft:#1D2F23;
+  --warn:#E7B565; --warn-soft:#33291A;
+  --risk:#F0937B; --risk-soft:#35221C;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -20px rgba(0,0,0,.9);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans KR",-apple-system,BlinkMacSystemFont,"Malgun Gothic",sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased}
+.num{font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-variant-numeric:tabular-nums}
+h1,h2,h3,h4{margin:0; font-weight:600; letter-spacing:-.01em; text-wrap:balance}
+p{margin:0}
+button{font:inherit; cursor:pointer}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.nav{position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:var(--surface); border-bottom:1px solid var(--line)}
+.navin{max-width:1080px; margin:0 auto; padding:0 24px; height:60px; display:flex; align-items:center; gap:14px}
+.brand{font-size:18px; font-weight:600; letter-spacing:.14em}
+.step{font-size:13px; color:var(--faint); border:1px solid var(--line); border-radius:999px; padding:2px 11px}
+.navin .right{margin-left:auto; font-size:13px; color:var(--faint)}
+
+.shell{max-width:1080px; margin:0 auto; padding:24px 24px 72px; display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,310px); gap:24px; align-items:start}
+@media (max-width:920px){ .shell{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:640px){ .navin,.shell{padding-left:16px; padding-right:16px} }
+
+.sheet{background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); overflow:hidden}
+.head{padding:20px 26px 16px; border-bottom:1px solid var(--line-soft);
+  background:linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%)}
+.head .row{display:flex; align-items:baseline; gap:10px; margin-bottom:11px}
+.head h1{font-size:20px}
+.head .cnt{margin-left:auto; font-size:14px; color:var(--muted); font-weight:600}
+.trk{height:6px; border-radius:4px; background:var(--line-soft); overflow:hidden}
+.trk i{display:block; height:100%; border-radius:4px; background:var(--accent-vivid); transition:width .25s}
+.form{padding:24px 26px 26px; display:flex; flex-direction:column; gap:24px}
+
+.q .qt{font-size:16.5px; font-weight:600; line-height:1.45; margin-bottom:4px}
+.q .qh{font-size:13.5px; color:var(--faint); margin-bottom:9px}
+.opts{display:flex; flex-direction:column; gap:6px}
+.opt{display:flex; align-items:center; gap:11px; border:1px solid var(--line); border-radius:10px;
+  padding:12px 15px; font-size:15px; background:var(--surface); text-align:left; width:100%; color:var(--ink)}
+.opt:hover{border-color:var(--accent-vivid); background:var(--surface-3)}
+.opt[data-on="1"]{border-color:var(--accent); background:var(--accent-soft); font-weight:600}
+.opt .tick{width:17px; height:17px; border-radius:50%; border:2px solid var(--line); flex:none; display:grid; place-items:center; font-size:10px; color:transparent}
+.opt[data-on="1"] .tick{border-color:var(--accent); background:var(--accent); color:#fff}
+.optrow{display:flex; gap:6px; flex-wrap:wrap}
+.optrow .opt{width:auto; flex:1 1 110px; justify-content:center; padding:11px 10px}
+.optrow .opt .tick{display:none}
+
+.days{display:grid; grid-template-columns:repeat(8,1fr); gap:6px; max-width:420px}
+.days button{border:1px solid var(--line); background:var(--surface); color:var(--muted); border-radius:8px; padding:9px 0; font-size:14px}
+.days button[data-on="1"]{border-color:var(--accent); background:var(--accent-soft); color:var(--ink); font-weight:600}
+
+.grid2{display:grid; grid-template-columns:repeat(2,1fr); gap:14px}
+@media (max-width:560px){ .grid2{grid-template-columns:1fr} }
+.field{display:flex; flex-direction:column; gap:5px}
+.field label{font-size:13.5px; color:var(--muted); font-weight:500}
+.field input{font:inherit; font-size:16px; padding:11px 13px; border-radius:9px; border:1px solid var(--line); background:var(--surface); color:var(--ink); width:100%}
+
+.sports{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
+@media (max-width:760px){ .sports{grid-template-columns:repeat(2,1fr)} }
+.sport{display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:10px; padding:11px 12px;
+  background:var(--surface); font-size:14px; color:var(--ink); text-align:left}
+.sport:hover{border-color:var(--accent-vivid)}
+.sport[data-on="1"]{border-color:var(--accent); background:var(--accent-soft); font-weight:600}
+.tier{font-size:10.5px; font-weight:700; border-radius:5px; padding:0 5px; border:1px solid currentColor; margin-left:auto; white-space:nowrap}
+.tier[data-t="low"]{color:var(--faint)} .tier[data-t="mid"]{color:var(--ok)}
+.tier[data-t="high"]{color:var(--risk)} .tier[data-t="str"]{color:var(--warn)}
+.detail{border:1px solid var(--line); border-radius:12px; padding:15px 17px; display:flex; flex-direction:column; gap:11px; background:var(--surface-3)}
+.detail .dh{display:flex; align-items:center; gap:8px; font-size:15px; font-weight:600}
+.detail label{font-size:13.5px; color:var(--muted)}
+
+.gauge{border:1px solid var(--line); border-radius:12px; padding:16px 18px; background:var(--surface)}
+.gauge .gt{display:flex; align-items:baseline; gap:8px; font-size:14px; color:var(--muted); margin-bottom:9px}
+.gauge .gv{font-size:26px; font-weight:600; margin-left:auto}
+.track{height:10px; border-radius:5px; background:var(--line-soft); position:relative; overflow:hidden}
+.track i{position:absolute; inset:0 auto 0 0; border-radius:5px; background:var(--accent-vivid)}
+.gauge .gl{display:flex; justify-content:space-between; font-size:12.5px; color:var(--faint); margin-top:7px}
+
+.callout{border:1px solid var(--line); background:var(--surface-3); border-radius:11px; padding:14px 16px; font-size:14px; color:var(--muted)}
+.callout b{color:var(--ink); font-weight:600}
+.skip{border:1px dashed var(--accent); border-radius:10px; padding:11px 15px; font-size:14px; color:var(--accent); font-weight:500}
+
+.nav2{display:flex; gap:10px; padding-top:6px}
+.primary{flex:1; border:0; border-radius:11px; padding:14px; font-weight:600; font-size:16px; background:var(--accent); color:#fff}
+:root[data-theme="dark"] .primary{color:#11150F}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .primary{color:#11150F}}
+.primary:disabled{opacity:.45; cursor:not-allowed}
+.back{border:1px solid var(--line); border-radius:11px; padding:14px 22px; background:var(--surface); color:var(--muted); font-size:15px}
+
+/* 결과 */
+.feat{display:grid; grid-template-columns:auto 1fr auto; gap:7px 14px; font-size:14px; align-items:center}
+.feat .fk{color:var(--faint)}
+.feat .fb{height:7px; border-radius:4px; background:var(--line-soft); overflow:hidden}
+.feat .fb i{display:block; height:100%; background:var(--accent-vivid)}
+.feat .fv{font-weight:600}
+.slot{border:1px solid var(--line); border-radius:12px; padding:14px 16px; display:flex; gap:12px; align-items:flex-start}
+.slot[data-k="fixed"]{border-color:var(--accent); background:var(--accent-soft)}
+.slot[data-k="pick"][data-on="1"]{border-color:var(--ok); background:var(--ok-soft)}
+.slot[data-k="out"]{border-style:dashed; background:var(--surface-3)}
+.slot .mk{font-size:17px; line-height:1.3; flex:none}
+.slot .st{font-size:15px; font-weight:600}
+.slot .sd{font-size:13px; color:var(--muted); margin-top:1px}
+.badge{font-size:11px; font-weight:700; border:1px solid currentColor; border-radius:5px; padding:0 6px; margin-left:8px; white-space:nowrap}
+.cnt2{font-size:14px; color:var(--muted)}
+.cnt2 b{color:var(--ink)}
+
+.rail{display:flex; flex-direction:column; gap:14px}
+@media (min-width:921px){ .rail{position:sticky; top:76px} }
+.card{background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:15px 17px}
+.card h3{font-size:12px; letter-spacing:.11em; text-transform:uppercase; color:var(--faint); margin-bottom:10px}
+.card p{font-size:13.5px; color:var(--muted)}
+.card p+p{margin-top:8px}
+.card b{color:var(--ink); font-weight:600}
+.idlist{display:flex; flex-wrap:wrap; gap:5px}
+.id{font-size:12px; font-weight:600; border:1px solid var(--line); border-radius:5px; padding:1px 7px; color:var(--muted)}
+.id[data-t="w"]{color:var(--accent); border-color:var(--accent)}
+.tbl{width:100%; border-collapse:collapse; font-size:13px}
+.tbl td{padding:6px 0; border-bottom:1px solid var(--line-soft); color:var(--muted); vertical-align:top}
+.tbl td:first-child{color:var(--ink); font-weight:600; white-space:nowrap; padding-right:12px}
+.tbl tr:last-child td{border-bottom:0}
+code{font-family:"IBM Plex Mono",monospace; font-size:12.5px; background:var(--surface-2); border:1px solid var(--line-soft); border-radius:5px; padding:1px 5px}
+</style>
+
+<nav class="nav"><div class="navin">
+  <span class="brand">PAEON</span>
+  <span class="step" id="stepchip">초기 설문</span>
+  <span class="right">W03 다음 · 답변은 예시입니다</span>
+</div></nav>
+
+<div class="shell">
+  <main class="sheet">
+    <div class="head">
+      <div class="row"><h1 id="cat"></h1><span class="cnt num" id="cnt"></span></div>
+      <div class="trk"><i id="prog"></i></div>
+    </div>
+    <div class="form" id="form"></div>
+  </main>
+  <aside class="rail" id="rail"></aside>
+</div>
+
+<script>
+const el=(t,a={},...k)=>{const n=document.createElement(t);
+  for(const[p,v] of Object.entries(a)){ if(p==='cls')n.className=v; else if(p==='html')n.innerHTML=v;
+    else if(p.startsWith('on'))n.addEventListener(p.slice(2),v); else if(v!=null)n.setAttribute(p,v); }
+  k.flat().forEach(c=>c!=null&&n.append(c.nodeType?c:document.createTextNode(c))); return n;};
+
+/* 운동 종목 → 강도 자동 분류. 고강도 2.0은 "중강도 150분 ≡ 고강도 75분"에서 정확히 나온다. */
+const TIER={low:{n:'저강도',w:0.8}, mid:{n:'중강도',w:1.0}, high:{n:'고강도',w:2.0}, str:{n:'근력',w:0}};
+const SPORTS=[
+  {id:'walk',n:'걷기',t:'low'},{id:'house',n:'집안일 · 청소',t:'low'},
+  {id:'fwalk',n:'빠르게 걷기',t:'mid'},{id:'bike',n:'자전거(평지)',t:'mid'},
+  {id:'bad',n:'배드민턴 · 탁구',t:'mid'},{id:'yoga',n:'요가 · 필라테스',t:'mid'},
+  {id:'stair',n:'계단 오르기',t:'mid'},{id:'swim',n:'수영(천천히)',t:'mid'},
+  {id:'run',n:'달리기',t:'high'},{id:'hike',n:'등산',t:'high'},
+  {id:'rope',n:'줄넘기',t:'high'},{id:'ball',n:'축구 · 농구',t:'high'},
+  {id:'gym',n:'헬스(웨이트)',t:'str'},{id:'body',n:'맨몸 · 밴드운동',t:'str'},
+];
+const MINS=[['10분 미만',5],['10–29분',20],['30–59분',45],['60분 이상',75]];
+
+const Q={
+  salt:[
+    {id:'N1',t:'국·찌개·라면을 국물까지 드시는 일이 일주일에 몇 번인가요',
+     o:[['0회',0],['1–2회',1.5],['3–4회',3.5],['5–6회',5.5],['7회 이상',7]]},
+    {id:'N2',t:'라면·즉석국 같은 인스턴트를 일주일에 몇 번 드시나요',
+     o:[['0회',0],['1회',1],['2회',2],['3회 이상',3]], row:true},
+    {id:'N3',t:'김치·장아찌·젓갈을 하루 몇 끼에 드시나요',
+     o:[['안 먹음',0],['1끼',1],['2끼',2],['3끼',3]], row:true},
+    {id:'N4',t:'식탁에서 소금이나 간장을 더 넣으시나요',
+     o:[['항상',2],['자주',1],['가끔',0.5],['안 함',0]], row:true},
+  ],
+  sub:[
+    {id:'S1',t:'현재 담배를 피우시나요',h:'전자담배도 포함입니다',
+     o:[['매일 피움',1],['가끔 피움',0.7],['과거엔 피웠고 지금은 안 함',0.3],['피운 적 없음',0]]},
+    {id:'S2',t:'하루에 몇 개비 정도 피우시나요',skipIf:s=>s.S1===0||s.S1===0.3,
+     o:[['10개비 미만',1],['10–19개비',2],['20개비 이상',3]], row:true},
+    {id:'D1',t:'술을 얼마나 자주 드시나요',
+     o:[['안 마심',0],['월 1회 이하',0.2],['월 2–4회',0.7],['주 2–3회',2.5],['주 4회 이상',4.5]]},
+    {id:'D2',t:'마실 때 보통 몇 잔 드시나요',h:'소주 1잔 · 맥주 1캔 = 1잔',skipIf:s=>s.D1===0,
+     o:[['1–2잔',1.5],['3–4잔',3.5],['5–6잔',5.5],['7–9잔',8],['10잔 이상',11]], row:true},
+    {id:'D3',t:'한 번에 소주 1병(맥주 4캔) 이상 마시는 일이 한 달에 몇 번인가요',skipIf:s=>s.D1===0,
+     o:[['0회',0],['1회',1],['2–3회',2.5],['4회 이상',4]], row:true},
+  ],
+  out:[
+    {id:'O1',t:'배달 음식을 일주일에 몇 번 드시나요',
+     o:[['0회',0],['1–2회',1.5],['3–4회',3.5],['5회 이상',5]], row:true},
+    {id:'O2',t:'식당·구내식당 외식을 일주일에 몇 번 하시나요',
+     o:[['0회',0],['1–2회',1.5],['3–5회',4],['6–9회',7.5],['10회 이상',10]]},
+    {id:'O3',t:'배달·외식으로 주로 무엇을 드시나요',
+     o:[['한식 국물류',1],['중식 · 분식',0.5],['치킨 · 피자',0.5],['샐러드 · 덮밥',0]], row:true},
+  ],
+  morn:[
+    {id:'M1',t:'최근 일주일 동안 아침을 며칠 드셨나요',
+     o:[['0일',0],['1–2일',1.5],['3–4일',3.5],['5–6일',5.5],['매일',7]]},
+    {id:'M2',t:'아침을 거르는 이유는 무엇인가요',skipIf:s=>s.M1===7,
+     o:[['시간이 없어서',0],['입맛이 없어서',1],['다이어트 때문에',2],['습관이라서',3]], row:true},
+  ],
+  wt:[
+    {id:'W2',t:'최근 1년 사이 체중이 어떻게 달라졌나요',
+     o:[['3kg 이상 늘었다',2],['비슷하다',0],['3kg 이상 줄었다',-1]], row:true},
+    {id:'W4',t:'밤 9시 이후에 식사하는 일이 일주일에 몇 번인가요',
+     o:[['0회',0],['1–2회',1.5],['3–4회',3.5],['5회 이상',5]], row:true},
+  ],
+  care:[
+    {id:'X1',t:'고혈압으로 약을 드시고 계신가요',h:'모델 보정에 반드시 필요한 문항입니다',
+     o:[['예',1],['아니오',0]], row:true},
+    {id:'X2',t:'고혈압을 진단받은 적이 있나요',
+     o:[['예',1],['아니오',0]], row:true},
+    {id:'X3',t:'혈압을 주 1회 재실 수 있나요',
+     o:[['집에 혈압계가 있다',2],['약국 · 보건소를 이용할 수 있다',1],['어렵다',0]]},
+  ],
+};
+const STEPS=[{k:'basic',cat:'기본 정보'},{k:'salt',cat:'나트륨'},{k:'act',cat:'신체 활동'},
+  {k:'sub',cat:'흡연 · 음주'},{k:'out',cat:'외식 · 배달'},{k:'morn',cat:'아침 식사'},
+  {k:'wt',cat:'체중 관리'},{k:'care',cat:'복약 · 측정'},{k:'done',cat:'설문 완료'}];
+
+const S={ans:{}, basic:{age:45,sex:1,h:172,w:78}, sports:{}, step:0, picks:new Set()};
+const visible=l=>l.filter(q=>!(q.skipIf&&q.skipIf(S.ans)));
+const skipped=l=>l.filter(q=>q.skipIf&&q.skipIf(S.ans));
+
+function derive(){
+  const a=S.ans,b=S.basic;
+  const bmi=b.w/Math.pow(b.h/100,2);
+  const salt=Math.max(0,Math.min(14,(a.N1||0)+(a.N2||0)+(a.N3||0)*2+(a.N4||0)+(a.O3||0)));
+  let act=0,strDays=0;
+  for(const [id,v] of Object.entries(S.sports)){
+    const sp=SPORTS.find(s=>s.id===id); if(!sp||!v.days) continue;
+    if(sp.t==='str'){strDays=Math.max(strDays,v.days); continue;}
+    act+=v.days*(v.min||0)*TIER[sp.t].w;
+  }
+  return {age:b.age, male:b.sex, bmi, salt, act, eatout:(a.O1||0)+(a.O2||0),
+          smoke:a.S1||0, drink:(a.D1||0)*(a.D2||0), strDays, sit:a.SIT||0};
+}
+
+/* 위험 기여도 — 선형 모델이라 계수 x (값 − 평균) 이 그대로 SHAP 값이다 */
+const FEATS=[{k:'age',label:'나이',coef:0.055,mean:45},{k:'male',label:'성별',coef:0.45,mean:0.5},
+  {k:'bmi',label:'체질량지수',coef:0.11,mean:23.8},{k:'salt',label:'나트륨 습관',coef:0.09,mean:5},
+  {k:'eatout',label:'외식·배달',coef:0.05,mean:4},{k:'act',label:'신체활동',coef:-0.0025,mean:100},
+  {k:'smoke',label:'흡연',coef:0.30,mean:0.2},{k:'drink',label:'음주',coef:0.022,mean:4}];
+const contribs=d=>FEATS.map(f=>({...f, c:f.coef*(d[f.k]-f.mean)}));
+
+/* ── 챌린지 배정 ──────────────────────────────────────────
+   고정 2칸: 1칸은 흡연, 1칸은 음주. 해당 없으면 나트륨으로 대체하고,
+   나트륨도 이미 낮으면 기여도가 가장 큰 바꿀 수 있는 요인으로 넘어간다. */
+const SALT_POOL=[
+  {id:'s1',t:'국물 남기기 주 5회',  d:'국·찌개·라면은 한 번에 염분이 많이 들어갑니다'},
+  {id:'s2',t:'라면 주 1회 이하',    d:'단일 식품 중 염분이 가장 눈에 띕니다'},
+];
+const BY_FEAT={
+  bmi:{id:'w1',t:'4주 −1kg',d:'표준체중 초과 시 5kg 감량만으로 뚜렷한 혈압 감소'},
+  salt:{id:'s1',t:'국물 남기기 주 5회',d:'소금을 절반으로 줄이면 수축기 4~6mmHg 감소'},
+  eatout:{id:'o1',t:'배달 앱 주 2회 줄이기',d:'외식 빈도를 배달의 대리 지표로 씁니다'},
+  act:{id:'a2',t:'하루 30분 걷기 주 5일',d:'규칙적인 유산소로 수축기 5~7mmHg 감소'},
+};
+function assign(){
+  const d=derive();
+  const used=new Set(), fixed=[], pool=[];
+  let si=0;
+  const nextSalt=()=>{ while(si<SALT_POOL.length){ const m=SALT_POOL[si++]; if(!used.has(m.id)) return m; } return null; };
+  const fallback=()=>{
+    const order=contribs(d).filter(f=>['bmi','eatout','act'].includes(f.k))
+      .sort((a,b)=>b.c-a.c).map(f=>BY_FEAT[f.k]);
+    return order.find(m=>m&&!used.has(m.id))||null;
+  };
+  const add=(m,from,why)=>{ if(!m) return; used.add(m.id); fixed.push({...m,from,why}); };
+
+  // 슬롯 1 — 흡연
+  if(d.smoke>=0.7) add({id:'b1',t:'금연 유지 (전자담배 포함)',d:'6대 수칙에 전자담배가 따로 명시됩니다'},
+                       '흡연','현재 흡연 중입니다');
+  else add(d.salt>4?nextSalt():fallback(),'흡연 → 대체',
+           d.smoke===0?'담배를 피우지 않아 나트륨으로 대체했습니다':'과거 흡연자라 금연 대신 나트륨으로 대체했습니다');
+  // 슬롯 2 — 음주
+  if(d.drink>0) add({id:'b2',t:'표준잔 지키기 · 남 2 / 여 1',d:'초과하면 경고를 띄웁니다'},
+                    '음주','주 '+Math.round(d.drink)+'잔 드십니다');
+  else add(d.salt>4?nextSalt():fallback(),'음주 → 대체','술을 마시지 않아 나트륨으로 대체했습니다');
+
+  // 선택 후보 — 바꿀 수 있는 요인만 기여도 순
+  contribs(d).filter(f=>['bmi','salt','eatout','act'].includes(f.k)).sort((a,b)=>b.c-a.c)
+    .forEach(f=>{ const m=BY_FEAT[f.k]; if(!m||used.has(m.id)) return;
+      if(f.k==='salt'&&d.salt<=4) return;
+      if(f.k==='act'&&d.act>=150) return;
+      if(f.k==='bmi'&&d.bmi<25) return;
+      if(f.k==='eatout'&&d.eatout<=4) return;
+      used.add(m.id); pool.push({...m, c:f.c, feat:f.label}); });
+  if(d.sit>=2) pool.push({id:'a1',t:'앉아서 발뒤꿈치 들기 주 5일',d:'앉아 있는 시간이 깁니다',c:0,feat:'좌식'});
+
+  // 제외 목록
+  const out=[];
+  if(d.smoke<0.7) out.push(['금연', d.smoke===0?'담배를 피우지 않습니다':'이미 끊으셨습니다']);
+  if(d.drink===0) out.push(['절주','술을 마시지 않습니다']);
+  if(d.salt<=4) out.push(['국물 남기기','이미 싱겁게 드십니다']);
+  if(d.act>=150) out.push(['하루 30분 걷기','권고 150분을 이미 넘겼습니다']);
+  if(d.bmi<25) out.push(['4주 −1kg','BMI가 권고 범위입니다']);
+  if(d.eatout<=4) out.push(['배달 줄이기','외식·배달 빈도가 낮습니다']);
+  if((S.ans.M1??7)>=5) out.push(['아침 거르지 않기','아침을 대체로 드십니다']);
+  return {fixed, pool, out, d};
+}
+
+const form=document.getElementById('form');
+const go=n=>{S.step=n; render(); window.scrollTo({top:0,behavior:'smooth'});};
+
+function radio(q){
+  const w=el('div',{cls:'q'}, el('div',{cls:'qt'},q.t), q.h?el('div',{cls:'qh'},q.h):null);
+  const box=el('div',{cls:q.row?'optrow':'opts'});
+  q.o.forEach(([lb,v])=>box.append(el('button',{cls:'opt',type:'button','data-on':S.ans[q.id]===v?'1':'0',
+    onclick:()=>{S.ans[q.id]=v; render();}}, q.row?null:el('span',{cls:'tick'},'✓'), lb)));
+  w.append(box); return w;
+}
+
+function render(){
+  const st=STEPS[S.step];
+  document.getElementById('cat').textContent=st.cat;
+  document.getElementById('cnt').textContent=(S.step+1)+' / '+STEPS.length;
+  document.getElementById('prog').style.width=Math.round(S.step/(STEPS.length-1)*100)+'%';
+  document.getElementById('stepchip').textContent=st.k==='done'?'설문 완료':'초기 설문';
+  form.textContent=''; let ready=true;
+
+  if(st.k==='basic'){
+    const f=(k,l)=>el('div',{cls:'field'}, el('label',{for:'b-'+k},l),
+      el('input',{type:'number',id:'b-'+k,value:S.basic[k],oninput:e=>{S.basic[k]=parseFloat(e.target.value)||0;}}));
+    form.append(
+      el('p',{cls:'callout',html:'<b>왜 묻나요</b><br>나이·성별·체형은 위험도 계산에 바로 들어가고, 4주 뒤 같은 항목을 다시 물어 비교합니다.'}),
+      el('div',{cls:'grid2'}, f('age','나이'), f('h','키 (cm)'), f('w','몸무게 (kg)'),
+        el('div',{cls:'field'}, el('label',{},'성별'),
+          el('div',{cls:'optrow'}, [['남',1],['여',0]].map(([t,v])=>
+            el('button',{cls:'opt',type:'button','data-on':S.basic.sex===v?'1':'0',
+              onclick:()=>{S.basic.sex=v; render();}},t))))));
+  }
+  else if(st.k==='act'){ ready=renderAct(); }
+  else if(st.k==='done'){ renderDone(); }
+  else {
+    const vis=visible(Q[st.k]), sk=skipped(Q[st.k]);
+    vis.forEach(q=>{ form.append(radio(q)); if(S.ans[q.id]===undefined) ready=false; });
+    if(sk.length) form.append(el('div',{cls:'skip'},
+      '앞 답변에 따라 '+sk.length+'문항을 건너뜁니다 — '+sk.map(q=>q.id).join(', ')));
+  }
+  if(st.k!=='done') form.append(el('div',{cls:'nav2'},
+    S.step>0?el('button',{cls:'back',type:'button',onclick:()=>go(S.step-1)},'이전'):null,
+    el('button',{cls:'primary',type:'button',disabled:ready?null:'',onclick:()=>go(S.step+1)},
+      ready?'다음':'모두 답해주세요')));
+  renderRail();
+}
+
+function renderAct(){
+  form.append(el('div',{cls:'q'},
+    el('div',{cls:'qt'},'최근 일주일에 하신 운동을 모두 골라주세요'),
+    el('div',{cls:'qh'},'고르면 강도는 자동으로 붙습니다. 안 하셨으면 그냥 다음으로 넘어가세요.')));
+  const grid=el('div',{cls:'sports'});
+  SPORTS.forEach(sp=>{const on=!!S.sports[sp.id];
+    grid.append(el('button',{cls:'sport',type:'button','data-on':on?'1':'0',
+      onclick:()=>{on?delete S.sports[sp.id]:S.sports[sp.id]={days:3,min:45}; render();}},
+      sp.n, el('span',{cls:'tier','data-t':sp.t},TIER[sp.t].n)));});
+  form.append(grid);
+  Object.keys(S.sports).forEach(id=>{
+    const sp=SPORTS.find(s=>s.id===id), v=S.sports[id];
+    const d=el('div',{cls:'detail'}, el('div',{cls:'dh'}, sp.n, el('span',{cls:'tier','data-t':sp.t},TIER[sp.t].n)));
+    const dd=el('div',{cls:'days'});
+    for(let i=0;i<=7;i++) dd.append(el('button',{type:'button','data-on':v.days===i?'1':'0',
+      onclick:()=>{v.days=i; render();}},String(i)));
+    d.append(el('label',{},'주 며칠'), dd);
+    if(v.days>0){ const mm=el('div',{cls:'optrow'});
+      MINS.forEach(([t,val])=>mm.append(el('button',{cls:'opt',type:'button','data-on':v.min===val?'1':'0',
+        onclick:()=>{v.min=val; render();}},t)));
+      d.append(el('label',{},'하루 평균'), mm); }
+    form.append(d);
+  });
+  const act=derive().act;
+  form.append(el('div',{cls:'gauge'},
+    el('div',{cls:'gt'},'중강도 환산', el('span',{cls:'gv num',style:'color:var(--'+(act>=150?'ok':'warn')+')'},Math.round(act)+'분')),
+    el('div',{cls:'track'}, el('i',{style:'width:'+Math.min(100,act/150*100)+'%'})),
+    el('div',{cls:'gl'}, el('span',{},'0'), el('span',{},act>=150?'권고 150분 달성':'권고 150분'))),
+    el('p',{cls:'callout',html:'<b>고강도 1분 = 중강도 2분</b>으로 셉니다. 질병관리청 6대 수칙의 “중강도 150분 또는 고강도 75분”이 정확히 이 비율입니다.'}));
+  form.append(radio({id:'SIT',t:'하루 중 앉아 있는 시간은 어느 정도인가요',
+    o:[['4시간 미만',0],['4–8시간',1],['8–12시간',2],['12시간 이상',3]], row:true}));
+  return S.ans.SIT!==undefined;
+}
+
+function renderDone(){
+  const {fixed,pool,out,d}=assign();
+  const F=[['나이',d.age,'세',90],['체질량지수',d.bmi.toFixed(1),'',40],['나트륨 습관',d.salt.toFixed(1),'회/주',14],
+    ['신체활동',Math.round(d.act),'분/주',300],['외식·배달',d.eatout.toFixed(1),'회/주',14],
+    ['음주',Math.round(d.drink),'잔/주',28],['흡연',d.smoke,'',1]];
+  const picked=[...S.picks].filter(id=>pool.some(m=>m.id===id));
+  form.append(
+    el('p',{cls:'callout',html:'<b>설문이 끝났습니다</b><br>답변에서 모델 입력값 7개를 뽑고, 고정 챌린지 2개를 배정했습니다. 4주 뒤 같은 문항을 다시 물어 비교합니다.'}),
+    el('div',{cls:'q'}, el('div',{cls:'qt'},'모델에 들어갈 값')),
+    el('div',{cls:'feat'}, F.map(([k,v,u,mx])=>[el('span',{cls:'fk'},k),
+      el('span',{cls:'fb'}, el('i',{style:'width:'+Math.min(100,parseFloat(v)/mx*100)+'%'})),
+      el('span',{cls:'fv num'}, v+(u?' '+u:''))]).flat()),
+    el('div',{cls:'q'}, el('div',{cls:'qt'},'고정 챌린지 2개'),
+      el('div',{cls:'qh'},'흡연 한 칸, 음주 한 칸. 해당 없으면 나트륨으로 대체됩니다')),
+    fixed.map(m=>el('div',{cls:'slot','data-k':'fixed'}, el('span',{cls:'mk'},'📌'),
+      el('span',{}, el('div',{cls:'st'}, m.t, el('span',{cls:'badge',style:'color:var(--accent)'},m.from)),
+        el('div',{cls:'sd'}, m.why+' · '+m.d)))));
+  const cnt=el('p',{cls:'cnt2'});
+  form.append(el('div',{cls:'q'}, el('div',{cls:'qt'},'선택 챌린지'),
+      el('div',{cls:'qh'},'위험 기여도가 큰 순서입니다. 1~2개 고르세요')), cnt);
+  const draw=()=>{
+    cnt.textContent=''; cnt.append('선택 ', el('b',{},picked.length+' / 2'));
+    box.textContent='';
+    pool.forEach(m=>{ const on=S.picks.has(m.id), full=!on&&[...S.picks].length>=2;
+      box.append(el('div',{cls:'slot','data-k':'pick','data-on':on?'1':'0',
+        style:full?'opacity:.5':'', onclick:()=>{ if(full) return;
+          on?S.picks.delete(m.id):S.picks.add(m.id); renderDone2();}},
+        el('span',{cls:'mk'}, on?'✅':'⬜'),
+        el('span',{}, el('div',{cls:'st'}, m.t, m.feat?el('span',{cls:'badge',style:'color:var(--muted)'},m.feat+' 기여도'):null),
+          el('div',{cls:'sd'},m.d)))); });
+  };
+  const box=el('div',{style:'display:flex;flex-direction:column;gap:9px'});
+  form.append(box); draw();
+  form.append(
+    el('div',{cls:'q'}, el('div',{cls:'qt'},'제외한 챌린지 '+out.length+'개'),
+      el('div',{cls:'qh'},'이미 하고 계신 것을 다시 시키지 않습니다')),
+    out.map(([t,w])=>el('div',{cls:'slot','data-k':'out'}, el('span',{cls:'mk',style:'color:var(--ghost)'},'—'),
+      el('span',{}, el('div',{cls:'st',style:'color:var(--faint)'},t), el('div',{cls:'sd'},w)))),
+    el('div',{cls:'nav2'},
+      el('button',{cls:'back',type:'button',onclick:()=>go(S.step-1)},'이전'),
+      el('button',{cls:'primary',type:'button',
+        onclick:()=>{S.step=0; S.ans={}; S.sports={}; S.picks.clear(); render();}},'처음부터 다시')));
+}
+function renderDone2(){ form.textContent=''; renderDone(); renderRail(); }
+
+const RAIL={
+  basic:[['왜 이 순서인가','무거운 질문을 뒤로 뺐습니다. 복약·진단 문항은 마지막 단계입니다.']],
+  salt:[['빈도로만 묻습니다','KNHANES는 나트륨을 24시간 회상 mg으로 잡습니다. 사용자는 mg을 못 답하니 빈도로 받고, 학습할 때 <b>mg → 빈도 변환 규칙</b>을 우리가 만들어야 합니다.']],
+  act:[['종목 → 강도 자동 분류','“중강도인가요?”를 묻지 않습니다. 종목만 고르면 시스템이 분류하고, 저장은 KNHANES와 같은 <b>강도별 분/주</b> 구조입니다.'],
+       ['고강도 × 2','질병관리청 “중강도 150분 또는 고강도 75분”에서 비율이 정확히 2로 떨어집니다.']],
+  sub:[['이 답이 고정 챌린지를 정합니다','흡연하지 않으면 금연 자리가 나트륨으로, 술을 마시지 않으면 절주 자리가 나트륨으로 대체됩니다.'],
+       ['스킵 로직','비흡연이면 개비 수를, 비음주면 잔 수와 폭음을 건너뜁니다.']],
+  out:[['배달과 외식을 나눠 묻습니다','학습은 KNHANES 외식 빈도로 하고, 서비스 서사는 배달로 갑니다.']],
+  morn:[['근거가 없는 카테고리','질병관리청 6대·9대 수칙 어디에도 아침 식사 항목이 없습니다.']],
+  wt:[['6대 수칙 ①','체중이 첫 번째 수칙입니다. 5kg 감량만으로 뚜렷한 혈압 감소라는 숫자가 있습니다.']],
+  care:[['이게 없으면 모델이 망가집니다','고혈압 약 복용 여부는 <b>역인과 보정 변수</b>입니다. 없으면 “저염식 하는 사람 = 고혈압”을 학습합니다.']],
+  done:[['고정 2 + 선택 1~2','고정은 흡연 한 칸, 음주 한 칸입니다. 해당이 없으면 나트륨 미션이 그 자리를 채우고, 나트륨도 이미 낮으면 기여도가 가장 큰 요인으로 넘어갑니다.'],
+        ['선택은 기여도 순','바꿀 수 없는 나이·성별은 후보에서 뺍니다. 그래야 “성별을 바꾸세요”가 1위로 올라오지 않습니다.']],
+};
+function renderRail(){
+  const r=document.getElementById('rail'); r.textContent='';
+  const k=STEPS[S.step].k;
+  r.append(el('div',{cls:'card'}, el('h3',{},'추적성'),
+    el('div',{cls:'idlist'}, ['W03','W04','W09'].map(i=>el('span',{cls:'id','data-t':'w'},i)),
+      ['REQ-HEALTH-001','REQ-HEALTH-002','REQ-CHAL-001','REQ-CHAL-003'].map(i=>el('span',{cls:'id'},i)))));
+  (RAIL[k]||[]).forEach(([t,d])=>r.append(el('div',{cls:'card'}, el('h3',{},t), el('p',{html:d}))));
+  if(k==='act') r.append(el('div',{cls:'card'}, el('h3',{},'강도 판단 기준'),
+    el('table',{cls:'tbl'},
+      el('tr',{}, el('td',{},'저강도'), el('td',{},'노래를 부를 수 있음')),
+      el('tr',{}, el('td',{},'중강도'), el('td',{},'대화는 되는데 노래는 안 됨')),
+      el('tr',{}, el('td',{},'고강도'), el('td',{},'몇 마디 말하기도 힘듦')),
+      el('tr',{}, el('td',{},'심박수'), el('td',{html:'<code>(220 − 나이) × 60~80%</code>'})))));
+  if(k==='done') r.append(el('div',{cls:'card'}, el('h3',{},'계산식'),
+    el('p',{html:'<code>act = 중강도분 + 고강도분×2 + 걷기분×0.8</code>'}),
+    el('p',{html:'<code>salt = N1 + N2 + N3×2 + N4 + O3</code>'}),
+    el('p',{html:'<code>drink = D1빈도 × D2잔수</code>'}),
+    el('p',{},'가중치는 잠정값입니다. KNHANES 원시자료가 오면 실측치와 상관을 맞춰 보정해야 합니다.')));
+}
+render();
+</script>
