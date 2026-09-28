@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>파이온 ERD v5 영역별 정리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F2F5F6;
+  --surface: #FFFFFF;
+  --ink: #1B2733;
+  --muted: #5E6B78;
+  --line: #D6DDE2;
+  --soft: #E8EDF0;
+  --pk: #0E6B6B;
+  --fk: #A3354A;
+  --uq: #5A5F9E;
+  --post: #8A6A2E;
+  --sans: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11181E; --surface: #19232B; --ink: #E3E9EE; --muted: #9AA8B4;
+    --line: #2B3944; --soft: #212D36; --pk: #4FC1B8; --fk: #EB8295; --uq: #9FA4E6; --post: #D9B26A;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11181E; --surface: #19232B; --ink: #E3E9EE; --muted: #9AA8B4;
+  --line: #2B3944; --soft: #212D36; --pk: #4FC1B8; --fk: #EB8295; --uq: #9FA4E6; --post: #D9B26A;
+}
+*, *::before, *::after { box-sizing: inherit; }
+html { scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 104px); scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.6; }
+a { color: inherit; }
+a:focus-visible, input:focus-visible { outline: 2px solid var(--pk); outline-offset: 2px; }
+
+.layout { display: grid; grid-template-columns: 264px minmax(0, 1fr); max-width: 1480px; margin: 0 auto; }
+aside { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; height: 100vh; overflow-y: auto; padding: 28px 20px 40px 24px; border-right: 1px solid var(--line); }
+aside h2 { font-size: 15px; margin: 0 0 18px; font-weight: 700; }
+aside h2 small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; }
+.navhead { font-size: 13px; font-weight: 600; color: var(--muted); margin: 20px 0 6px; }
+.navhead.post { color: var(--post); }
+aside ul { list-style: none; margin: 0; padding: 0; }
+aside li a { display: flex; justify-content: space-between; gap: 8px; padding: 5px 8px; margin: 0 -8px; border-radius: 4px; text-decoration: none; font-size: 14px; }
+aside li a span { color: var(--muted); font-variant-numeric: tabular-nums; }
+aside li a:hover, aside li a.active { background: var(--soft); }
+aside li a.active { font-weight: 600; }
+
+main { padding: 40px 40px 80px; min-width: 0; }
+.intro h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.2; margin: 0 0 10px; letter-spacing: -0.01em; }
+.intro p { max-width: 68ch; color: var(--muted); margin: 0 0 24px; }
+.stats { display: flex; flex-wrap: wrap; gap: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); width: fit-content; max-width: 100%; margin-bottom: 20px; }
+.stats div { padding: 12px 20px; border-right: 1px solid var(--line); }
+.stats div:last-child { border-right: 0; }
+.stats b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+.stats span { font-size: 13px; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); margin-bottom: 36px; align-items: center; }
+.legend .item { display: inline-flex; gap: 6px; align-items: center; }
+.swatch-post { width: 22px; height: 12px; border: 1.5px dashed var(--post); border-radius: 2px; display: inline-block; }
+
+.map { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 24px; margin-bottom: 28px; }
+.map h2 { font-size: 20px; margin: 0 0 4px; }
+.map p { margin: 0 0 16px; color: var(--muted); font-size: 14px; max-width: 70ch; }
+.diagram { overflow-x: auto; }
+.diagram pre.mermaid { margin: 0; background: transparent; min-width: min-content; font-family: var(--sans); }
+
+.search { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding: 12px 0; margin-bottom: 12px; }
+.search input { width: 100%; max-width: 520px; font: inherit; font-size: 15px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.search .hint { font-size: 13px; color: var(--muted); margin-left: 10px; }
+
+.group { padding: 36px 0 12px; border-top: 1px solid var(--line); }
+.ghead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.ghead h3 { font-size: 24px; margin: 0; line-height: 1.3; }
+.scope { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 3px; background: var(--soft); color: var(--pk); }
+.scope.post { color: var(--post); border: 1px dashed var(--post); background: transparent; }
+.gdesc { color: var(--muted); max-width: 72ch; margin: 8px 0 10px; }
+.conn { font-size: 14px; margin-bottom: 16px; }
+.conn p { margin: 2px 0; }
+.conn b { font-weight: 600; margin-right: 6px; }
+.muted { color: var(--muted); }
+.group .diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+.group.post .diagram { border-style: dashed; border-color: var(--post); }
+
+.cards { columns: 360px; column-gap: 16px; }
+.card { break-inside: avoid; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; margin: 0 0 16px; padding: 0 0 12px; }
+.card.post { border: 1.5px dashed var(--post); }
+.card:target { outline: 2px solid var(--fk); outline-offset: 2px; }
+.card header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 12px 14px 8px; border-bottom: 1px solid var(--line); }
+.card h4 { font-family: var(--mono); font-size: 15px; font-weight: 500; margin: 0; word-break: break-all; }
+.card .count { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.tnote { font-size: 13px; color: var(--muted); margin: 10px 14px 4px; line-height: 1.55; }
+.cols { list-style: none; margin: 6px 0 0; padding: 0; }
+.cols li { padding: 6px 14px; border-top: 1px solid var(--soft); }
+.cols li:first-child { border-top: 0; }
+.line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.cname { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+.ctype { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.enum-link { color: var(--uq); text-decoration: underline dotted; text-underline-offset: 3px; }
+.flags { margin-left: auto; display: inline-flex; gap: 4px; }
+.flag { font-size: 11px; font-weight: 600; padding: 0 5px; border-radius: 3px; line-height: 18px; border: 1px solid currentColor; }
+.flag.pk { color: var(--pk); }
+.flag.fk { color: var(--fk); }
+.flag.uq { color: var(--uq); }
+.flag.nn { color: var(--muted); border-color: var(--line); }
+.sub { display: flex; flex-direction: column; gap: 1px; font-size: 12.5px; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+.sub .ref { color: var(--fk); }
+.sub .ref a { font-family: var(--mono); }
+.indexes { list-style: none; margin: 8px 14px 0; padding: 8px 0 0; border-top: 1px solid var(--line); font-size: 12.5px; font-family: var(--mono); color: var(--muted); }
+.indexes li { padding: 1px 0; }
+.ixk { font-family: var(--sans); font-weight: 600; color: var(--ink); margin-right: 4px; }
+.refd { font-size: 12.5px; color: var(--muted); margin: 8px 14px 0; line-height: 1.6; }
+.refd a { font-family: var(--mono); }
+
+.enums { padding-top: 36px; border-top: 1px solid var(--line); }
+.enums h3 { font-size: 24px; margin: 0 0 6px; }
+.enum-grid { columns: 260px; column-gap: 16px; margin-top: 16px; }
+.enum { break-inside: avoid; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; }
+.enum:target { outline: 2px solid var(--uq); outline-offset: 2px; }
+.enum h4 { font-family: var(--mono); font-size: 14px; font-weight: 500; margin: 0 0 6px; color: var(--uq); }
+.enum ul { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.enum li { padding: 2px 0; }
+.enum code { font-family: var(--mono); }
+.enum li span { color: var(--muted); display: block; font-size: 12px; }
+
+.empty { display: none; color: var(--muted); padding: 24px 0; }
+body.searching .diagram, body.searching .conn, body.searching .gdesc, body.searching .map { display: none; }
+.card.hide, .group.hide { display: none; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  aside { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 20px; }
+  aside ul { display: flex; flex-wrap: wrap; gap: 6px; }
+  aside li a { margin: 0; border: 1px solid var(--line); background: var(--surface); }
+  main { padding: 24px 16px 60px; }
+  .stats div { padding: 10px 14px; }
+  .cards { columns: 1; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+  <h2>파이온 ERD v5<small>영역별 테이블 목록</small></h2>
+  <div class="navhead">MVP</div>
+  <ul><li><a href="#mvp_auth">회원 · 인증<span>6</span></a></li><li><a href="#mvp_consent">동의 · 약관<span>3</span></a></li><li><a href="#mvp_eligibility">이용 적합성 · 응급 확인<span>2</span></a></li><li><a href="#mvp_health">건강정보 · 검진 결과지 OCR<span>6</span></a></li><li><a href="#mvp_survey">생활습관 설문<span>7</span></a></li><li><a href="#mvp_features">파생 피처 · 가중치<span>3</span></a></li><li><a href="#mvp_model_registry">질환 · 모델 레지스트리<span>5</span></a></li><li><a href="#mvp_prediction">예측 · XAI<span>6</span></a></li><li><a href="#mvp_challenge_master">챌린지 마스터<span>4</span></a></li><li><a href="#mvp_recommendation">추천<span>5</span></a></li><li><a href="#mvp_challenge_cycle">챌린지 사이클 · 수행<span>5</span></a></li><li><a href="#mvp_diet">식단 나트륨 분석<span>4</span></a></li><li><a href="#mvp_notification">알림 · 재평가<span>5</span></a></li><li><a href="#mvp_feedback">피드백<span>1</span></a></li><li><a href="#mvp_audit">분석 이벤트 · 보안 감사<span>2</span></a></li></ul>
+  <div class="navhead post">POST-MVP</div>
+  <ul><li><a href="#post_mvp_ml">ML 실험 기록<span>4</span></a></li><li><a href="#post_mvp_feedback">피드백 분석 · 개선<span>2</span></a></li><li><a href="#post_mvp_api_audit">API 요청 감사<span>1</span></a></li></ul>
+  <div class="navhead">참고</div>
+  <ul><li><a href="#overview">영역 관계도</a></li><li><a href="#enums">Enum 목록<span>50</span></a></li></ul>
+</aside>
+<main>
+  <div class="intro">
+    <h1>파이온 데이터 모델</h1>
+    <p>ERD v5 코드를 기준으로 테이블 71개를 18개 영역으로 나눠 정리했습니다. 영역마다 관계 다이어그램과 컬럼 상세를 함께 보여주고, 외래 키를 누르면 참조 대상 테이블로 이동합니다.</p>
+  </div>
+  <div class="stats">
+    <div><b>64</b><span>MVP 테이블</span></div>
+    <div><b>7</b><span>POST-MVP 테이블</span></div>
+    <div><b>105</b><span>관계</span></div>
+    <div><b>50</b><span>Enum</span></div>
+  </div>
+  <div class="legend">
+    <span class="item"><span class="flag pk">PK</span>기본 키</span>
+    <span class="item"><span class="flag fk">FK</span>외래 키</span>
+    <span class="item"><span class="flag uq">UQ</span>유니크</span>
+    <span class="item"><span class="flag nn">NN</span>NOT NULL</span>
+    <span class="item"><span class="swatch-post"></span>점선 테두리는 POST-MVP</span>
+  </div>
+
+  <section class="map" id="overview">
+    <h2>영역 관계도</h2>
+    <p>화살표는 외래 키가 향하는 방향입니다. 거의 모든 영역이 참조하는 users(회원 · 인증)는 선을 생략했습니다.</p>
+    <div class="diagram"><pre class="mermaid">flowchart LR
+  subgraph S1[&quot;MVP&quot;]
+    G0[&quot;회원 · 인증&lt;br/&gt;6개&quot;]
+    G1[&quot;동의 · 약관&lt;br/&gt;3개&quot;]
+    G2[&quot;이용 적합성 · 응급 확인&lt;br/&gt;2개&quot;]
+    G3[&quot;건강정보 · 검진 결과지 OCR&lt;br/&gt;6개&quot;]
+    G4[&quot;생활습관 설문&lt;br/&gt;7개&quot;]
+    G5[&quot;파생 피처 · 가중치&lt;br/&gt;3개&quot;]
+    G6[&quot;질환 · 모델 레지스트리&lt;br/&gt;5개&quot;]
+    G7[&quot;예측 · XAI&lt;br/&gt;6개&quot;]
+    G8[&quot;챌린지 마스터&lt;br/&gt;4개&quot;]
+    G9[&quot;추천&lt;br/&gt;5개&quot;]
+    G10[&quot;챌린지 사이클 · 수행&lt;br/&gt;5개&quot;]
+    G11[&quot;식단 나트륨 분석&lt;br/&gt;4개&quot;]
+    G12[&quot;알림 · 재평가&lt;br/&gt;5개&quot;]
+    G13[&quot;피드백&lt;br/&gt;1개&quot;]
+    G14[&quot;분석 이벤트 · 보안 감사&lt;br/&gt;2개&quot;]
+  end
+  subgraph S2[&quot;POST-MVP&quot;]
+    G15[&quot;ML 실험 기록&lt;br/&gt;4개&quot;]
+    G16[&quot;피드백 분석 · 개선&lt;br/&gt;2개&quot;]
+    G17[&quot;API 요청 감사&lt;br/&gt;1개&quot;]
+  end
+  G6 --&gt; G5
+  G7 --&gt; G6
+  G7 --&gt; G5
+  G8 --&gt; G5
+  G9 --&gt; G5
+  G9 --&gt; G8
+  G10 --&gt; G8
+  G15 --&gt; G6
+  G3 --&gt; G10
+  G4 --&gt; G3
+  G4 --&gt; G10
+  G9 --&gt; G4
+  G7 --&gt; G3
+  G9 --&gt; G7
+  G10 --&gt; G9
+  G10 --&gt; G3
+  G11 --&gt; G10
+  G11 --&gt; G3
+  G12 --&gt; G10
+  G12 --&gt; G3
+  G13 --&gt; G7
+  G13 --&gt; G9
+  G13 --&gt; G10</pre></div>
+  </section>
+
+  <div class="search">
+    <label for="q" class="muted" style="display:block;font-size:13px;margin-bottom:4px">테이블 이름으로 찾기</label>
+    <input id="q" type="search" placeholder="예: prediction, cycle, consent" autocomplete="off"><span class="hint" id="hint"></span>
+  </div>
+  <p class="empty" id="empty">일치하는 테이블이 없습니다. 영문 테이블 이름의 일부로 검색해 보세요.</p>
+
+  <section class="group" id="mvp_auth" data-group>
+<div class="ghead"><span class="scope">MVP</span><h3>회원 · 인증</h3></div>
+<p class="gdesc">계정과 로그인 세션, 이메일 인증 토큰, 회원 탈퇴 요청과 도메인별 삭제 처리 작업. 테이블 6개.</p>
+<div class="conn"></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  users {
+    uuid user_id PK
+  }
+  user_profiles {
+    uuid user_id PK,FK
+  }
+  user_sessions {
+    uuid session_id PK
+    uuid user_id FK
+  }
+  account_verification_tokens {
+    uuid verification_token_id PK
+    uuid user_id FK
+  }
+  account_deletion_requests {
+    uuid deletion_request_id PK
+    uuid user_id FK
+  }
+  data_processing_tasks {
+    uuid processing_task_id PK
+    uuid deletion_request_id FK
+    uuid user_id FK
+  }
+  users ||--o| user_profiles : &quot;user_id&quot;
+  users ||--o{ user_sessions : &quot;user_id&quot;
+  users |o--o{ account_verification_tokens : &quot;user_id&quot;
+  users ||--o{ account_deletion_requests : &quot;user_id&quot;
+  users ||--o{ data_processing_tasks : &quot;user_id&quot;
+  account_deletion_requests |o--o{ data_processing_tasks : &quot;deletion_request_id&quot;</pre></div>
+<div class="cards"><article class="card" id="t-users" data-name="users">
+<header><h4>users</h4><span class="count">7개 컬럼</span></header>
+<p class="tnote">REQ-USER-001~003, NFR-SEC-001. 물리 삭제하지 않는 tombstone 행.</p>
+<ul class="cols"><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">email</span><span class="ctype">varchar(255)</span><span class="flags"><span class="flag uq" title="유니크">UQ</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">탈퇴 시 deleted+{user_id}@invalid 로 익명화</span></div></li><li><div class="line"><span class="cname">password_hash</span><span class="ctype">varchar(255)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">NFR-SEC-001. 탈퇴 시 무효값으로 교체</span></div></li><li><div class="line"><span class="cname">status</span><span class="ctype"><a class="enum-link" href="#e-user_status">user_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 active</span></div></li><li><div class="line"><span class="cname">created_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">updated_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">deleted_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li></ul><p class="refd">참조하는 테이블 25개: <a href="#t-account_deletion_requests">account_deletion_requests</a>, <a href="#t-account_verification_tokens">account_verification_tokens</a>, <a href="#t-analytics_events">analytics_events</a>, <a href="#t-api_request_audits">api_request_audits</a>, <a href="#t-challenge_cycles">challenge_cycles</a>, <a href="#t-challenge_recommendation_batches">challenge_recommendation_batches</a>, <a href="#t-data_processing_tasks">data_processing_tasks</a>, <a href="#t-eligibility_assessments">eligibility_assessments</a>, <a href="#t-feedbacks">feedbacks</a>, <a href="#t-guardian_consent_verifications">guardian_consent_verifications</a>, <a href="#t-health_records">health_records</a>, <a href="#t-meal_analysis_results">meal_analysis_results</a>, <a href="#t-notification_deliveries">notification_deliveries</a>, <a href="#t-notification_preferences">notification_preferences</a>, <a href="#t-prediction_jobs">prediction_jobs</a>, <a href="#t-predictions">predictions</a>, <a href="#t-push_devices">push_devices</a>, <a href="#t-reevaluation_schedules">reevaluation_schedules</a>, <a href="#t-security_audit_logs">security_audit_logs</a>, <a href="#t-survey_instances">survey_instances</a>, <a href="#t-uploaded_file_processing_jobs">uploaded_file_processing_jobs</a>, <a href="#t-user_classifications">user_classifications</a>, <a href="#t-user_consents">user_consents</a>, <a href="#t-user_profiles">user_profiles</a>, <a href="#t-user_sessions">user_sessions</a></p></article><article class="card" id="t-user_profiles" data-name="user_profiles">
+<header><h4>user_profiles</h4><span class="count">5개 컬럼</span></header>
+<p class="tnote">REQ-HEALTH-001. 이름·전화번호는 수집하지 않는다.</p>
+<ul class="cols"><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">sex</span><span class="ctype"><a class="enum-link" href="#e-sex_type">sex_type</a></span><span class="flags"></span></div><div class="sub"><span class="cnote">W04에서 수집하므로 가입 직후에는 NULL 가능</span></div></li><li><div class="line"><span class="cname">birth_date</span><span class="ctype">date</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">만 14세 미만 판별(REQ-CONSENT-003)·적용 연령 판별(REQ-ELIG-001)</span></div></li><li><div class="line"><span class="cname">created_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">updated_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul></article><article class="card" id="t-user_sessions" data-name="user_sessions">
+<header><h4>user_sessions</h4><span class="count">6개 컬럼</span></header>
+<p class="tnote">REQ-USER-002, NFR-SEC-002. JWT refresh token은 해시로 저장.</p>
+<ul class="cols"><li><div class="line"><span class="cname">session_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">refresh_token_hash</span><span class="ctype">varchar(255)</span><span class="flags"><span class="flag uq" title="유니크">UQ</span><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">expires_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">revoked_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">created_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (user_id)</li></ul></article><article class="card" id="t-account_verification_tokens" data-name="account_verification_tokens">
+<header><h4>account_verification_tokens</h4><span class="count">8개 컬럼</span></header>
+<p class="tnote">REQ-USER-004.</p>
+<ul class="cols"><li><div class="line"><span class="cname">verification_token_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">email</span><span class="ctype">varchar(255)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">token_hash</span><span class="ctype">varchar(255)</span><span class="flags"><span class="flag uq" title="유니크">UQ</span><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">purpose</span><span class="ctype"><a class="enum-link" href="#e-verification_purpose">verification_purpose</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">expires_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">password_reset은 발급 +30분</span></div></li><li><div class="line"><span class="cname">used_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div><div class="sub"><span class="cnote">NOT NULL이면 재사용 불가</span></div></li><li><div class="line"><span class="cname">created_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (email, purpose)</li></ul></article><article class="card" id="t-account_deletion_requests" data-name="account_deletion_requests">
+<header><h4>account_deletion_requests</h4><span class="count">7개 컬럼</span></header>
+<p class="tnote">REQ-USER-003.</p>
+<ul class="cols"><li><div class="line"><span class="cname">deletion_request_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">reauthenticated_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">requested_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">status</span><span class="ctype"><a class="enum-link" href="#e-deletion_status">deletion_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 requested</span></div></li><li><div class="line"><span class="cname">completed_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">result_summary</span><span class="ctype">jsonb</span><span class="flags"></span></div><div class="sub"><span class="cnote">도메인별 삭제·보관·익명화 결과. 사용자 조회용</span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (user_id)</li></ul><p class="refd">참조하는 테이블 1개: <a href="#t-data_processing_tasks">data_processing_tasks</a></p></article><article class="card" id="t-data_processing_tasks" data-name="data_processing_tasks">
+<header><h4>data_processing_tasks</h4><span class="count">8개 컬럼</span></header>
+<p class="tnote">REQ-USER-003, NFR-SEC-003. 탈퇴 1건 = 도메인별 task 1건.</p>
+<ul class="cols"><li><div class="line"><span class="cname">processing_task_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">deletion_request_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-account_deletion_requests">account_deletion_requests</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">data_domain</span><span class="ctype"><a class="enum-link" href="#e-data_domain_type">data_domain_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">action_type</span><span class="ctype"><a class="enum-link" href="#e-data_action_type">data_action_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">status</span><span class="ctype"><a class="enum-link" href="#e-task_status">task_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 pending</span></div></li><li><div class="line"><span class="cname">policy_version</span><span class="ctype">varchar(30)</span><span class="flags"></span></div><div class="sub"><span class="cnote">적용한 개인정보 처리방침 버전</span></div></li><li><div class="line"><span class="cname">executed_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (deletion_request_id, data_domain)</li></ul></article></div></section><section class="group" id="mvp_consent" data-group>
+<div class="ghead"><span class="scope">MVP</span><h3>동의 · 약관</h3></div>
+<p class="gdesc">버전이 매겨진 동의 정책, 사용자별 동의·철회 이력, 만 14세 미만 법정대리인 확인. 테이블 3개.</p>
+<div class="conn"><p class="muted">users.user_id 참조는 다이어그램에서 생략했습니다.</p></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  consent_policies {
+    uuid policy_id PK
+  }
+  user_consents {
+    uuid user_consent_id PK
+    uuid user_id FK
+    uuid policy_id FK
+  }
+  guardian_consent_verifications {
+    uuid guardian_verification_id PK
+    uuid user_id FK
+    uuid policy_id FK
+  }
+  consent_policies ||--o{ user_consents : &quot;policy_id&quot;
+  consent_policies ||--o{ guardian_consent_verifications : &quot;policy_id&quot;</pre></div>
+<div class="cards"><article class="card" id="t-consent_policies" data-name="consent_policies">
+<header><h4>consent_policies</h4><span class="count">9개 컬럼</span></header>
+<p class="tnote">REQ-USER-001, REQ-CONSENT-001, NFR-SEC-003,006,007</p>
+<ul class="cols"><li><div class="line"><span class="cname">policy_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">policy_type</span><span class="ctype"><a class="enum-link" href="#e-policy_type">policy_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">version</span><span class="ctype">varchar(30)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">purpose_text</span><span class="ctype">text</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">collection_items</span><span class="ctype">text</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">NFR-SEC-006: 생활습관 설문 항목 포함</span></div></li><li><div class="line"><span class="cname">retention_policy</span><span class="ctype">text</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">NFR-SEC-005: 검진 결과지 원본 이미지 보관 기간 명시</span></div></li><li><div class="line"><span class="cname">withdrawal_method</span><span class="ctype">text</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">third_party_notice</span><span class="ctype">text</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">NFR-SEC-007: 목적 외 이용·제3자 제공 없음 고지</span></div></li><li><div class="line"><span class="cname">published_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (policy_type, version)</li></ul><p class="refd">참조하는 테이블 2개: <a href="#t-guardian_consent_verifications">guardian_consent_verifications</a>, <a href="#t-user_consents">user_consents</a></p></article><article class="card" id="t-user_consents" data-name="user_consents">
+<header><h4>user_consents</h4><span class="count">6개 컬럼</span></header>
+<p class="tnote">REQ-CONSENT-001~002. 동의 버전·동의·철회 시각 보관.<br>마이그레이션: UNIQUE (user_id, policy_id) WHERE withdrawn_at IS NULL</p>
+<ul class="cols"><li><div class="line"><span class="cname">user_consent_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">policy_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-consent_policies">consent_policies</a></span></div></li><li><div class="line"><span class="cname">status</span><span class="ctype"><a class="enum-link" href="#e-consent_status">consent_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 agreed</span></div></li><li><div class="line"><span class="cname">consented_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">withdrawn_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (user_id, policy_id)</li></ul></article><article class="card" id="t-guardian_consent_verifications" data-name="guardian_consent_verifications">
+<header><h4>guardian_consent_verifications</h4><span class="count">11개 컬럼</span></header>
+<p class="tnote">REQ-CONSENT-003(개인정보보호법 제22조의2). 법정대리인 정보는 동의 확인 목적에만 사용.<br>미확인 시 purge_due_at 도래 → guardian_*_enc NULL 처리 + status=purged.</p>
+<ul class="cols"><li><div class="line"><span class="cname">guardian_verification_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">policy_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-consent_policies">consent_policies</a></span></div></li><li><div class="line"><span class="cname">guardian_name_enc</span><span class="ctype">varchar(500)</span><span class="flags"></span></div><div class="sub"><span class="cnote">암호화 저장. 파기 시 NULL</span></div></li><li><div class="line"><span class="cname">guardian_contact_enc</span><span class="ctype">varchar(500)</span><span class="flags"></span></div><div class="sub"><span class="cnote">암호화 저장(휴대폰/이메일). 파기 시 NULL</span></div></li><li><div class="line"><span class="cname">verification_method</span><span class="ctype">varchar(30)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">sms, email 등</span></div></li><li><div class="line"><span class="cname">verification_status</span><span class="ctype"><a class="enum-link" href="#e-guardian_verification_status">guardian_verification_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 pending</span></div></li><li><div class="line"><span class="cname">collected_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">verified_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">purge_due_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">collected_at + 5일</span></div></li><li><div class="line"><span class="cname">purged_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (user_id)</li><li><span class="ixk">인덱스</span> (verification_status, purge_due_at)</li></ul></article></div></section><section class="group" id="mvp_eligibility" data-group>
+<div class="ghead"><span class="scope">MVP</span><h3>이용 적합성 · 응급 확인</h3></div>
+<p class="gdesc">연령·기진단·응급 여부 판정. 응급 증상 원문은 저장하지 않습니다. 테이블 2개.</p>
+<div class="conn"><p class="muted">users.user_id 참조는 다이어그램에서 생략했습니다.</p></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  eligibility_assessments {
+    uuid assessment_id PK
+    uuid user_id FK
+  }
+  eligibility_answers {
+    uuid eligibility_answer_id PK
+    uuid assessment_id FK
+  }
+  eligibility_assessments ||--o{ eligibility_answers : &quot;assessment_id&quot;</pre></div>
+<div class="cards"><article class="card" id="t-eligibility_assessments" data-name="eligibility_assessments">
+<header><h4>eligibility_assessments</h4><span class="count">8개 컬럼</span></header>
+<p class="tnote">REQ-ELIG-001~004, NFR-SAFE-004, REQ-HEALTH-007.<br>응급 증상은 emergency_flag·result_code·emergency_acknowledged_at만 저장(증상 원문 미저장).<br>age_out·diagnosed여도 챌린지·대시보드·기록은 이용 가능, 위험 예측만 제외.</p>
+<ul class="cols"><li><div class="line"><span class="cname">assessment_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">result_code</span><span class="ctype"><a class="enum-link" href="#e-eligibility_result">eligibility_result</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">age_eligible</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">diagnosed_hypertension</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">보류: 제외 범위 확정 후 심혈관질환 진단 여부 컬럼으로 변경 예정</span></div></li><li><div class="line"><span class="cname">emergency_flag</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">emergency_acknowledged_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div><div class="sub"><span class="cnote">응급 안내를 확인하고 진행한 시각(REQ-ELIG-003). 응급 아님이면 NULL</span></div></li><li><div class="line"><span class="cname">assessed_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (user_id, assessed_at)</li></ul><p class="refd">참조하는 테이블 1개: <a href="#t-eligibility_answers">eligibility_answers</a></p></article><article class="card" id="t-eligibility_answers" data-name="eligibility_answers">
+<header><h4>eligibility_answers</h4><span class="count">5개 컬럼</span></header>
+<p class="tnote">REQ-ELIG-002,004. 응급 증상 응답은 저장하지 않는다(NFR-SEC-003 최소 수집).<br>응급 여부는 eligibility_assessments.emergency_flag·result_code·emergency_acknowledged_at으로만 남아 NFR-SAFE-004 차단과 부적합 사유 표시에 충분하다.<br>마이그레이션(선택): question_code를 허용 목록으로 제한하는 CHECK 또는 서비스 검증.</p>
+<ul class="cols"><li><div class="line"><span class="cname">eligibility_answer_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">assessment_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-eligibility_assessments">eligibility_assessments</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">question_code</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">연령·기진단 확인 문항만 저장. 응급 증상 문항은 저장 대상 아님</span></div></li><li><div class="line"><span class="cname">answer_code</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">created_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (assessment_id, question_code)</li></ul></article></div></section><section class="group" id="mvp_health" data-group>
+<div class="ghead"><span class="scope">MVP</span><h3>건강정보 · 검진 결과지 OCR</h3></div>
+<p class="gdesc">검진·재평가·주간 혈압 기록과 지표별 측정값, 입력 검증 오류, 결과지 업로드와 인식 결과. 테이블 6개.</p>
+<div class="conn"><p><b>참조하는 영역</b> 챌린지 사이클 · 수행</p><p><b>이 영역을 참조하는 곳</b> 생활습관 설문, 식단 나트륨 분석, 알림 · 재평가, 예측 · XAI, 챌린지 사이클 · 수행</p><p class="muted">users.user_id 참조는 다이어그램에서 생략했습니다.</p></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  health_input_schemas {
+    uuid health_schema_id PK
+  }
+  health_records {
+    uuid health_record_id PK
+    uuid user_id FK
+    uuid health_schema_id FK
+    uuid cycle_id FK
+  }
+  health_measurements {
+    uuid measurement_id PK
+    uuid health_record_id FK
+    uuid source_measurement_id FK
+  }
+  health_validation_errors {
+    uuid validation_error_id PK
+    uuid health_record_id FK
+  }
+  uploaded_file_processing_jobs {
+    uuid file_job_id PK
+    uuid user_id FK
+    uuid health_record_id FK
+  }
+  ocr_extraction_results {
+    uuid extraction_result_id PK
+    uuid file_job_id FK
+  }
+  health_input_schemas ||--o{ health_records : &quot;health_schema_id&quot;
+  health_measurements |o--o{ health_measurements : &quot;source_measurement_id&quot;
+  challenge_cycles |o--o{ health_records : &quot;cycle_id&quot;
+  health_records ||--o{ health_measurements : &quot;health_record_id&quot;
+  health_records ||--o{ health_validation_errors : &quot;health_record_id&quot;
+  health_records |o--o{ uploaded_file_processing_jobs : &quot;health_record_id&quot;
+  uploaded_file_processing_jobs ||--o{ ocr_extraction_results : &quot;file_job_id&quot;</pre></div>
+<div class="cards"><article class="card" id="t-health_input_schemas" data-name="health_input_schemas">
+<header><h4>health_input_schemas</h4><span class="count">5개 컬럼</span></header>
+<p class="tnote">REQ-HEALTH-002. 입력 계약을 스키마 버전으로 추적.</p>
+<ul class="cols"><li><div class="line"><span class="cname">health_schema_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">schema_version</span><span class="ctype">varchar(30)</span><span class="flags"><span class="flag uq" title="유니크">UQ</span><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">model_scope</span><span class="ctype"><a class="enum-link" href="#e-model_scope_type">model_scope_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">active_from</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">retired_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li></ul><p class="refd">참조하는 테이블 1개: <a href="#t-health_records">health_records</a></p></article><article class="card" id="t-health_records" data-name="health_records">
+<header><h4>health_records</h4><span class="count">9개 컬럼</span></header>
+<p class="tnote">REQ-HEALTH-002,004,007,008.<br>동일 유형·동일 날짜 중복은 409(REQ-HEALTH-004). 검진 계열끼리의 날짜 중복도 막으려면<br>마이그레이션: UNIQUE (user_id, examination_date) WHERE input_type IN (initial, full_reassessment, manual)<br>weekly_bp는 이 부분 유니크에서 빠지므로 검진일과 같은 날 혈압 기록 가능.</p>
+<ul class="cols"><li><div class="line"><span class="cname">health_record_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">health_schema_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-health_input_schemas">health_input_schemas</a></span></div></li><li><div class="line"><span class="cname">cycle_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenge_cycles">challenge_cycles</a>, 삭제 시 NULL</span><span class="cnote">사이클 중 입력(weekly_bp, interim_reassessment)일 때만</span></div></li><li><div class="line"><span class="cname">input_type</span><span class="ctype"><a class="enum-link" href="#e-health_input_type">health_input_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">source_type</span><span class="ctype"><a class="enum-link" href="#e-health_source_type">health_source_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">examination_date</span><span class="ctype">date</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">created_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">verified_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div><div class="sub"><span class="cnote">W05 입력 검토 화면에서 사용자 확인 완료 시각</span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (user_id, input_type, examination_date)</li><li><span class="ixk">인덱스</span> (user_id, examination_date)</li><li><span class="ixk">인덱스</span> (cycle_id)</li></ul><p class="refd">참조하는 테이블 6개: <a href="#t-health_measurements">health_measurements</a>, <a href="#t-health_validation_errors">health_validation_errors</a>, <a href="#t-prediction_jobs">prediction_jobs</a>, <a href="#t-reevaluation_schedules">reevaluation_schedules</a>, <a href="#t-survey_instances">survey_instances</a>, <a href="#t-uploaded_file_processing_jobs">uploaded_file_processing_jobs</a></p></article><article class="card" id="t-health_measurements" data-name="health_measurements">
+<header><h4>health_measurements</h4><span class="count">10개 컬럼</span></header>
+<p class="tnote">REQ-HEALTH-002,008. BMI는 HEIGHT/WEIGHT로 서버 계산(input_method=calculated).<br>4주 재평가에서 혈당·총콜레스테롤·HDL은 carried_forward + source_measurement_id로 직전 값 참조.<br>필수 표시: ALCOHOL_FREQ, TOTAL_CHOL, HDL, HTN_STATUS (필수 여부의 기준은 model_feature_contracts.required와 health_input_schemas).<br>HTN_STATUS: none(진단 없음) / diagnosed_untreated(진단·미치료) / treated(치료 중)<br>마이그레이션: CHECK (metric_code &lt;&gt; &#x27;HTN_STATUS&#x27; OR value_code IN (&#x27;none&#x27;,&#x27;diagnosed_untreated&#x27;,&#x27;treated&#x27;))<br>마이그레이션: CHECK ((value_num IS NULL) &lt;&gt; (value_code IS NULL))<br>마이그레이션: CHECK (input_method &lt;&gt; &#x27;carried_forward&#x27; OR source_measurement_id IS NOT NULL)</p>
+<ul class="cols"><li><div class="line"><span class="cname">measurement_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">health_record_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-health_records">health_records</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">metric_code</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">SBP, DBP, HEIGHT, WEIGHT, BMI, FASTING_GLUCOSE, TOTAL_CHOL(필수), HDL(필수), SMOKING, DIABETES, HTN_STATUS(필수), PARENT_HTN, ALCOHOL_FREQ(필수), EXERCISE_FREQ 등</span></div></li><li><div class="line"><span class="cname">value_num</span><span class="ctype">decimal(12,4)</span><span class="flags"></span></div><div class="sub"><span class="cnote">수치형 지표</span></div></li><li><div class="line"><span class="cname">value_code</span><span class="ctype">varchar(50)</span><span class="flags"></span></div><div class="sub"><span class="cnote">범주형 지표(흡연 여부·당뇨·가족력·빈도 등). HTN_STATUS는 none / diagnosed_untreated / treated</span></div></li><li><div class="line"><span class="cname">unit</span><span class="ctype">varchar(20)</span><span class="flags"></span></div><div class="sub"><span class="cnote">수치형만. mmHg, cm, kg, mg/dL</span></div></li><li><div class="line"><span class="cname">measured_on</span><span class="ctype">date</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">input_method</span><span class="ctype"><a class="enum-link" href="#e-measurement_input_method">measurement_input_method</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">source_measurement_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-health_measurements">health_measurements</a></span><span class="cnote">carried_forward일 때 원본 측정값</span></div></li><li><div class="line"><span class="cname">created_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (health_record_id, metric_code)</li><li><span class="ixk">인덱스</span> (metric_code)</li></ul></article><article class="card" id="t-health_validation_errors" data-name="health_validation_errors">
+<header><h4>health_validation_errors</h4><span class="count">6개 컬럼</span></header>
+<p class="tnote">REQ-HEALTH-003. 필수값·숫자·단위·허용 범위 필드 오류(API 422).</p>
+<ul class="cols"><li><div class="line"><span class="cname">validation_error_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">health_record_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-health_records">health_records</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">field_code</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">error_code</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">message</span><span class="ctype">varchar(255)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">resolved_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li></ul></article><article class="card" id="t-uploaded_file_processing_jobs" data-name="uploaded_file_processing_jobs">
+<header><h4>uploaded_file_processing_jobs</h4><span class="count">10개 컬럼</span></header>
+<p class="tnote">REQ-HEALTH-006, REQ-RECO-002, NFR-SEC-005, NFR-OPS-006. 원본 이미지는 처리 후 지체 없이 삭제.</p>
+<ul class="cols"><li><div class="line"><span class="cname">file_job_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">health_record_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-health_records">health_records</a>, 삭제 시 NULL</span><span class="cnote">OCR 결과로 생성된 검진 기록. 확정 전에는 NULL</span></div></li><li><div class="line"><span class="cname">file_purpose</span><span class="ctype"><a class="enum-link" href="#e-file_purpose_type">file_purpose_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">storage_object_key</span><span class="ctype">varchar(500)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">원본 삭제 후에도 삭제 증빙용으로 키만 보관</span></div></li><li><div class="line"><span class="cname">status</span><span class="ctype"><a class="enum-link" href="#e-file_job_status">file_job_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 uploaded</span></div></li><li><div class="line"><span class="cname">failure_reason</span><span class="ctype">varchar(255)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">created_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">processed_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">deleted_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div><div class="sub"><span class="cnote">NFR-SEC-005: 원본 이미지 삭제 시각</span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (user_id)</li><li><span class="ixk">인덱스</span> (file_purpose, status, created_at)</li></ul><p class="refd">참조하는 테이블 3개: <a href="#t-challenge_proofs">challenge_proofs</a>, <a href="#t-meal_analysis_results">meal_analysis_results</a>, <a href="#t-ocr_extraction_results">ocr_extraction_results</a></p></article><article class="card" id="t-ocr_extraction_results" data-name="ocr_extraction_results">
+<header><h4>ocr_extraction_results</h4><span class="count">7개 컬럼</span></header>
+<p class="tnote">REQ-HEALTH-006. 인식된 칸만 폼에 채우고, 실패 시 퀵 폼으로 전환.</p>
+<ul class="cols"><li><div class="line"><span class="cname">extraction_result_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">file_job_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-uploaded_file_processing_jobs">uploaded_file_processing_jobs</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">metric_code</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">extracted_value</span><span class="ctype">decimal(12,4)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">unit</span><span class="ctype">varchar(20)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">confidence</span><span class="ctype">decimal(5,4)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">accepted_by_user</span><span class="ctype">boolean</span><span class="flags"></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (file_job_id, metric_code)</li></ul></article></div></section><section class="group" id="mvp_survey" data-group>
+<div class="ghead"><span class="scope">MVP</span><h3>생활습관 설문</h3></div>
+<p class="gdesc">버전별 설문 문항·선택지·조건부 규칙과 사용자 응답. 설문 응답도 건강정보로 취급합니다. 테이블 7개.</p>
+<div class="conn"><p><b>참조하는 영역</b> 건강정보 · 검진 결과지 OCR, 챌린지 사이클 · 수행</p><p><b>이 영역을 참조하는 곳</b> 추천</p><p class="muted">users.user_id 참조는 다이어그램에서 생략했습니다.</p></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  survey_versions {
+    uuid survey_version_id PK
+  }
+  survey_questions {
+    uuid question_id PK
+    uuid survey_version_id FK
+  }
+  survey_options {
+    uuid option_id PK
+    uuid question_id FK
+  }
+  survey_question_rules {
+    uuid question_rule_id PK
+    uuid target_question_id FK
+    uuid source_question_id FK
+    uuid source_option_id FK
+  }
+  survey_instances {
+    uuid survey_instance_id PK
+    uuid user_id FK
+    uuid survey_version_id FK
+    uuid health_record_id FK
+    uuid cycle_id FK
+  }
+  survey_responses {
+    uuid response_id PK
+    uuid survey_instance_id FK
+    uuid question_id FK
+  }
+  survey_response_options {
+    uuid response_id FK
+    uuid option_id FK
+  }
+  survey_versions ||--o{ survey_questions : &quot;survey_version_id&quot;
+  survey_questions ||--o{ survey_options : &quot;question_id&quot;
+  survey_questions ||--o{ survey_question_rules : &quot;target_question_id&quot;
+  survey_questions ||--o{ survey_question_rules : &quot;source_question_id&quot;
+  survey_options ||--o{ survey_question_rules : &quot;source_option_id&quot;
+  survey_versions ||--o{ survey_instances : &quot;survey_version_id&quot;
+  survey_questions ||--o{ survey_responses : &quot;question_id&quot;
+  survey_options ||--o{ survey_response_options : &quot;option_id&quot;
+  health_records |o--o{ survey_instances : &quot;health_record_id&quot;
+  challenge_cycles |o--o{ survey_instances : &quot;cycle_id&quot;
+  survey_instances ||--o{ survey_responses : &quot;survey_instance_id&quot;
+  survey_responses ||--o{ survey_response_options : &quot;response_id&quot;</pre></div>
+<div class="cards"><article class="card" id="t-survey_versions" data-name="survey_versions">
+<header><h4>survey_versions</h4><span class="count">5개 컬럼</span></header>
+<p class="tnote">REQ-HEALTH-005,008, NFR-ARCH-005</p>
+<ul class="cols"><li><div class="line"><span class="cname">survey_version_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">survey_type</span><span class="ctype"><a class="enum-link" href="#e-survey_type">survey_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">version</span><span class="ctype">varchar(30)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">active_from</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">active_to</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (survey_type, version)</li></ul><p class="refd">참조하는 테이블 2개: <a href="#t-survey_instances">survey_instances</a>, <a href="#t-survey_questions">survey_questions</a></p></article><article class="card" id="t-survey_questions" data-name="survey_questions">
+<header><h4>survey_questions</h4><span class="count">7개 컬럼</span></header>
+
+<ul class="cols"><li><div class="line"><span class="cname">question_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">survey_version_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-survey_versions">survey_versions</a></span></div></li><li><div class="line"><span class="cname">question_code</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">question_text</span><span class="ctype">text</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">answer_type</span><span class="ctype"><a class="enum-link" href="#e-survey_answer_type">survey_answer_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 single_select</span><span class="cnote">모든 문항은 선택지형(REQ-HEALTH-005)</span></div></li><li><div class="line"><span class="cname">display_order</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">required</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 true</span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (survey_version_id, question_code)</li></ul><p class="refd">참조하는 테이블 3개: <a href="#t-survey_options">survey_options</a>, <a href="#t-survey_question_rules">survey_question_rules</a>, <a href="#t-survey_responses">survey_responses</a></p></article><article class="card" id="t-survey_options" data-name="survey_options">
+<header><h4>survey_options</h4><span class="count">7개 컬럼</span></header>
+<p class="tnote">선택지는 시드 데이터로 관리.<br>혈압 측정 수단 문항(question_code 예: BP_MEASURE_METHOD) 선택지:<br>  home_monitor(집에 혈압계가 있음) / pharmacy_health_center(약국·보건소에서 측정) / difficult(측정이 어려움)</p>
+<ul class="cols"><li><div class="line"><span class="cname">option_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">question_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-survey_questions">survey_questions</a></span></div></li><li><div class="line"><span class="cname">option_code</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">option_text</span><span class="ctype">varchar(255)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">numeric_score</span><span class="ctype">decimal(8,2)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">derived_value</span><span class="ctype">jsonb</span><span class="flags"></span></div><div class="sub"><span class="cnote">운동 종목→강도 자동 분류, 나트륨 0~2점 등</span></div></li><li><div class="line"><span class="cname">display_order</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (question_id, option_code)</li></ul><p class="refd">참조하는 테이블 2개: <a href="#t-survey_question_rules">survey_question_rules</a>, <a href="#t-survey_response_options">survey_response_options</a></p></article><article class="card" id="t-survey_question_rules" data-name="survey_question_rules">
+<header><h4>survey_question_rules</h4><span class="count">5개 컬럼</span></header>
+<p class="tnote">REQ-HEALTH-005. 앞 문항 답에 따른 조건부 건너뛰기. 옵션은 FK로 참조.</p>
+<ul class="cols"><li><div class="line"><span class="cname">question_rule_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">target_question_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-survey_questions">survey_questions</a></span></div></li><li><div class="line"><span class="cname">source_question_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-survey_questions">survey_questions</a></span></div></li><li><div class="line"><span class="cname">source_option_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-survey_options">survey_options</a></span></div></li><li><div class="line"><span class="cname">rule_type</span><span class="ctype">varchar(20)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 show_when</span></div></li></ul></article><article class="card" id="t-survey_instances" data-name="survey_instances">
+<header><h4>survey_instances</h4><span class="count">8개 컬럼</span></header>
+<p class="tnote">REQ-HEALTH-005,008, NFR-SEC-006(설문 응답 = 건강정보). 설문 완료율의 분모·분자 기준.</p>
+<ul class="cols"><li><div class="line"><span class="cname">survey_instance_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">survey_version_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-survey_versions">survey_versions</a></span></div></li><li><div class="line"><span class="cname">health_record_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-health_records">health_records</a>, 삭제 시 NULL</span></div></li><li><div class="line"><span class="cname">cycle_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenge_cycles">challenge_cycles</a>, 삭제 시 NULL</span><span class="cnote">interim_lifestyle 재설문일 때 대상 사이클</span></div></li><li><div class="line"><span class="cname">status</span><span class="ctype"><a class="enum-link" href="#e-survey_instance_status">survey_instance_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 started</span></div></li><li><div class="line"><span class="cname">started_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">submitted_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (user_id, started_at)</li></ul><p class="refd">참조하는 테이블 3개: <a href="#t-challenge_recommendation_batches">challenge_recommendation_batches</a>, <a href="#t-survey_responses">survey_responses</a>, <a href="#t-user_classifications">user_classifications</a></p></article><article class="card" id="t-survey_responses" data-name="survey_responses">
+<header><h4>survey_responses</h4><span class="count">4개 컬럼</span></header>
+<p class="tnote">문항당 응답 1건. 선택한 옵션은 survey_response_options에 저장(단일·복수 공통).</p>
+<ul class="cols"><li><div class="line"><span class="cname">response_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">survey_instance_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-survey_instances">survey_instances</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">question_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-survey_questions">survey_questions</a></span></div></li><li><div class="line"><span class="cname">created_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (survey_instance_id, question_id)</li></ul><p class="refd">참조하는 테이블 1개: <a href="#t-survey_response_options">survey_response_options</a></p></article><article class="card" id="t-survey_response_options" data-name="survey_response_options">
+<header><h4>survey_response_options</h4><span class="count">2개 컬럼</span></header>
+<p class="tnote">single_select는 1행, multi_select는 N행.<br>마이그레이션: option이 해당 question 소속인지 트리거 또는 서비스 로직으로 검증.</p>
+<ul class="cols"><li><div class="line"><span class="cname">response_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-survey_responses">survey_responses</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">option_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-survey_options">survey_options</a></span></div></li></ul><ul class="indexes"><li><span class="ixk">복합 PK</span> (response_id, option_id)</li></ul></article></div></section><section class="group" id="mvp_features" data-group>
+<div class="ghead"><span class="scope">MVP</span><h3>파생 피처 · 가중치</h3></div>
+<p class="gdesc">설문과 측정값에서 만드는 파생 피처 정의와, 피드백으로 보정하는 가중치 버전. 테이블 3개.</p>
+<div class="conn"><p><b>이 영역을 참조하는 곳</b> 예측 · XAI, 질환 · 모델 레지스트리, 챌린지 마스터, 추천</p></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  derived_feature_definitions {
+    uuid feature_definition_id PK
+  }
+  feature_weight_versions {
+    uuid feature_weight_version_id PK
+  }
+  feature_weight_items {
+    uuid feature_weight_item_id PK
+    uuid feature_weight_version_id FK
+    uuid feature_definition_id FK
+  }
+  feature_weight_versions ||--o{ feature_weight_items : &quot;feature_weight_version_id&quot;
+  derived_feature_definitions ||--o{ feature_weight_items : &quot;feature_definition_id&quot;</pre></div>
+<div class="cards"><article class="card" id="t-derived_feature_definitions" data-name="derived_feature_definitions">
+<header><h4>derived_feature_definitions</h4><span class="count">7개 컬럼</span></header>
+<p class="tnote">NFR-FEED-002, NFR-ML-004,006. 파생 피처를 데이터로 관리.<br>행은 수정하지 않고, 규칙이 바뀌면 version+1 새 행을 추가(과거 예측 재현성).</p>
+<ul class="cols"><li><div class="line"><span class="cname">feature_definition_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">feature_code</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">version</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 1</span></div></li><li><div class="line"><span class="cname">source_type</span><span class="ctype"><a class="enum-link" href="#e-feature_source_type">feature_source_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">calculation_rule</span><span class="ctype">jsonb</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">active</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 true</span></div></li><li><div class="line"><span class="cname">created_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (feature_code, version)</li></ul><p class="refd">참조하는 테이블 5개: <a href="#t-challenge_eligibility_rules">challenge_eligibility_rules</a>, <a href="#t-feature_weight_items">feature_weight_items</a>, <a href="#t-model_feature_contracts">model_feature_contracts</a>, <a href="#t-prediction_factors">prediction_factors</a>, <a href="#t-prediction_feature_values">prediction_feature_values</a></p></article><article class="card" id="t-feature_weight_versions" data-name="feature_weight_versions">
+<header><h4>feature_weight_versions</h4><span class="count">6개 컬럼</span></header>
+<p class="tnote">NFR-FEED-002. 피드백·실측 데이터 기반 가중치 변경 이력.</p>
+<ul class="cols"><li><div class="line"><span class="cname">feature_weight_version_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">version</span><span class="ctype">varchar(30)</span><span class="flags"><span class="flag uq" title="유니크">UQ</span><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">reason</span><span class="ctype">text</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">changed_by</span><span class="ctype">varchar(100)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">effective_from</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">effective_to</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li></ul><p class="refd">참조하는 테이블 2개: <a href="#t-challenge_recommendation_batches">challenge_recommendation_batches</a>, <a href="#t-feature_weight_items">feature_weight_items</a></p></article><article class="card" id="t-feature_weight_items" data-name="feature_weight_items">
+<header><h4>feature_weight_items</h4><span class="count">4개 컬럼</span></header>
+
+<ul class="cols"><li><div class="line"><span class="cname">feature_weight_item_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">feature_weight_version_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-feature_weight_versions">feature_weight_versions</a></span></div></li><li><div class="line"><span class="cname">feature_definition_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-derived_feature_definitions">derived_feature_definitions</a></span></div></li><li><div class="line"><span class="cname">weight</span><span class="ctype">decimal(12,6)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (feature_weight_version_id, feature_definition_id)</li></ul></article></div></section><section class="group" id="mvp_model_registry" data-group>
+<div class="ghead"><span class="scope">MVP</span><h3>질환 · 모델 레지스트리</h3></div>
+<p class="gdesc">질환, 모델 A 정의와 버전, 입력 피처 계약, 변경 이력. 테이블 5개.</p>
+<div class="conn"><p><b>참조하는 영역</b> 파생 피처 · 가중치</p><p><b>이 영역을 참조하는 곳</b> ML 실험 기록, 예측 · XAI</p></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  diseases {
+    uuid disease_id PK
+  }
+  model_definitions {
+    uuid model_id PK
+    uuid disease_id FK
+  }
+  model_versions {
+    uuid model_version_id PK
+    uuid model_id FK
+  }
+  model_feature_contracts {
+    uuid model_feature_contract_id PK
+    uuid model_version_id FK
+    uuid feature_definition_id FK
+  }
+  model_change_logs {
+    uuid change_log_id PK
+    uuid model_version_id FK
+  }
+  diseases ||--o{ model_definitions : &quot;disease_id&quot;
+  model_definitions ||--o{ model_versions : &quot;model_id&quot;
+  model_versions ||--o{ model_feature_contracts : &quot;model_version_id&quot;
+  derived_feature_definitions ||--o{ model_feature_contracts : &quot;feature_definition_id&quot;
+  model_versions ||--o{ model_change_logs : &quot;model_version_id&quot;</pre></div>
+<div class="cards"><article class="card" id="t-diseases" data-name="diseases">
+<header><h4>diseases</h4><span class="count">4개 컬럼</span></header>
+<p class="tnote">NFR-ARCH-002. 고혈압 이후 질환 확장 기준.</p>
+<ul class="cols"><li><div class="line"><span class="cname">disease_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">disease_code</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag uq" title="유니크">UQ</span><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">disease_name</span><span class="ctype">varchar(100)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">active</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 true</span></div></li></ul><p class="refd">참조하는 테이블 1개: <a href="#t-model_definitions">model_definitions</a></p></article><article class="card" id="t-model_definitions" data-name="model_definitions">
+<header><h4>model_definitions</h4><span class="count">7개 컬럼</span></header>
+<p class="tnote">REQ-PRED-001, REQ-ELIG-001, NFR-ARCH-002~003. 현재 운영 모델은 MODEL_A 1종. 테이블 구조는 모델 추가 확장용으로 유지.</p>
+<ul class="cols"><li><div class="line"><span class="cname">model_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">disease_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-diseases">diseases</a></span></div></li><li><div class="line"><span class="cname">model_code</span><span class="ctype">varchar(30)</span><span class="flags"><span class="flag uq" title="유니크">UQ</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">MODEL_A (MODEL_B 행은 제거)</span></div></li><li><div class="line"><span class="cname">prediction_scope</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">10_year_risk</span></div></li><li><div class="line"><span class="cname">eligible_age_min</span><span class="ctype">int</span><span class="flags"></span></div><div class="sub"><span class="cnote">REQ-ELIG-001: 모델 문서의 적용 연령과 일치</span></div></li><li><div class="line"><span class="cname">eligible_age_max</span><span class="ctype">int</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">active</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 true</span></div></li></ul><p class="refd">참조하는 테이블 1개: <a href="#t-model_versions">model_versions</a></p></article><article class="card" id="t-model_versions" data-name="model_versions">
+<header><h4>model_versions</h4><span class="count">10개 컬럼</span></header>
+<p class="tnote">NFR-ML-004, NFR-ARCH-003~004, NFR-SAFE-005, NFR-OPS-004</p>
+<ul class="cols"><li><div class="line"><span class="cname">model_version_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">model_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-model_definitions">model_definitions</a></span></div></li><li><div class="line"><span class="cname">version</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">artifact_uri</span><span class="ctype">varchar(500)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">preprocessing_version</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">threshold_config</span><span class="ctype">jsonb</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">is_provisional</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 true</span><span class="cnote">NFR-SAFE-005: 잠정 모델 고지 여부</span></div></li><li><div class="line"><span class="cname">training_data_label</span><span class="ctype">varchar(150)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">NFR-SAFE-005: 결과 화면에 표기할 학습 데이터 출처</span></div></li><li><div class="line"><span class="cname">released_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">retired_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (model_id, version)</li></ul><p class="refd">참조하는 테이블 5개: <a href="#t-model_change_logs">model_change_logs</a>, <a href="#t-model_experiments">model_experiments</a>, <a href="#t-model_feature_contracts">model_feature_contracts</a>, <a href="#t-prediction_job_runs">prediction_job_runs</a>, <a href="#t-predictions">predictions</a></p></article><article class="card" id="t-model_feature_contracts" data-name="model_feature_contracts">
+<header><h4>model_feature_contracts</h4><span class="count">6개 컬럼</span></header>
+<p class="tnote">REQ-HEALTH-002,008, REQ-PRED-007, NFR-ML-001.<br>MODEL_A 입력 계약: 나이(profile), 성별(profile), 수축기혈압(SBP), 총콜레스테롤(TOTAL_CHOL), HDL, 흡연(SMOKING), 당뇨(DIABETES), 고혈압 진단·치료 상태(HTN_STATUS).<br>4주 재평가는 SBP를 새로 받고 나머지는 직전 값 이월로 같은 계약을 채운다.</p>
+<ul class="cols"><li><div class="line"><span class="cname">model_feature_contract_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">model_version_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-model_versions">model_versions</a></span></div></li><li><div class="line"><span class="cname">feature_definition_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-derived_feature_definitions">derived_feature_definitions</a></span></div></li><li><div class="line"><span class="cname">required</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">missing_value_policy</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">feature_order</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (model_version_id, feature_definition_id)</li></ul></article><article class="card" id="t-model_change_logs" data-name="model_change_logs">
+<header><h4>model_change_logs</h4><span class="count">6개 컬럼</span></header>
+<p class="tnote">NFR-OPS-004. 변경 일시·변경자·사유. (운영 이력이므로 MVP에 포함)</p>
+<ul class="cols"><li><div class="line"><span class="cname">change_log_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">model_version_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-model_versions">model_versions</a></span></div></li><li><div class="line"><span class="cname">change_type</span><span class="ctype"><a class="enum-link" href="#e-model_change_type">model_change_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">changed_by</span><span class="ctype">varchar(100)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">reason</span><span class="ctype">text</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">changed_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul></article></div></section><section class="group" id="mvp_prediction" data-group>
+<div class="ghead"><span class="scope">MVP</span><h3>예측 · XAI</h3></div>
+<p class="gdesc">비동기 예측 작업과 모델별 실행, 예측 결과, 입력 스냅샷, 기여 요인, 결과 고지 기록. 테이블 6개.</p>
+<div class="conn"><p><b>참조하는 영역</b> 건강정보 · 검진 결과지 OCR, 질환 · 모델 레지스트리, 파생 피처 · 가중치</p><p><b>이 영역을 참조하는 곳</b> 추천, 피드백</p><p class="muted">users.user_id 참조는 다이어그램에서 생략했습니다.</p></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  prediction_jobs {
+    uuid prediction_job_id PK
+    uuid user_id FK
+    uuid health_record_id FK
+    uuid retry_of_job_id FK
+  }
+  prediction_job_runs {
+    uuid job_run_id PK
+    uuid prediction_job_id FK
+    uuid model_version_id FK
+  }
+  predictions {
+    uuid prediction_id PK
+    uuid job_run_id FK
+    uuid user_id FK
+    uuid model_version_id FK
+  }
+  prediction_feature_values {
+    uuid prediction_feature_value_id PK
+    uuid prediction_id FK
+    uuid feature_definition_id FK
+  }
+  prediction_factors {
+    uuid prediction_factor_id PK
+    uuid prediction_id FK
+    uuid feature_definition_id FK
+  }
+  result_disclosures {
+    uuid disclosure_id PK
+    uuid prediction_id FK
+  }
+  prediction_jobs |o--o{ prediction_jobs : &quot;retry_of_job_id&quot;
+  model_versions ||--o{ prediction_job_runs : &quot;model_version_id&quot;
+  model_versions ||--o{ predictions : &quot;model_version_id&quot;
+  derived_feature_definitions ||--o{ prediction_feature_values : &quot;feature_definition_id&quot;
+  derived_feature_definitions |o--o{ prediction_factors : &quot;feature_definition_id&quot;
+  health_records ||--o{ prediction_jobs : &quot;health_record_id&quot;
+  prediction_jobs ||--o{ prediction_job_runs : &quot;prediction_job_id&quot;
+  prediction_job_runs ||--o{ predictions : &quot;job_run_id&quot;
+  predictions ||--o{ prediction_feature_values : &quot;prediction_id&quot;
+  predictions ||--o{ prediction_factors : &quot;prediction_id&quot;
+  predictions ||--o{ result_disclosures : &quot;prediction_id&quot;</pre></div>
+<div class="cards"><article class="card" id="t-prediction_jobs" data-name="prediction_jobs">
+<header><h4>prediction_jobs</h4><span class="count">11개 컬럼</span></header>
+<p class="tnote">REQ-PRED-002,007, NFR-ASYNC-001. 접수 202 + prediction_job_id 반환.</p>
+<ul class="cols"><li><div class="line"><span class="cname">prediction_job_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">health_record_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-health_records">health_records</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">request_type</span><span class="ctype"><a class="enum-link" href="#e-prediction_request_type">prediction_request_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">status</span><span class="ctype"><a class="enum-link" href="#e-job_status">job_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 queued</span></div></li><li><div class="line"><span class="cname">retryable</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 false</span><span class="cnote">REQ-PRED-002: 실패 시 재시도 가능 여부 표시</span></div></li><li><div class="line"><span class="cname">retry_of_job_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-prediction_jobs">prediction_jobs</a></span></div></li><li><div class="line"><span class="cname">requested_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">started_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">completed_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">failure_reason</span><span class="ctype">text</span><span class="flags"></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (user_id, requested_at)</li><li><span class="ixk">인덱스</span> (status, requested_at)</li></ul><p class="refd">참조하는 테이블 1개: <a href="#t-prediction_job_runs">prediction_job_runs</a></p></article><article class="card" id="t-prediction_job_runs" data-name="prediction_job_runs">
+<header><h4>prediction_job_runs</h4><span class="count">8개 컬럼</span></header>
+<p class="tnote">모델별 독립 실행·교체 구조(NFR-ARCH-003). 현재는 모든 요청 유형(4주 재평가 포함)에서 MODEL_A run을 생성.<br>적용 연령 밖이면 run_status=skipped + skip_reason_code, predictions 행을 만들지 않는다.</p>
+<ul class="cols"><li><div class="line"><span class="cname">job_run_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">prediction_job_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-prediction_jobs">prediction_jobs</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">model_version_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-model_versions">model_versions</a></span></div></li><li><div class="line"><span class="cname">run_status</span><span class="ctype"><a class="enum-link" href="#e-job_run_status">job_run_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 queued</span></div></li><li><div class="line"><span class="cname">skip_reason_code</span><span class="ctype">varchar(30)</span><span class="flags"></span></div><div class="sub"><span class="cnote">age_out, diagnosed 등. REQ-ELIG-001~002</span></div></li><li><div class="line"><span class="cname">started_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">completed_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">error_message</span><span class="ctype">text</span><span class="flags"></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (prediction_job_id, model_version_id)</li></ul><p class="refd">참조하는 테이블 1개: <a href="#t-predictions">predictions</a></p></article><article class="card" id="t-predictions" data-name="predictions">
+<header><h4>predictions</h4><span class="count">9개 컬럼</span></header>
+<p class="tnote">REQ-PRED-001,003~007, NFR-ML-004, NFR-ARCH-004. 결과는 덮어쓰지 않고 이력으로 쌓는다.<br>검진 기록·재예측 종류는 job_run → prediction_jobs로 추적.</p>
+<ul class="cols"><li><div class="line"><span class="cname">prediction_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">job_run_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag uq" title="유니크">UQ</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-prediction_job_runs">prediction_job_runs</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span><span class="cnote">조회용 비정규화. job_run → job.user_id와 일치를 서비스에서 보장</span></div></li><li><div class="line"><span class="cname">model_version_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-model_versions">model_versions</a></span><span class="cnote">NFR-ARCH-004 전·후 비교 기준. job_run 값과 동일</span></div></li><li><div class="line"><span class="cname">risk_level</span><span class="ctype"><a class="enum-link" href="#e-risk_level_type">risk_level_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">score</span><span class="ctype">decimal(8,5)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">vascular_age</span><span class="ctype">decimal(5,1)</span><span class="flags"></span></div><div class="sub"><span class="cnote">MODEL_A 장기 카드. 추정치 표기</span></div></li><li><div class="line"><span class="cname">result_card_type</span><span class="ctype"><a class="enum-link" href="#e-result_card_type">result_card_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">predicted_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (user_id, predicted_at)</li><li><span class="ixk">인덱스</span> (user_id, model_version_id, predicted_at)</li></ul><p class="refd">참조하는 테이블 5개: <a href="#t-challenge_recommendation_batches">challenge_recommendation_batches</a>, <a href="#t-feedbacks">feedbacks</a>, <a href="#t-prediction_factors">prediction_factors</a>, <a href="#t-prediction_feature_values">prediction_feature_values</a>, <a href="#t-result_disclosures">result_disclosures</a></p></article><article class="card" id="t-prediction_feature_values" data-name="prediction_feature_values">
+<header><h4>prediction_feature_values</h4><span class="count">5개 컬럼</span></header>
+<p class="tnote">NFR-ML-004~005. 예측에 실제 사용한 입력 스냅샷.</p>
+<ul class="cols"><li><div class="line"><span class="cname">prediction_feature_value_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">prediction_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-predictions">predictions</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">feature_definition_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-derived_feature_definitions">derived_feature_definitions</a></span></div></li><li><div class="line"><span class="cname">value_json</span><span class="ctype">jsonb</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">missing_reason</span><span class="ctype">varchar(50)</span><span class="flags"></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (prediction_id, feature_definition_id)</li></ul></article><article class="card" id="t-prediction_factors" data-name="prediction_factors">
+<header><h4>prediction_factors</h4><span class="count">8개 컬럼</span></header>
+<p class="tnote">REQ-PRED-003, REQ-CHAL-008(기여도 최대 개선 가능 요인 대체).</p>
+<ul class="cols"><li><div class="line"><span class="cname">prediction_factor_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">prediction_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-predictions">predictions</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">feature_definition_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-derived_feature_definitions">derived_feature_definitions</a></span></div></li><li><div class="line"><span class="cname">factor_code</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">direction</span><span class="ctype"><a class="enum-link" href="#e-factor_direction">factor_direction</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">importance</span><span class="ctype">decimal(12,8)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">modifiable</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">true면 챌린지로 연결(REQ-PRED-003)</span></div></li><li><div class="line"><span class="cname">display_rank</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (prediction_id, factor_code)</li></ul></article><article class="card" id="t-result_disclosures" data-name="result_disclosures">
+<header><h4>result_disclosures</h4><span class="count">5개 컬럼</span></header>
+<p class="tnote">REQ-PRED-005~006, NFR-SAFE-001,003,005</p>
+<ul class="cols"><li><div class="line"><span class="cname">disclosure_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">prediction_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-predictions">predictions</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">disclosure_type</span><span class="ctype"><a class="enum-link" href="#e-disclosure_type">disclosure_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">message_version</span><span class="ctype">varchar(30)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">shown_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul></article></div></section><section class="group" id="mvp_challenge_master" data-group>
+<div class="ghead"><span class="scope">MVP</span><h3>챌린지 마스터</h3></div>
+<p class="gdesc">카테고리와 챌린지, 상·중·하 난이도별 목표, 추천·제외 규칙. 테이블 4개.</p>
+<div class="conn"><p><b>참조하는 영역</b> 파생 피처 · 가중치</p><p><b>이 영역을 참조하는 곳</b> 챌린지 사이클 · 수행, 추천</p></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  challenge_categories {
+    uuid category_id PK
+  }
+  challenges {
+    uuid challenge_id PK
+    uuid category_id FK
+  }
+  challenge_levels {
+    uuid challenge_level_id PK
+    uuid challenge_id FK
+  }
+  challenge_eligibility_rules {
+    uuid challenge_rule_id PK
+    uuid challenge_id FK
+    uuid feature_definition_id FK
+  }
+  challenge_categories ||--o{ challenges : &quot;category_id&quot;
+  challenges ||--o{ challenge_levels : &quot;challenge_id&quot;
+  challenges ||--o{ challenge_eligibility_rules : &quot;challenge_id&quot;
+  derived_feature_definitions |o--o{ challenge_eligibility_rules : &quot;feature_definition_id&quot;</pre></div>
+<div class="cards"><article class="card" id="t-challenge_categories" data-name="challenge_categories">
+<header><h4>challenge_categories</h4><span class="count">6개 컬럼</span></header>
+<p class="tnote">REQ-CHAL-001(5~6개), NFR-ARCH-005</p>
+<ul class="cols"><li><div class="line"><span class="cname">category_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">category_code</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag uq" title="유니크">UQ</span><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">category_name</span><span class="ctype">varchar(100)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">description</span><span class="ctype">text</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">display_order</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">active</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 true</span></div></li></ul><p class="refd">참조하는 테이블 2개: <a href="#t-challenge_recommendation_categories">challenge_recommendation_categories</a>, <a href="#t-challenges">challenges</a></p></article><article class="card" id="t-challenges" data-name="challenges">
+<header><h4>challenges</h4><span class="count">8개 컬럼</span></header>
+<p class="tnote">REQ-CHAL-001,003,008; NFR-ARCH-005. 카테고리당 최소 3개, 전체 30개 내외.</p>
+<ul class="cols"><li><div class="line"><span class="cname">challenge_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">category_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenge_categories">challenge_categories</a></span></div></li><li><div class="line"><span class="cname">challenge_code</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag uq" title="유니크">UQ</span><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">challenge_name</span><span class="ctype">varchar(150)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">description</span><span class="ctype">text</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">mission_role</span><span class="ctype"><a class="enum-link" href="#e-mission_role_type">mission_role_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">fixed=흡연·음주, replacement=수정 가능 요인 미션으로 대체, selectable=카테고리 제한 없이 선택(선택 미션 1개)</span></div></li><li><div class="line"><span class="cname">proof_type</span><span class="ctype"><a class="enum-link" href="#e-proof_type">proof_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">active</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 true</span></div></li></ul><p class="refd">참조하는 테이블 4개: <a href="#t-challenge_eligibility_rules">challenge_eligibility_rules</a>, <a href="#t-challenge_levels">challenge_levels</a>, <a href="#t-challenge_recommendation_candidates">challenge_recommendation_candidates</a>, <a href="#t-cycle_challenges">cycle_challenges</a></p></article><article class="card" id="t-challenge_levels" data-name="challenge_levels">
+<header><h4>challenge_levels</h4><span class="count">5개 컬럼</span></header>
+<p class="tnote">REQ-CHAL-009~010. 챌린지별 상·중·하 목표를 데이터로 관리.</p>
+<ul class="cols"><li><div class="line"><span class="cname">challenge_level_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">challenge_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenges">challenges</a></span></div></li><li><div class="line"><span class="cname">difficulty</span><span class="ctype"><a class="enum-link" href="#e-difficulty_level">difficulty_level</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">weekly_target</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">주 단위 목표 횟수(REQ-CHAL-004)</span></div></li><li><div class="line"><span class="cname">target_config</span><span class="ctype">jsonb</span><span class="flags"></span></div><div class="sub"><span class="cnote">음주 허용 잔 수: {&quot;male_max&quot;:2,&quot;female_max&quot;:1} 등</span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (challenge_id, difficulty)</li></ul></article><article class="card" id="t-challenge_eligibility_rules" data-name="challenge_eligibility_rules">
+<header><h4>challenge_eligibility_rules</h4><span class="count">7개 컬럼</span></header>
+<p class="tnote">REQ-CHAL-001,008,009; NFR-ML-006, NFR-SAFE-007(복약자 문구 제한 규칙 포함 가능).<br>replace 규칙 시드: 고정 미션(흡연·음주) 비해당 시, prediction_factors 중 modifiable=true이고 risk_increase 기여도가 가장 큰 요인에 연결된 미션으로 대체.</p>
+<ul class="cols"><li><div class="line"><span class="cname">challenge_rule_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">challenge_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenges">challenges</a></span></div></li><li><div class="line"><span class="cname">feature_definition_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-derived_feature_definitions">derived_feature_definitions</a></span></div></li><li><div class="line"><span class="cname">rule_type</span><span class="ctype"><a class="enum-link" href="#e-challenge_rule_type">challenge_rule_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">rule_expression</span><span class="ctype">jsonb</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">priority</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">active</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 true</span></div></li></ul></article></div></section><section class="group" id="mvp_recommendation" data-group>
+<div class="ghead"><span class="scope">MVP</span><h3>추천</h3></div>
+<p class="gdesc">설문 기반 사용자 분류, 추천 묶음, 카테고리·챌린지 후보와 추천 근거. 테이블 5개.</p>
+<div class="conn"><p><b>참조하는 영역</b> 생활습관 설문, 예측 · XAI, 챌린지 마스터, 파생 피처 · 가중치</p><p><b>이 영역을 참조하는 곳</b> 챌린지 사이클 · 수행, 피드백</p><p class="muted">users.user_id 참조는 다이어그램에서 생략했습니다.</p></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  user_classifications {
+    uuid user_classification_id PK
+    uuid user_id FK
+    uuid survey_instance_id FK
+  }
+  challenge_recommendation_batches {
+    uuid recommendation_batch_id PK
+    uuid user_id FK
+    uuid survey_instance_id FK
+    uuid prediction_id FK
+    uuid feature_weight_version_id FK
+  }
+  challenge_recommendation_categories {
+    uuid recommendation_category_id PK
+    uuid recommendation_batch_id FK
+    uuid category_id FK
+  }
+  challenge_recommendation_candidates {
+    uuid recommendation_candidate_id PK
+    uuid recommendation_batch_id FK
+    uuid challenge_id FK
+  }
+  challenge_recommendation_reasons {
+    uuid recommendation_reason_id PK
+    uuid recommendation_candidate_id FK
+  }
+  feature_weight_versions |o--o{ challenge_recommendation_batches : &quot;feature_weight_version_id&quot;
+  challenge_categories ||--o{ challenge_recommendation_categories : &quot;category_id&quot;
+  challenges ||--o{ challenge_recommendation_candidates : &quot;challenge_id&quot;
+  survey_instances ||--o{ user_classifications : &quot;survey_instance_id&quot;
+  survey_instances ||--o{ challenge_recommendation_batches : &quot;survey_instance_id&quot;
+  predictions |o--o{ challenge_recommendation_batches : &quot;prediction_id&quot;
+  challenge_recommendation_batches ||--o{ challenge_recommendation_categories : &quot;recommendation_batch_id&quot;
+  challenge_recommendation_batches ||--o{ challenge_recommendation_candidates : &quot;recommendation_batch_id&quot;
+  challenge_recommendation_candidates ||--o{ challenge_recommendation_reasons : &quot;recommendation_candidate_id&quot;</pre></div>
+<div class="cards"><article class="card" id="t-user_classifications" data-name="user_classifications">
+<header><h4>user_classifications</h4><span class="count">6개 컬럼</span></header>
+<p class="tnote">challenge_user_classified 이벤트, 추천 후보·고정 미션 대체(REQ-CHAL-008), NFR-SAFE-007 판단 근거.</p>
+<ul class="cols"><li><div class="line"><span class="cname">user_classification_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">survey_instance_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-survey_instances">survey_instances</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">classification_code</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">smoker, drinker, high_sodium, on_bp_medication 등</span></div></li><li><div class="line"><span class="cname">classification_value</span><span class="ctype">jsonb</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">classified_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (survey_instance_id, classification_code)</li></ul></article><article class="card" id="t-challenge_recommendation_batches" data-name="challenge_recommendation_batches">
+<header><h4>challenge_recommendation_batches</h4><span class="count">7개 컬럼</span></header>
+<p class="tnote">REQ-CHAL-001, REQ-FEED-001,003. 추천 결과 조회·버전 추적.</p>
+<ul class="cols"><li><div class="line"><span class="cname">recommendation_batch_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">survey_instance_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-survey_instances">survey_instances</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">prediction_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-predictions">predictions</a>, 삭제 시 NULL</span></div></li><li><div class="line"><span class="cname">feature_weight_version_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-feature_weight_versions">feature_weight_versions</a></span></div></li><li><div class="line"><span class="cname">created_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">viewed_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (user_id, created_at)</li></ul><p class="refd">참조하는 테이블 4개: <a href="#t-challenge_cycles">challenge_cycles</a>, <a href="#t-challenge_recommendation_candidates">challenge_recommendation_candidates</a>, <a href="#t-challenge_recommendation_categories">challenge_recommendation_categories</a>, <a href="#t-feedbacks">feedbacks</a></p></article><article class="card" id="t-challenge_recommendation_categories" data-name="challenge_recommendation_categories">
+<header><h4>challenge_recommendation_categories</h4><span class="count">5개 컬럼</span></header>
+<p class="tnote">REQ-CHAL-001: 여러 카테고리 후보를 함께 제시한 순서와 근거. 사용자가 카테고리를 고르는 단계는 없음.</p>
+<ul class="cols"><li><div class="line"><span class="cname">recommendation_category_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">recommendation_batch_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenge_recommendation_batches">challenge_recommendation_batches</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">category_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenge_categories">challenge_categories</a></span></div></li><li><div class="line"><span class="cname">display_order</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">reason_message</span><span class="ctype">varchar(500)</span><span class="flags"></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (recommendation_batch_id, category_id)</li></ul></article><article class="card" id="t-challenge_recommendation_candidates" data-name="challenge_recommendation_candidates">
+<header><h4>challenge_recommendation_candidates</h4><span class="count">8개 컬럼</span></header>
+<p class="tnote">추천·제외 미션 모두 저장. 이전 사이클 완료 챌린지는 excluded(REQ-CHAL-002).</p>
+<ul class="cols"><li><div class="line"><span class="cname">recommendation_candidate_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">recommendation_batch_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenge_recommendation_batches">challenge_recommendation_batches</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">challenge_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenges">challenges</a></span></div></li><li><div class="line"><span class="cname">recommendation_status</span><span class="ctype"><a class="enum-link" href="#e-candidate_status">candidate_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">proposed_role</span><span class="ctype"><a class="enum-link" href="#e-mission_role_type">mission_role_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">proposed_difficulty</span><span class="ctype"><a class="enum-link" href="#e-difficulty_level">difficulty_level</a></span><span class="flags"></span></div></li><li><div class="line"><span class="cname">proposed_weekly_target</span><span class="ctype">int</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">display_order</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (recommendation_batch_id, challenge_id)</li></ul><p class="refd">참조하는 테이블 3개: <a href="#t-challenge_recommendation_reasons">challenge_recommendation_reasons</a>, <a href="#t-cycle_challenges">cycle_challenges</a>, <a href="#t-feedbacks">feedbacks</a></p></article><article class="card" id="t-challenge_recommendation_reasons" data-name="challenge_recommendation_reasons">
+<header><h4>challenge_recommendation_reasons</h4><span class="count">6개 컬럼</span></header>
+<p class="tnote">REQ-PRED-003,006. 결과 화면에 표시하는 챌린지 추천 근거.</p>
+<ul class="cols"><li><div class="line"><span class="cname">recommendation_reason_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">recommendation_candidate_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenge_recommendation_candidates">challenge_recommendation_candidates</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">reason_type</span><span class="ctype"><a class="enum-link" href="#e-recommendation_reason_type">recommendation_reason_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">factor_code</span><span class="ctype">varchar(50)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">message</span><span class="ctype">varchar(500)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">display_order</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul></article></div></section><section class="group" id="mvp_challenge_cycle" data-group>
+<div class="ghead"><span class="scope">MVP</span><h3>챌린지 사이클 · 수행</h3></div>
+<p class="gdesc">4주 사이클과 사이클별 챌린지, 주간 목표, 일별 수행 기록과 인증. 테이블 5개.</p>
+<div class="conn"><p><b>참조하는 영역</b> 건강정보 · 검진 결과지 OCR, 챌린지 마스터, 추천</p><p><b>이 영역을 참조하는 곳</b> 건강정보 · 검진 결과지 OCR, 생활습관 설문, 식단 나트륨 분석, 알림 · 재평가, 피드백</p><p class="muted">users.user_id 참조는 다이어그램에서 생략했습니다.</p></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  challenge_cycles {
+    uuid cycle_id PK
+    uuid user_id FK
+    uuid recommendation_batch_id FK
+  }
+  cycle_challenges {
+    uuid cycle_challenge_id PK
+    uuid cycle_id FK
+    uuid challenge_id FK
+    uuid recommendation_candidate_id FK
+  }
+  challenge_target_weeks {
+    uuid target_week_id PK
+    uuid cycle_challenge_id FK
+  }
+  challenge_logs {
+    uuid challenge_log_id PK
+    uuid cycle_challenge_id FK
+  }
+  challenge_proofs {
+    uuid challenge_proof_id PK
+    uuid challenge_log_id FK
+    uuid file_job_id FK
+  }
+  challenges ||--o{ cycle_challenges : &quot;challenge_id&quot;
+  challenge_recommendation_batches |o--o{ challenge_cycles : &quot;recommendation_batch_id&quot;
+  challenge_cycles ||--o{ cycle_challenges : &quot;cycle_id&quot;
+  challenge_recommendation_candidates |o--o{ cycle_challenges : &quot;recommendation_candidate_id&quot;
+  cycle_challenges ||--o{ challenge_target_weeks : &quot;cycle_challenge_id&quot;
+  cycle_challenges ||--o{ challenge_logs : &quot;cycle_challenge_id&quot;
+  challenge_logs ||--o{ challenge_proofs : &quot;challenge_log_id&quot;
+  uploaded_file_processing_jobs |o--o{ challenge_proofs : &quot;file_job_id&quot;</pre></div>
+<div class="cards"><article class="card" id="t-challenge_cycles" data-name="challenge_cycles">
+<header><h4>challenge_cycles</h4><span class="count">10개 컬럼</span></header>
+<p class="tnote">REQ-CHAL-002,007. 4주 단위. 중단·미달 사이클도 이력으로 남김.<br>마이그레이션: UNIQUE (user_id) WHERE status = &#x27;active&#x27;<br>구성(고정 2 + 선택 1 = 총 3개, 선택 미션은 카테고리 제한 없음, REQ-CHAL-003 v1.4)은 서비스 로직과 테스트로 검증.</p>
+<ul class="cols"><li><div class="line"><span class="cname">cycle_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">recommendation_batch_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenge_recommendation_batches">challenge_recommendation_batches</a>, 삭제 시 NULL</span></div></li><li><div class="line"><span class="cname">started_on</span><span class="ctype">date</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">ended_on</span><span class="ctype">date</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">started_on + 27일</span></div></li><li><div class="line"><span class="cname">status</span><span class="ctype"><a class="enum-link" href="#e-cycle_status">cycle_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 active</span></div></li><li><div class="line"><span class="cname">stopped_reason_code</span><span class="ctype">varchar(30)</span><span class="flags"></span></div><div class="sub"><span class="cnote">중단 사유(선택 수집)</span></div></li><li><div class="line"><span class="cname">stopped_note</span><span class="ctype">text</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">created_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">updated_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (user_id, started_on)</li></ul><p class="refd">참조하는 테이블 4개: <a href="#t-cycle_challenges">cycle_challenges</a>, <a href="#t-health_records">health_records</a>, <a href="#t-reevaluation_schedules">reevaluation_schedules</a>, <a href="#t-survey_instances">survey_instances</a></p></article><article class="card" id="t-cycle_challenges" data-name="cycle_challenges">
+<header><h4>cycle_challenges</h4><span class="count">9개 컬럼</span></header>
+<p class="tnote">REQ-CHAL-002~003,008~010.</p>
+<ul class="cols"><li><div class="line"><span class="cname">cycle_challenge_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">cycle_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenge_cycles">challenge_cycles</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">challenge_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenges">challenges</a></span></div></li><li><div class="line"><span class="cname">recommendation_candidate_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenge_recommendation_candidates">challenge_recommendation_candidates</a>, 삭제 시 NULL</span></div></li><li><div class="line"><span class="cname">selection_type</span><span class="ctype"><a class="enum-link" href="#e-selection_type">selection_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">difficulty</span><span class="ctype"><a class="enum-link" href="#e-difficulty_level">difficulty_level</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">REQ-CHAL-009: 사용자별 적용 난이도</span></div></li><li><div class="line"><span class="cname">weekly_target</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">시작 시점 challenge_levels 값 스냅샷</span></div></li><li><div class="line"><span class="cname">target_config</span><span class="ctype">jsonb</span><span class="flags"></span></div><div class="sub"><span class="cnote">음주 허용 잔 수 등 스냅샷</span></div></li><li><div class="line"><span class="cname">status</span><span class="ctype"><a class="enum-link" href="#e-cycle_challenge_status">cycle_challenge_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 active</span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (cycle_id, challenge_id)</li><li><span class="ixk">인덱스</span> (challenge_id, status)</li></ul><p class="refd">참조하는 테이블 3개: <a href="#t-challenge_logs">challenge_logs</a>, <a href="#t-challenge_target_weeks">challenge_target_weeks</a>, <a href="#t-feedbacks">feedbacks</a></p></article><article class="card" id="t-challenge_target_weeks" data-name="challenge_target_weeks">
+<header><h4>challenge_target_weeks</h4><span class="count">5개 컬럼</span></header>
+<p class="tnote">REQ-CHAL-004,006, REQ-DASH-008. 주간 목표(달성률 분모).<br>달성 수(분자)는 저장하지 않고 challenge_logs에서 status=completed 건수로 계산<br>(뷰 v_challenge_week_progress 권장) → 당일 수정 시 동기화 문제 없음.</p>
+<ul class="cols"><li><div class="line"><span class="cname">target_week_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">cycle_challenge_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-cycle_challenges">cycle_challenges</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">week_number</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">1~4</span></div></li><li><div class="line"><span class="cname">week_start</span><span class="ctype">date</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">target_count</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (cycle_challenge_id, week_number)</li></ul></article><article class="card" id="t-challenge_logs" data-name="challenge_logs">
+<header><h4>challenge_logs</h4><span class="count">9개 컬럼</span></header>
+<p class="tnote">REQ-CHAL-004~005,010, REQ-DASH-009(스트릭은 조회 시 계산). 당일만 수정, 동일 날짜 중복 409.</p>
+<ul class="cols"><li><div class="line"><span class="cname">challenge_log_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">cycle_challenge_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-cycle_challenges">cycle_challenges</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">log_date</span><span class="ctype">date</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">status</span><span class="ctype"><a class="enum-link" href="#e-challenge_log_status">challenge_log_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">quantity</span><span class="ctype">decimal(8,2)</span><span class="flags"></span></div><div class="sub"><span class="cnote">음주 잔 수 등</span></div></li><li><div class="line"><span class="cname">limit_exceeded</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 false</span><span class="cnote">REQ-CHAL-010: 초과 시 true + status=failed</span></div></li><li><div class="line"><span class="cname">note</span><span class="ctype">text</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">recorded_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">updated_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (cycle_challenge_id, log_date)</li></ul><p class="refd">참조하는 테이블 2개: <a href="#t-challenge_proofs">challenge_proofs</a>, <a href="#t-meal_analysis_results">meal_analysis_results</a></p></article><article class="card" id="t-challenge_proofs" data-name="challenge_proofs">
+<header><h4>challenge_proofs</h4><span class="count">6개 컬럼</span></header>
+<p class="tnote">REQ-CHAL-004, challenge_proof_submitted 이벤트.</p>
+<ul class="cols"><li><div class="line"><span class="cname">challenge_proof_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">challenge_log_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenge_logs">challenge_logs</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">proof_type</span><span class="ctype"><a class="enum-link" href="#e-proof_type">proof_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">file_job_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-uploaded_file_processing_jobs">uploaded_file_processing_jobs</a>, 삭제 시 NULL</span></div></li><li><div class="line"><span class="cname">proof_data</span><span class="ctype">jsonb</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">submitted_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul></article></div></section><section class="group" id="mvp_diet" data-group>
+<div class="ghead"><span class="scope">MVP</span><h3>식단 나트륨 분석</h3></div>
+<p class="gdesc">식약처 공개 데이터 기반 음식 정보와 식단 사진 나트륨 분석 결과. 테이블 4개.</p>
+<div class="conn"><p><b>참조하는 영역</b> 건강정보 · 검진 결과지 OCR, 챌린지 사이클 · 수행</p><p class="muted">users.user_id 참조는 다이어그램에서 생략했습니다.</p></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  evidence_sources {
+    uuid evidence_source_id PK
+  }
+  food_items {
+    uuid food_id PK
+    uuid evidence_source_id FK
+  }
+  meal_analysis_results {
+    uuid meal_analysis_id PK
+    uuid user_id FK
+    uuid challenge_log_id FK
+    uuid file_job_id FK
+  }
+  meal_analysis_foods {
+    uuid meal_analysis_food_id PK
+    uuid meal_analysis_id FK
+    uuid food_id FK
+  }
+  evidence_sources |o--o{ food_items : &quot;evidence_source_id&quot;
+  food_items |o--o{ meal_analysis_foods : &quot;food_id&quot;
+  challenge_logs |o--o{ meal_analysis_results : &quot;challenge_log_id&quot;
+  uploaded_file_processing_jobs |o--o{ meal_analysis_results : &quot;file_job_id&quot;
+  meal_analysis_results ||--o{ meal_analysis_foods : &quot;meal_analysis_id&quot;</pre></div>
+<div class="cards"><article class="card" id="t-evidence_sources" data-name="evidence_sources">
+<header><h4>evidence_sources</h4><span class="count">6개 컬럼</span></header>
+<p class="tnote">REQ-RECO-002. 식약처 공개 데이터 출처(식단 나트륨 분석의 food_items 기준).</p>
+<ul class="cols"><li><div class="line"><span class="cname">evidence_source_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">title</span><span class="ctype">varchar(255)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">예: 식품의약품안전처 식품영양성분 데이터베이스</span></div></li><li><div class="line"><span class="cname">publisher</span><span class="ctype">varchar(150)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">source_url</span><span class="ctype">varchar(500)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">citation_text</span><span class="ctype">text</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">verified_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li></ul><p class="refd">참조하는 테이블 1개: <a href="#t-food_items">food_items</a></p></article><article class="card" id="t-food_items" data-name="food_items">
+<header><h4>food_items</h4><span class="count">6개 컬럼</span></header>
+<p class="tnote">REQ-RECO-002. 식약처 공개 영양성분 데이터 기준.</p>
+<ul class="cols"><li><div class="line"><span class="cname">food_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">food_name</span><span class="ctype">varchar(255)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">external_food_code</span><span class="ctype">varchar(100)</span><span class="flags"><span class="flag uq" title="유니크">UQ</span></span></div><div class="sub"><span class="cnote">식약처 식품코드</span></div></li><li><div class="line"><span class="cname">sodium_mg</span><span class="ctype">decimal(12,2)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">serving_unit</span><span class="ctype">varchar(30)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">evidence_source_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-evidence_sources">evidence_sources</a></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (food_name)</li></ul><p class="refd">참조하는 테이블 1개: <a href="#t-meal_analysis_foods">meal_analysis_foods</a></p></article><article class="card" id="t-meal_analysis_results" data-name="meal_analysis_results">
+<header><h4>meal_analysis_results</h4><span class="count">10개 컬럼</span></header>
+<p class="tnote">REQ-RECO-002. 이미지 분석 실패 시 직접 입력(manual)으로 대체.</p>
+<ul class="cols"><li><div class="line"><span class="cname">meal_analysis_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">challenge_log_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenge_logs">challenge_logs</a>, 삭제 시 NULL</span></div></li><li><div class="line"><span class="cname">file_job_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-uploaded_file_processing_jobs">uploaded_file_processing_jobs</a>, 삭제 시 NULL</span></div></li><li><div class="line"><span class="cname">analysis_status</span><span class="ctype"><a class="enum-link" href="#e-meal_analysis_status">meal_analysis_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 processing</span></div></li><li><div class="line"><span class="cname">sodium_score</span><span class="ctype">decimal(8,2)</span><span class="flags"></span></div><div class="sub"><span class="cnote">칼로리가 아닌 나트륨 기준</span></div></li><li><div class="line"><span class="cname">total_sodium_mg</span><span class="ctype">decimal(12,2)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">improvement_message</span><span class="ctype">text</span><span class="flags"></span></div><div class="sub"><span class="cnote">개선 제안</span></div></li><li><div class="line"><span class="cname">result_source</span><span class="ctype"><a class="enum-link" href="#e-meal_result_source">meal_result_source</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">analyzed_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (user_id, analyzed_at)</li></ul><p class="refd">참조하는 테이블 1개: <a href="#t-meal_analysis_foods">meal_analysis_foods</a></p></article><article class="card" id="t-meal_analysis_foods" data-name="meal_analysis_foods">
+<header><h4>meal_analysis_foods</h4><span class="count">7개 컬럼</span></header>
+
+<ul class="cols"><li><div class="line"><span class="cname">meal_analysis_food_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">meal_analysis_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-meal_analysis_results">meal_analysis_results</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">food_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-food_items">food_items</a></span></div></li><li><div class="line"><span class="cname">food_name_detected</span><span class="ctype">varchar(255)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">serving_count</span><span class="ctype">decimal(8,2)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">sodium_mg_estimated</span><span class="ctype">decimal(12,2)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">confidence</span><span class="ctype">decimal(5,4)</span><span class="flags"></span></div></li></ul></article></div></section><section class="group" id="mvp_notification" data-group>
+<div class="ghead"><span class="scope">MVP</span><h3>알림 · 재평가</h3></div>
+<p class="gdesc">알림 수신 설정과 푸시 기기, 알림 템플릿, 4주·3~6개월 재평가 일정과 발송 기록. 테이블 5개.</p>
+<div class="conn"><p><b>참조하는 영역</b> 건강정보 · 검진 결과지 OCR, 챌린지 사이클 · 수행</p><p class="muted">users.user_id 참조는 다이어그램에서 생략했습니다.</p></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  notification_preferences {
+    uuid user_id PK,FK
+  }
+  push_devices {
+    uuid push_device_id PK
+    uuid user_id FK
+  }
+  notification_templates {
+    uuid template_id PK
+  }
+  reevaluation_schedules {
+    uuid reevaluation_schedule_id PK
+    uuid user_id FK
+    uuid cycle_id FK
+    uuid completed_health_record_id FK
+  }
+  notification_deliveries {
+    uuid notification_delivery_id PK
+    uuid user_id FK
+    uuid template_id FK
+    uuid reevaluation_schedule_id FK
+  }
+  notification_templates ||--o{ notification_deliveries : &quot;template_id&quot;
+  challenge_cycles |o--o{ reevaluation_schedules : &quot;cycle_id&quot;
+  health_records |o--o{ reevaluation_schedules : &quot;completed_health_record_id&quot;
+  reevaluation_schedules |o--o{ notification_deliveries : &quot;reevaluation_schedule_id&quot;</pre></div>
+<div class="cards"><article class="card" id="t-notification_preferences" data-name="notification_preferences">
+<header><h4>notification_preferences</h4><span class="count">5개 컬럼</span></header>
+<p class="tnote">REQ-NOTI-001</p>
+<ul class="cols"><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">push_enabled</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 false</span><span class="cnote">미설정 시 발송하지 않음</span></div></li><li><div class="line"><span class="cname">morning_time</span><span class="ctype">time</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">timezone</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 Asia/Seoul</span></div></li><li><div class="line"><span class="cname">updated_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul></article><article class="card" id="t-push_devices" data-name="push_devices">
+<header><h4>push_devices</h4><span class="count">8개 컬럼</span></header>
+<p class="tnote">REQ-NOTI-001. HTTPS + 사용자 동작으로 받은 권한이 있을 때만 웹 푸시.</p>
+<ul class="cols"><li><div class="line"><span class="cname">push_device_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a>, 삭제 시 함께 삭제</span></div></li><li><div class="line"><span class="cname">endpoint</span><span class="ctype">varchar(1000)</span><span class="flags"><span class="flag uq" title="유니크">UQ</span><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">public_key</span><span class="ctype">varchar(500)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">auth_key</span><span class="ctype">varchar(500)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">permission_status</span><span class="ctype"><a class="enum-link" href="#e-push_permission_status">push_permission_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">last_seen_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">revoked_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (user_id)</li></ul></article><article class="card" id="t-notification_templates" data-name="notification_templates">
+<header><h4>notification_templates</h4><span class="count">6개 컬럼</span></header>
+
+<ul class="cols"><li><div class="line"><span class="cname">template_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">notification_type</span><span class="ctype"><a class="enum-link" href="#e-notification_type">notification_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">version</span><span class="ctype">varchar(30)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">title_template</span><span class="ctype">varchar(200)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">body_template</span><span class="ctype">text</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">참여를 강요하지 않는 톤</span></div></li><li><div class="line"><span class="cname">active</span><span class="ctype">boolean</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 true</span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (notification_type, version)</li></ul><p class="refd">참조하는 테이블 1개: <a href="#t-notification_deliveries">notification_deliveries</a></p></article><article class="card" id="t-reevaluation_schedules" data-name="reevaluation_schedules">
+<header><h4>reevaluation_schedules</h4><span class="count">8개 컬럼</span></header>
+<p class="tnote">REQ-HEALTH-008, REQ-DASH-011, NFR-OPS-005. 두 주기 스케줄을 schedule_type으로 분리.</p>
+<ul class="cols"><li><div class="line"><span class="cname">reevaluation_schedule_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">cycle_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenge_cycles">challenge_cycles</a>, 삭제 시 NULL</span><span class="cnote">interim_4week일 때 대상 사이클</span></div></li><li><div class="line"><span class="cname">schedule_type</span><span class="ctype"><a class="enum-link" href="#e-reevaluation_type">reevaluation_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">due_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">status</span><span class="ctype"><a class="enum-link" href="#e-schedule_status">schedule_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 pending</span></div></li><li><div class="line"><span class="cname">completed_health_record_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-health_records">health_records</a>, 삭제 시 NULL</span></div></li><li><div class="line"><span class="cname">completed_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (status, due_at)</li><li><span class="ixk">인덱스</span> (user_id, schedule_type)</li></ul><p class="refd">참조하는 테이블 1개: <a href="#t-notification_deliveries">notification_deliveries</a></p></article><article class="card" id="t-notification_deliveries" data-name="notification_deliveries">
+<header><h4>notification_deliveries</h4><span class="count">9개 컬럼</span></header>
+<p class="tnote">REQ-NOTI-001, NFR-OPS-005. 실패 시 재시도.</p>
+<ul class="cols"><li><div class="line"><span class="cname">notification_delivery_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">template_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-notification_templates">notification_templates</a></span></div></li><li><div class="line"><span class="cname">reevaluation_schedule_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-reevaluation_schedules">reevaluation_schedules</a>, 삭제 시 NULL</span></div></li><li><div class="line"><span class="cname">scheduled_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">sent_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">status</span><span class="ctype"><a class="enum-link" href="#e-delivery_status">delivery_status</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 scheduled</span></div></li><li><div class="line"><span class="cname">retry_count</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="dflt">기본값 0</span></div></li><li><div class="line"><span class="cname">error_message</span><span class="ctype">text</span><span class="flags"></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (status, scheduled_at)</li></ul></article></div></section><section class="group" id="mvp_feedback" data-group>
+<div class="ghead"><span class="scope">MVP</span><h3>피드백</h3></div>
+<p class="gdesc">예측·추천 평가, 챌린지 난이도 평가, 추천 거절 사유. 테이블 1개.</p>
+<div class="conn"><p><b>참조하는 영역</b> 예측 · XAI, 챌린지 사이클 · 수행, 추천</p><p class="muted">users.user_id 참조는 다이어그램에서 생략했습니다.</p></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  feedbacks {
+    uuid feedback_id PK
+    uuid user_id FK
+    uuid prediction_id FK
+    uuid recommendation_batch_id FK
+    uuid cycle_challenge_id FK
+    uuid recommendation_candidate_id FK
+  }
+  predictions |o--o{ feedbacks : &quot;prediction_id&quot;
+  challenge_recommendation_batches |o--o{ feedbacks : &quot;recommendation_batch_id&quot;
+  cycle_challenges |o--o{ feedbacks : &quot;cycle_challenge_id&quot;
+  challenge_recommendation_candidates |o--o{ feedbacks : &quot;recommendation_candidate_id&quot;</pre></div>
+<div class="cards"><article class="card" id="t-feedbacks" data-name="feedbacks">
+<header><h4>feedbacks</h4><span class="count">13개 컬럼</span></header>
+<p class="tnote">REQ-FEED-001~003.<br>마이그레이션: CHECK — feedback_type에 해당하지 않는 대상 FK는 모두 NULL<br>  (해당 FK는 생성 시 필수, 대상 삭제 후에는 SET NULL로 비어 통계만 유지)<br>  prediction → prediction_id / recommendation → recommendation_batch_id<br>  difficulty → cycle_challenge_id + difficulty_rating / rejection → recommendation_candidate_id</p>
+<ul class="cols"><li><div class="line"><span class="cname">feedback_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a></span></div></li><li><div class="line"><span class="cname">feedback_type</span><span class="ctype"><a class="enum-link" href="#e-feedback_type">feedback_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">prediction_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-predictions">predictions</a>, 삭제 시 NULL</span></div></li><li><div class="line"><span class="cname">recommendation_batch_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenge_recommendation_batches">challenge_recommendation_batches</a>, 삭제 시 NULL</span></div></li><li><div class="line"><span class="cname">cycle_challenge_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-cycle_challenges">cycle_challenges</a>, 삭제 시 NULL</span></div></li><li><div class="line"><span class="cname">recommendation_candidate_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-challenge_recommendation_candidates">challenge_recommendation_candidates</a>, 삭제 시 NULL</span></div></li><li><div class="line"><span class="cname">rating</span><span class="ctype">varchar(20)</span><span class="flags"></span></div><div class="sub"><span class="cnote">prediction/recommendation 평가</span></div></li><li><div class="line"><span class="cname">difficulty_rating</span><span class="ctype"><a class="enum-link" href="#e-difficulty_rating">difficulty_rating</a></span><span class="flags"></span></div><div class="sub"><span class="cnote">REQ-FEED-002</span></div></li><li><div class="line"><span class="cname">rejection_reason</span><span class="ctype"><a class="enum-link" href="#e-rejection_reason">rejection_reason</a></span><span class="flags"></span></div><div class="sub"><span class="cnote">REQ-FEED-003 (선택 응답)</span></div></li><li><div class="line"><span class="cname">comment</span><span class="ctype">text</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">target_version</span><span class="ctype">varchar(50)</span><span class="flags"></span></div><div class="sub"><span class="cnote">평가 대상 버전(모델/가중치)</span></div></li><li><div class="line"><span class="cname">created_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (user_id, created_at)</li><li><span class="ixk">인덱스</span> (feedback_type)</li></ul></article></div></section><section class="group" id="mvp_audit" data-group>
+<div class="ghead"><span class="scope">MVP</span><h3>분석 이벤트 · 보안 감사</h3></div>
+<p class="gdesc">서비스 지표 이벤트와 보안 감사 로그. 민감 값은 기록하지 않습니다. 테이블 2개.</p>
+<div class="conn"><p class="muted">users.user_id 참조는 다이어그램에서 생략했습니다.</p></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  analytics_events {
+    uuid event_id PK
+    uuid user_id FK
+  }
+  security_audit_logs {
+    uuid security_audit_log_id PK
+    uuid user_id FK
+  }</pre></div>
+<div class="cards"><article class="card" id="t-analytics_events" data-name="analytics_events">
+<header><h4>analytics_events</h4><span class="count">6개 컬럼</span></header>
+<p class="tnote">지표·이벤트. 건강 수치·설문 원문은 event_properties에 넣지 않는다(NFR-SEC-004).</p>
+<ul class="cols"><li><div class="line"><span class="cname">event_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a>, 삭제 시 NULL</span></div></li><li><div class="line"><span class="cname">event_name</span><span class="ctype">varchar(100)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">challenge_survey_started, challenge_recommendation_viewed 등</span></div></li><li><div class="line"><span class="cname">event_properties</span><span class="ctype">jsonb</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">request_trace_id</span><span class="ctype">uuid</span><span class="flags"></span></div><div class="sub"><span class="cnote">FK 없음. 로그 연결용 추적 ID(NFR-OPS-002)</span></div></li><li><div class="line"><span class="cname">occurred_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (event_name, occurred_at)</li></ul></article><article class="card" id="t-security_audit_logs" data-name="security_audit_logs">
+<header><h4>security_audit_logs</h4><span class="count">8개 컬럼</span></header>
+<p class="tnote">NFR-SEC-002,004,005(원본 이미지 삭제 증빙). 민감 값 자체는 기록하지 않는다.</p>
+<ul class="cols"><li><div class="line"><span class="cname">security_audit_log_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a>, 삭제 시 NULL</span></div></li><li><div class="line"><span class="cname">actor_type</span><span class="ctype">varchar(30)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">action_type</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">login, consent_withdraw, file_deleted 등</span></div></li><li><div class="line"><span class="cname">resource_type</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">resource_id</span><span class="ctype">uuid</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">request_trace_id</span><span class="ctype">uuid</span><span class="flags"></span></div><div class="sub"><span class="cnote">FK 없음(NFR-OPS-002)</span></div></li><li><div class="line"><span class="cname">occurred_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (user_id, occurred_at)</li></ul></article></div></section><section class="group post" id="post_mvp_ml" data-group>
+<div class="ghead"><span class="scope post">POST-MVP</span><h3>ML 실험 기록</h3></div>
+<p class="gdesc">학습 데이터셋, 실험, 지표, 혼동행렬. 테이블 4개.</p>
+<div class="conn"><p><b>참조하는 영역</b> 질환 · 모델 레지스트리</p></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  training_datasets {
+    uuid dataset_id PK
+  }
+  model_experiments {
+    uuid experiment_id PK
+    uuid model_version_id FK
+    uuid dataset_id FK
+  }
+  model_experiment_metrics {
+    uuid metric_id PK
+    uuid experiment_id FK
+  }
+  model_confusion_matrices {
+    uuid confusion_matrix_id PK
+    uuid experiment_id FK
+  }
+  model_versions ||--o{ model_experiments : &quot;model_version_id&quot;
+  training_datasets ||--o{ model_experiments : &quot;dataset_id&quot;
+  model_experiments ||--o{ model_experiment_metrics : &quot;experiment_id&quot;
+  model_experiments ||--o{ model_confusion_matrices : &quot;experiment_id&quot;</pre></div>
+<div class="cards"><article class="card post" id="t-training_datasets" data-name="training_datasets">
+<header><h4>training_datasets</h4><span class="count">7개 컬럼</span></header>
+<p class="tnote">NFR-ML-007~008. MODEL_A 학습 데이터와 모집단 필터 기록.</p>
+<ul class="cols"><li><div class="line"><span class="cname">dataset_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">dataset_name</span><span class="ctype">varchar(150)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">dataset_version</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">source_type</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">Framingham 등</span></div></li><li><div class="line"><span class="cname">population_filter</span><span class="ctype">jsonb</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">used_for_model_code</span><span class="ctype">varchar(30)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">MODEL_A</span></div></li><li><div class="line"><span class="cname">created_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (dataset_name, dataset_version)</li></ul><p class="refd">참조하는 테이블 1개: <a href="#t-model_experiments">model_experiments</a></p></article><article class="card post" id="t-model_experiments" data-name="model_experiments">
+<header><h4>model_experiments</h4><span class="count">7개 컬럼</span></header>
+<p class="tnote">NFR-ML-001~003,005,009</p>
+<ul class="cols"><li><div class="line"><span class="cname">experiment_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">model_version_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-model_versions">model_versions</a></span></div></li><li><div class="line"><span class="cname">dataset_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-training_datasets">training_datasets</a></span></div></li><li><div class="line"><span class="cname">algorithm</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">logistic_regression, xgboost, lightgbm 등</span></div></li><li><div class="line"><span class="cname">split_config</span><span class="ctype">jsonb</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">preprocessing_config</span><span class="ctype">jsonb</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">executed_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><p class="refd">참조하는 테이블 2개: <a href="#t-model_confusion_matrices">model_confusion_matrices</a>, <a href="#t-model_experiment_metrics">model_experiment_metrics</a></p></article><article class="card post" id="t-model_experiment_metrics" data-name="model_experiment_metrics">
+<header><h4>model_experiment_metrics</h4><span class="count">5개 컬럼</span></header>
+
+<ul class="cols"><li><div class="line"><span class="cname">metric_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">experiment_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-model_experiments">model_experiments</a></span></div></li><li><div class="line"><span class="cname">metric_name</span><span class="ctype">varchar(30)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="cnote">auc_roc, f1, precision, recall</span></div></li><li><div class="line"><span class="cname">metric_value</span><span class="ctype">decimal(12,8)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">dataset_split</span><span class="ctype"><a class="enum-link" href="#e-dataset_split_type">dataset_split_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (experiment_id, metric_name, dataset_split)</li></ul></article><article class="card post" id="t-model_confusion_matrices" data-name="model_confusion_matrices">
+<header><h4>model_confusion_matrices</h4><span class="count">7개 컬럼</span></header>
+
+<ul class="cols"><li><div class="line"><span class="cname">confusion_matrix_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">experiment_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-model_experiments">model_experiments</a></span></div></li><li><div class="line"><span class="cname">dataset_split</span><span class="ctype"><a class="enum-link" href="#e-dataset_split_type">dataset_split_type</a></span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">true_negative</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">false_positive</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">false_negative</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">true_positive</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">유니크</span> (experiment_id, dataset_split)</li></ul></article></div></section><section class="group post" id="post_mvp_feedback" data-group>
+<div class="ghead"><span class="scope post">POST-MVP</span><h3>피드백 분석 · 개선</h3></div>
+<p class="gdesc">피드백 통계 리포트와 개선 후보·반영 이력. 테이블 2개.</p>
+<div class="conn"></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  feedback_analysis_reports {
+    uuid feedback_report_id PK
+  }
+  feedback_improvement_actions {
+    uuid improvement_action_id PK
+    uuid feedback_report_id FK
+  }
+  feedback_analysis_reports ||--o{ feedback_improvement_actions : &quot;feedback_report_id&quot;</pre></div>
+<div class="cards"><article class="card post" id="t-feedback_analysis_reports" data-name="feedback_analysis_reports">
+<header><h4>feedback_analysis_reports</h4><span class="count">6개 컬럼</span></header>
+<p class="tnote">NFR-FEED-001. 피드백 통계·분석 리포트.</p>
+<ul class="cols"><li><div class="line"><span class="cname">feedback_report_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">period_start</span><span class="ctype">date</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">period_end</span><span class="ctype">date</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">report_type</span><span class="ctype">varchar(30)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">result_json</span><span class="ctype">jsonb</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">created_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><p class="refd">참조하는 테이블 1개: <a href="#t-feedback_improvement_actions">feedback_improvement_actions</a></p></article><article class="card post" id="t-feedback_improvement_actions" data-name="feedback_improvement_actions">
+<header><h4>feedback_improvement_actions</h4><span class="count">7개 컬럼</span></header>
+<p class="tnote">NFR-FEED-001. 개선 후보와 반영 이력.</p>
+<ul class="cols"><li><div class="line"><span class="cname">improvement_action_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">feedback_report_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span><span class="flag nn" title="NOT NULL">NN</span></span></div><div class="sub"><span class="ref">→ <a href="#t-feedback_analysis_reports">feedback_analysis_reports</a></span></div></li><li><div class="line"><span class="cname">feature_area</span><span class="ctype">varchar(50)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">proposed_action</span><span class="ctype">text</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">status</span><span class="ctype">varchar(20)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">applied_version</span><span class="ctype">varchar(50)</span><span class="flags"></span></div></li><li><div class="line"><span class="cname">applied_at</span><span class="ctype">timestamptz</span><span class="flags"></span></div></li></ul></article></div></section><section class="group post" id="post_mvp_api_audit" data-group>
+<div class="ghead"><span class="scope post">POST-MVP</span><h3>API 요청 감사</h3></div>
+<p class="gdesc">API 요청별 응답 상태와 소요 시간. MVP 테이블은 이 테이블을 FK로 참조하지 않습니다. 테이블 1개.</p>
+<div class="conn"><p class="muted">users.user_id 참조는 다이어그램에서 생략했습니다.</p></div>
+<div class="diagram"><pre class="mermaid">erDiagram
+  api_request_audits {
+    uuid request_trace_id PK
+    uuid user_id FK
+  }</pre></div>
+<div class="cards"><article class="card post" id="t-api_request_audits" data-name="api_request_audits">
+<header><h4>api_request_audits</h4><span class="count">7개 컬럼</span></header>
+<p class="tnote">NFR-OPS-002, NFR-API-002, NFR-SEC-004. 민감정보·URL 쿼리 저장 금지.<br>MVP 테이블은 이 테이블을 FK로 참조하지 않는다(request_trace_id 값만 공유).</p>
+<ul class="cols"><li><div class="line"><span class="cname">request_trace_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag pk" title="기본 키">PK</span></span></div></li><li><div class="line"><span class="cname">user_id</span><span class="ctype">uuid</span><span class="flags"><span class="flag fk" title="외래 키">FK</span></span></div><div class="sub"><span class="ref">→ <a href="#t-users">users</a>, 삭제 시 NULL</span></div></li><li><div class="line"><span class="cname">method</span><span class="ctype">varchar(10)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">route_pattern</span><span class="ctype">varchar(255)</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">response_status</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">duration_ms</span><span class="ctype">int</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li><li><div class="line"><span class="cname">occurred_at</span><span class="ctype">timestamptz</span><span class="flags"><span class="flag nn" title="NOT NULL">NN</span></span></div></li></ul><ul class="indexes"><li><span class="ixk">인덱스</span> (route_pattern, occurred_at)</li></ul></article></div></section>
+
+  <section class="enums" id="enums">
+    <h3>Enum 목록</h3>
+    <p class="gdesc">컬럼 타입에서 Enum 이름을 누르면 여기로 이동합니다.</p>
+    <div class="enum-grid"><div class="enum" id="e-user_status"><h4>user_status</h4><ul><li><code>active</code></li><li><code>deleted</code></li></ul></div><div class="enum" id="e-sex_type"><h4>sex_type</h4><ul><li><code>male</code></li><li><code>female</code></li></ul></div><div class="enum" id="e-verification_purpose"><h4>verification_purpose</h4><ul><li><code>signup_email</code></li><li><code>password_reset</code></li><li><code>withdrawal_reauth</code></li></ul></div><div class="enum" id="e-deletion_status"><h4>deletion_status</h4><ul><li><code>requested</code></li><li><code>processing</code></li><li><code>completed</code></li><li><code>failed</code></li></ul></div><div class="enum" id="e-data_domain_type"><h4>data_domain_type</h4><ul><li><code>profile</code></li><li><code>consent</code></li><li><code>eligibility</code></li><li><code>health</code></li><li><code>survey</code></li><li><code>prediction</code></li><li><code>challenge</code></li><li><code>photo</code></li><li><code>diet</code></li><li><code>notification</code></li><li><code>feedback</code></li><li><code>analytics</code></li></ul></div><div class="enum" id="e-data_action_type"><h4>data_action_type</h4><ul><li><code>delete</code></li><li><code>anonymize</code></li><li><code>retain</code></li></ul></div><div class="enum" id="e-task_status"><h4>task_status</h4><ul><li><code>pending</code></li><li><code>running</code></li><li><code>done</code></li><li><code>failed</code></li></ul></div><div class="enum" id="e-policy_type"><h4>policy_type</h4><ul><li><code>terms_of_service</code></li><li><code>privacy</code></li><li><code>health_data</code></li><li><code>guardian</code></li></ul></div><div class="enum" id="e-consent_status"><h4>consent_status</h4><ul><li><code>agreed</code></li><li><code>withdrawn</code></li></ul></div><div class="enum" id="e-guardian_verification_status"><h4>guardian_verification_status</h4><ul><li><code>pending</code></li><li><code>verified</code></li><li><code>expired</code></li><li><code>purged</code></li></ul></div><div class="enum" id="e-eligibility_result"><h4>eligibility_result</h4><ul><li><code>eligible</code></li><li><code>age_out</code></li><li><code>diagnosed</code> <span>관상동맥질환 기진단(제외 범위 확정 전 잠정 정의)</span></li><li><code>emergency</code></li></ul></div><div class="enum" id="e-model_scope_type"><h4>model_scope_type</h4><ul><li><code>MODEL_A</code> <span>위험 예측 입력</span></li><li><code>TRACKING</code> <span>예측에 쓰지 않는 추적용 입력(주간 혈압 등)</span></li></ul></div><div class="enum" id="e-health_input_type"><h4>health_input_type</h4><ul><li><code>initial</code> <span>최초 전체 검진 입력</span></li><li><code>interim_reassessment</code> <span>4주 사이클 종료: 혈압 + 생활습관 재설문 (REQ-HEALTH-008)</span></li><li><code>full_reassessment</code> <span>3~6개월 전체 재검진</span></li><li><code>weekly_bp</code> <span>사이클 중 주간 혈압 기록</span></li><li><code>manual</code> <span>사용자가 임의로 추가한 검진 이력 (REQ-HEALTH-004)</span></li></ul></div><div class="enum" id="e-health_source_type"><h4>health_source_type</h4><ul><li><code>manual</code></li><li><code>ocr</code></li><li><code>mixed</code></li></ul></div><div class="enum" id="e-measurement_input_method"><h4>measurement_input_method</h4><ul><li><code>manual</code></li><li><code>ocr</code></li><li><code>calculated</code></li><li><code>carried_forward</code></li></ul></div><div class="enum" id="e-file_purpose_type"><h4>file_purpose_type</h4><ul><li><code>health_report_ocr</code></li><li><code>meal_analysis</code></li><li><code>challenge_proof</code></li></ul></div><div class="enum" id="e-file_job_status"><h4>file_job_status</h4><ul><li><code>uploaded</code></li><li><code>processing</code></li><li><code>succeeded</code></li><li><code>partial</code></li><li><code>failed</code></li><li><code>deleted</code></li></ul></div><div class="enum" id="e-survey_type"><h4>survey_type</h4><ul><li><code>initial_lifestyle</code></li><li><code>interim_lifestyle</code></li><li><code>sodium</code></li></ul></div><div class="enum" id="e-survey_answer_type"><h4>survey_answer_type</h4><ul><li><code>single_select</code></li><li><code>multi_select</code></li></ul></div><div class="enum" id="e-survey_instance_status"><h4>survey_instance_status</h4><ul><li><code>started</code></li><li><code>submitted</code></li><li><code>abandoned</code></li></ul></div><div class="enum" id="e-feature_source_type"><h4>feature_source_type</h4><ul><li><code>survey</code></li><li><code>measurement</code></li><li><code>challenge</code></li><li><code>profile</code></li></ul></div><div class="enum" id="e-model_change_type"><h4>model_change_type</h4><ul><li><code>model</code></li><li><code>coefficient</code></li><li><code>threshold</code></li><li><code>preprocessing</code></li></ul></div><div class="enum" id="e-dataset_split_type"><h4>dataset_split_type</h4><ul><li><code>train</code></li><li><code>validation</code></li><li><code>test</code></li></ul></div><div class="enum" id="e-prediction_request_type"><h4>prediction_request_type</h4><ul><li><code>initial</code> <span>최초 입력 → MODEL_A</span></li><li><code>interim</code> <span>4주 재평가 → MODEL_A (새 혈압 + 직전 검진값 이월, REQ-PRED-007)</span></li><li><code>full</code> <span>전체 재검진 → MODEL_A</span></li><li><code>manual</code> <span>새 입력이 있을 때만 허용</span></li></ul></div><div class="enum" id="e-job_status"><h4>job_status</h4><ul><li><code>queued</code></li><li><code>running</code></li><li><code>completed</code></li><li><code>failed</code></li></ul></div><div class="enum" id="e-job_run_status"><h4>job_run_status</h4><ul><li><code>queued</code></li><li><code>running</code></li><li><code>completed</code></li><li><code>failed</code></li><li><code>skipped</code></li></ul></div><div class="enum" id="e-risk_level_type"><h4>risk_level_type</h4><ul><li><code>normal</code></li><li><code>borderline</code></li><li><code>high</code></li></ul></div><div class="enum" id="e-result_card_type"><h4>result_card_type</h4><ul><li><code>long_term</code> <span>MODEL_A 장기 위험 카드. 모델 B 제거로 current_lifestyle 삭제</span></li></ul></div><div class="enum" id="e-factor_direction"><h4>factor_direction</h4><ul><li><code>risk_increase</code></li><li><code>protective</code></li></ul></div><div class="enum" id="e-disclosure_type"><h4>disclosure_type</h4><ul><li><code>screening_notice</code></li><li><code>uncertainty</code></li><li><code>provisional_model</code></li><li><code>consultation</code></li></ul></div><div class="enum" id="e-difficulty_level"><h4>difficulty_level</h4><ul><li><code>low</code></li><li><code>medium</code></li><li><code>high</code></li></ul></div><div class="enum" id="e-mission_role_type"><h4>mission_role_type</h4><ul><li><code>fixed</code></li><li><code>selectable</code></li><li><code>replacement</code></li></ul></div><div class="enum" id="e-proof_type"><h4>proof_type</h4><ul><li><code>photo</code></li><li><code>self_record</code></li><li><code>automatic</code></li><li><code>measurement</code></li></ul></div><div class="enum" id="e-challenge_rule_type"><h4>challenge_rule_type</h4><ul><li><code>recommend</code></li><li><code>exclude</code></li><li><code>replace</code> <span>고정 미션 비해당 시 수정 가능 요인 미션으로 대체</span></li><li><code>difficulty</code></li></ul></div><div class="enum" id="e-candidate_status"><h4>candidate_status</h4><ul><li><code>recommended</code></li><li><code>excluded</code></li><li><code>selected</code></li><li><code>rejected</code></li></ul></div><div class="enum" id="e-recommendation_reason_type"><h4>recommendation_reason_type</h4><ul><li><code>risk_factor</code></li><li><code>survey_answer</code></li><li><code>completion_history</code></li><li><code>exclusion</code></li></ul></div><div class="enum" id="e-cycle_status"><h4>cycle_status</h4><ul><li><code>active</code></li><li><code>completed</code> <span>4주 정상 종료</span></li><li><code>incomplete</code> <span>목표 미달 종료 (REQ-CHAL-007)</span></li><li><code>stopped</code> <span>사용자 중단</span></li></ul></div><div class="enum" id="e-selection_type"><h4>selection_type</h4><ul><li><code>fixed</code></li><li><code>replacement</code></li><li><code>selected</code></li></ul></div><div class="enum" id="e-cycle_challenge_status"><h4>cycle_challenge_status</h4><ul><li><code>active</code></li><li><code>completed</code></li><li><code>incomplete</code></li><li><code>stopped</code></li></ul></div><div class="enum" id="e-challenge_log_status"><h4>challenge_log_status</h4><ul><li><code>completed</code></li><li><code>failed</code></li><li><code>skipped</code></li></ul></div><div class="enum" id="e-meal_analysis_status"><h4>meal_analysis_status</h4><ul><li><code>processing</code></li><li><code>succeeded</code></li><li><code>failed</code></li><li><code>manual_entered</code></li></ul></div><div class="enum" id="e-meal_result_source"><h4>meal_result_source</h4><ul><li><code>image</code></li><li><code>manual</code></li></ul></div><div class="enum" id="e-push_permission_status"><h4>push_permission_status</h4><ul><li><code>granted</code></li><li><code>denied</code></li><li><code>default</code></li></ul></div><div class="enum" id="e-notification_type"><h4>notification_type</h4><ul><li><code>morning_challenge</code></li><li><code>interim_reassessment</code></li><li><code>full_reassessment</code></li></ul></div><div class="enum" id="e-reevaluation_type"><h4>reevaluation_type</h4><ul><li><code>interim_4week</code> <span>사이클 종료 시 중간 재평가</span></li><li><code>full_3to6month</code> <span>마지막 전체 입력일 +3개월부터 안내</span></li></ul></div><div class="enum" id="e-schedule_status"><h4>schedule_status</h4><ul><li><code>pending</code></li><li><code>notified</code></li><li><code>completed</code></li><li><code>expired</code></li></ul></div><div class="enum" id="e-delivery_status"><h4>delivery_status</h4><ul><li><code>scheduled</code></li><li><code>sent</code></li><li><code>failed</code></li><li><code>cancelled</code></li></ul></div><div class="enum" id="e-feedback_type"><h4>feedback_type</h4><ul><li><code>prediction</code> <span>REQ-FEED-001: prediction_id 필수</span></li><li><code>recommendation</code> <span>REQ-FEED-001: recommendation_batch_id 필수</span></li><li><code>difficulty</code> <span>REQ-FEED-002: cycle_challenge_id 필수</span></li><li><code>rejection</code> <span>REQ-FEED-003: recommendation_candidate_id 필수</span></li></ul></div><div class="enum" id="e-difficulty_rating"><h4>difficulty_rating</h4><ul><li><code>easy</code></li><li><code>moderate</code></li><li><code>hard</code></li></ul></div><div class="enum" id="e-rejection_reason"><h4>rejection_reason</h4><ul><li><code>already_doing</code></li><li><code>not_interested</code></li><li><code>too_difficult</code></li></ul></div></div>
+  </section>
+</main>
+</div>
+<script>
+(function () {
+  var q = document.getElementById('q'), hint = document.getElementById('hint'), empty = document.getElementById('empty');
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.card'));
+  var groups = Array.prototype.slice.call(document.querySelectorAll('[data-group]'));
+  q.addEventListener('input', function () {
+    var v = q.value.trim().toLowerCase();
+    document.body.classList.toggle('searching', v.length > 0);
+    var n = 0;
+    cards.forEach(function (c) {
+      var hit = !v || c.getAttribute('data-name').indexOf(v) !== -1;
+      c.classList.toggle('hide', !hit);
+      if (hit) n++;
+    });
+    groups.forEach(function (g) {
+      g.classList.toggle('hide', v && !g.querySelector('.card:not(.hide)'));
+    });
+    hint.textContent = v ? n + '개 테이블' : '';
+    empty.style.display = v && n === 0 ? 'block' : 'none';
+  });
+  var links = Array.prototype.slice.call(document.querySelectorAll('aside a[href^="#"]'));
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          links.forEach(function (l) { l.classList.toggle('active', l.getAttribute('href') === '#' + e.target.id); });
+        }
+      });
+    }, { rootMargin: '-10% 0px -80% 0px' });
+    groups.forEach(function (g) { io.observe(g); });
+  }
+})();
+</script>
+
+<!--claude-mermaid-runtime-begin:3477-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="/_runtime/mermaid-11.16.1.min.js"></script>
+<script>(function(){
+var CFG={"palettes":{"light":{"surface":"#f4efe4","text":"#42392e","line":"#8a7f6d","border":"#7a6c52","bg":"#fffdf8"},"dark":{"surface":"#262b34","text":"#f2f3f5","line":"#a8adb8","border":"#9aa4b8","bg":"#1f232b"}}};
+if(typeof mermaid==='undefined')return;
+var pres=Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function(p){if(p.hasAttribute('data-claude-mermaid-claimed'))return false;p.setAttribute('data-claude-mermaid-claimed','1');return true;});
+if(!pres.length)return;
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+var root=document.documentElement;
+var items=pres.map(function(pre){
+var mount=document.createElement('div');mount.className='mermaid-diagram';
+return {pre:pre,mount:mount,src:pre.textContent||''};
+});
+var seq=0;
+var renderGen=0;
+var lastKey='';
+function pageBg(fallback){
+var els=[document.body,document.documentElement];
+for(var i=0;i<els.length;i++){
+var c=els[i]&&getComputedStyle(els[i]).backgroundColor;
+if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)')return c;
+}
+return fallback;
+}
+function render(){
+var theme=root.getAttribute('data-theme');
+var dark=theme==='dark'||(!!(mq&&mq.matches)&&theme!=='light');
+var pal=dark?CFG.palettes.dark:CFG.palettes.light;
+var bg=pageBg(pal.bg);
+var key=(dark?'d':'l')+'|'+bg;
+if(key===lastKey)return;
+lastKey=key;
+var gen=++renderGen;
+var font=getComputedStyle(document.body).fontFamily||'sans-serif';
+var nat={useMaxWidth:false};
+mermaid.initialize({
+startOnLoad:false,securityLevel:'strict',theme:'base',
+flowchart:nat,sequence:nat,er:nat,state:nat,class:nat,pie:nat,
+gantt:nat,journey:nat,timeline:nat,gitGraph:nat,mindmap:nat,xyChart:nat,
+quadrantChart:nat,sankey:nat,c4:nat,requirement:nat,block:nat,
+packet:nat,kanban:nat,architecture:nat,radar:nat,
+themeVariables:{background:bg,mainBkg:pal.surface,primaryColor:pal.surface,
+primaryTextColor:pal.text,lineColor:pal.line,primaryBorderColor:pal.border,
+nodeBorder:pal.border,clusterBorder:pal.border,edgeLabelBackground:bg,
+clusterBkg:'rgba(127,127,127,0.07)',titleColor:pal.text,
+darkMode:dark,rowOdd:bg,rowEven:'rgba(127,127,127,0.07)',
+attributeBackgroundColorOdd:bg,attributeBackgroundColorEven:'rgba(127,127,127,0.07)',
+fontSize:'16px',fontFamily:font},
+themeCSS:'.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+});
+items.forEach(function(it){
+var id='claude-mermaid-'+seq++;
+mermaid.render(id,it.src).then(function(r){
+if(gen!==renderGen)return;
+var prev=it.pre.previousElementSibling;
+if(prev&&prev.className==='mermaid-diagram'&&prev!==it.mount)return;
+it.mount.innerHTML=r.svg;
+if(!it.mount.parentNode)it.pre.parentNode.insertBefore(it.mount,it.pre);
+it.pre.style.display='none';
+},function(){
+var scratch=document.getElementById(id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+scratch=document.getElementById('d'+id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+if(gen!==renderGen)return;
+if(it.mount.parentNode)it.mount.parentNode.removeChild(it.mount);
+it.pre.style.display='';
+});
+});
+}
+render();
+if(mq&&mq.addEventListener)mq.addEventListener('change',render);
+if(typeof MutationObserver!=='undefined')new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();</script>
+<!--claude-mermaid-runtime-end-->
+</body>
+</html>
