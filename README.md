@@ -78,11 +78,6 @@ cp .env.example .env    # 비밀번호 채우기. .env 는 커밋 금지
 docker compose up --build
 ```
 
-| 주소 | 용도 |
-|---|---|
-| http://localhost:8000/healthcheck | 서버 상태 확인 |
-| http://localhost:8000/docs | API 문서 (Swagger) |
-
 `app/` 은 볼륨으로 마운트돼 있어서 코드를 고치면 자동으로 다시 뜬다.
 종료는 `docker compose down`, DB까지 날리려면 `docker compose down -v`.
 
