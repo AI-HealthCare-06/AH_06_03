@@ -1,4 +1,4 @@
-"""모델 A v0.1.0 — Framingham 10년 관상동맥질환(TenYearCHD), 보정 없음 (1사이클).
+"""모델 A v0.1.0 — Framingham 10년 관상동맥질환(TenYearCHD), 보정 없음 (첫 번째 사이클).
 
 입력: $PAEON_DATA_DIR/framingham.csv
 출력: modeling/model_a/artifacts/
@@ -6,7 +6,7 @@
   - model_a_xgb_v0.1.0.json  XGBoost 비교 모델
   - metrics_model_a.json  성능 기록 (NFR-ML-003)
 피처는 PRD REQ-HEALTH-002 입력 항목에서 받을 수 있는 것만 사용.
-  HDL: Framingham에 없음 / glucose: 수시 혈당이라 한국 공복혈당과 다름 → 1사이클 제외
+  HDL: Framingham에 없음 / glucose: 수시 혈당이라 한국 공복혈당과 다름 → 첫 번째 사이클 제외
 """
 from pathlib import Path
 import json
@@ -111,7 +111,7 @@ def main():
                    "baseline": 0.0 if k in BINARY else round(float(mu), 6),
                    **({"value_labels": VALUE_LABELS[k]} if k in VALUE_LABELS else {})}
                   for (k, lab, mod, src), c, mu, md in zip(FEATS, coef, sc.mean_, imp.statistics_)],
-        "bands": {"정상": "p < 0.10", "경계": "0.10 ≤ p ≤ 0.20", "위험": "p > 0.20", "source": "데모 코드 기준 (1사이클 잠정)"},
+        "bands": {"정상": "p < 0.10", "경계": "0.10 ≤ p ≤ 0.20", "위험": "p > 0.20", "source": "데모 코드 기준 (첫 번째 사이클 잠정)"},
         "age_range": [32, 70],
     }
     (OUT / f"model_a_v{VERSION}.json").write_text(json.dumps(spec, ensure_ascii=False, indent=2))

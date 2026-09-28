@@ -143,7 +143,7 @@ def predict_model_a(inp: dict, spec: dict | None = None) -> dict:
     out = _score(spec, features_a(inp))
     p = out["probability"]
     out["risk_level"] = "normal" if p < 0.10 else ("borderline" if p <= 0.20 else "high")
-    out["percentile"] = None  # 1사이클 미제공 (한국인 기준 상대 위치는 보정 사이클에서)
+    out["percentile"] = None  # 첫 번째 사이클 미제공 (한국인 기준 상대 위치는 보정 사이클에서)
     return {"model_code": spec["model_code"], "model_version": spec["version"], "status": "completed",
             "skip_reason": None, **out}
 

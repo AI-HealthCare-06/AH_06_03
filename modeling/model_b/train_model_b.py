@@ -1,4 +1,4 @@
-"""모델 B v0.1.0 — 국민건강영양조사 2022–2024, 현재 고혈압 경계군(정상 vs 주의·전단계) (1사이클).
+"""모델 B v0.1.0 — 국민건강영양조사 2022–2024, 현재 고혈압 경계군(정상 vs 주의·전단계) (첫 번째 사이클).
 
 입력: $PAEON_DATA_DIR/KNHANES_2022_2024_selected.parquet (extract_selected.py 로 재추출)
 출력: modeling/model_b/artifacts/
