@@ -1,0 +1,126 @@
+{
+  "version": "0.1.0",
+  "data": "framingham.csv",
+  "n_total": 4240,
+  "n_train": 3392,
+  "n_test": 848,
+  "positive_rate_train": 0.1518,
+  "positive_rate_test": 0.1521,
+  "features": [
+    "age",
+    "male",
+    "sysBP",
+    "totChol",
+    "currentSmoker",
+    "diabetes",
+    "BPMeds",
+    "prevalentHyp",
+    "BMI"
+  ],
+  "split": "층화 무작위 80/20 (seed 42) + 학습 데이터 5-fold CV",
+  "models": {
+    "logistic": {
+      "cv_auc_mean": 0.7305,
+      "cv_auc_std": 0.0301,
+      "test_at_0.5": {
+        "threshold": 0.5,
+        "auc": 0.7007,
+        "f1": 0.1096,
+        "sensitivity": 0.062,
+        "specificity": 0.9875,
+        "confusion": {
+          "tn": 710,
+          "fp": 9,
+          "fn": 121,
+          "tp": 8
+        }
+      },
+      "test_at_youden_train": {
+        "threshold": 0.1508,
+        "auc": 0.7007,
+        "f1": 0.347,
+        "sensitivity": 0.5891,
+        "specificity": 0.6759,
+        "confusion": {
+          "tn": 486,
+          "fp": 233,
+          "fn": 53,
+          "tp": 76
+        }
+      },
+      "brier": 0.1216,
+      "mean_pred_test": 0.1501,
+      "bands_test": {
+        "경계": {
+          "n": 259,
+          "observed_rate": 0.1776
+        },
+        "위험": {
+          "n": 208,
+          "observed_rate": 0.2837
+        },
+        "정상": {
+          "n": 381,
+          "observed_rate": 0.063
+        }
+      }
+    },
+    "xgboost": {
+      "cv_auc_mean": 0.7097,
+      "cv_auc_std": 0.0238,
+      "test_at_0.5": {
+        "threshold": 0.5,
+        "auc": 0.6595,
+        "f1": 0.0915,
+        "sensitivity": 0.0543,
+        "specificity": 0.9764,
+        "confusion": {
+          "tn": 702,
+          "fp": 17,
+          "fn": 122,
+          "tp": 7
+        }
+      },
+      "test_at_youden_train": {
+        "threshold": 0.1913,
+        "auc": 0.6595,
+        "f1": 0.2994,
+        "sensitivity": 0.4109,
+        "specificity": 0.7608,
+        "confusion": {
+          "tn": 547,
+          "fp": 172,
+          "fn": 76,
+          "tp": 53
+        }
+      },
+      "brier": 0.1273,
+      "mean_pred_test": 0.1485999971628189,
+      "bands_test": {
+        "경계": {
+          "n": 246,
+          "observed_rate": 0.1748
+        },
+        "위험": {
+          "n": 212,
+          "observed_rate": 0.25
+        },
+        "정상": {
+          "n": 390,
+          "observed_rate": 0.0846
+        }
+      }
+    }
+  },
+  "xgb_impute_medians": {
+    "age": 49.0,
+    "male": 0.0,
+    "sysBP": 128.0,
+    "totChol": 234.0,
+    "currentSmoker": 0.0,
+    "diabetes": 0.0,
+    "BPMeds": 0.0,
+    "prevalentHyp": 0.0,
+    "BMI": 25.38
+  }
+}
