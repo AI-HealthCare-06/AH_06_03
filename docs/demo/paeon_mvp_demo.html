@@ -1,0 +1,932 @@
+<title>PAEON MVP 데모</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* 와이어프레임 v4 팔레트(핑크). 상단 버튼으로 초록과 바꿔 볼 수 있다 */
+  --cream:#F5EBEB; --sage-light:#E8C9C9; --sage:#CB9F9F; --sage-deep:#BD8484; --track:#F0E0E0;
+  --petal1:#F2A6BE; --petal2:#E8879F; --center:#FCE8B8; --dots:#E0A836; --stem:#BD8484;
+  --shadow-btn:rgba(189,132,132,.45);
+}
+:root[data-pal="green"]{
+  --cream:#FEF5ED; --sage-light:#D3E4CD; --sage:#ADC2A9; --sage-deep:#99A799; --track:#EEF4EB;
+  --petal1:#D3E4CD; --petal2:#99A799; --center:#F6C6A5; --dots:#E88B72; --stem:#ADC2A9;
+  --shadow-btn:rgba(153,167,153,.45);
+}
+:root{
+  --ink:#384038; --muted:#5C665C; --faint:#8A928A;
+  --surface:#FFFFFF; --surface-2:var(--cream);
+  --line:var(--sage-light); --line-soft:var(--track);
+  --accent:var(--sage-deep); --accent-soft:var(--sage-light);
+  --ok:#3E7A55; --ok-soft:#E4EFE5;
+  --warn:#8C6014; --warn-soft:#F7EDD9;
+  --risk:#B0543F; --risk-soft:#FBEAE5;
+  --danger:#D97362; --peach:#F6C6A5;
+  --shadow:0 8px 24px rgba(56,64,56,.08), 0 2px 6px rgba(56,64,56,.06);
+}
+*{box-sizing:border-box}
+body{margin:0; background:#F1ECE4; color:var(--ink); font-family:'Noto Sans KR',sans-serif; font-size:14px; line-height:1.6; padding-bottom:70px}
+h1,h2,h3,.heading-font{font-family:'Gowun Dodum','Noto Sans KR',sans-serif}
+h1,h2,h3{margin:0; font-weight:700}
+p{margin:0}
+button{font:inherit; cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--sage-deep); outline-offset:2px; border-radius:6px}
+
+/* ── 상단 단계 선택 (와이어프레임 picker) ── */
+.picker{position:sticky; top:0; z-index:50; background:rgba(245,235,235,.95); backdrop-filter:blur(6px);
+  border-bottom:1px solid var(--sage); padding:12px 20px; display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+:root[data-pal="green"] .picker{background:rgba(254,245,237,.95)}
+.picker .brand{font-weight:900; font-size:18px; margin-right:10px; color:var(--sage-deep); display:flex; align-items:center; gap:4px}
+#steps{display:flex; gap:6px; flex-wrap:wrap; flex:1}
+#steps button{border:1px solid var(--sage); background:#fff; color:var(--muted); border-radius:999px; padding:5px 11px; font-size:12.5px}
+#steps button:hover:not(:disabled){background:var(--sage-deep); color:#fff; border-color:var(--sage-deep)}
+#steps button[data-on="1"]{background:var(--sage-deep); color:#fff; border-color:var(--sage-deep); font-weight:700}
+#steps button[data-done="1"]{color:var(--ink)}
+#steps button:disabled{opacity:.4; cursor:not-allowed}
+.pal{display:flex; gap:4px; font-size:11.5px; color:var(--muted); align-items:center}
+.pal button{border:1px solid var(--sage); background:#fff; border-radius:999px; padding:3px 10px; font-size:11.5px; color:var(--muted)}
+.pal button[data-on="1"]{background:var(--sage-light); color:var(--ink); font-weight:700}
+
+/* ── 화면 프레임 (와이어프레임 frame) ── */
+.wrapper{max-width:900px; margin:34px auto 0; padding:0 20px}
+.screen-tag{display:flex; align-items:center; gap:10px; margin-bottom:10px}
+.screen-tag .id{background:var(--sage-deep); color:#fff; font-weight:700; font-size:13px; padding:4px 12px; border-radius:999px}
+.screen-tag .name{font-weight:700; font-size:15px}
+.screen-tag .flow{color:var(--muted); font-size:12.5px; margin-left:auto; text-align:right}
+.frame{background:#fff; border-radius:28px; box-shadow:var(--shadow); border:1px solid #EDE3D6; overflow:hidden}
+.frame-bar{display:flex; gap:6px; padding:12px 18px; background:var(--cream); border-bottom:1px solid var(--sage-light)}
+.frame-bar span{width:9px; height:9px; border-radius:50%; background:var(--sage)}
+.frame-body{padding:28px 30px; position:relative}
+.app-shell{display:flex; gap:22px}
+.nav-col{width:150px; flex:none}
+.nav-item{display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:14px; font-size:13.5px; color:var(--muted); margin-bottom:6px; font-weight:500; cursor:pointer}
+.nav-item.active{background:var(--sage-light); color:var(--ink); font-weight:700; box-shadow:0 3px 10px rgba(56,64,56,.07)}
+.content-col{flex:1; min-width:0}
+.screen{display:flex; flex-direction:column; gap:14px}
+.notes{margin-top:12px; background:#fff; border:1px dashed var(--sage); border-radius:14px; padding:12px 16px; font-size:12px; color:var(--muted); line-height:1.7}
+.notes .why{display:flex; flex-direction:column; gap:3px; margin-top:8px}
+.notes .why b{color:var(--ink)}
+.disclaimer{font-size:11.5px; color:var(--faint); margin-top:8px}
+.idlist{display:flex; flex-wrap:wrap; gap:4px}
+.id{font-size:10.5px; font-weight:700; border:1px solid var(--sage-light); border-radius:4px; padding:1px 6px; color:var(--muted); background:#fff}
+.id[data-t="w"]{color:#fff; background:var(--sage-deep); border-color:var(--sage-deep)}
+@media (max-width:760px){ .app-shell{flex-direction:column} .nav-col{width:auto; display:flex; gap:6px; flex-wrap:wrap} .frame-body{padding:20px 16px} }
+
+/* ── 폼 ── */
+.lede{font-size:12.5px; color:var(--muted)}
+.sect{font-size:13px; font-weight:700; margin-top:4px}
+.field{display:flex; flex-direction:column; gap:4px}
+.field label{font-size:12.5px; font-weight:700; color:var(--muted)}
+.field input,.field select{font:inherit; font-size:13.5px; padding:10px 12px; border-radius:12px; border:1.5px solid var(--sage-light); background:#fff; color:var(--ink); width:100%}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px 14px}
+.cta{width:100%; border:0; border-radius:999px; padding:13px 22px; font-weight:700; font-size:14.5px; background:var(--sage-deep); color:#fff; box-shadow:0 6px 14px var(--shadow-btn)}
+.cta:disabled{opacity:.4; cursor:not-allowed; box-shadow:none}
+.ghost{width:100%; border:1.5px solid var(--sage); border-radius:999px; padding:11px 18px; font-weight:700; background:#fff; color:var(--ink); font-size:13.5px}
+.q{display:flex; flex-direction:column; gap:7px}
+.qt{font-size:13.5px; font-weight:700}
+.qh{font-size:11.5px; color:var(--muted)}
+.optrow{display:flex; flex-wrap:wrap; gap:8px}
+.opt{border:1.5px solid var(--sage-light); background:#fff; color:var(--ink); border-radius:16px; padding:8px 14px; font-size:13px; font-weight:600; box-shadow:0 3px 10px rgba(56,64,56,.07)}
+.opt[data-on="1"]{border-color:var(--sage-deep); background:var(--sage-light)}
+.opt .badge{font-size:10.5px; color:var(--muted); margin-left:6px; font-weight:500}
+.tip,.hint{font-size:11.5px; color:var(--muted)}
+.privacy{display:flex; gap:8px; align-items:flex-start; font-size:12px; color:var(--muted); border:1px solid var(--sage-light); border-radius:14px; padding:11px 14px; background:#fff}
+
+/* ── 카드류 ── */
+.callout{background:var(--cream); border:1px solid var(--sage-light); border-radius:18px; padding:14px 18px; font-size:12.5px; color:var(--muted)}
+.callout b{color:var(--ink)}
+.warnbox{border:1.5px solid var(--danger); background:#FBEAE5; border-radius:18px; padding:14px 18px; font-size:13px}
+.warnbox b{color:var(--risk)}
+.warnbox .acts{display:flex; gap:8px; margin-top:10px; align-items:center; flex-wrap:wrap}
+.warnbox .acts span{font-size:12.5px; font-weight:700}
+.warnbox .acts button{width:auto; padding:8px 18px}
+.call119{display:inline-block; margin-top:8px; background:var(--danger); color:#fff; border-radius:999px; padding:8px 18px; font-weight:700; font-size:13px; text-decoration:none}
+.kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
+.kpi{background:#fff; border:1px solid var(--sage-light); border-radius:14px; padding:10px 8px; text-align:center}
+.kpi .k{font-size:11.5px; color:var(--muted)}
+.kpi .v{font-size:18px; font-weight:900; margin-top:2px}
+.riskrow{display:flex; align-items:center; gap:10px; background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px 18px}
+.chip{font-size:11.5px; font-weight:700; border-radius:999px; padding:3px 11px; border:1.5px solid currentColor; white-space:nowrap}
+.riskrow .pct{font-size:30px; font-weight:900; margin-left:auto}
+.agebox{background:var(--cream); border:1px solid var(--sage-light); border-radius:18px; padding:16px; text-align:center}
+.agebox .big{font-size:34px; font-weight:900; line-height:1.1}
+.agebox .sub{font-size:12px; color:var(--muted); margin-top:3px}
+.agebox .gap{font-size:13.5px; font-weight:700; margin-top:5px}
+.speech{background:var(--sage-light); border-radius:18px; padding:13px 18px; font-size:13.5px}
+.speech .who{font-size:11px; color:var(--muted); font-weight:700; margin-bottom:2px}
+figure{margin:0; background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px 18px}
+figcaption{font-size:12.5px; color:var(--muted); margin-bottom:8px}
+figcaption b{color:var(--ink)}
+.chart{width:100%; height:auto; display:block; overflow:visible}
+.bars{display:grid; grid-template-columns:88px 1fr 46px; gap:8px 10px; align-items:center; font-size:13px}
+.bk{color:var(--ink)}
+.bb{background:var(--track); border-radius:8px; height:9px; overflow:hidden}
+.bb i{display:block; height:100%; border-radius:8px}
+.bv{text-align:right; font-weight:700; font-size:12px}
+.trk{background:var(--track); border-radius:999px; height:10px; overflow:hidden}
+.trk i{display:block; height:100%; background:var(--sage-deep); border-radius:999px}
+.substeps{display:flex; gap:6px; flex-wrap:wrap}
+.substeps span{font-size:12px; border:1px solid var(--sage-light); border-radius:999px; padding:4px 12px; color:var(--muted); background:var(--cream); font-weight:700}
+.substeps span[data-on="1"]{background:var(--sage-deep); border-color:var(--sage-deep); color:#fff}
+.substeps span[data-done="1"]{color:var(--ink)}
+.countbar{font-size:12.5px; color:var(--muted)}
+.countbar b{color:var(--ink)}
+
+/* ── 챌린지 ── */
+.cat{background:var(--cream); border:1px solid var(--sage-light); border-radius:18px; overflow:hidden}
+.cat>header{display:flex; align-items:center; gap:8px; padding:10px 16px; border-bottom:1px solid var(--sage-light)}
+.cat>header h3{font-size:14px}
+.slot{display:flex; gap:10px; align-items:flex-start; background:#fff; border:1.5px solid var(--sage-light); border-radius:16px; padding:12px 14px; font-size:13.5px; margin:8px 10px}
+.cat .slot{margin:8px 10px}
+.screen>.slot{margin:0}
+.slot[data-k="fixed"]{background:var(--cream)}
+.slot[data-k="out"]{opacity:.6; border-style:dashed; background:transparent}
+.slot .st{font-weight:700}
+.slot .sd{font-size:12px; color:var(--muted)}
+.slot .from{font-size:10.5px; color:var(--sage-deep); border:1px solid var(--sage-deep); border-radius:999px; padding:0 8px; margin-left:6px; white-space:nowrap; font-weight:700}
+.pickable{cursor:pointer}
+.pickable[data-on="1"]{border-color:var(--sage-deep); background:var(--sage-light)}
+.lvl{font-size:10.5px; font-weight:700; border-radius:999px; padding:0 8px; border:1px solid currentColor; margin-left:6px; white-space:nowrap}
+.lvl[data-l="하"]{color:var(--ok)} .lvl[data-l="중"]{color:var(--warn)} .lvl[data-l="상"]{color:var(--risk)}
+.daygrid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px}
+.daygrid button{border:1px solid var(--sage-light); background:#fff; border-radius:10px; padding:8px 0; font-size:11.5px; color:var(--muted)}
+.daygrid button[data-on="1"]{background:var(--sage-deep); border-color:var(--sage-deep); color:#fff; font-weight:700}
+.wk{font-size:12px; color:var(--muted); font-weight:700; margin-top:4px}
+.bplog{display:grid; grid-template-columns:auto 1fr auto; gap:4px 12px; font-size:12.5px; align-items:center}
+.inline{display:flex; gap:8px; align-items:flex-end}
+.inline .field{flex:1}
+.inline button{width:auto; padding:10px 20px}
+
+/* ── 홈 / 비교 ── */
+.state{display:flex; gap:6px; flex-wrap:wrap}
+.state button{border:1px solid var(--sage); background:#fff; border-radius:999px; padding:5px 12px; font-size:12px; color:var(--muted)}
+.state button[data-on="1"]{background:var(--sage-deep); border-color:var(--sage-deep); color:#fff; font-weight:700}
+.hero{background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:16px 20px}
+.hero h1{font-size:18px; line-height:1.35}
+.hero p{font-size:12.5px; color:var(--muted); margin-top:4px}
+.tworow{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.mini{background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px; text-align:center}
+.mini .lb{font-size:11.5px; color:var(--muted)}
+.mini .vv{font-size:32px; font-weight:900}
+.mini .sb{font-size:12px; color:var(--muted)}
+.deltarow{display:grid; grid-template-columns:1fr auto 1fr; gap:10px; align-items:center; background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:16px}
+.deltarow .side{text-align:center}
+.deltarow .side .lb{font-size:11.5px; color:var(--muted)}
+.deltarow .side .vv{font-size:32px; font-weight:900}
+.deltarow .arrow{font-size:22px; color:var(--faint)}
+.hero-w01{text-align:center; padding:26px 8px 8px}
+.hero-w01 h2{font-size:24px; margin:6px 0 4px}
+.hero-w01 .headline{font-size:19px; font-weight:700; margin:16px 0 4px}
+.trio{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; text-align:left; margin-top:6px}
+.trio .opt{display:flex; align-items:center; gap:8px; border-radius:16px; cursor:default}
+.dots{position:absolute; width:70px; height:70px; opacity:.35; pointer-events:none; background-image:radial-gradient(var(--sage) 1.6px, transparent 1.6px); background-size:12px 12px}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo-paeon" viewBox="0 0 100 100">
+    <g style="fill:var(--stem)">
+      <ellipse cx="50" cy="76" rx="8" ry="16" transform="rotate(35 50 76)"/>
+      <ellipse cx="50" cy="76" rx="8" ry="16" transform="rotate(-35 50 76)"/>
+    </g>
+    <g style="fill:var(--petal1)">
+      <ellipse cx="50" cy="26" rx="14" ry="21"/>
+      <ellipse cx="50" cy="26" rx="14" ry="21" transform="rotate(60 50 50)"/>
+      <ellipse cx="50" cy="26" rx="14" ry="21" transform="rotate(120 50 50)"/>
+      <ellipse cx="50" cy="26" rx="14" ry="21" transform="rotate(180 50 50)"/>
+      <ellipse cx="50" cy="26" rx="14" ry="21" transform="rotate(240 50 50)"/>
+      <ellipse cx="50" cy="26" rx="14" ry="21" transform="rotate(300 50 50)"/>
+    </g>
+    <g style="fill:var(--petal2)">
+      <ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(30 50 50)"/>
+      <ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(90 50 50)"/>
+      <ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(150 50 50)"/>
+      <ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(210 50 50)"/>
+      <ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(270 50 50)"/>
+      <ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(330 50 50)"/>
+    </g>
+    <circle cx="50" cy="50" r="11" style="fill:var(--center)"/>
+    <circle cx="45" cy="47" r="2.2" style="fill:var(--dots)"/>
+    <circle cx="55" cy="47" r="2.2" style="fill:var(--dots)"/>
+    <circle cx="50" cy="54" r="2.2" style="fill:var(--dots)"/>
+  </symbol>
+</svg>
+
+<div class="picker">
+  <span class="brand"><svg width="20" height="20"><use href="#logo-paeon"/></svg> PAEON</span>
+  <nav id="steps" aria-label="화면 단계"></nav>
+  <span class="pal">색 <button type="button" data-p="pink" data-on="1">핑크</button><button type="button" data-p="green" data-on="0">초록</button></span>
+</div>
+
+<div class="wrapper">
+  <div class="screen-tag"><span class="id" id="sid">W01</span><span class="name" id="stitle">서비스 소개</span><span class="flow" id="sflow"></span></div>
+  <div class="frame">
+    <div class="frame-bar"><span></span><span></span><span></span></div>
+    <div class="frame-body">
+      <div class="app-shell">
+        <div class="nav-col" id="navcol"></div>
+        <div class="content-col"><div class="screen" id="screen"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="notes" id="notes"></div>
+</div>
+
+<script>
+/* ═══════════ 유틸 ═══════════ */
+const el = (t,a={},...kids)=>{const n=document.createElement(t);
+  for(const [k,v] of Object.entries(a)){ if(k==='cls')n.className=v; else if(k==='html')n.innerHTML=v;
+    else if(k.startsWith('on'))n.addEventListener(k.slice(2),v); else if(v!=null)n.setAttribute(k,v); }
+  kids.flat().forEach(c=>c!=null&&n.append(c.nodeType?c:document.createTextNode(c))); return n;};
+const f1 = n => (Math.round(n*10)/10).toFixed(1);
+const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+const sig = z => 1/(1+Math.exp(-z));
+const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* ═══════════ 모델 A — 10년 내 관상동맥질환 위험 (유일한 예측 모델) ═══════════
+   Framingham 위험요인(나이·성별·수축기혈압·총콜레스테롤·HDL·흡연·당뇨·고혈압 치료)을 쓰는
+   선형 로지스틱 예시 모델. 선형이라 기여도 = 계수 x (값 − 평균) 이 그대로 설명값(SHAP)이다.
+   계수는 모델 문서가 확정되기 전까지 쓰는 잠정값. 구조만 확정. 모델 B는 사용하지 않는다. */
+const FEATS = [
+  {k:'age',   label:'나이',        coef: 0.065, mean:40,  fixed:true},
+  {k:'male',  label:'성별(남)',    coef: 0.50,  mean:0.5, fixed:true},
+  {k:'sbp',   label:'수축기혈압',  coef: 0.014, mean:125},
+  {k:'tc',    label:'총콜레스테롤',coef: 0.005, mean:200},
+  {k:'hdl',   label:'HDL',         coef:-0.015, mean:50},
+  {k:'smoke', label:'흡연',        coef: 0.60,  mean:0.2},
+  {k:'htnTx', label:'고혈압 치료', coef: 0.20,  mean:0.2},
+  {k:'diab',  label:'당뇨',        coef: 0.50,  mean:0.1},
+];
+const INTERCEPT = -2.95;   // FIXED_PATCH
+const AGE_COEF = 0.065;
+const contribs = x => FEATS.map(f=>({...f, val:x[f.k], c:f.coef*(x[f.k]-f.mean)}));
+const risk = x => sig(INTERCEPT + contribs(x).reduce((s,f)=>s+f.c,0));
+/* 혈관 나이: 나이·성별 외 기여도를 나이 계수로 환산해 더한다. */
+const vascAge = x => clamp(x.age + contribs(x).filter(f=>!f.fixed).reduce((s,f)=>s+f.c,0)/AGE_COEF, 20, 90);
+const band = r => r<0.10 ? {t:'정상', v:'ok'} : r<=0.20 ? {t:'경계', v:'warn'} : {t:'위험', v:'risk'};
+
+/* ═══════════ 입력 상태 ═══════════ */
+const P = {age:45, male:1, h:172, w:78, sbp:145, dbp:92, smoke:1, drink:3, diab:0, htn:0, tc:212, hdl:45, glu:104, fam:1};
+const A = {N1:5.5, N2:2, N3:2, N4:1, O1:3.5, O2:4, M1:1.5, W2:0, X3:2};
+const SPORTS = [
+  {id:'walk', n:'걷기', tier:'저강도', w:0.8}, {id:'fwalk', n:'빠르게 걷기', tier:'중강도', w:1},
+  {id:'bike', n:'자전거', tier:'중강도', w:1},  {id:'yoga', n:'요가·필라테스', tier:'중강도', w:1},
+  {id:'run', n:'달리기', tier:'고강도', w:2},    {id:'hike', n:'등산', tier:'고강도', w:2},
+];
+const SP = {fwalk:{days:3, min:45}};
+const S = {step:0, reached:0, noPred:false, elig:{age:true, emer:'no'}, emerAck:false, ocr:null,
+  sub:0, pick:null, days:new Set(), bpLog:[], home:'active', fb:{rating:null, comment:'', saved:false}, noti:{on:true, time:'08:00'}, mp:null, consent:true, pwd:'', gone:false, rec:'trend', w01:'intro', res5:'result', bpIn:{sys:140, dia:88}};
+
+const bmi = () => P.w/Math.pow(P.h/100,2);
+const X = () => ({age:P.age, male:P.male, sbp:P.sbp, tc:P.tc, hdl:P.hdl, smoke:P.smoke, htnTx:P.htn===2?1:0, diab:P.diab});
+const derive = () => {
+  const salt = clamp(A.N1+A.N2+A.N3*2+A.N4, 0, 14), eatout = A.O1+A.O2;
+  let act = 0; for (const sp of SPORTS){ const v=SP[sp.id]; if (v) act += v.days*v.min*sp.w; }
+  return {salt, eatout, act:Math.round(act)};
+};
+
+/* ═══════════ 챌린지 — 고정 2(흡연·음주) + 선택 1, 카테고리 제한 없음 ═══════════ */
+const M = {
+  b1:{id:'b1',t:'금연 유지 (전자담배 포함)',d:'전자담배도 포함입니다',lv:'상',bp:-2},
+  b2:{id:'b2',t:'표준잔 지키기 · 남 2 / 여 1',d:'초과 입력 시 경고와 함께 해당 일차를 실패로 처리합니다',lv:'중',bp:-2},
+  s1:{id:'s1',cat:'salt',t:'국물 남기기 주 5회',d:'국·찌개·라면은 한 번에 염분이 많이 들어갑니다',lv:'하',bp:-5},
+  s2:{id:'s2',cat:'salt',t:'라면 주 1회 이하',d:'단일 식품 중 염분이 가장 눈에 띕니다',lv:'중',bp:-3},
+  s3:{id:'s3',cat:'salt',t:'김치 한 끼 1접시 이하',d:'김치는 싱겁게 담가 소량만',lv:'상',bp:-3},
+  a1:{id:'a1',cat:'act',t:'앉아서 발뒤꿈치 들기 주 5일',d:'오래 앉아 있는 사용자용, 저강도부터',lv:'하',bp:-2},
+  a2:{id:'a2',cat:'act',t:'하루 30분 걷기 주 5일',d:'유산소 주 5회 이상',lv:'중',bp:-6},
+  a3:{id:'a3',cat:'act',t:'저항운동 주 2회',d:'유산소로 몸을 푼 뒤에 실시',lv:'상',bp:-3},
+  o1:{id:'o1',cat:'out',t:'배달 앱 주 2회 줄이기',d:'외식 빈도를 배달의 대리 지표로 씀',lv:'하',bp:-2},
+  o2:{id:'o2',cat:'out',t:'집밥 저염식 주 3회',d:'가공식품 대신 신선한 채소·과일·육류',lv:'중',bp:-4},
+  o3:{id:'o3',cat:'out',t:'외식할 때 "덜 짜게" 요청',d:'조리 단계에서 염분을 줄이는 요청',lv:'하',bp:-2},
+  m1:{id:'m1',cat:'morn',t:'아침 거르지 않기 주 5일',d:'근거 확인이 필요한 항목(검토 중)',lv:'중',bp:0},
+  w1:{id:'w1',cat:'wt',t:'4주 −1kg',d:'표준체중 초과 시 감량',lv:'상',bp:-3},
+  w2:{id:'w2',cat:'wt',t:'저녁 밥 2/3공기',d:'저녁 식사량 줄이기',lv:'중',bp:-2},
+  w3:{id:'w3',cat:'wt',t:'야식 없는 날 주 5일',d:'야식 줄이기',lv:'하',bp:-1},
+};
+const CATS = [
+  {id:'salt',n:'나트륨 줄이기',ids:['s1','s2','s3']}, {id:'act',n:'신체 활동',ids:['a1','a2','a3']},
+  {id:'out',n:'외식 · 배달 조절',ids:['o1','o2','o3']}, {id:'morn',n:'아침 식사',ids:['m1'],note:'검토 중'},
+  {id:'wt',n:'체중 관리',ids:['w1','w2','w3'],note:'Backlog'},
+];
+function excludeReason(m){
+  const d = derive();
+  if (m.cat==='salt' && d.salt<=4) return '이미 싱겁게 드십니다';
+  if (m.id==='a2' && d.act>=150) return '권고 150분을 이미 넘겼습니다';
+  if (m.cat==='out' && d.eatout<=4) return '외식·배달 빈도가 낮습니다';
+  if (m.cat==='morn' && A.M1>=5.5) return '아침을 대체로 드십니다';
+  if (m.cat==='wt' && bmi()<25) return 'BMI가 권고 범위입니다';
+  return null;
+}
+/* 고정 2칸: 흡연 한 칸, 음주 한 칸. 해당 없으면 나트륨 미션이 채우고,
+   나트륨도 이미 낮으면 기여도가 큰 개선 가능 요인의 미션으로 넘어간다. */
+function fixedMissions(){
+  const d = derive(), used = new Set(), out = [];
+  const salt = [M.s1, M.s2]; let si = 0;
+  const nextSalt = () => { while (si<salt.length){ const m=salt[si++]; if(!used.has(m.id)) return m; } return null; };
+  const fb = [M.a2, M.o2, M.w2]; let fi = 0;
+  const nextFb = () => { while (fi<fb.length){ const m=fb[fi++]; if(!used.has(m.id) && !excludeReason(m)) return m; } return null; };
+  const fill = (base, keep, from) => {
+    if (keep){ used.add(base.id); out.push({...base, from}); return; }
+    const m = d.salt>4 ? nextSalt() : nextFb();
+    if (m){ used.add(m.id); out.push({...m, from:from+' → 대체'}); }
+    else out.push({id:'none'+out.length, t:'대체할 미션이 없습니다', d:'후보가 모자랄 때의 규칙은 팀 논의 중입니다', lv:'-', bp:0, from:from+' → 대체'});
+  };
+  fill(M.b1, P.smoke===1, '흡연'); fill(M.b2, P.drink>0, '음주');
+  return out;
+}
+const pickedMission = () => S.pick ? M[S.pick] : null;
+
+/* 4주 뒤 — 인증한 비율만큼만 반영. 모델 A 입력 중 4주 사이 바뀌는 것(혈압·흡연)만 바뀐다. */
+function after(){
+  const done = S.days.size/28, x = X(), z = {...x};
+  const all = [...fixedMissions(), ...(pickedMission()?[pickedMission()]:[])];
+  const plan = clamp(-all.reduce((s,m)=>s+(m.bp||0),0), 0, 12)*done;
+  const measured = S.bpLog.length ? S.bpLog[S.bpLog.length-1].sys : null;
+  z.sbp = measured!=null ? measured : x.sbp - plan;
+  if (all.some(m=>m.id==='b1')) z.smoke = x.smoke*(1-done);
+  return {z, drop:x.sbp - z.sbp, measured:measured!=null};
+}
+
+/* ═══════════ 차트 ═══════════ */
+function bpChart(series){
+  const W=356, H=150, padL=32, padR=58, padT=10, padB=22;
+  const lo = Math.min(120, ...series)-4, hi = Math.max(150, ...series)+4;
+  const Xp = i => padL + (series.length>1 ? i*(W-padL-padR)/(series.length-1) : 0);
+  const Yp = v => padT + (hi-v)/(hi-lo)*(H-padT-padB);
+  const s = ['<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="수축기 혈압 추이">'];
+  s.push('<line x1="'+padL+'" y1="'+Yp(140).toFixed(1)+'" x2="'+(W-padR)+'" y2="'+Yp(140).toFixed(1)+'" stroke="'+cssv('--warn')+'" stroke-width="1.5" stroke-dasharray="5 4"/>');
+  s.push('<text x="'+(W-padR+6)+'" y="'+(Yp(140)+4).toFixed(1)+'" font-size="10" font-weight="600" fill="'+cssv('--warn')+'">고혈압 140</text>');
+  [120,130,150].forEach(v=>{ if(v>lo&&v<hi) s.push('<text x="'+(padL-6)+'" y="'+(Yp(v)+3).toFixed(1)+'" text-anchor="end" font-size="9" font-family="IBM Plex Mono, monospace" fill="'+cssv('--faint')+'">'+v+'</text>'); });
+  s.push('<polyline fill="none" stroke="'+cssv('--accent')+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="'+series.map((v,i)=>Xp(i).toFixed(1)+','+Yp(v).toFixed(1)).join(' ')+'"/>');
+  series.forEach((v,i)=>{
+    s.push('<circle cx="'+Xp(i).toFixed(1)+'" cy="'+Yp(v).toFixed(1)+'" r="'+(i===series.length-1?5:3.5)+'" fill="'+cssv('--surface')+'" stroke="'+cssv('--accent')+'" stroke-width="2"><title>'+i+'주 '+Math.round(v)+' mmHg</title></circle>');
+    s.push('<text x="'+Xp(i).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="'+cssv('--faint')+'">'+i+'주</text>');
+  });
+  s.push('<text x="'+(Xp(series.length-1)-2).toFixed(1)+'" y="'+(Yp(series[series.length-1])+17).toFixed(1)+'" text-anchor="end" font-size="11" font-weight="600" font-family="IBM Plex Mono, monospace" fill="'+cssv('--ink')+'">'+Math.round(series[series.length-1])+'</text>');
+  s.push('</svg>'); return s.join('');
+}
+function bars(rows){
+  const mx = Math.max(0.2, ...rows.map(r=>Math.abs(r.c)));
+  return el('div',{cls:'bars'}, rows.map(r=>{
+    const col = r.fixed ? 'var(--sage)' : (r.c>=0 ? 'var(--sage-deep)' : 'var(--sage)');
+    return [el('span',{cls:'bk'}, r.label),
+      el('span',{cls:'bb'}, el('i',{style:'width:'+(Math.abs(r.c)/mx*100)+'%;background:'+col})),
+      el('span',{cls:'bv', style:'color:var(--ink)'}, (r.c>=0?'+':'−')+f1(Math.abs(r.c)*100))];
+  }).flat());
+}
+
+/* ═══════════ 화면 골격 ═══════════ */
+const STEPS = [
+  {sid:'W01',  short:'시작·가입',title:'서비스 소개 · 시작하기', flow:'소개 → 시작하기'},
+  {sid:'W03',  short:'적합성',  title:'이용 적합성 · 응급 확인', flow:'안전 문진 → 서비스 분기'},
+  {sid:'W04',  short:'건강정보',title:'건강정보 입력', flow:'직접 입력 → 검증'},
+  {sid:'W04-2',short:'설문',    title:'생활습관 설문', flow:'선택지 응답 → 자동 건너뛰기 → 다음'},
+  {sid:'W05',  short:'검토',    title:'입력 검토', flow:'확인 → 분석 요청'},
+  {sid:'W06',  short:'결과',    title:'예측 결과 · XAI 설명', flow:'선별 결과 → 설명 → 다음 행동'},
+  {sid:'W09',  short:'챌린지',  title:'챌린지 선택', flow:'추천 → 선택 → 시작'},
+  {sid:'W10',  short:'인증',    title:'챌린지 수행 · 인증', flow:'목표 → 인증 → 달성률'},
+  {sid:'W08',  short:'홈',      title:'대시보드 (홈)', flow:'상태 요약 → 오늘의 실천'},
+  {sid:'W11',   short:'내 기록',title:'추이 · 변화 추적', flow:'이력 → 차트'},
+  {sid:'W12',   short:'마이페이지',title:'피드백 · 마이페이지', flow:'의견 → 저장 / 계정 관리'},
+];
+const RAIL = [
+  {ids:['W01'], reqs:[], why:[['이 데모가 보여주는 것','입력 → 예측(모델 A 하나) → 챌린지 → 4주 → 재평가까지 한 바퀴. 회원가입·DB·알림은 뺐습니다.']]},
+  {ids:['W03'], reqs:['REQ-ELIG-001','REQ-ELIG-003','NFR-SAFE-004'], why:[
+    ['응급 증상','"예" 또는 "잘 모르겠습니다"면 119 안내를 먼저 보여주고, "그래도 진행하시겠습니까?" 확인을 눌러야 넘어갑니다.'],
+    ['나이 범위 밖','가입과 챌린지는 그대로, 위험 예측만 제외됩니다.'],
+    ['고혈압 진단','제외 조건이 아닙니다. 다음 화면에서 입력으로 받습니다.']]},
+  {ids:['W04'], reqs:['REQ-HEALTH-002','REQ-HEALTH-006','NFR-SEC-005','NFR-SEC-007'], why:[
+    ['사진은 지름길, 폼이 본길','인식에 실패해도 폼이 이미 있어 막다른 길이 되지 않습니다. 원본 이미지는 값을 뽑은 뒤 지웁니다.'],
+    ['필수 항목','수축기·이완기 혈압, 신장·체중, 흡연, 음주 빈도, 당뇨, 고혈압 진단·치료 상태, 총콜레스테롤, HDL, 부모 가족력. 공복혈당·운동 빈도는 선택입니다.'],
+    ['흡연·음주는 여기서만','설문에서 다시 묻지 않고, 챌린지의 고정 미션(금연·절주)도 이 답으로 정합니다.']]},
+  {ids:['W04-2'], reqs:['REQ-HEALTH-005','REQ-PRED-008','REQ-CHAL-001'], why:[
+    ['선택지로만 묻습니다','주관식이 없습니다. 운동은 종목을 고르면 강도가 자동으로 붙습니다.'],
+    ['예측 모델 입력이 아닙니다','이 설문의 답은 챌린지 추천·제외를 정하는 데 씁니다. 위험 점수는 건강정보(W04) 값으로 계산합니다.'],
+    ['7단계','나트륨 → 신체 활동 → 외식·배달 → 아침 식사 → 체중 관리 → 혈압 측정 수단 → 완료']]},
+  {ids:['W05'], reqs:['REQ-HEALTH-007','REQ-ELIG-004'], why:[['분석 전에 한 번','적격성과 4개 지표, 모델 A 입력값을 확인하고 넘어갑니다.']]},
+  {ids:['W06'], reqs:['REQ-PRED-001','REQ-PRED-003','REQ-PRED-006','NFR-SAFE-001','NFR-ACC-003'], why:[
+    ['모델 A 하나','10년 내 관상동맥질환 발병 위험과 혈관 나이를 카드 2개로 보여줍니다. 모델 B는 사용하지 않습니다.'],
+    ['바꿀 수 없는 요인','나이는 목록에 두되 해석에서는 빼고, 성별은 바꿀 수 없어 목록에서 뺐습니다. 한 줄 해석은 바꿀 수 있는 요인만 고릅니다.'],
+    ['색 + 글자','구간을 색만으로 전달하지 않고 글자를 같이 넣었습니다(NFR-ACC-003).']]},
+  {ids:['W09'], reqs:['REQ-CHAL-001','REQ-CHAL-003','REQ-CHAL-008','REQ-CHAL-009'], why:[
+    ['고정 2 + 선택 1','고정은 흡연 한 칸, 음주 한 칸. 해당이 없으면 나트륨 미션이 그 자리를 채웁니다.'],
+    ['제외한 미션과 이유','이미 하고 계신 것은 다시 시키지 않고 이유를 보여줍니다.'],
+    ['보류 카테고리','아침 식사는 "검토", 체중 관리는 "Backlog" 상태입니다.']]},
+  {ids:['W10'], reqs:['REQ-CHAL-004','REQ-CHAL-006','REQ-NOTI-001'], why:[
+    ['주 단위 목표','하루 단위가 아니라 주 몇 회로 셉니다. 알림은 아침에 한 번만.'],
+    ['혈압은 미션이 아닙니다','3개 미션에 포함하지 않는 주 1회 상시 기록입니다. 4주 뒤 비교의 재료가 됩니다.'],
+    ['인증한 만큼만','28일 중 누른 비율만큼만 변화에 반영합니다.']]},
+  {ids:['W08'], reqs:['REQ-DASH-001','REQ-DASH-005','REQ-DASH-006','REQ-DASH-011'], why:[
+    ['상태 3종','입력 전 / 진행 중 / 4주 완료. 상태마다 질문형 헤드라인과 주 버튼 하나.'],
+    ['지표는 혈압 하나','BMI·혈당·콜레스테롤은 건강정보 화면에서 봅니다. 포인트·쿠폰은 없습니다.']]},
+  {ids:['W11-2'], reqs:['REQ-PRED-007','REQ-DASH-003','REQ-HEALTH-008'], why:[
+    ['같은 모델 A로 다시','바뀐 입력(혈압·흡연)만 다시 받아 전·후를 각각 계산합니다.'],
+    ['4주 변화는 작을 수 있습니다','10년 위험은 4주 사이 바뀌는 입력이 적어 크게 움직이지 않습니다. 혈압 변화를 함께 봅니다.'],
+    ['혈액 수치는 3~6개월','콜레스테롤은 4주에 바뀌지 않아 전체 재검진은 따로 안내합니다.']]},
+];
+const RAIL_GUIDE = {ids:['W07'], reqs:['REQ-PRED-005','NFR-SAFE-001'], why:[
+  ['고위험일 때만 나옵니다','결과가 "위험" 구간이면 결과 화면의 주 버튼이 이 화면으로 바뀝니다. 정상·경계에서는 나오지 않습니다.'],
+  ['"검사받으세요"가 아니라 "상의해 보세요"','진단이 아니며 검사 여부는 의사가 판단합니다. 특정 병원·검사를 추천하지 않습니다(광고성 배제).'],
+  ['고위험이어도 챌린지 병행','챌린지도 함께 시작할 수 있습니다.']]};
+const RAIL_SIGNUP = {ids:['W02'], reqs:['REQ-USER-001','REQ-USER-002','REQ-USER-004','REQ-CONSENT-001','REQ-CONSENT-003','NFR-SEC-003','NFR-SEC-006'], why:[
+  ['건강정보 동의는 따로','일반 약관과 분리해서 받고, 동의 버전과 시각을 저장합니다. 미동의 시 건강정보 입력으로 넘어가지 않습니다.'],
+  ['이름·전화번호는 받지 않음','이메일·비밀번호·생년월일만 받습니다(최소 수집). 성별은 건강정보(W04)에서 받습니다.'],
+  ['만 14세 미만','생년월일로 판별해 법정대리인 동의 단계를 더합니다. 확인되지 않으면 5일 안에 파기합니다.']]};
+RAIL[10] = {ids:['W12'], reqs:['REQ-USER-003','REQ-CONSENT-002','REQ-NOTI-001','REQ-FEED-001'], why:[
+  ['동의 철회 ≠ 회원 탈퇴','건강정보 처리 동의를 철회해도 계정은 유지됩니다.'],
+  ['내려받기와 탈퇴는 떨어뜨려 배치','탈퇴는 재인증 후 처리하고, 삭제되는 항목을 먼저 알려 줍니다.'],
+  ['평가는 대상과 버전을 함께 저장','예측·추천 중 무엇에 대한 평가인지와 모델·추천 버전을 같이 기록합니다(FEED-001).'],
+  ['알림 끄기','끄면 챌린지 미수행 알림을 보내지 않습니다(NOTI-001).']]};
+const RAIL_COMPARE = RAIL[9];
+const RAIL_TREND = {ids:['W11'], reqs:['REQ-DASH-002','REQ-DASH-003','REQ-DASH-010'], why:[
+  ['이력이 2건 이상일 때만','예측 이력이 2건 미만이면 "기록이 쌓이면 여기에 변화가 보입니다"를 보여줍니다.'],
+  ['최초 대비 변화','색만이 아니라 ▼▲ 기호와 글자로도 구분합니다(NFR-ACC-003). 이력은 재예측이 돌아야 쌓입니다.'],
+  ['혈압 그래프는 따로','혈압 추이와 위험 점수는 인과를 암시하지 않도록 분리해서 보여줍니다.']]};
+const screen = document.getElementById('screen');
+/* null/배열을 걸러서 화면에 붙인다 */
+const add = (...kids) => kids.flat(Infinity).forEach(c => c!=null && screen.append(c.nodeType?c:document.createTextNode(c)));
+const go = n => { if (n===5) S.res5='result'; S.step=n; S.reached=Math.max(S.reached,n); render(); window.scrollTo({top:0, behavior:'smooth'}); };
+const nextOf = n => (n===3 && S.noPred) ? 6 : n+1;
+const prevOf = n => (n===6 && S.noPred) ? 3 : n-1;
+const restart = () => { S.step=0; S.reached=0; S.days.clear(); S.pick=null; S.bpLog=[]; S.emerAck=false; S.sub=0; S.noPred=false; S.home='active'; S.fb={rating:null, comment:'', saved:false}; S.mp=null; S.consent=true; S.pwd=''; S.gone=false; S.rec='trend'; S.w01='intro'; S.res5='result'; render(); };
+
+function renderSteps(){
+  const nav = document.getElementById('steps'); nav.textContent='';
+  STEPS.forEach((s,i)=>nav.append(el('button',{
+    'data-on': i===S.step?'1':'0', 'data-done': i<S.reached?'1':'0', type:'button',
+    disabled: (i>S.reached || (S.noPred && (i===4||i===5))) ? '' : null, onclick:()=>{ if(i===0) S.w01='intro'; go(i); },
+  }, s.sid+' '+s.short)));
+}
+const NAVS = [['🏠 홈',8],['🩺 건강정보',2],['🌱 챌린지',6],['📈 내 기록',9],['👤 마이페이지',10]];
+function renderNav(){
+  const nc = document.getElementById('navcol'); nc.textContent='';
+  nc.style.display = S.step<2 ? 'none' : '';
+  const act = S.step===8?0 : (S.step===2||S.step===3)?1 : (S.step===6||S.step===7)?2 : S.step===9?3 : S.step===10?4 : -1;
+  NAVS.forEach(([l,t],i)=>nc.append(el('div',{cls:'nav-item'+(act===i?' active':''),
+    onclick:()=>{ S.reached=Math.max(S.reached,t); if(t===9) S.rec='trend'; go(t); }}, l)));
+}
+function renderRail(){
+  const r = document.getElementById('notes'); r.textContent='';
+  const info = (S.step===5 && S.res5==='guide') ? RAIL_GUIDE : (S.step===0 && S.w01==='signup') ? RAIL_SIGNUP : S.step===9 ? (S.rec==='compare' ? RAIL_COMPARE : RAIL_TREND) : RAIL[S.step];
+  r.append(
+    el('div',{cls:'idlist'}, info.ids.map(i=>el('span',{cls:'id','data-t':'w'}, i)), info.reqs.map(i=>el('span',{cls:'id'}, i))),
+    el('div',{cls:'why'}, info.why.map(([t,d])=>el('div',{cls:'q2'}, el('b',{}, t+' · '), el('span',{html:d})))),
+    el('p',{cls:'disclaimer'}, '데모용 모델입니다. 계수는 모델 문서가 확정되기 전까지 쓰는 잠정값이고, 화면의 수치는 실제 진단이 아닙니다.'));
+}
+function render(){
+  renderSteps(); renderNav(); renderRail();
+  const st = (S.step===5 && S.res5==='guide') ? {sid:'W07', title:'검사 · 상담 안내', flow:'고위험 → 의료기관'} : (S.step===0 && S.w01==='signup') ? {sid:'W02', title:'회원가입 · 로그인 · 동의', flow:'계정 생성 → 필수 동의'} : (S.step===9 && S.rec==='compare') ? {sid:'W11-2', title:'4주 전 · 후 비교', flow:'재입력 → 같은 모델 → 변화'} : STEPS[S.step];
+  document.getElementById('sid').textContent = st.sid;
+  document.getElementById('stitle').textContent = st.title;
+  document.getElementById('sflow').textContent = st.flow;
+  screen.textContent = '';
+  [scr0,scr1,scr2,scr3,scr4,scr5,scr6,scr7,scr8,scr9,scr10][S.step]();
+}
+
+/* ═══════════ 공통 부품 ═══════════ */
+const callout = (t,d) => el('div',{cls:'callout', html:'<b>'+t+'</b><br>'+d});
+const cta = (label, fn, off) => el('button',{cls:'cta', type:'button', disabled:off?'':null, onclick:fn}, label);
+const ghost = (label, fn) => el('button',{cls:'ghost', type:'button', onclick:fn}, label);
+const chips = (opts, get, set) => el('div',{cls:'optrow'}, opts.map(([lb,v])=>
+  el('button',{cls:'opt', type:'button', 'data-on':get()===v?'1':'0', onclick:()=>{set(v); render();}}, lb)));
+const rq = (title, hint, opts, key) => el('div',{cls:'q'}, el('div',{cls:'qt'},title), hint?el('div',{cls:'qh'},hint):null,
+  chips(opts, ()=>A[key], v=>A[key]=v));
+const numF = (key, label) => el('div',{cls:'field'}, el('label',{}, label),
+  el('input',{type:'number', value:P[key], oninput:e=>{P[key]=parseFloat(e.target.value)||0;}}));
+const selF = (key, label, opts) => el('div',{cls:'field'}, el('label',{}, label),
+  el('select',{onchange:e=>{P[key]=parseFloat(e.target.value);}},
+    opts.map(([t,v])=>el('option',{value:v, selected:P[key]===v?'':null}, t))));
+
+/* ── W01 ── */
+function scrIntro(){
+  add(el('div',{cls:'hero-w01'},
+      el('div',{html:'<svg width="64" height="64"><use href="#logo-paeon"/></svg>'}),
+      el('h2',{}, '파이온 PAEON'),
+      el('p',{cls:'headline'}, '검진 결과지의 "주의", 그래서 뭘 해야 하나요?'),
+      el('p',{cls:'lede'}, '입력 → 위험 예측 → 챌린지 → 4주 재평가까지 직접 눌러 볼 수 있습니다')),
+    el('div',{style:'max-width:340px;margin:0 auto;width:100%'}, cta('내 위험도 확인하기 · 무료', ()=>{S.w01='signup'; render();})),
+    el('div',{cls:'trio'}, [['📋','1 · 건강정보 입력'],['🔎','2 · 위험 요인 확인'],['🌱','3 · 챌린지로 관리']].map(([e,t])=>
+      el('div',{cls:'opt'}, el('span',{}, e), t))),
+    callout('예시 사용자','45세 남성 · 172cm 78kg · 혈압 145/92 · 총콜레스테롤 212 · HDL 45 · 흡연 중 · 국물 자주 · 배달 잦음. 각 화면의 값은 직접 바꿔 볼 수 있습니다.'),
+    el('p',{cls:'tip', style:'text-align:center'}, '진단이 아닌 선별 정보입니다'));
+}
+
+/* ── W03 ── */
+function scr1(){
+  const e = S.elig, emerOn = e.emer!=='no';
+  const q = (t,opts,get,set) => el('div',{cls:'q'}, el('div',{cls:'qt'},t), chips(opts,get,set));
+  add(
+    el('p',{cls:'lede'},'입력을 받기 전에 대상자인지, 응급 상황이 아닌지 먼저 확인합니다.'),
+    q('만 나이가 위험 예측 적용 범위(데모: 만 30~79세)인가요?', [['예',true],['아니오',false]], ()=>e.age, v=>e.age=v),
+    q('지금 가슴 통증·심한 두통·한쪽 마비·말이 어눌해짐이 있나요?', [['아니오','no'],['예','yes'],['잘 모르겠습니다','unsure']], ()=>e.emer, v=>{e.emer=v; S.emerAck=false;}));
+  if (emerOn && !S.emerAck){
+    add(el('div',{cls:'warnbox'},
+      el('div',{html:'<b>응급 증상일 수 있습니다</b><br>지금 바로 119에 연락하세요. 이 서비스는 응급 판단을 하지 않습니다.'}),
+      el('a',{cls:'call119', href:'tel:119'}, '📞 119 전화'),
+      el('div',{cls:'acts'}, el('span',{},'그래도 진행하시겠습니까?'),
+        ghost('돌아가기', ()=>{e.emer='no'; S.emerAck=false; render();}),
+        ghost('그래도 진행', ()=>{S.emerAck=true; render();}))));
+  } else {
+    if (emerOn) add(el('div',{cls:'callout', html:'<b>📞 119 안내를 확인하고 진행합니다</b><br>안내는 화면 상단에 계속 표시됩니다.'}));
+    add(e.age
+      ? el('div',{cls:'riskrow', style:'border-color:var(--ok)'}, el('span',{cls:'chip',style:'color:var(--ok)'},'대상'),
+          el('span',{}, '위험 예측 대상입니다. 고혈압 진단은 제외 조건이 아니며 다음 화면에서 입력으로 받습니다.'))
+      : callout('위험 예측 대상 연령이 아닙니다','가입과 챌린지는 그대로 이용할 수 있고, 위험 예측만 제외됩니다.'));
+  }
+  add(cta(e.age?'건강정보 입력으로':'건강정보 입력으로 (예측 제외)', ()=>{S.noPred=!e.age; go(2);}, emerOn && !S.emerAck));
+}
+
+/* ── W04 ── */
+function scr2(){
+  add(
+    el('div',{style:'display:flex;gap:8px'},
+      ghost('검진 결과지 사진으로 채우기', ()=>{S.ocr=true; render();}),
+      ghost('인식 실패 재현', ()=>{S.ocr='fail'; render();})),
+    el('p',{cls:'tip'}, S.ocr===true?'6개 항목을 채웠습니다 · 못 읽은 칸은 직접 입력하세요':'사진 인식은 지름길일 뿐입니다. 실패해도 아래 폼에 직접 입력하면 됩니다.'),
+    S.ocr==='fail'?el('div',{cls:'warnbox', html:'<b>인식할 수 없는 서식입니다</b><br>필수 수치만 직접 입력해 주세요. 나머지는 나중에 채워도 됩니다.'}):null,
+    el('p',{cls:'sect'},'기본 정보'),
+    el('div',{cls:'grid2'}, numF('age','나이'), selF('male','성별',[['남',1],['여',0]]), numF('h','키 (cm)'), numF('w','몸무게 (kg)')),
+    el('p',{cls:'sect'},'필수 항목'),
+    el('div',{cls:'grid2'}, numF('sbp','수축기 혈압 (mmHg)'), numF('dbp','이완기 혈압 (mmHg)'),
+      selF('smoke','흡연 여부',[['비흡연',0],['흡연',1]]),
+      selF('drink','음주 빈도',[['안 마심',0],['월 1회 이하',1],['월 2–4회',2],['주 2–3회',3],['주 4회 이상',4]]),
+      selF('diab','당뇨병 여부',[['없음',0],['있음',1]]),
+      selF('htn','고혈압 진단·치료 상태',[['진단받은 적 없음',0],['진단받았지만 약은 안 먹음',1],['진단받았고 약을 먹는 중',2]]),
+      numF('tc','총콜레스테롤 (mg/dL)'), numF('hdl','HDL 콜레스테롤 (mg/dL)'),
+      selF('fam','부모 고혈압 가족력',[['없음',0],['있음',1]])),
+    el('p',{cls:'sect'},'선택 항목'),
+    el('div',{cls:'grid2'}, numF('glu','공복혈당 (mg/dL)')),
+    el('p',{cls:'tip'},'BMI는 신장·체중으로 계산합니다. 선택 항목이 비어도 예측은 진행하고 정확도 한계를 표시합니다. (데모) 수축기혈압 170 · 총콜레스테롤 260처럼 높이면 고위험 결과와 검사·상담 안내(W07)를 볼 수 있습니다.'),
+    el('div',{cls:'privacy'}, el('span',{},'🔒'), el('span',{},'입력하신 건강정보는 위험도 예측과 챌린지 추천에만 씁니다. 다른 용도로 쓰거나 제3자에게 제공하지 않습니다.')),
+    cta('생활습관 설문으로', ()=>go(3)));
+}
+
+/* ── W04-2 ── */
+const SUB = ['나트륨','신체 활동','외식·배달','아침 식사','체중 관리','혈압 측정','완료'];
+function scr3(){
+  const i = S.sub;
+  add(el('div',{cls:'substeps'}, SUB.map((n,k)=>el('span',{'data-on':k===i?'1':'0','data-done':k<i?'1':'0'}, n))),
+    el('div',{cls:'trk'}, el('i',{style:'width:'+Math.round(i/(SUB.length-1)*100)+'%'})));
+  if (i===0) add(
+    rq('국·찌개·라면을 국물까지 드시는 일이 일주일에 몇 번인가요',null,[['0회',0],['1–2회',1.5],['3–4회',3.5],['5–6회',5.5],['7회 이상',7]],'N1'),
+    rq('라면·즉석국 같은 인스턴트를 일주일에 몇 번 드시나요',null,[['0회',0],['1회',1],['2회',2],['3회 이상',3]],'N2'),
+    rq('김치·장아찌·젓갈을 하루 몇 끼에 드시나요',null,[['안 먹음',0],['1끼',1],['2끼',2],['3끼',3]],'N3'),
+    rq('식탁에서 소금이나 간장을 더 넣으시나요',null,[['항상',2],['자주',1],['가끔',0.5],['안 함',0]],'N4'));
+  if (i===1){
+    const d = derive();
+    add(el('div',{cls:'q'}, el('div',{cls:'qt'},'최근 일주일에 하신 운동을 모두 골라주세요'),
+      el('div',{cls:'qh'},'고르면 강도는 자동으로 붙습니다. 안 하셨으면 그냥 다음으로.'),
+      el('div',{cls:'optrow'}, SPORTS.map(sp=>el('button',{cls:'opt',type:'button','data-on':SP[sp.id]?'1':'0',
+        onclick:()=>{ SP[sp.id]?delete SP[sp.id]:SP[sp.id]={days:3,min:45}; render(); }},
+        sp.n, el('span',{cls:'badge'},sp.tier))))));
+    SPORTS.filter(sp=>SP[sp.id]).forEach(sp=>{ const v=SP[sp.id];
+      add(el('div',{cls:'callout'}, el('b',{},sp.n+' · '+sp.tier),
+        el('div',{cls:'qh',style:'margin:6px 0 4px'},'주 며칠'),
+        chips([0,1,2,3,4,5,6,7].map(n=>[String(n),n]), ()=>v.days, n=>v.days=n),
+        el('div',{cls:'qh',style:'margin:8px 0 4px'},'하루 평균'),
+        chips([['10–29분',20],['30–59분',45],['60분 이상',75]], ()=>v.min, n=>v.min=n))); });
+    add(callout('중강도 환산 '+d.act+'분 / 권고 150분','고강도 1분 = 중강도 2분으로 셉니다. 저강도 걷기는 0.8배로 셉니다.'));
+  }
+  if (i===2) add(
+    rq('배달 음식을 일주일에 몇 번 드시나요',null,[['0회',0],['1–2회',1.5],['3–4회',3.5],['5회 이상',5]],'O1'),
+    rq('식당·구내식당 외식을 일주일에 몇 번 하시나요',null,[['0회',0],['1–2회',1.5],['3–5회',4],['6–9회',7.5],['10회 이상',10]],'O2'));
+  if (i===3){
+    add(rq('최근 일주일 동안 아침을 며칠 드셨나요',null,[['0일',0],['1–2일',1.5],['3–4일',3.5],['5–6일',5.5],['매일',7]],'M1'));
+    add(A.M1===7 ? el('p',{cls:'hint'},'앞 답변에 따라 "아침을 거르는 이유" 문항은 건너뜁니다.')
+      : el('div',{cls:'q'}, el('div',{cls:'qt'},'아침을 거르는 이유는 무엇인가요'), chips([['시간이 없어서',0],['입맛이 없어서',1],['다이어트 때문에',2],['습관이라서',3]], ()=>A.M2, v=>A.M2=v)));
+    add(el('p',{cls:'hint'},'아침 식사 미션은 근거 확인이 필요해 "검토" 상태입니다.'));
+  }
+  if (i===4) add(
+    rq('최근 1년 사이 체중이 어떻게 달라졌나요',null,[['3kg 이상 늘었다',2],['비슷하다',0],['3kg 이상 줄었다',-1]],'W2'),
+    el('p',{cls:'hint'},'체중 관리 미션은 상세 정책이 정해지지 않아 Backlog 상태입니다. 화면에는 일단 유지합니다.'));
+  if (i===5) add(
+    rq('혈압을 주 1회 재실 수 있나요','모델 입력이 아니라 혈압 기록 안내 여부를 정하는 답입니다',
+      [['집에 혈압계가 있다',2],['약국·보건소를 이용할 수 있다',1],['어렵다',0]],'X3'));
+  if (i===6){
+    const d = derive();
+    add(callout('설문이 끝났습니다','답변에서 챌린지 추천에 쓸 값을 뽑았습니다. 위험 점수는 건강정보(W04) 값으로 계산합니다.'),
+      el('div',{cls:'kpis',style:'grid-template-columns:repeat(3,1fr)'},
+        [['나트륨 습관',f1(d.salt)+'회/주'],['외식·배달',f1(d.eatout)+'회/주'],['신체활동',d.act+'분/주']].map(([k,v])=>
+          el('div',{cls:'kpi'}, el('div',{cls:'k'},k), el('div',{cls:'v num'},v)))));
+  }
+  add(el('div',{style:'display:flex;gap:8px'},
+    ghost('이전', ()=>{ if(i===0) go(2); else {S.sub--; render();} }),
+    i<SUB.length-1 ? cta('다음', ()=>{S.sub++; render();}) : cta(S.noPred?'챌린지 보기 (예측 제외)':'입력 검토로', ()=>go(nextOf(3)))));
+}
+
+/* ── W05 ── */
+function scr4(){
+  const K = [['BMI',f1(bmi())],['혈압',P.sbp+'/'+P.dbp],['공복혈당',P.glu||'—'],['총콜레스테롤',P.tc||'—']];
+  const htn = ['진단 없음','진단받았지만 약 안 먹음','진단받았고 약 복용 중'][P.htn];
+  add(
+    callout('위험 예측 가능','모델이 검증된 연령 범위라서 10년 관상동맥질환 위험을 예측할 수 있습니다. 분석 전에 한 번 확인해 주세요.'),
+    el('div',{cls:'kpis'}, K.map(([k,v])=>el('div',{cls:'kpi'}, el('div',{cls:'k'},k), el('div',{cls:'v num'},String(v))))),
+    el('p',{cls:'tip'},'모델 A 입력 — 나이 '+P.age+' · '+(P.male?'남':'여')+' · 수축기혈압 '+P.sbp+' · 총콜레스테롤 '+P.tc+' · HDL '+P.hdl+' · '+(P.smoke?'흡연':'비흡연')+' · '+(P.diab?'당뇨':'당뇨 없음')+' · 고혈압 '+htn),
+    cta('위험도 분석하기', ()=>go(5)));
+}
+
+/* ── W06 ── */
+function scrResult(){
+  const x = X(), r = risk(x), va = vascAge(x), b = band(r);
+  const cs = contribs(x).filter(f=>f.k!=='male' && Math.abs(f.c)>0.004).sort((p,q)=>q.c-p.c);
+  const top = cs.find(f=>f.c>0 && !f.fixed);
+  add(
+    el('div',{cls:'riskrow', style:'border-color:var(--'+b.v+')'},
+      el('span',{cls:'chip', style:'color:var(--'+b.v+')'}, b.t),
+      el('span',{style:'font-size:12px;color:var(--muted)'},'10년 내 관상동맥질환 발병 위험'),
+      el('span',{cls:'pct num', style:'color:var(--'+b.v+')'}, Math.round(r*100)+'%')),
+    el('div',{cls:'agebox'},
+      el('div',{cls:'big num'}, Math.round(va)+'세'),
+      el('div',{cls:'sub'},'혈관 나이 · 실제 나이 '+P.age+'세 · 추정치'),
+      el('div',{cls:'gap', style:'color:var(--'+(va>P.age?'risk':'ok')+')'}, (va>P.age?'+':'−')+f1(Math.abs(va-P.age))+'세')),
+    el('div',{cls:'speech'}, el('div',{cls:'who'},'한 줄 해석'),
+      el('div',{}, top ? top.label+'이(가) 위험을 가장 크게 올리고 있습니다. 여기부터 바꿔볼까요?' : '지금 바꿀 수 있는 큰 위험 요인은 보이지 않습니다.')),
+    el('figure',{}, el('figcaption',{html:'위험을 올린 요인 · <b>진한 막대는 바꿀 수 있는 요인</b>, 연한 막대는 바꿀 수 없는 요인(나이)이거나 위험을 낮춘 요인 (로지스틱 ×100)'}), bars(cs)),
+    el('p',{cls:'tip'},'진단이 아닌 선별 정보입니다. 학습 데이터 확정 전의 잠정 모델이며 불확실성이 있습니다. 약물 언급은 하지 않습니다.'),
+    b.t==='위험' ? cta('검사 · 상담 안내 보기', ()=>{S.res5='guide'; render();}) : cta('맞춤 챌린지 보기', ()=>go(6)));
+}
+
+/* ── W09 ── */
+function scr6(){
+  const fx = fixedMissions(), usedIds = new Set(fx.map(m=>m.id));
+  const outs = [];
+  if (P.smoke!==1) outs.push(['금연 유지','담배를 피우지 않습니다']);
+  if (P.drink===0) outs.push(['표준잔 지키기','술을 마시지 않습니다']);
+  const list = el('div',{style:'display:flex;flex-direction:column;gap:12px'});
+  CATS.forEach(c=>{
+    const ms = c.ids.map(id=>M[id]).filter(m=>!usedIds.has(m.id));
+    const avail = ms.filter(m=>!excludeReason(m));
+    if (!avail.length){ const why = ms.length?excludeReason(ms[0]):null; if (why) outs.push([c.n+' 미션', why]); return; }
+    ms.filter(m=>excludeReason(m)).forEach(m=>outs.push([m.t, excludeReason(m)]));
+    list.append(el('div',{cls:'cat'},
+      el('header',{}, el('h3',{}, c.n), c.note?el('span',{cls:'lvl',style:'color:var(--faint)'},c.note):null),
+      avail.map(m=>el('div',{cls:'slot pickable','data-k':'pick','data-on':S.pick===m.id?'1':'0',
+        onclick:()=>{ S.pick = S.pick===m.id ? null : m.id; render(); }},
+        el('span',{}, S.pick===m.id?'✅':'⬜'),
+        el('span',{}, el('div',{cls:'st'}, m.t, el('span',{cls:'lvl','data-l':m.lv}, m.lv)), el('div',{cls:'sd'}, m.d))))));
+  });
+  if (S.pick && (usedIds.has(S.pick) || excludeReason(M[S.pick]))) S.pick = null;
+  add(
+    el('p',{cls:'lede'},'고정 미션 2개는 정해져 있고, 아래에서 선택 미션 1개를 고릅니다. 한 사이클에 총 3개입니다.'),
+    el('div',{cls:'sect'},'고정 미션 2개 — 흡연 한 칸, 음주 한 칸'),
+    fx.map(m=>el('div',{cls:'slot','data-k':'fixed'}, el('span',{},'📌'),
+      el('span',{}, el('div',{cls:'st'}, m.t, m.lv!=='-'?el('span',{cls:'lvl','data-l':m.lv},m.lv):null, el('span',{cls:'from'},m.from)), el('div',{cls:'sd'}, m.d)))),
+    el('div',{cls:'sect'},'선택 미션 1개 — 카테고리 제한 없음'),
+    list,
+    el('div',{cls:'countbar'},'선택 ',el('b',{}, (S.pick?1:0)+' / 1'),' · 총 ',el('b',{}, (2+(S.pick?1:0))+' / 3개')),
+    el('div',{cls:'sect'},'제외한 미션 '+outs.length+'개 — 이미 하고 계신 것은 다시 시키지 않습니다'),
+    outs.map(([t,w])=>el('div',{cls:'slot','data-k':'out'}, el('span',{},'—'), el('span',{}, el('div',{cls:'st'},t), el('div',{cls:'sd'},w)))),
+    el('div',{style:'display:flex;gap:8px'}, ghost('이전', ()=>go(prevOf(6))), cta('4주 챌린지 시작', ()=>go(7), !S.pick)));
+}
+
+/* ── W10 ── */
+function scr7(){
+  const wkDone = w => { let n=0; for(let d=0;d<7;d++) if(S.days.has(w*7+d)) n++; return n; };
+  const grid = el('div',{style:'display:flex;flex-direction:column;gap:8px'});
+  for (let w=0; w<4; w++){
+    grid.append(el('div',{cls:'wk'}, (w+1)+'주차 · 이번 주 목표 5회 중 '+wkDone(w)+'회'));
+    const g = el('div',{cls:'daygrid'});
+    for (let d=0; d<7; d++){ const k=w*7+d, on=S.days.has(k);
+      g.append(el('button',{type:'button','data-on':on?'1':'0', onclick:()=>{ on?S.days.delete(k):S.days.add(k); render(); }}, String(d+1))); }
+    grid.append(g);
+  }
+  const sample = () => { const p=P.sbp; S.bpLog=[p,p-2,p-4,p-5].map((v,i)=>({w:i+1,sys:v,dia:P.dbp-Math.round(i*1.5)})); render(); };
+  const canMeasure = A.X3>0;
+  add(
+    el('p',{cls:'lede'},'선택한 미션을 실천한 날을 누르세요. 목표는 하루가 아니라 주 단위 횟수이고, 알림은 아침에 한 번만 갑니다.'),
+    el('div',{cls:'countbar'},'인증 ',el('b',{}, S.days.size+' / 28일'),' · 누른 만큼만 변화에 반영됩니다'),
+    grid,
+    el('div',{style:'display:flex;gap:8px'},
+      ghost('전부 인증 (데모)', ()=>{for(let i=0;i<28;i++)S.days.add(i); render();}),
+      ghost('초기화', ()=>{S.days.clear(); render();})),
+    el('div',{cls:'sect'},'혈압 기록 — 3개 미션에 포함하지 않는 주 1회 상시 기록'),
+    canMeasure ? el('div',{cls:'inline'},
+        el('div',{cls:'field'}, el('label',{},'수축기'), el('input',{type:'number', value:S.bpIn.sys, oninput:e=>{S.bpIn.sys=parseFloat(e.target.value)||0;}})),
+        el('div',{cls:'field'}, el('label',{},'이완기'), el('input',{type:'number', value:S.bpIn.dia, oninput:e=>{S.bpIn.dia=parseFloat(e.target.value)||0;}})),
+        el('button',{cls:'ghost', type:'button', disabled:S.bpLog.length>=4?'':null,
+          onclick:()=>{S.bpLog.push({w:S.bpLog.length+1, sys:S.bpIn.sys, dia:S.bpIn.dia}); render();}}, '기록'))
+      : callout('혈압을 재기 어렵다고 답하셨어요','혈압 기록을 권하지 않고, 가까운 약국·보건소 이용을 안내합니다. 이 경우 4주 뒤 비교는 추정치로 보여줍니다.'),
+    S.bpLog.length ? el('div',{cls:'bplog'}, S.bpLog.map(l=>[el('span',{cls:'num'},l.w+'주차'), el('span',{cls:'num'}, l.sys+'/'+l.dia+' mmHg'), el('span',{cls:'hint'}, l.sys>=140?'고혈압 기준 이상':'')]).flat()) : null,
+    canMeasure ? ghost('4주치 예시 기록 채우기 (데모)', sample) : null,
+    el('div',{style:'display:flex;gap:8px'}, ghost('이전', ()=>go(6)), cta('대시보드 보기', ()=>go(8))));
+}
+
+/* ── W08 ── */
+function scr8(){
+  const st = S.home, x = X(), {z, drop} = after();
+  const noData = st==='empty';
+  const sw = el('div',{cls:'state'}, [['empty','입력 전'],['active','진행 중 (2주차)'],['redo','4주 완료']].map(([k,l])=>
+    el('button',{type:'button','data-on':st===k?'1':'0', onclick:()=>{S.home=k; render();}}, l)));
+  const H = {
+    empty:['혈압, 마지막으로 재신 게 언제인가요?','검진 결과지가 있으면 사진 한 장으로 끝납니다. 없으면 직접 입력해도 됩니다.','건강정보 입력하기', ()=>go(2)],
+    active:['국물을 남기면 혈압이 정말 내려갈까요?','소금 섭취를 절반으로 줄이면 수축기 혈압이 평균 4~6mmHg 내려갑니다. 2주째 실천 중이십니다.','오늘 챌린지 인증하기', ()=>go(7)],
+    redo:['4주가 끝났습니다. 얼마나 달라졌을까요?','바뀐 항목만 다시 입력하면 같은 모델로 비교해 드립니다.','4주 결과 확인하기', ()=>{S.rec='compare'; go(9);}],
+  }[st];
+  const r0 = risk(x), b0 = band(r0), va = vascAge(x);
+  const series = st==='redo' ? [0,1,2,3,4].map(i=>x.sbp-drop*(i/4)) : [0,1,2].map(i=>x.sbp-(Math.min(12,-[...fixedMissions(),...(pickedMission()?[pickedMission()]:[])].reduce((s,m)=>s+(m.bp||0),0))*0.5)*(i/2));
+  const doneDays = S.days.size, streak = Math.min(doneDays, 9);
+  add(sw,
+    el('div',{cls:'hero'}, el('h1',{}, H[0]), el('p',{}, H[1])),
+    cta(H[2], H[3]),
+    noData ? el('div',{cls:'callout', html:'<b>아직 예측할 정보가 없습니다</b><br>키·몸무게와 혈압을 넣으면 위험과 혈관 나이를 계산해 드립니다. 혈압은 —/— mmHg로 비워 둡니다.'})
+      : (S.noPred ? el('div',{cls:'callout', html:'<b>위험 예측 대상 연령이 아닙니다</b><br>챌린지와 혈압 기록은 그대로 이용할 수 있습니다.'})
+        : el('div',{cls:'tworow'},
+            el('div',{cls:'mini'}, el('div',{cls:'lb'},'10년 관상동맥질환 위험'), el('div',{cls:'vv num',style:'color:var(--'+b0.v+')'}, Math.round(r0*100)+'%'), el('div',{cls:'sb'},b0.t)),
+            el('div',{cls:'mini'}, el('div',{cls:'lb'},'혈관 나이'), el('div',{cls:'vv num'}, Math.round(va)+'세'), el('div',{cls:'sb'},'실제 '+P.age+'세')))),
+    noData ? null : el('figure',{}, el('figcaption',{html:'수축기 혈압 · <b>주 1회 측정</b> · 시작 '+Math.round(series[0])+' → 지금 '+Math.round(series[series.length-1])+' mmHg'}), el('div',{html:bpChart(S.bpLog.length&&st!=='redo'?[x.sbp,...S.bpLog.map(l=>l.sys)]:series)})),
+    noData ? null : el('div',{cls:'callout', html:'<b>이번 주 챌린지 '+Math.min(5,doneDays)+' / 5일</b> · 연속 기록 '+streak+'일'}),
+    el('p',{cls:'tip'},'BMI · 공복혈당 · 총콜레스테롤은 건강정보 화면에서 확인합니다. 대시보드에는 고혈압과 가장 연관된 지표 하나만 둡니다.'));
+}
+
+/* ── W11-2 ── */
+function scrCompare(){
+  if (S.noPred){
+    add(callout('위험 예측 대상 연령이 아닙니다','전·후 위험도 비교는 제공하지 않습니다. 인증 <b>'+S.days.size+' / 28일</b>'), cta('처음부터 다시', restart));
+    return;
+  }
+  const x = X(), {z, drop, measured} = after();
+  const r0 = risk(x), r1 = risk(z), v0 = vascAge(x), v1 = vascAge(z), b1 = band(r1);
+  const rank = t => contribs(t).filter(f=>f.c>0 && !f.fixed).sort((p,q)=>q.c-p.c).map(f=>f.label);
+  const k0 = rank(x), k1 = rank(z);
+  const moved = k0[0] && k1.indexOf(k0[0])>0 ? {n:k0[0], to:k1.indexOf(k0[0])+1} : null;
+  const series = S.bpLog.length ? [x.sbp, ...S.bpLog.map(l=>l.sys)] : [0,1,2,3,4].map(i=>x.sbp-drop*(i/4));
+  add(
+    el('p',{cls:'lede'},'바뀐 입력(혈압·흡연)만 다시 받아 같은 모델 A에 전·후 데이터를 각각 넣어 비교했습니다.'),
+    el('div',{cls:'deltarow'},
+      el('div',{cls:'side'}, el('div',{cls:'lb'},'시작'), el('div',{cls:'vv num'}, Math.round(r0*100)+'%'), el('div',{cls:'hint'},'혈관 나이 '+Math.round(v0)+'세')),
+      el('div',{cls:'arrow'},'→'),
+      el('div',{cls:'side'}, el('div',{cls:'lb'},'4주 후'), el('div',{cls:'vv num', style:'color:var(--'+(r1<r0?'ok':'muted')+')'}, Math.round(r1*100)+'%'), el('div',{cls:'hint'},'혈관 나이 '+Math.round(v1)+'세'))),
+    el('div',{cls:'riskrow', style:'border-color:var(--'+b1.v+')'}, el('span',{cls:'chip',style:'color:var(--'+b1.v+')'}, b1.t),
+      el('span',{style:'font-size:12px;color:var(--muted)'}, '10년 내 관상동맥질환 위험 '+Math.round(r0*100)+'% → '), el('span',{cls:'pct num',style:'color:var(--'+b1.v+')'}, Math.round(r1*100)+'%')),
+    el('div',{cls:'speech'}, el('div',{cls:'who'},'한 줄 해석'),
+      el('div',{}, S.days.size===0 && !S.bpLog.length ? '인증·측정 기록이 없어 변화를 계산할 수 없습니다. 인증 화면에서 며칠 눌러보세요.'
+        : moved ? moved.n+' 기여도가 1위에서 '+moved.to+'위로 내려갔습니다. 혈압 그래프만으로는 알기 어려운 변화입니다.'
+        : '아직 순위가 바뀔 만큼은 아닙니다. 다음 4주에 난이도를 한 단계 올려볼까요?')),
+    el('figure',{}, el('figcaption',{html:'수축기 혈압 추이 · <b>주 1회 측정</b> 기록이 있어야 그려집니다'}), el('div',{html:bpChart(series)})),
+    el('p',{cls:'tip'}, drop>0 ? '−'+Math.round(drop)+' mmHg는 '+(measured?'주 1회 측정해 기록한 혈압 변화입니다.':'저염·운동 효과를 인증 비율만큼 반영한 추정값입니다. 혈압을 기록하면 실제 값으로 바뀝니다.') : '혈압 기록이 없으면 이 그래프는 시작 값만 보입니다.'),
+    callout('4주 사이 위험도 변화는 작을 수 있어요','10년 위험은 4주 사이 바뀌는 입력(혈압·흡연)이 적어 크게 움직이지 않습니다. 혈압 변화를 함께 확인해 주세요.'),
+    callout('혈액 수치는 3~6개월 뒤','총콜레스테롤·HDL은 4주에 바뀌지 않아 전체 재검진은 따로 안내합니다.'),
+    el('div',{style:'display:flex;gap:8px'}, ghost('다음 4주 챌린지 고르기', ()=>{S.days.clear(); S.pick=null; S.bpLog=[]; go(6);}), cta('처음부터 다시', restart)));
+}
+
+/* ── W11 · 내 기록 (추이 · 변화 추적) ── */
+function riskChart(pts){
+  const W=356, H=130, padL=34, padR=16, padT=12, padB=24;
+  const hi = Math.max(0.3, ...pts.map(p=>p.r))+0.02;
+  const Xp = i => padL + (pts.length>1 ? i*(W-padL-padR)/(pts.length-1) : 0);
+  const Yp = v => padT + (1-v/hi)*(H-padT-padB);
+  const s = ['<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="10년 위험 변화">'];
+  s.push('<rect x="'+padL+'" y="'+Yp(0.10).toFixed(1)+'" width="'+(W-padL-padR)+'" height="'+(Yp(0)-Yp(0.10)).toFixed(1)+'" fill="'+cssv('--ok-soft')+'"/>');
+  s.push('<text x="'+(W-padR-4)+'" y="'+(Yp(0.10)+11).toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+cssv('--ok')+'">정상 범위</text>');
+  s.push('<polyline fill="none" stroke="'+cssv('--accent')+'" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="'+pts.map((p,i)=>Xp(i).toFixed(1)+','+Yp(p.r).toFixed(1)).join(' ')+'"/>');
+  pts.forEach((p,i)=>{
+    s.push('<circle cx="'+Xp(i).toFixed(1)+'" cy="'+Yp(p.r).toFixed(1)+'" r="5" fill="'+cssv('--surface')+'" stroke="'+cssv('--accent')+'" stroke-width="2.5"/>');
+    s.push('<text x="'+Xp(i).toFixed(1)+'" y="'+(Yp(p.r)-10).toFixed(1)+'" text-anchor="middle" font-size="11" font-weight="700" fill="'+cssv('--ink')+'">'+Math.round(p.r*100)+'%</text>');
+    s.push('<text x="'+Xp(i).toFixed(1)+'" y="'+(H-7)+'" text-anchor="middle" font-size="10" fill="'+cssv('--faint')+'">'+p.l+'</text>');
+  });
+  s.push('</svg>'); return s.join('');
+}
+function scrTrend(){
+  const x = X(), r0 = risk(x), {z} = after(), r1 = risk(z);
+  const hasHistory = S.days.size>0 || S.bpLog.length>0;
+  add(el('div',{cls:'state'}, ['3개월','6개월','1년','전체'].map((t,i)=>el('button',{type:'button','data-on':i===3?'1':'0'}, t))));
+  if (S.noPred){
+    add(callout('위험 예측 대상 연령이 아닙니다','예측 이력이 없어 위험 추이는 그리지 않습니다. 챌린지 인증과 혈압 기록은 아래에서 확인합니다.'));
+  } else if (!hasHistory){
+    add(el('div',{cls:'callout', html:'<b>기록이 쌓이면 여기에 변화가 보입니다</b><br>예측 이력이 2건 이상이어야 추이를 그립니다. 챌린지 인증이나 혈압 기록 후 다시 와 주세요.'}),
+      ghost('챌린지 인증하러 가기', ()=>go(7)));
+  } else {
+    const d = Math.round((r1-r0)*100);
+    add(el('figure',{}, el('figcaption',{html:'예측 이력 · <b>10년 내 관상동맥질환 위험</b> 변화'}), el('div',{html:riskChart([{l:'시작',r:r0},{l:'4주 후',r:r1}])}),
+        el('p',{cls:'tip'},'옅은 띠 = 정상 범위')),
+      el('div',{cls:'speech'}, el('div',{cls:'who'},'최초 대비 변화'),
+        el('div',{style:'font-weight:700;color:var(--'+(d<0?'ok':d>0?'risk':'muted')+')'}, (d<0?'▼ ':d>0?'▲ ':'– ')+'처음보다 '+Math.abs(d)+'%p '+(d<0?'낮아졌습니다':d>0?'높아졌습니다':'변화가 없습니다')+
+          '  (' + Math.round(r0*100) + '% → ' + Math.round(r1*100) + '%)')));
+  }
+  add(el('div',{cls:'tworow'},
+      el('figure',{}, el('figcaption',{html:'<b>혈압 추이</b> · 수축기'}),
+        S.bpLog.length ? el('div',{html:bpChart([X().sbp, ...S.bpLog.map(l=>l.sbp||l.sys)])}) : el('p',{cls:'hint'},'주 1회 기록하면 여기에 그려집니다')),
+      el('figure',{}, el('figcaption',{html:'<b>체중 · BMI</b>'}),
+        el('div',{cls:'vv num', style:'font-size:26px;font-weight:900'}, f1(bmi())), el('p',{cls:'hint'}, P.w+'kg · 첫 입력 기준'))),
+    el('p',{cls:'tip'},'혈압 그래프와 챌린지 달성률은 인과를 암시하지 않도록 따로 보여줍니다.'),
+    cta('4주 전 · 후 비교 보기', ()=>{S.rec='compare'; render();}));
+}
+function scr9(){
+  add(el('div',{cls:'state'}, [['trend','추이 · 변화 추적 (W11)'],['compare','4주 전 · 후 비교 (W11-2)']].map(([k,l])=>
+    el('button',{type:'button','data-on':S.rec===k?'1':'0', onclick:()=>{S.rec=k; render();}}, l))));
+  if (S.rec==='compare') scrCompare(); else scrTrend();
+}
+
+
+/* ── W02 회원가입 · 동의 ── */
+const SU = {birth:'1981-03-15', email:'you@email.com', pw:'paeon1234!', pw2:'paeon1234!', a1:true, a2:true, g:false};
+const ageOf = b => { const d=new Date(b), n=new Date('2026-09-28'); let a=n.getFullYear()-d.getFullYear();
+  if (n < new Date(n.getFullYear(), d.getMonth(), d.getDate())) a--; return a; };
+function scrSignup(){
+  const age = ageOf(SU.birth), minor = age<14, bad = [];
+  if (!/^\S+@\S+\.\S+$/.test(SU.email)) bad.push('이메일 형식이 올바르지 않습니다');
+  if (SU.pw.length<8) bad.push('비밀번호는 8자 이상이어야 합니다');
+  if (SU.pw!==SU.pw2) bad.push('비밀번호 확인이 일치하지 않습니다');
+  const ok = !bad.length && SU.a1 && SU.a2 && (!minor || SU.g);
+  const inp = (label,key,type,ph) => el('div',{cls:'field'}, el('label',{},label),
+    el('input',{type, value:SU[key], placeholder:ph, onchange:e=>{SU[key]=e.target.value; render();}}));
+  const chk = (key,label) => el('label',{style:'display:flex;gap:8px;align-items:flex-start;font-size:12.5px'},
+    el('input',{type:'checkbox', checked:SU[key]?'':null, onchange:e=>{SU[key]=e.target.checked; render();}}), el('span',{}, label));
+  add(el('div',{style:'max-width:420px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:12px'},
+    el('h3',{style:'text-align:center'}, '파이온 PAEON'),
+    inp('생년월일','birth','date',''), inp('이메일','email','email','you@email.com'),
+    inp('비밀번호','pw','password',''), inp('비밀번호 확인','pw2','password',''),
+    bad.length ? el('p',{cls:'hint', style:'color:var(--risk)'}, bad.join(' · ')) : null,
+    el('div',{cls:'callout'},
+      chk('a1','[필수] 이용약관 · 개인정보 수집 동의'),
+      el('div',{style:'height:6px'}),
+      chk('a2','[필수] 건강정보 수집 항목 · 목적 · 보유기간 · 철회 방법 확인')),
+    minor ? el('div',{cls:'callout'}, el('b',{},'만 14세 미만입니다 · '), '법정대리인 동의 단계가 추가로 뜹니다.',
+      el('div',{style:'height:6px'}), chk('g','[필수] 법정대리인 동의를 확인했습니다')) : null,
+    el('p',{cls:'hint'}, '이름·전화번호는 받지 않습니다. 성별은 건강정보 입력에서 받습니다.'),
+    cta('가입하기', ()=>{ P.age = age; S.w01='intro'; go(1); }, !ok),
+    ghost('이미 계정이 있어요 · 로그인', ()=>{ S.w01='intro'; go(1); }),
+    el('p',{cls:'hint', style:'text-align:center'}, '비밀번호를 잊으셨나요? 이메일 확인 후 재설정 코드(30분 유효)를 보냅니다')));
+}
+function scr0(){ if (S.w01==='signup') scrSignup(); else scrIntro(); }
+
+
+/* ── W07 검사 · 상담 안내 (고위험일 때만) ── */
+function scrGuide(){
+  add(el('div',{cls:'riskrow', style:'border-color:var(--risk)'}, el('span',{cls:'chip', style:'color:var(--risk)'}, '고위험'),
+      el('span',{}, el('b',{}, '의료기관 진료를 권합니다. '), '이 화면은 진단이 아니며, 검사 여부는 의사가 판단합니다')),
+    el('div',{cls:'tworow'},
+      el('div',{cls:'mini', style:'text-align:left'}, el('b',{}, '무엇을 상의하면 되나'),
+        el('p',{cls:'hint', html:'· 혈압이 계속 높게 나오는지<br>· 추가 검사가 필요한지<br>· 생활습관으로 조절 가능한 범위인지'})),
+      el('div',{cls:'mini', style:'text-align:left'}, el('b',{}, '가져갈 것'),
+        el('p',{cls:'hint', html:'· 최근 혈압 기록<br>· 입력한 검진 수치<br>· 실천 중인 생활습관'}))),
+    el('p',{cls:'hint'}, '특정 병원·검사를 추천하지 않습니다.'),
+    el('div',{style:'display:flex;gap:8px'}, ghost('결과로 돌아가기', ()=>{S.res5='result'; render();}), cta('챌린지도 함께 시작하기', ()=>go(6))));
+}
+function scr5(){ if (S.res5==='guide') scrGuide(); else scrResult(); }
+
+
+/* ── W12 피드백 · 마이페이지 ── */
+function downloadMyData(){
+  const data = {입력:P, 설문:A, 챌린지:{고정:fixedMissions().map(m=>m.t), 선택:pickedMission()?pickedMission().t:null, 인증일수:S.days.size}, 혈압기록:S.bpLog};
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  a.download = 'paeon-my-data.json'; a.click();
+}
+function scr10(){
+  if (S.gone){
+    add(callout('탈퇴 처리 요청을 접수했습니다','건강정보·설문·예측·챌린지 기록·사진은 삭제하고, 법령상 보관이 필요한 항목은 익명화해 보관합니다. 결과는 이메일로 안내드립니다.'),
+      cta('처음으로', restart));
+    return;
+  }
+  const rate = k => S.fb.rating===k;
+  const info = {rec:['검진 기록', '2026-09-28 · 초기 입력 (수축기 '+P.sbp+' · 총콜레스테롤 '+P.tc+') · 4주 뒤 재입력 예정'],
+                chal:['챌린지 기록', '인증 '+S.days.size+' / 28일 · 혈압 기록 '+S.bpLog.length+'회'],
+                acct:['이메일 · 비밀번호 변경', '재인증 후 변경할 수 있습니다. ('+SU.email+')']};
+  add(
+    el('div',{cls:'callout'}, el('b',{},'이 결과가 도움이 되었나요?'), el('div',{style:'height:8px'}),
+      el('div',{cls:'optrow'}, [['😀 도움됨','up'],['😐 보통','mid'],['🙁 아님','down']].map(([l,k])=>
+        el('button',{cls:'opt', type:'button', 'data-on':rate(k)?'1':'0', onclick:()=>{S.fb.rating=k; S.fb.saved=false; render();}}, l))),
+      el('div',{style:'height:8px'}),
+      el('textarea',{rows:2, placeholder:'의견 남기기 (선택)', style:'width:100%;font:inherit;padding:8px 10px;border-radius:12px;border:1.5px solid var(--sage-light)',
+        onchange:e=>{S.fb.comment=e.target.value; S.fb.saved=false;}}, S.fb.comment),
+      el('div',{style:'height:8px'}),
+      ghost(S.fb.saved?'저장했습니다 ✓':'평가 저장', ()=>{ if(S.fb.rating){S.fb.saved=true; render();} }),
+      el('p',{cls:'hint', style:'margin-top:6px'}, '평가는 대상(예측/추천)과 버전을 함께 저장합니다(FEED-001).')),
+    el('div',{cls:'sect'}, '내 정보'),
+    el('div',{cls:'tworow'}, [['🩺 검진 기록','rec'],['🌱 챌린지 기록','chal'],['🔔 알림 설정','noti'],['🔑 이메일·비밀번호 변경','acct']].map(([l,k])=>
+      el('button',{cls:'opt', type:'button', 'data-on':S.mp===k?'1':'0', onclick:()=>{S.mp=S.mp===k?null:k; render();}}, l))),
+    S.mp && info[S.mp] ? el('div',{cls:'callout'}, el('b',{}, info[S.mp][0]), el('br'), info[S.mp][1]) : null,
+    S.mp==='noti' ? el('div',{cls:'callout'}, el('b',{},'알림 설정'), el('div',{style:'height:6px'}),
+      el('div',{cls:'optrow'},
+        el('button',{cls:'opt', type:'button', 'data-on':S.noti.on?'1':'0', onclick:()=>{S.noti.on=!S.noti.on; render();}}, S.noti.on?'챌린지 미수행 알림 받기 · 켬':'챌린지 미수행 알림 받기 · 끔'),
+        S.noti.on ? el('select',{onchange:e=>{S.noti.time=e.target.value; render();}, style:'font:inherit;padding:6px 10px;border-radius:12px;border:1.5px solid var(--sage-light)'},
+          ['07:00','08:00','09:00'].map(t=>el('option',{value:t, selected:S.noti.time===t?'':null}, t))) : null),
+      el('p',{cls:'hint', style:'margin-top:6px'}, S.noti.on?'아침 '+S.noti.time+'에 한 번, 강요하지 않는 톤으로 보냅니다. 알림 설정과 개인정보 안내를 같은 화면에서 확인합니다.':'끄면 알림을 보내지 않습니다(NOTI-001).')) : null,
+    !S.consent ? callout('건강정보 처리 동의를 철회했습니다','새 건강정보 입력과 예측이 멈춥니다. 계정은 유지되며, 다시 동의하면 이어서 쓸 수 있습니다.') : null,
+    el('p',{cls:'hint'}, '동의 철회는 회원 탈퇴와 다릅니다 — 철회해도 계정은 유지됩니다.'),
+    el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},
+      ghost(S.consent?'건강정보 처리 동의 철회':'건강정보 처리 동의 다시 하기', ()=>{ S.mp = S.consent ? 'withdraw' : null; if(!S.consent) S.consent=true; render(); }),
+      ghost('내 데이터 내려받기', downloadMyData)),
+    S.mp==='withdraw' ? el('div',{cls:'warnbox'}, el('b',{},'동의를 철회할까요?'), el('br'), '철회하면 새 건강정보 입력과 예측이 멈춥니다. 계정은 그대로입니다.',
+      el('div',{cls:'acts'}, ghost('취소', ()=>{S.mp=null; render();}), ghost('철회하기', ()=>{S.consent=false; S.mp=null; render();}))) : null,
+    el('div',{style:'height:6px'}),
+    ghost('회원 탈퇴', ()=>{ S.mp = S.mp==='delete' ? null : 'delete'; render(); }),
+    S.mp==='delete' ? el('div',{cls:'warnbox'}, el('b',{},'회원 탈퇴 — 재인증이 필요합니다'), el('br'),
+      '삭제: 건강정보 · 설문 · 예측 · 챌린지 기록 · 사진 / 익명화·보관: 법령상 보관이 필요한 항목',
+      el('div',{cls:'field', style:'margin-top:8px'}, el('label',{},'비밀번호 다시 입력'), el('input',{type:'password', value:S.pwd, onchange:e=>{S.pwd=e.target.value; render();}})),
+      el('div',{cls:'acts'}, ghost('취소', ()=>{S.mp=null; render();}), cta('탈퇴하기', ()=>{S.gone=true; render();}, !S.pwd))) : null);
+}
+
+/* 색 전환(핑크 / 초록) — 차트 색까지 다시 그린다 */
+function setPal(p){
+  document.documentElement.dataset.pal = p==='green' ? 'green' : 'pink';
+  try{ localStorage.setItem('paeon-pal', p); }catch(e){}
+  document.querySelectorAll('.pal button').forEach(b=>b.dataset.on = b.dataset.p===p ? '1' : '0');
+  render();
+}
+document.querySelectorAll('.pal button').forEach(b=>b.addEventListener('click',()=>setPal(b.dataset.p)));
+let _p='pink'; try{ _p = localStorage.getItem('paeon-pal')==='green' ? 'green' : 'pink'; }catch(e){}
+setPal(_p);
+
+</script>
