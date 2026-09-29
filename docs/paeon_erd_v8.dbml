@@ -1,0 +1,1532 @@
+// =====================================================================
+// PAEON 전수 ERD — dbdiagram.io DBML (v8, 요구사항 v1.9 + 모델_연결_명세 v0.1.0 반영)
+// 기준: docs/요구사항_정의서_파이온.xlsx v1.9 (1차 멘토링 9/28 반영: 모델 B 복원, 허리둘레·한 번 음주량 입력)
+//       + modeling/handoff/모델_연결_명세.md (모델 A v0.1.0 · 모델 B v0.1.0, 첫 번째 사이클)
+//  - v1.7에서 삭제된 LLM 예방행동 추천(REQ-RECO-001)은 제외
+//  - 식단 나트륨 분석(REQ-RECO-002)은 MVP 범위에 포함
+//  - 삭제된 REQ-CHAL-011(근거 출처 표기)에 따라 challenge/category_evidence_sources 제거
+//
+// [범위 표시 규칙]  TableGroup(유료) 대신 아래 두 가지로 구분한다.
+//  1) 코드 구역 주석:  // ===== [MVP] ... =====  /  // ===== [POST-MVP] ... =====
+//  2) Post-MVP 테이블은 Note 맨 앞에 '[POST-MVP]' 표기
+//
+// [공통 규칙]
+//  - DB: PostgreSQL. 시각은 모두 timestamptz.
+//  - users 행은 물리 삭제하지 않는다. 탈퇴 시 email을 'deleted+{user_id}@invalid'로
+//    익명화하고 status='deleted', deleted_at을 기록 → email UNIQUE 유지 + 재가입 가능.
+//  - 건강정보 도메인 삭제는 data_processing_tasks가 수행하며, 하위 테이블은 파일 하단
+//    'FK 삭제 정책' 구역의 ON DELETE 규칙을 따른다.
+//  - 상태·고정 분류값은 Enum, 운영 중 추가되는 코드(metric_code, question_code 등)는
+//    데이터 주도(NFR-ARCH-005)를 위해 varchar로 둔다.
+//  - DBML로 표현할 수 없는 부분 유니크·CHECK 제약은 Note에 '마이그레이션:'으로 명시.
+// =====================================================================
+
+
+// =====================================================================
+// Enums
+// =====================================================================
+Enum user_status {
+  active
+  deleted
+}
+Enum sex_type {
+  male
+  female
+}
+
+Enum verification_purpose {
+  signup_email
+  password_reset
+  withdrawal_reauth
+}
+
+Enum deletion_status {
+  requested
+  processing
+  completed
+  failed
+}
+Enum data_domain_type {
+  profile
+  consent
+  eligibility
+  health
+  survey
+  prediction
+  challenge
+  photo
+  diet
+  notification
+  feedback
+  analytics
+}
+Enum data_action_type {
+  delete
+  anonymize
+  retain
+}
+Enum task_status {
+  pending
+  running
+  done
+  failed
+}
+
+Enum policy_type {
+  terms_of_service
+  privacy
+  health_data
+  guardian
+}
+Enum consent_status {
+  agreed
+  withdrawn
+}
+Enum guardian_verification_status {
+  pending
+  verified
+  expired
+  purged
+}
+
+Enum eligibility_result {
+  eligible
+  age_out
+  diagnosed  [note: '관상동맥질환 기진단(W03 질문)']
+  emergency
+}
+
+Enum model_scope_type {
+  MODEL_A   [note: '장기(10년) 위험 예측 입력']
+  MODEL_B   [note: '현재 생활습관 기반 예측 입력']
+  BOTH
+  TRACKING  [note: '예측에 쓰지 않는 추적용 입력(주간 혈압 등)']
+}
+
+Enum health_input_type {
+  initial               [note: '최초 전체 검진 입력']
+  interim_reassessment  [note: '4주 사이클 종료: 혈압 + 생활습관 재설문 (REQ-HEALTH-008)']
+  full_reassessment     [note: '3~6개월 전체 재검진']
+  weekly_bp             [note: '사이클 중 주간 혈압 기록']
+  manual                [note: '사용자가 임의로 추가한 검진 이력 (REQ-HEALTH-004)']
+}
+Enum health_source_type {
+  manual
+  ocr
+  mixed
+}
+Enum measurement_input_method {
+  manual
+  ocr
+  calculated
+  carried_forward
+}
+
+Enum file_purpose_type {
+  health_report_ocr
+  meal_analysis
+  challenge_proof
+}
+Enum file_job_status {
+  uploaded
+  processing
+  succeeded
+  partial
+  failed
+  deleted
+}
+
+Enum survey_type {
+  initial_lifestyle
+  interim_lifestyle
+  sodium
+}
+Enum survey_answer_type {
+  single_select
+  multi_select
+}
+Enum survey_instance_status {
+  started
+  submitted
+  abandoned
+}
+
+Enum feature_source_type {
+  survey
+  measurement
+  challenge
+  profile
+}
+
+Enum model_change_type {
+  model
+  coefficient
+  threshold
+  preprocessing
+}
+Enum dataset_split_type {
+  train
+  validation
+  test
+}
+
+Enum prediction_request_type {
+  initial   [note: '최초 입력 → MODEL_A + MODEL_B']
+  interim   [note: '4주 재평가 → MODEL_A + MODEL_B (명세 §8: 혈압·흡연·음주·체중·허리둘레·재설문을 새로 받고 나머지 이월, REQ-PRED-007)']
+  full      [note: '전체 재검진 → MODEL_A + MODEL_B']
+  manual    [note: '새 입력이 있을 때만 허용']
+}
+Enum job_status {
+  queued
+  running
+  completed
+  failed
+}
+Enum job_run_status {
+  queued
+  running
+  completed
+  failed
+  skipped
+}
+Enum risk_level_type {
+  normal
+  borderline
+  high
+}
+Enum result_card_type {
+  long_term        [note: 'MODEL_A → 카드 1(10년 관상동맥질환 위험·구간)과 카드 2(혈관 나이 vs 실제 나이)']
+  current_profile  [note: 'MODEL_B → 카드 3(현재 위험 프로필 + 개선 가능 1위 요인). 판정 아님(REQ-PRED-001)']
+}
+Enum factor_direction {
+  risk_increase
+  protective
+}
+Enum disclosure_type {
+  screening_notice
+  uncertainty
+  provisional_model
+  consultation
+  incomplete_input  [note: '선택 항목(공복혈당·운동 빈도) 미입력 시 정확도 한계 고지(REQ-HEALTH-002)']
+  carried_forward   [note: '혈당·콜레스테롤을 직전 값으로 유지했음을 고지(REQ-HEALTH-008)']
+}
+
+Enum catalog_status {
+  mvp      [note: '미션 카탈로그 상태 MVP']
+  review   [note: '검토(예: 아침 식사)']
+  backlog  [note: 'Backlog(예: 체중 관리)']
+}
+Enum factor_link_status {
+  linked            [note: '요인 → 카테고리 연결 확정']
+  pending_decision  [note: '팀 결정 필요(반대 방향 요인, Backlog 카테고리 등)']
+  not_linked        [note: '수정 불가 요인 등. 설명에만 표시']
+}
+Enum difficulty_level {
+  low
+  medium
+  high
+}
+Enum mission_role_type {
+  fixed
+  selectable
+  replacement
+}
+Enum proof_type {
+  photo
+  self_record
+  automatic
+  measurement
+}
+Enum challenge_rule_type {
+  recommend
+  exclude
+  replace     [note: '고정 미션 비해당 시 나트륨 미션 → (나트륨도 낮으면) 기여도 최대 개선 가능 요인 미션']
+  difficulty
+}
+Enum candidate_status {
+  recommended
+  excluded
+  selected
+  rejected
+}
+Enum recommendation_reason_type {
+  risk_factor
+  survey_answer
+  completion_history
+  exclusion
+}
+Enum cycle_status {
+  active
+  completed   [note: '4주 정상 종료']
+  incomplete  [note: '목표 미달 종료 (REQ-CHAL-007)']
+  stopped     [note: '사용자 중단']
+}
+Enum selection_type {
+  fixed
+  replacement
+  selected
+}
+Enum cycle_challenge_status {
+  active
+  completed
+  incomplete
+  stopped
+}
+Enum challenge_log_status {
+  completed
+  failed
+  skipped
+}
+
+Enum meal_analysis_status {
+  processing
+  succeeded
+  failed
+  manual_entered
+}
+Enum meal_result_source {
+  image
+  manual
+}
+
+Enum push_permission_status {
+  granted
+  denied
+  default
+}
+Enum notification_type {
+  morning_challenge
+  interim_reassessment
+  full_reassessment
+}
+Enum reevaluation_type {
+  interim_4week    [note: '사이클 종료 시 중간 재평가']
+  full_3to6month   [note: '마지막 전체 입력일 +3개월부터 안내']
+}
+Enum schedule_status {
+  pending
+  notified
+  completed
+  expired
+}
+Enum delivery_status {
+  scheduled
+  sent
+  failed
+  cancelled
+}
+
+Enum feedback_type {
+  prediction      [note: 'REQ-FEED-001: prediction_id 필수']
+  recommendation  [note: 'REQ-FEED-001: recommendation_batch_id 필수']
+  difficulty      [note: 'REQ-FEED-002: cycle_challenge_id 필수']
+  rejection       [note: 'REQ-FEED-003: recommendation_candidate_id 필수']
+}
+Enum difficulty_rating {
+  easy
+  moderate
+  hard
+}
+Enum rejection_reason {
+  already_doing
+  not_interested
+  too_difficult
+}
+
+
+// =====================================================================
+// ===== [MVP] 회원 · 인증 =====
+// =====================================================================
+Table users {
+  user_id uuid [pk]
+  email varchar(255) [not null, unique, note: '탈퇴 시 deleted+{user_id}@invalid 로 익명화']
+  password_hash varchar(255) [not null, note: 'NFR-SEC-001. 탈퇴 시 무효값으로 교체']
+  status user_status [not null, default: 'active']
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+  Note: 'REQ-USER-001~003, NFR-SEC-001. 물리 삭제하지 않는 tombstone 행.'
+}
+
+Table user_profiles {
+  user_id uuid [pk]
+  sex sex_type [note: 'W04에서 수집하므로 가입 직후에는 NULL 가능']
+  birth_date date [not null, note: '만 14세 미만 판별(REQ-CONSENT-003)·적용 연령 판별(REQ-ELIG-001)']
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  Note: 'REQ-HEALTH-001. 이름·전화번호는 수집하지 않는다.'
+}
+
+Table user_sessions {
+  session_id uuid [pk]
+  user_id uuid [not null]
+  refresh_token_hash varchar(255) [not null, unique]
+  expires_at timestamptz [not null]
+  revoked_at timestamptz
+  created_at timestamptz [not null]
+  Indexes {
+    user_id
+  }
+  Note: 'REQ-USER-002, NFR-SEC-002. JWT refresh token은 해시로 저장.'
+}
+
+Table account_verification_tokens {
+  verification_token_id uuid [pk]
+  user_id uuid
+  email varchar(255) [not null]
+  token_hash varchar(255) [not null, unique]
+  purpose verification_purpose [not null]
+  expires_at timestamptz [not null, note: 'password_reset은 발급 +30분']
+  used_at timestamptz [note: 'NOT NULL이면 재사용 불가']
+  created_at timestamptz [not null]
+  Indexes {
+    (email, purpose)
+  }
+  Note: 'REQ-USER-004.'
+}
+
+Table account_deletion_requests {
+  deletion_request_id uuid [pk]
+  user_id uuid [not null]
+  reauthenticated_at timestamptz [not null]
+  requested_at timestamptz [not null]
+  status deletion_status [not null, default: 'requested']
+  completed_at timestamptz
+  result_summary jsonb [note: '도메인별 삭제·보관·익명화 결과. 사용자 조회용']
+  Indexes {
+    user_id
+  }
+  Note: 'REQ-USER-003.'
+}
+
+Table data_processing_tasks {
+  processing_task_id uuid [pk]
+  deletion_request_id uuid
+  user_id uuid [not null]
+  data_domain data_domain_type [not null]
+  action_type data_action_type [not null]
+  status task_status [not null, default: 'pending']
+  policy_version varchar(30) [note: '적용한 개인정보 처리방침 버전']
+  executed_at timestamptz
+  Indexes {
+    (deletion_request_id, data_domain) [unique]
+  }
+  Note: 'REQ-USER-003, NFR-SEC-003. 탈퇴 1건 = 도메인별 task 1건.'
+}
+
+
+// =====================================================================
+// ===== [MVP] 동의 · 약관 =====
+// =====================================================================
+Table consent_policies {
+  policy_id uuid [pk]
+  policy_type policy_type [not null]
+  version varchar(30) [not null]
+  purpose_text text [not null]
+  collection_items text [not null, note: 'NFR-SEC-006: 생활습관 설문 항목 포함']
+  retention_policy text [not null, note: 'NFR-SEC-005: 검진 결과지 원본 이미지 보관 기간 명시']
+  withdrawal_method text [not null]
+  third_party_notice text [not null, note: 'NFR-SEC-007: 목적 외 이용·제3자 제공 없음 고지']
+  published_at timestamptz [not null]
+  Indexes {
+    (policy_type, version) [unique]
+  }
+  Note: 'REQ-USER-001, REQ-CONSENT-001, NFR-SEC-003,006,007'
+}
+
+Table user_consents {
+  user_consent_id uuid [pk]
+  user_id uuid [not null]
+  policy_id uuid [not null, ref: > consent_policies.policy_id]
+  status consent_status [not null, default: 'agreed']
+  consented_at timestamptz [not null]
+  withdrawn_at timestamptz
+  Indexes {
+    (user_id, policy_id)
+  }
+  Note: '''REQ-CONSENT-001~002. 동의 버전·동의·철회 시각 보관.
+마이그레이션: UNIQUE (user_id, policy_id) WHERE withdrawn_at IS NULL'''
+}
+
+Table guardian_consent_verifications {
+  guardian_verification_id uuid [pk]
+  user_id uuid [not null]
+  policy_id uuid [not null, ref: > consent_policies.policy_id]
+  guardian_name_enc varchar(500) [note: '암호화 저장. 파기 시 NULL']
+  guardian_contact_enc varchar(500) [note: '암호화 저장(휴대폰/이메일). 파기 시 NULL']
+  verification_method varchar(30) [not null, note: 'sms, email 등']
+  verification_status guardian_verification_status [not null, default: 'pending']
+  collected_at timestamptz [not null]
+  verified_at timestamptz
+  purge_due_at timestamptz [not null, note: 'collected_at + 5일']
+  purged_at timestamptz
+  Indexes {
+    user_id
+    (verification_status, purge_due_at) [note: '파기 배치 조회']
+  }
+  Note: '''REQ-CONSENT-003(개인정보보호법 제22조의2). 법정대리인 정보는 동의 확인 목적에만 사용.
+미확인 시 purge_due_at 도래 → guardian_*_enc NULL 처리 + status=purged.'''
+}
+
+
+// =====================================================================
+// ===== [MVP] 이용 적합성 · 응급 확인 =====
+// =====================================================================
+Table eligibility_assessments {
+  assessment_id uuid [pk]
+  user_id uuid [not null]
+  result_code eligibility_result [not null]
+  age_eligible boolean [not null]
+  diagnosed_cad boolean [not null, note: 'W03 관상동맥질환 진단 질문 응답. 고혈압 진단·치료 상태는 health_measurements.HTN_STATUS로 수집']
+  emergency_flag boolean [not null]
+  emergency_acknowledged_at timestamptz [note: '응급 안내를 확인하고 진행한 시각(REQ-ELIG-003). 응급 아님이면 NULL']
+  assessed_at timestamptz [not null]
+  Indexes {
+    (user_id, assessed_at)
+  }
+  Note: '''REQ-ELIG-001~004, NFR-SAFE-004, REQ-HEALTH-007.
+응급 증상은 emergency_flag·result_code·emergency_acknowledged_at만 저장(증상 원문 미저장).
+age_out·diagnosed(관상동맥질환 기진단)여도 챌린지·대시보드·기록은 이용 가능, 위험 예측만 제외.
+모델별 예측 제외 조건의 기준은 modeling/handoff/모델_연결_명세.md.'''
+}
+
+Table eligibility_answers {
+  eligibility_answer_id uuid [pk]
+  assessment_id uuid [not null]
+  question_code varchar(50) [not null, note: '연령·관상동맥질환 진단(W03) 확인 문항만 저장. 응급 증상 문항은 저장 대상 아님']
+  answer_code varchar(50) [not null]
+  created_at timestamptz [not null]
+  Indexes {
+    (assessment_id, question_code) [unique]
+  }
+  Note: '''REQ-ELIG-002,004. 응급 증상 응답은 저장하지 않는다(NFR-SEC-003 최소 수집).
+응급 여부는 eligibility_assessments.emergency_flag·result_code·emergency_acknowledged_at으로만 남아 NFR-SAFE-004 차단과 부적합 사유 표시에 충분하다.
+마이그레이션(선택): question_code를 허용 목록으로 제한하는 CHECK 또는 서비스 검증.'''
+}
+
+
+// =====================================================================
+// ===== [MVP] 건강정보 · 검진 결과지 OCR =====
+// =====================================================================
+Table health_input_schemas {
+  health_schema_id uuid [pk]
+  schema_version varchar(30) [not null, unique]
+  model_scope model_scope_type [not null]
+  active_from timestamptz [not null]
+  retired_at timestamptz
+  Note: 'REQ-HEALTH-002. 입력 계약을 스키마 버전으로 추적.'
+}
+
+Table health_records {
+  health_record_id uuid [pk]
+  user_id uuid [not null]
+  health_schema_id uuid [not null, ref: > health_input_schemas.health_schema_id]
+  cycle_id uuid [note: '사이클 중 입력(weekly_bp, interim_reassessment)일 때만']
+  input_type health_input_type [not null]
+  source_type health_source_type [not null]
+  examination_date date [not null]
+  created_at timestamptz [not null]
+  verified_at timestamptz [note: 'W05 입력 검토 화면에서 사용자 확인 완료 시각']
+  Indexes {
+    (user_id, input_type, examination_date) [unique]
+    (user_id, examination_date)
+    cycle_id
+  }
+  Note: '''REQ-HEALTH-002,004,007,008.
+동일 유형·동일 날짜 중복은 409(REQ-HEALTH-004). 검진 계열끼리의 날짜 중복도 막으려면
+마이그레이션: UNIQUE (user_id, examination_date) WHERE input_type IN (initial, full_reassessment, manual)
+weekly_bp는 이 부분 유니크에서 빠지므로 검진일과 같은 날 혈압 기록 가능.'''
+}
+
+Table health_measurements {
+  measurement_id uuid [pk]
+  health_record_id uuid [not null]
+  metric_code varchar(50) [not null, note: '필수: SBP, DBP, HEIGHT, WEIGHT, WAIST, SMOKING, ALCOHOL_FREQ, ALCOHOL_AMOUNT(음주자만), DIABETES, HTN_STATUS, TOTAL_CHOL, HDL, PARENT_HTN / 선택: FASTING_GLUCOSE, EXERCISE_FREQ / 계산: BMI, BP_STAGE']
+  value_num decimal(12,4) [note: '수치형 지표']
+  value_code varchar(50) [note: '범주형 지표. 값은 모델_연결_명세 §1.2 변환표의 값과 동일하게 저장(아래 Note)']
+  unit varchar(20) [note: '수치형만. mmHg, cm, kg, mg/dL']
+  measured_on date [not null]
+  input_method measurement_input_method [not null]
+  source_measurement_id uuid [ref: > health_measurements.measurement_id, note: 'carried_forward일 때 원본 측정값']
+  created_at timestamptz [not null]
+  Indexes {
+    (health_record_id, metric_code) [unique]
+    metric_code
+  }
+  Note: '''REQ-HEALTH-002,008. BMI는 HEIGHT/WEIGHT로 서버 계산(input_method=calculated).
+4주 재평가(명세 §8): SBP·DBP·SMOKING·ALCOHOL_FREQ·ALCOHOL_AMOUNT·WEIGHT·WAIST는 새로 받고,
+  HEIGHT·TOTAL_CHOL·HDL·FASTING_GLUCOSE·DIABETES·HTN_STATUS·PARENT_HTN은 carried_forward + source_measurement_id로 직전 값 참조.
+필수·선택 구분은 REQ-HEALTH-002(v1.9) 기준. 스키마 버전별 계약은 health_input_schemas·model_feature_contracts.required로 관리.
+WAIST: 허리둘레 cm(value_num).
+value_code 값 (명세 §1.2, 학습 데이터 코드와 1:1):
+  SMOKING(BS3_1): current / former / never
+  ALCOHOL_FREQ(BD1_11): never_lifetime / none_past_year / lt_monthly / monthly / 2_4_per_month / 2_3_per_week / 4plus_per_week
+  ALCOHOL_AMOUNT(BD2_1): 1_2 / 3_4 / 5_6 / 7_9 / 10plus — ALCOHOL_FREQ가 never_lifetime·none_past_year면 묻지 않고 행을 만들지 않는다
+  DIABETES: true / false · PARENT_HTN: yes / no / unknown
+  BP_STAGE(계산, 명세 §6 HE_HP 기준): normal / elevated / prehypertension / hypertension — 모델이 아닌 규칙 판정
+나이·성별은 user_profiles에서 참조하고 검진 입력에서 다시 받지 않는다(REQ-HEALTH-001·002).
+마이그레이션: CHECK (metric_code <> 'ALCOHOL_AMOUNT' OR value_code IN ('1_2','3_4','5_6','7_9','10plus'))
+마이그레이션: CHECK (metric_code <> 'SMOKING' OR value_code IN ('current','former','never')) — ALCOHOL_FREQ·PARENT_HTN·BP_STAGE도 같은 방식
+HTN_STATUS: none(진단 없음) / diagnosed_untreated(진단·미치료) / treated(치료 중)
+마이그레이션: CHECK (metric_code <> 'HTN_STATUS' OR value_code IN ('none','diagnosed_untreated','treated'))
+마이그레이션: CHECK ((value_num IS NULL) <> (value_code IS NULL))
+마이그레이션: CHECK (input_method <> 'carried_forward' OR source_measurement_id IS NOT NULL)'''
+}
+
+Table health_validation_errors {
+  validation_error_id uuid [pk]
+  health_record_id uuid [not null]
+  field_code varchar(50) [not null]
+  error_code varchar(50) [not null]
+  message varchar(255) [not null]
+  resolved_at timestamptz
+  Note: 'REQ-HEALTH-003. 필수값·숫자·단위·허용 범위 필드 오류(API 422).'
+}
+
+Table uploaded_file_processing_jobs {
+  file_job_id uuid [pk]
+  user_id uuid [not null]
+  health_record_id uuid [note: 'OCR 결과로 생성된 검진 기록. 확정 전에는 NULL']
+  file_purpose file_purpose_type [not null]
+  storage_object_key varchar(500) [not null, note: '원본 삭제 후에도 삭제 증빙용으로 키만 보관']
+  status file_job_status [not null, default: 'uploaded']
+  failure_reason varchar(255)
+  created_at timestamptz [not null]
+  processed_at timestamptz
+  deleted_at timestamptz [note: 'NFR-SEC-005: 원본 이미지 삭제 시각']
+  Indexes {
+    user_id
+    (file_purpose, status, created_at) [note: 'NFR-OPS-006 인식 실패율 집계']
+  }
+  Note: 'REQ-HEALTH-006, REQ-RECO-002, NFR-SEC-005, NFR-OPS-006. 원본 이미지는 처리 후 지체 없이 삭제.'
+}
+
+Table ocr_extraction_results {
+  extraction_result_id uuid [pk]
+  file_job_id uuid [not null]
+  metric_code varchar(50) [not null]
+  extracted_value decimal(12,4)
+  unit varchar(20)
+  confidence decimal(5,4)
+  accepted_by_user boolean
+  Indexes {
+    (file_job_id, metric_code) [unique]
+  }
+  Note: 'REQ-HEALTH-006. 인식된 칸만 폼에 채우고, 실패 시 퀵 폼으로 전환.'
+}
+
+
+// =====================================================================
+// ===== [MVP] 생활습관 설문 =====
+// =====================================================================
+Table survey_versions {
+  survey_version_id uuid [pk]
+  survey_type survey_type [not null]
+  version varchar(30) [not null]
+  active_from timestamptz [not null]
+  active_to timestamptz
+  Indexes {
+    (survey_type, version) [unique]
+  }
+  Note: 'REQ-HEALTH-005,008, NFR-ARCH-005'
+}
+
+Table survey_questions {
+  question_id uuid [pk]
+  survey_version_id uuid [not null, ref: > survey_versions.survey_version_id]
+  question_code varchar(50) [not null]
+  question_text text [not null]
+  answer_type survey_answer_type [not null, default: 'single_select', note: '모든 문항은 선택지형(REQ-HEALTH-005)']
+  display_order int [not null]
+  required boolean [not null, default: true]
+  Indexes {
+    (survey_version_id, question_code) [unique]
+  }
+}
+
+Table survey_options {
+  option_id uuid [pk]
+  question_id uuid [not null, ref: > survey_questions.question_id]
+  option_code varchar(50) [not null]
+  option_text varchar(255) [not null]
+  numeric_score decimal(8,2)
+  model_value_code varchar(50) [note: 'MODEL_B 입력 문항은 명세 §1.2 값(breakfast: 5_7/3_4/1_2/0, eatout: 2plus_per_day~lt_monthly)']
+  derived_value jsonb [note: '운동 종목→강도 자동 분류, 나트륨 0~2점 등']
+  display_order int [not null]
+  Indexes {
+    (question_id, option_code) [unique]
+  }
+  Note: '''선택지는 시드 데이터로 관리.
+혈압 측정 수단 문항(question_code 예: BP_MEASURE_METHOD) 선택지:
+  home_monitor(집에 혈압계가 있음) / pharmacy_health_center(약국·보건소에서 측정) / difficult(측정이 어려움)'''
+}
+
+Table survey_question_rules {
+  question_rule_id uuid [pk]
+  target_question_id uuid [not null, ref: > survey_questions.question_id]
+  source_question_id uuid [not null, ref: > survey_questions.question_id]
+  source_option_id uuid [not null, ref: > survey_options.option_id]
+  rule_type varchar(20) [not null, default: 'show_when']
+  Note: 'REQ-HEALTH-005. 앞 문항 답에 따른 조건부 건너뛰기. 옵션은 FK로 참조.'
+}
+
+Table survey_instances {
+  survey_instance_id uuid [pk]
+  user_id uuid [not null]
+  survey_version_id uuid [not null, ref: > survey_versions.survey_version_id]
+  health_record_id uuid
+  cycle_id uuid [note: 'interim_lifestyle 재설문일 때 대상 사이클']
+  status survey_instance_status [not null, default: 'started']
+  started_at timestamptz [not null]
+  submitted_at timestamptz
+  Indexes {
+    (user_id, started_at)
+  }
+  Note: 'REQ-HEALTH-005,008, NFR-SEC-006(설문 응답 = 건강정보). 설문 완료율의 분모·분자 기준.'
+}
+
+Table survey_responses {
+  response_id uuid [pk]
+  survey_instance_id uuid [not null]
+  question_id uuid [not null, ref: > survey_questions.question_id]
+  created_at timestamptz [not null]
+  Indexes {
+    (survey_instance_id, question_id) [unique]
+  }
+  Note: '문항당 응답 1건. 선택한 옵션은 survey_response_options에 저장(단일·복수 공통).'
+}
+
+Table survey_response_options {
+  response_id uuid [not null]
+  option_id uuid [not null, ref: > survey_options.option_id]
+  Indexes {
+    (response_id, option_id) [pk]
+  }
+  Note: '''single_select는 1행, multi_select는 N행.
+마이그레이션: option이 해당 question 소속인지 트리거 또는 서비스 로직으로 검증.'''
+}
+
+
+// =====================================================================
+// ===== [MVP] 파생 피처 · 가중치 =====
+// =====================================================================
+Table derived_feature_definitions {
+  feature_definition_id uuid [pk]
+  feature_code varchar(50) [not null]
+  version int [not null, default: 1]
+  source_type feature_source_type [not null]
+  calculation_rule jsonb [not null]
+  active boolean [not null, default: true]
+  created_at timestamptz [not null]
+  Indexes {
+    (feature_code, version) [unique]
+  }
+  Note: '''NFR-FEED-002, NFR-ML-004,006. 파생 피처를 데이터로 관리.
+행은 수정하지 않고, 규칙이 바뀌면 version+1 새 행을 추가(과거 예측 재현성).'''
+}
+
+Table feature_weight_versions {
+  feature_weight_version_id uuid [pk]
+  version varchar(30) [not null, unique]
+  reason text [not null]
+  changed_by varchar(100) [not null]
+  effective_from timestamptz [not null]
+  effective_to timestamptz
+  Note: 'NFR-FEED-002. 피드백·실측 데이터 기반 가중치 변경 이력.'
+}
+
+Table feature_weight_items {
+  feature_weight_item_id uuid [pk]
+  feature_weight_version_id uuid [not null, ref: > feature_weight_versions.feature_weight_version_id]
+  feature_definition_id uuid [not null, ref: > derived_feature_definitions.feature_definition_id]
+  weight decimal(12,6) [not null]
+  Indexes {
+    (feature_weight_version_id, feature_definition_id) [unique]
+  }
+}
+
+
+// =====================================================================
+// ===== [MVP] 질환 · 모델 레지스트리 =====
+// =====================================================================
+Table diseases {
+  disease_id uuid [pk]
+  disease_code varchar(50) [not null, unique]
+  disease_name varchar(100) [not null]
+  active boolean [not null, default: true]
+  Note: 'NFR-ARCH-002. 고혈압 이후 질환 확장 기준.'
+}
+
+Table model_definitions {
+  model_id uuid [pk]
+  disease_id uuid [not null, ref: > diseases.disease_id]
+  model_code varchar(30) [not null, unique, note: 'MODEL_A, MODEL_B']
+  prediction_scope varchar(50) [not null, note: 'MODEL_A=10_year_chd_risk(Framingham) / MODEL_B=current_borderline(KNHANES, 정상 vs 경계군 이진분류, REQ-PRED-009)']
+  eligible_age_min int [note: 'REQ-ELIG-001, 명세 §5: MODEL_A=32 / MODEL_B=19']
+  eligible_age_max int [note: 'MODEL_A=70 / MODEL_B=NULL(80세 이상은 80으로 계산)']
+  active boolean [not null, default: true]
+  Note: 'REQ-PRED-001, REQ-ELIG-001, NFR-ARCH-002~003. 운영 모델은 MODEL_A(장기 위험)·MODEL_B(현재 생활습관) 2종(요구사항 v1.9).'
+}
+
+Table model_versions {
+  model_version_id uuid [pk]
+  model_id uuid [not null, ref: > model_definitions.model_id]
+  version varchar(50) [not null]
+  artifact_uri varchar(500) [not null, note: '계수 JSON 경로(예: model_a/artifacts/model_a_v0.1.0.json). paeon_models.py SPEC_A·SPEC_B가 로드']
+  preprocessing_version varchar(50) [not null]
+  preprocessing_artifact_uri varchar(500) [note: '별도 전처리 아티팩트가 있을 때만. v0.1.0은 계수 JSON 안에 평균·기준점 포함 → NULL(NFR-ML-007)']
+  threshold_config jsonb [not null, note: 'MODEL_A v0.1.0: normal <0.10 / borderline 0.10–0.20 / high >0.20(데모 기준) · MODEL_B: 판정 없음 {}']
+  is_provisional boolean [not null, default: true, note: 'NFR-SAFE-005: 잠정 모델 고지 여부']
+  training_data_label varchar(150) [not null, note: 'NFR-SAFE-005: 결과 화면에 표기할 학습 데이터 출처']
+  released_at timestamptz [not null]
+  retired_at timestamptz
+  Indexes {
+    (model_id, version) [unique]
+  }
+  Note: 'NFR-ML-004, NFR-ARCH-003~004, NFR-SAFE-005, NFR-OPS-004'
+}
+
+Table model_feature_contracts {
+  model_feature_contract_id uuid [pk]
+  model_version_id uuid [not null, ref: > model_versions.model_version_id]
+  feature_definition_id uuid [not null, ref: > derived_feature_definitions.feature_definition_id]
+  required boolean [not null]
+  missing_value_policy varchar(50) [not null]
+  feature_order int [not null]
+  Indexes {
+    (model_version_id, feature_definition_id) [unique]
+  }
+  Note: '''REQ-HEALTH-002,008, REQ-PRED-007, NFR-ML-001.
+MODEL_A 피처(명세 §2.2): age, male, sysBP, totChol, currentSmoker, diabetes, BPMeds, prevalentHyp, BMI
+  (HTN_STATUS → prevalentHyp·BPMeds, SMOKING=current → currentSmoker). HDL은 학습 데이터에 없어 사용하지 않음.
+MODEL_B 피처(명세 §2.2): age, male, bmi, waist, parent_htn, smoke_current, smoke_former, drink_freq, drink_amount, aerobic, breakfast_skip, eatout
+  (설문 REQ-HEALTH-005: 외식·배달, 아침, 신체활동 주당 중강도·고강도 분 → aerobic 파생). SBP·DBP는 입력이 아님(판정·대시보드용).
+비어 있는 피처는 중앙값으로 채우고 missing_features로 보고(prediction_feature_values.missing_reason='imputed_median').
+나트륨 5문항 점수(REQ-PRED-008)는 모델 입력이 아니라 챌린지 후보 판정에만 쓴다.
+정확한 피처 목록·변환표는 modeling/handoff/모델_연결_명세.md를 기준으로 시드한다.
+4주 재예측(명세 §8): 같은 모델 버전·같은 피처. 새로 받는 값과 이월 값은 health_measurements Note 참고.
+age는 최초 예측 값을 유지한다(생일이 끼어도 전·후 비교가 흔들리지 않게).'''
+}
+
+Table model_change_logs {
+  change_log_id uuid [pk]
+  model_version_id uuid [not null, ref: > model_versions.model_version_id]
+  change_type model_change_type [not null]
+  changed_by varchar(100) [not null]
+  reason text [not null]
+  changed_at timestamptz [not null]
+  Note: 'NFR-OPS-004. 변경 일시·변경자·사유. (운영 이력이므로 MVP에 포함)'
+}
+
+
+// =====================================================================
+// ===== [MVP] 예측 · XAI =====
+// =====================================================================
+Table prediction_jobs {
+  prediction_job_id uuid [pk]
+  user_id uuid [not null]
+  health_record_id uuid [not null]
+  request_type prediction_request_type [not null]
+  status job_status [not null, default: 'queued']
+  retryable boolean [not null, default: false, note: 'REQ-PRED-002: 실패 시 재시도 가능 여부 표시']
+  retry_of_job_id uuid [ref: > prediction_jobs.prediction_job_id]
+  requested_at timestamptz [not null]
+  started_at timestamptz
+  completed_at timestamptz
+  failure_reason text
+  Indexes {
+    (user_id, requested_at)
+    (status, requested_at)
+  }
+  Note: 'REQ-PRED-002,007, NFR-ASYNC-001. 접수 202 + prediction_job_id 반환.'
+}
+
+Table prediction_job_runs {
+  job_run_id uuid [pk]
+  prediction_job_id uuid [not null]
+  model_version_id uuid [not null, ref: > model_versions.model_version_id]
+  run_status job_run_status [not null, default: 'queued']
+  skip_reason_code varchar(30) [note: '명세 출력값: age_out_of_range / htn_diagnosed(MODEL_B만) + cad_diagnosed(관상동맥질환 기진단, W03). REQ-ELIG-001~002']
+  started_at timestamptz
+  completed_at timestamptz
+  error_message text
+  Indexes {
+    (prediction_job_id, model_version_id) [unique]
+  }
+  Note: '''모델 A/B를 독립 실행·교체(NFR-ARCH-003). 요청 1건에 MODEL_A run과 MODEL_B run을 각각 생성하고, 한쪽 실패가 다른 쪽에 영향을 주지 않는다.
+적용 연령 밖이면 run_status=skipped + skip_reason_code, predictions 행을 만들지 않는다.
+HTN_STATUS가 diagnosed_untreated·treated이면 MODEL_B run은 skipped(htn_diagnosed), MODEL_A는 정상 실행(REQ-ELIG-002, NFR-ML-008).
+두 모델은 독립: 한쪽이 skipped·failed여도 다른 쪽 결과는 그대로 쓴다(명세 §2.1).'''
+}
+
+Table predictions {
+  prediction_id uuid [pk]
+  job_run_id uuid [not null, unique]
+  user_id uuid [not null, note: '조회용 비정규화. job_run → job.user_id와 일치를 서비스에서 보장']
+  model_version_id uuid [not null, ref: > model_versions.model_version_id, note: 'NFR-ARCH-004 전·후 비교 기준. job_run 값과 동일']
+  risk_level risk_level_type [note: 'MODEL_A만 정상·경계·위험 판정. MODEL_B는 NULL(판정이 아님, REQ-PRED-001)']
+  score decimal(8,6) [note: '명세 probability(소수 6자리). MODEL_A: 10년 관상동맥질환 확률(보정 전, 그대로 % 표시 금지) / MODEL_B: 경계군과 닮은 정도']
+  percentile decimal(5,2) [note: '같은 성별·연령대 상위 %. v0.1.0은 NULL(보정 사이클에서 채움)']
+  vascular_age decimal(5,1) [note: 'MODEL_A 카드 2. v0.1.0은 모델 출력에 없어 데모 계산식(나이 계수 0.066053) 사용, 두 번째 사이클 재설계']
+  result_card_type result_card_type [not null]
+  predicted_at timestamptz [not null]
+  Indexes {
+    (user_id, predicted_at)
+    (user_id, model_version_id, predicted_at) [note: '동일 버전 전·후 비교']
+  }
+  Note: '''REQ-PRED-001,003~007, NFR-ML-004, NFR-ARCH-004. 결과는 덮어쓰지 않고 이력으로 쌓는다.
+검진 기록·재예측 종류는 job_run → prediction_jobs로 추적. 두 모델 결과를 하나로 합산하지 않는다.
+마이그레이션: CHECK ((result_card_type = 'long_term') = (risk_level IS NOT NULL))
+마이그레이션: CHECK (result_card_type = 'long_term' OR vascular_age IS NULL)'''
+}
+
+Table prediction_feature_values {
+  prediction_feature_value_id uuid [pk]
+  prediction_id uuid [not null]
+  feature_definition_id uuid [not null, ref: > derived_feature_definitions.feature_definition_id]
+  value_json jsonb [not null]
+  missing_reason varchar(50)
+  Indexes {
+    (prediction_id, feature_definition_id) [unique]
+  }
+  Note: 'NFR-ML-004~005. 예측에 실제 사용한 입력 스냅샷.'
+}
+
+Table prediction_factors {
+  prediction_factor_id uuid [pk]
+  prediction_id uuid [not null]
+  feature_definition_id uuid [ref: > derived_feature_definitions.feature_definition_id]
+  factor_code varchar(50) [not null]
+  direction factor_direction [not null]
+  importance decimal(12,8) [not null, note: '명세 contribution: 로그 오즈 기여도(+ = 위험↑). 기준점 = 있다/없다 요인은 없음, 숫자·단계 요인은 학습 평균']
+  value_label varchar(100) [note: '값의 뜻(예: 있음, 주 2–3회). 숫자 요인은 NULL']
+  modifiable boolean [not null, note: 'true면 챌린지로 연결(REQ-PRED-003)']
+  direction_matches_expectation boolean [not null, default: true, note: '학습된 계수 방향이 의학적 상식과 일치하는지. false여도 거르지 않고 저장']
+  display_rank int [not null]
+  Indexes {
+    (prediction_id, factor_code) [unique]
+  }
+  Note: '''REQ-PRED-003, REQ-CHAL-008(기여도 최대 개선 가능 요인 대체).
+기여도 0(해당 없음) 요인은 저장하지 않는다. top_risk_factor = direction=risk_increase 중 display_rank 최소,
+  top_modifiable_factor = 그중 modifiable=true 최소(→ factor_challenge_links로 챌린지 연결).
+v0.1.0: MODEL_A는 전부 true, MODEL_B는 smoke_current·smoke_former·eatout·aerobic이 false(표시만, 걸러내지 않음).
+화면 표시 방식(숨김·주석·그대로 노출)은 팀 결정 필요.'''
+}
+
+Table result_disclosures {
+  disclosure_id uuid [pk]
+  prediction_id uuid [not null]
+  disclosure_type disclosure_type [not null]
+  message_version varchar(30) [not null]
+  shown_at timestamptz [not null]
+  Note: 'REQ-PRED-005~006, NFR-SAFE-001,003,005'
+}
+
+
+// =====================================================================
+// ===== [MVP] 챌린지 마스터 =====
+// =====================================================================
+Table challenge_categories {
+  category_id uuid [pk]
+  category_code varchar(50) [not null, unique]
+  category_name varchar(100) [not null]
+  description text
+  display_order int [not null]
+  active boolean [not null, default: true]
+  catalog_status catalog_status [not null, default: 'mvp', note: '미션 카탈로그 시트 상태(체중 관리=backlog, 아침 식사=review)']
+  Note: 'REQ-CHAL-001(5~6개), NFR-ARCH-005'
+}
+
+Table challenges {
+  challenge_id uuid [pk]
+  category_id uuid [not null, ref: > challenge_categories.category_id]
+  challenge_code varchar(50) [not null, unique]
+  challenge_name varchar(150) [not null]
+  description text [not null]
+  mission_role mission_role_type [not null, note: 'fixed=흡연·음주, replacement=나트륨 미션 우선, 나트륨도 낮으면 기여도 최대 개선 가능 요인 미션(REQ-CHAL-008), selectable=카테고리 제한 없이 선택(선택 미션 1개)']
+  proof_type proof_type [not null]
+  active boolean [not null, default: true]
+  Note: 'REQ-CHAL-001,003,008; NFR-ARCH-005. 카테고리당 최소 3개, 전체 30개 내외.'
+}
+
+Table factor_challenge_links {
+  factor_link_id uuid [pk]
+  model_id uuid [not null, ref: > model_definitions.model_id]
+  factor_code varchar(50) [not null, note: '모델 출력 factors[].code (예: waist, bmi, drink_freq, currentSmoker, sysBP)']
+  category_id uuid [ref: > challenge_categories.category_id, note: 'not_linked이면 NULL']
+  link_status factor_link_status [not null]
+  note text
+  Indexes {
+    (model_id, factor_code, category_id) [unique]
+  }
+  Note: '''모델_연결_명세 §7 요인 → 챌린지 카테고리 연결표를 데이터로 관리(NFR-ARCH-005).
+REQ-PRED-003(개선 가능 요인 → 챌린지), REQ-CHAL-008(나트륨도 낮으면 top_modifiable_factor로 대체)에서 조회.
+v0.1.0 시드 예: B waist·bmi / A BMI → 체중 관리(Backlog, pending_decision) · B drink_freq·drink_amount → 절주(linked)
+  · A currentSmoker → 금연(linked) · B eatout → 외식·배달, B aerobic → 신체 활동(반대 방향, pending_decision)
+  · A sysBP → 나트륨·신체 활동·체중 관리 중 선택(pending_decision) · A totChol → not_linked'''
+}
+
+Table challenge_levels {
+  challenge_level_id uuid [pk]
+  challenge_id uuid [not null, ref: > challenges.challenge_id]
+  difficulty difficulty_level [not null]
+  weekly_target int [not null, note: '주 단위 목표 횟수(REQ-CHAL-004)']
+  target_config jsonb [note: '음주 허용 잔 수: {"male_max":2,"female_max":1} 등']
+  Indexes {
+    (challenge_id, difficulty) [unique]
+  }
+  Note: 'REQ-CHAL-009~010. 챌린지별 상·중·하 목표를 데이터로 관리.'
+}
+
+Table challenge_eligibility_rules {
+  challenge_rule_id uuid [pk]
+  challenge_id uuid [not null, ref: > challenges.challenge_id]
+  feature_definition_id uuid [ref: > derived_feature_definitions.feature_definition_id]
+  rule_type challenge_rule_type [not null]
+  rule_expression jsonb [not null]
+  priority int [not null]
+  active boolean [not null, default: true]
+  Note: '''REQ-CHAL-001,008,009; NFR-ML-006, NFR-SAFE-007(복약자 문구 제한 규칙 포함 가능).
+replace 규칙 시드(REQ-CHAL-008): 건강정보 입력의 SMOKING·ALCOHOL_FREQ로 비흡연·비음주 판정 → 해당 고정 칸을 나트륨 미션으로 대체.
+  나트륨 등급(REQ-PRED-008)도 하이면 prediction_factors 중 modifiable=true·risk_increase 기여도 최대 요인의 미션으로 대체.
+NFR-ML-006: 후보 미션은 MODEL_A 수정 가능 요인(SHAP 상위 5위 이내)과 feature_definition_id로 연결된 것만 채택, 연결 근거 없으면 제외 또는 참고용.'''
+}
+
+
+// =====================================================================
+// ===== [MVP] 추천 =====
+// =====================================================================
+Table user_classifications {
+  user_classification_id uuid [pk]
+  user_id uuid [not null]
+  survey_instance_id uuid [note: '설문 기반 분류일 때']
+  health_record_id uuid [note: '건강정보 입력 기반 분류일 때(흡연·음주·복약)']
+  classification_code varchar(50) [not null, note: 'smoker, drinker(건강정보 입력) / sodium_grade(하·중·상, REQ-PRED-008) / on_bp_medication(HTN_STATUS=treated) 등']
+  classification_value jsonb
+  classified_at timestamptz [not null]
+  Indexes {
+    (survey_instance_id, classification_code) [unique]
+    (health_record_id, classification_code) [unique]
+  }
+  Note: '''challenge_user_classified 이벤트, 추천 후보·고정 미션 대체(REQ-CHAL-008), NFR-SAFE-007 판단 근거.
+흡연·음주 판정은 설문이 아니라 건강정보 입력(W04) 기준(v1.8).
+마이그레이션: CHECK (survey_instance_id IS NOT NULL OR health_record_id IS NOT NULL)'''
+}
+
+Table challenge_recommendation_batches {
+  recommendation_batch_id uuid [pk]
+  user_id uuid [not null]
+  survey_instance_id uuid [not null]
+  prediction_id uuid
+  feature_weight_version_id uuid [ref: > feature_weight_versions.feature_weight_version_id]
+  created_at timestamptz [not null]
+  viewed_at timestamptz
+  Indexes {
+    (user_id, created_at)
+  }
+  Note: 'REQ-CHAL-001, REQ-FEED-001,003. 추천 결과 조회·버전 추적.'
+}
+
+Table challenge_recommendation_categories {
+  recommendation_category_id uuid [pk]
+  recommendation_batch_id uuid [not null]
+  category_id uuid [not null, ref: > challenge_categories.category_id]
+  display_order int [not null]
+  reason_message varchar(500)
+  Indexes {
+    (recommendation_batch_id, category_id) [unique]
+  }
+  Note: 'REQ-CHAL-001: 여러 카테고리 후보를 함께 제시한 순서와 근거. 사용자가 카테고리를 고르는 단계는 없음.'
+}
+
+Table challenge_recommendation_candidates {
+  recommendation_candidate_id uuid [pk]
+  recommendation_batch_id uuid [not null]
+  challenge_id uuid [not null, ref: > challenges.challenge_id]
+  recommendation_status candidate_status [not null]
+  proposed_role mission_role_type [not null]
+  proposed_difficulty difficulty_level
+  proposed_weekly_target int
+  display_order int [not null]
+  Indexes {
+    (recommendation_batch_id, challenge_id) [unique]
+  }
+  Note: '추천·제외 미션 모두 저장. 이전 사이클 완료 챌린지는 excluded(REQ-CHAL-002).'
+}
+
+Table challenge_recommendation_reasons {
+  recommendation_reason_id uuid [pk]
+  recommendation_candidate_id uuid [not null]
+  reason_type recommendation_reason_type [not null]
+  factor_code varchar(50)
+  message varchar(500) [not null]
+  display_order int [not null]
+  Note: 'REQ-PRED-003,006. 결과 화면(카드 3 포함)에 표시하는 챌린지 추천 근거.'
+}
+
+
+// =====================================================================
+// ===== [MVP] 챌린지 사이클 · 수행 =====
+// =====================================================================
+Table challenge_cycles {
+  cycle_id uuid [pk]
+  user_id uuid [not null]
+  recommendation_batch_id uuid
+  started_on date [not null]
+  ended_on date [not null, note: 'started_on + 27일']
+  status cycle_status [not null, default: 'active']
+  stopped_reason_code varchar(30) [note: '중단 사유(선택 수집)']
+  stopped_note text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  Indexes {
+    (user_id, started_on)
+  }
+  Note: '''REQ-CHAL-002,007. 4주 단위. 중단·미달 사이클도 이력으로 남김.
+마이그레이션: UNIQUE (user_id) WHERE status = 'active'
+구성(고정 2 + 선택 1 = 총 3개, 선택 미션은 카테고리 제한 없음, REQ-CHAL-003 v1.4)은 서비스 로직과 테스트로 검증.'''
+}
+
+Table cycle_challenges {
+  cycle_challenge_id uuid [pk]
+  cycle_id uuid [not null]
+  challenge_id uuid [not null, ref: > challenges.challenge_id]
+  recommendation_candidate_id uuid
+  selection_type selection_type [not null]
+  removable boolean [not null, default: true, note: 'REQ-CHAL-003: 요약 화면의 미션별 해제 가능 여부']
+  difficulty difficulty_level [not null, note: 'REQ-CHAL-009: 사용자별 적용 난이도']
+  weekly_target int [not null, note: '시작 시점 challenge_levels 값 스냅샷']
+  target_config jsonb [note: '음주 허용 잔 수 등 스냅샷']
+  status cycle_challenge_status [not null, default: 'active']
+  Indexes {
+    (cycle_id, challenge_id) [unique]
+    (challenge_id, status) [note: '완료 챌린지 재선택 제한 조회']
+  }
+  Note: 'REQ-CHAL-002~003,008~010.'
+}
+
+Table challenge_target_weeks {
+  target_week_id uuid [pk]
+  cycle_challenge_id uuid [not null]
+  week_number int [not null, note: '1~4']
+  week_start date [not null]
+  target_count int [not null]
+  Indexes {
+    (cycle_challenge_id, week_number) [unique]
+  }
+  Note: '''REQ-CHAL-004,006, REQ-DASH-008. 주간 목표(달성률 분모).
+달성 수(분자)는 저장하지 않고 challenge_logs에서 status=completed 건수로 계산
+(뷰 v_challenge_week_progress 권장) → 당일 수정 시 동기화 문제 없음.'''
+}
+
+Table challenge_logs {
+  challenge_log_id uuid [pk]
+  cycle_challenge_id uuid [not null]
+  log_date date [not null]
+  status challenge_log_status [not null]
+  quantity decimal(8,2) [note: '음주 잔 수 등']
+  limit_exceeded boolean [not null, default: false, note: 'REQ-CHAL-010: 초과 시 true + status=failed']
+  note text
+  recorded_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  Indexes {
+    (cycle_challenge_id, log_date) [unique]
+  }
+  Note: 'REQ-CHAL-004~005,010, REQ-DASH-009(스트릭은 조회 시 계산). 당일만 수정, 동일 날짜 중복 409.'
+}
+
+Table challenge_proofs {
+  challenge_proof_id uuid [pk]
+  challenge_log_id uuid [not null]
+  proof_type proof_type [not null]
+  file_job_id uuid
+  proof_data jsonb
+  submitted_at timestamptz [not null]
+  Note: 'REQ-CHAL-004, challenge_proof_submitted 이벤트.'
+}
+
+
+// =====================================================================
+// ===== [MVP] 식단 나트륨 분석 =====
+// =====================================================================
+Table evidence_sources {
+  evidence_source_id uuid [pk]
+  title varchar(255) [not null, note: '예: 식품의약품안전처 식품영양성분 데이터베이스']
+  publisher varchar(150)
+  source_url varchar(500)
+  citation_text text [not null]
+  verified_at timestamptz
+  Note: 'REQ-RECO-002. 식약처 공개 데이터 출처(식단 나트륨 분석의 food_items 기준).'
+}
+
+Table food_items {
+  food_id uuid [pk]
+  food_name varchar(255) [not null]
+  external_food_code varchar(100) [unique, note: '식약처 식품코드']
+  sodium_mg decimal(12,2)
+  serving_unit varchar(30)
+  evidence_source_id uuid [ref: > evidence_sources.evidence_source_id]
+  Indexes {
+    food_name
+  }
+  Note: 'REQ-RECO-002. 식약처 공개 영양성분 데이터 기준.'
+}
+
+Table meal_analysis_results {
+  meal_analysis_id uuid [pk]
+  user_id uuid [not null]
+  challenge_log_id uuid
+  file_job_id uuid
+  analysis_status meal_analysis_status [not null, default: 'processing']
+  sodium_score decimal(8,2) [note: '칼로리가 아닌 나트륨 기준']
+  total_sodium_mg decimal(12,2)
+  improvement_message text [note: '개선 제안']
+  result_source meal_result_source [not null]
+  analyzed_at timestamptz
+  Indexes {
+    (user_id, analyzed_at)
+  }
+  Note: 'REQ-RECO-002. 이미지 분석 실패 시 직접 입력(manual)으로 대체.'
+}
+
+Table meal_analysis_foods {
+  meal_analysis_food_id uuid [pk]
+  meal_analysis_id uuid [not null]
+  food_id uuid [ref: > food_items.food_id]
+  food_name_detected varchar(255) [not null]
+  serving_count decimal(8,2)
+  sodium_mg_estimated decimal(12,2)
+  confidence decimal(5,4)
+}
+
+
+// =====================================================================
+// ===== [MVP] 알림 · 재평가 =====
+// =====================================================================
+Table notification_preferences {
+  user_id uuid [pk]
+  push_enabled boolean [not null, default: false, note: '챌린지 시작 알림(REQ-NOTI-001). 미설정 시 발송하지 않음']
+  reevaluation_enabled boolean [not null, default: false, note: '건강정보 재입력 알림(REQ-NOTI-002). 미설정 시 발송하지 않음']
+  morning_time time
+  timezone varchar(50) [not null, default: 'Asia/Seoul']
+  updated_at timestamptz [not null]
+  Note: 'REQ-NOTI-001~002'
+}
+
+Table push_devices {
+  push_device_id uuid [pk]
+  user_id uuid [not null]
+  endpoint varchar(1000) [not null, unique]
+  public_key varchar(500)
+  auth_key varchar(500)
+  permission_status push_permission_status [not null]
+  last_seen_at timestamptz [not null]
+  revoked_at timestamptz
+  Indexes {
+    user_id
+  }
+  Note: 'REQ-NOTI-001. HTTPS + 사용자 동작으로 받은 권한이 있을 때만 웹 푸시.'
+}
+
+Table notification_templates {
+  template_id uuid [pk]
+  notification_type notification_type [not null]
+  version varchar(30) [not null]
+  title_template varchar(200) [not null]
+  body_template text [not null, note: '참여를 강요하지 않는 톤']
+  active boolean [not null, default: true]
+  Indexes {
+    (notification_type, version) [unique]
+  }
+}
+
+Table reevaluation_schedules {
+  reevaluation_schedule_id uuid [pk]
+  user_id uuid [not null]
+  cycle_id uuid [note: 'interim_4week일 때 대상 사이클']
+  schedule_type reevaluation_type [not null]
+  due_at timestamptz [not null]
+  status schedule_status [not null, default: 'pending']
+  completed_health_record_id uuid
+  completed_at timestamptz
+  Indexes {
+    (status, due_at)
+    (user_id, schedule_type)
+  }
+  Note: 'REQ-HEALTH-008, REQ-DASH-011, NFR-OPS-005. 두 주기 스케줄을 schedule_type으로 분리.'
+}
+
+Table notification_deliveries {
+  notification_delivery_id uuid [pk]
+  user_id uuid [not null]
+  template_id uuid [not null, ref: > notification_templates.template_id]
+  reevaluation_schedule_id uuid
+  scheduled_at timestamptz [not null]
+  sent_at timestamptz
+  status delivery_status [not null, default: 'scheduled']
+  retry_count int [not null, default: 0]
+  error_message text
+  Indexes {
+    (status, scheduled_at)
+  }
+  Note: '''REQ-NOTI-001~002, REQ-CHAL-004, NFR-OPS-005. 실패 시 재시도.
+챌린지 알림은 사용자당 하루 1회 이하(REQ-CHAL-004).
+마이그레이션: UNIQUE (user_id, (scheduled_at AT TIME ZONE 'Asia/Seoul')::date) WHERE 템플릿 유형 = morning_challenge (트리거 또는 서비스 로직)'''
+}
+
+
+// =====================================================================
+// ===== [MVP] 피드백 =====
+// =====================================================================
+Table feedbacks {
+  feedback_id uuid [pk]
+  user_id uuid [not null]
+  feedback_type feedback_type [not null]
+  prediction_id uuid
+  recommendation_batch_id uuid
+  cycle_challenge_id uuid
+  recommendation_candidate_id uuid
+  rating varchar(20) [note: 'prediction/recommendation 평가']
+  difficulty_rating difficulty_rating [note: 'REQ-FEED-002']
+  rejection_reason rejection_reason [note: 'REQ-FEED-003 (선택 응답)']
+  comment text
+  target_version varchar(50) [note: '평가 대상 버전(모델/가중치)']
+  created_at timestamptz [not null]
+  Indexes {
+    (user_id, created_at)
+    feedback_type
+  }
+  Note: '''REQ-FEED-001~003.
+마이그레이션: CHECK — feedback_type에 해당하지 않는 대상 FK는 모두 NULL
+  (해당 FK는 생성 시 필수, 대상 삭제 후에는 SET NULL로 비어 통계만 유지)
+  prediction → prediction_id / recommendation → recommendation_batch_id
+  difficulty → cycle_challenge_id + difficulty_rating / rejection → recommendation_candidate_id'''
+}
+
+
+// =====================================================================
+// ===== [MVP] 분석 이벤트 · 보안 감사 =====
+// =====================================================================
+Table analytics_events {
+  event_id uuid [pk]
+  user_id uuid
+  event_name varchar(100) [not null, note: 'challenge_survey_started, challenge_recommendation_viewed 등']
+  event_properties jsonb [not null]
+  request_trace_id uuid [note: 'FK 없음. 로그 연결용 추적 ID(NFR-OPS-002)']
+  occurred_at timestamptz [not null]
+  Indexes {
+    (event_name, occurred_at)
+  }
+  Note: '지표·이벤트. 건강 수치·설문 원문은 event_properties에 넣지 않는다(NFR-SEC-004).'
+}
+
+Table security_audit_logs {
+  security_audit_log_id uuid [pk]
+  user_id uuid
+  actor_type varchar(30) [not null]
+  action_type varchar(50) [not null, note: 'login, consent_withdraw, file_deleted 등']
+  resource_type varchar(50) [not null]
+  resource_id uuid
+  request_trace_id uuid [note: 'FK 없음(NFR-OPS-002)']
+  occurred_at timestamptz [not null]
+  Indexes {
+    (user_id, occurred_at)
+  }
+  Note: 'NFR-SEC-002,004,005(원본 이미지 삭제 증빙). 민감 값 자체는 기록하지 않는다.'
+}
+
+
+// =====================================================================
+// ===== [POST-MVP] ML 실험 기록 =====
+// =====================================================================
+Table training_datasets {
+  dataset_id uuid [pk]
+  dataset_name varchar(150) [not null]
+  dataset_version varchar(50) [not null]
+  source_type varchar(50) [not null, note: 'MODEL_A=Framingham Heart Study / MODEL_B=KNHANES 2022-2024(질병관리청 원시자료)']
+  population_filter jsonb [not null, note: 'MODEL_B: HE_HP IN (1,2,3), 4(고혈압) 제외(NFR-ML-008). 라벨 1→0, 2·3→1(REQ-PRED-009)']
+  used_for_model_code varchar(30) [not null, note: 'MODEL_A, MODEL_B']
+  created_at timestamptz [not null]
+  Indexes {
+    (dataset_name, dataset_version) [unique]
+  }
+  Note: '''[POST-MVP] NFR-ML-007~008. 모델 A/B 학습 데이터 및 모집단 분리.
+원시자료는 이용 조건(질병관리청 원시자료 공개 규정 제8조)상 저장소·DB에 올리지 않고 메타데이터만 기록한다.'''
+}
+
+Table model_experiments {
+  experiment_id uuid [pk]
+  model_version_id uuid [not null, ref: > model_versions.model_version_id]
+  dataset_id uuid [not null, ref: > training_datasets.dataset_id]
+  algorithm varchar(50) [not null, note: 'logistic_regression(전달 모델), xgboost(비교) 등']
+  split_config jsonb [not null]
+  preprocessing_config jsonb [not null]
+  executed_at timestamptz [not null]
+  Note: '[POST-MVP] NFR-ML-001~003,005,009'
+}
+
+Table model_experiment_metrics {
+  metric_id uuid [pk]
+  experiment_id uuid [not null, ref: > model_experiments.experiment_id]
+  metric_name varchar(30) [not null, note: 'auc_roc, f1, precision, recall']
+  metric_value decimal(12,8) [not null]
+  dataset_split dataset_split_type [not null]
+  Indexes {
+    (experiment_id, metric_name, dataset_split) [unique]
+  }
+  Note: '[POST-MVP]'
+}
+
+Table model_confusion_matrices {
+  confusion_matrix_id uuid [pk]
+  experiment_id uuid [not null, ref: > model_experiments.experiment_id]
+  dataset_split dataset_split_type [not null]
+  true_negative int [not null]
+  false_positive int [not null]
+  false_negative int [not null]
+  true_positive int [not null]
+  Indexes {
+    (experiment_id, dataset_split) [unique]
+  }
+  Note: '[POST-MVP]'
+}
+
+
+// =====================================================================
+// ===== [POST-MVP] 피드백 분석 · 개선 =====
+// =====================================================================
+Table feedback_analysis_reports {
+  feedback_report_id uuid [pk]
+  period_start date [not null]
+  period_end date [not null]
+  report_type varchar(30) [not null]
+  result_json jsonb [not null]
+  created_at timestamptz [not null]
+  Note: '[POST-MVP] NFR-FEED-001. 피드백 통계·분석 리포트.'
+}
+
+Table feedback_improvement_actions {
+  improvement_action_id uuid [pk]
+  feedback_report_id uuid [not null, ref: > feedback_analysis_reports.feedback_report_id]
+  feature_area varchar(50) [not null]
+  proposed_action text [not null]
+  status varchar(20) [not null]
+  applied_version varchar(50)
+  applied_at timestamptz
+  Note: '[POST-MVP] NFR-FEED-001. 개선 후보와 반영 이력.'
+}
+
+
+// =====================================================================
+// ===== [POST-MVP] API 요청 감사 =====
+// =====================================================================
+Table api_request_audits {
+  request_trace_id uuid [pk]
+  user_id uuid
+  method varchar(10) [not null]
+  route_pattern varchar(255) [not null]
+  response_status int [not null]
+  duration_ms int [not null]
+  occurred_at timestamptz [not null]
+  Indexes {
+    (route_pattern, occurred_at)
+  }
+  Note: '''[POST-MVP] NFR-OPS-002, NFR-API-002, NFR-SEC-004. 민감정보·URL 쿼리 저장 금지.
+MVP 테이블은 이 테이블을 FK로 참조하지 않는다(request_trace_id 값만 공유).'''
+}
+
+// 참고: 기존 service_health_checks는 제거.
+// GET /health(NFR-OPS-001)는 DB·큐 상태를 실시간으로 점검해 응답하며, DB에 저장하지 않는다.
+
+
+// =====================================================================
+// FK 삭제 정책 (long-form Ref)
+//  - users는 물리 삭제하지 않으므로 users 참조는 RESTRICT(기본값).
+//  - 건강정보 도메인 삭제 시 하위 데이터는 CASCADE, 다른 도메인에서의 참조는 SET NULL.
+// =====================================================================
+
+// --- users 참조 (RESTRICT) ---
+Ref: users.user_id - user_profiles.user_id
+Ref: user_sessions.user_id > users.user_id [delete: cascade]
+Ref: account_verification_tokens.user_id > users.user_id [delete: cascade]
+Ref: account_deletion_requests.user_id > users.user_id
+Ref: data_processing_tasks.user_id > users.user_id
+Ref: data_processing_tasks.deletion_request_id > account_deletion_requests.deletion_request_id [delete: cascade]
+Ref: user_consents.user_id > users.user_id
+Ref: guardian_consent_verifications.user_id > users.user_id
+Ref: eligibility_assessments.user_id > users.user_id
+Ref: health_records.user_id > users.user_id
+Ref: uploaded_file_processing_jobs.user_id > users.user_id
+Ref: survey_instances.user_id > users.user_id
+Ref: prediction_jobs.user_id > users.user_id
+Ref: predictions.user_id > users.user_id
+Ref: user_classifications.user_id > users.user_id
+Ref: challenge_recommendation_batches.user_id > users.user_id
+Ref: challenge_cycles.user_id > users.user_id
+Ref: meal_analysis_results.user_id > users.user_id
+Ref: users.user_id - notification_preferences.user_id [delete: cascade]
+Ref: push_devices.user_id > users.user_id [delete: cascade]
+Ref: reevaluation_schedules.user_id > users.user_id
+Ref: notification_deliveries.user_id > users.user_id
+Ref: feedbacks.user_id > users.user_id
+Ref: analytics_events.user_id > users.user_id [delete: set null]
+Ref: security_audit_logs.user_id > users.user_id [delete: set null]
+Ref: api_request_audits.user_id > users.user_id [delete: set null]
+
+// --- 적합성 ---
+Ref: eligibility_answers.assessment_id > eligibility_assessments.assessment_id [delete: cascade]
+
+// --- 건강정보 (health 도메인 삭제 시) ---
+Ref: health_records.cycle_id > challenge_cycles.cycle_id [delete: set null]
+Ref: health_measurements.health_record_id > health_records.health_record_id [delete: cascade]
+Ref: health_validation_errors.health_record_id > health_records.health_record_id [delete: cascade]
+Ref: uploaded_file_processing_jobs.health_record_id > health_records.health_record_id [delete: set null]
+Ref: ocr_extraction_results.file_job_id > uploaded_file_processing_jobs.file_job_id [delete: cascade]
+
+// --- 설문 (survey 도메인 삭제 시) ---
+Ref: survey_instances.health_record_id > health_records.health_record_id [delete: set null]
+Ref: survey_instances.cycle_id > challenge_cycles.cycle_id [delete: set null]
+Ref: survey_responses.survey_instance_id > survey_instances.survey_instance_id [delete: cascade]
+Ref: survey_response_options.response_id > survey_responses.response_id [delete: cascade]
+Ref: user_classifications.survey_instance_id > survey_instances.survey_instance_id [delete: cascade]
+Ref: user_classifications.health_record_id > health_records.health_record_id [delete: cascade]
+Ref: challenge_recommendation_batches.survey_instance_id > survey_instances.survey_instance_id [delete: cascade]
+
+// --- 예측 (prediction 도메인 삭제 시, 검진 기록 삭제 시 함께) ---
+Ref: prediction_jobs.health_record_id > health_records.health_record_id [delete: cascade]
+Ref: prediction_job_runs.prediction_job_id > prediction_jobs.prediction_job_id [delete: cascade]
+Ref: predictions.job_run_id > prediction_job_runs.job_run_id [delete: cascade]
+Ref: prediction_feature_values.prediction_id > predictions.prediction_id [delete: cascade]
+Ref: prediction_factors.prediction_id > predictions.prediction_id [delete: cascade]
+Ref: result_disclosures.prediction_id > predictions.prediction_id [delete: cascade]
+Ref: challenge_recommendation_batches.prediction_id > predictions.prediction_id [delete: set null]
+
+// --- 추천 ---
+Ref: challenge_recommendation_categories.recommendation_batch_id > challenge_recommendation_batches.recommendation_batch_id [delete: cascade]
+Ref: challenge_recommendation_candidates.recommendation_batch_id > challenge_recommendation_batches.recommendation_batch_id [delete: cascade]
+Ref: challenge_recommendation_reasons.recommendation_candidate_id > challenge_recommendation_candidates.recommendation_candidate_id [delete: cascade]
+
+// --- 챌린지 사이클 (challenge 도메인 삭제 시) ---
+Ref: challenge_cycles.recommendation_batch_id > challenge_recommendation_batches.recommendation_batch_id [delete: set null]
+Ref: cycle_challenges.cycle_id > challenge_cycles.cycle_id [delete: cascade]
+Ref: cycle_challenges.recommendation_candidate_id > challenge_recommendation_candidates.recommendation_candidate_id [delete: set null]
+Ref: challenge_target_weeks.cycle_challenge_id > cycle_challenges.cycle_challenge_id [delete: cascade]
+Ref: challenge_logs.cycle_challenge_id > cycle_challenges.cycle_challenge_id [delete: cascade]
+Ref: challenge_proofs.challenge_log_id > challenge_logs.challenge_log_id [delete: cascade]
+Ref: challenge_proofs.file_job_id > uploaded_file_processing_jobs.file_job_id [delete: set null]
+
+// --- 식단 (diet 도메인 삭제 시) ---
+Ref: meal_analysis_results.challenge_log_id > challenge_logs.challenge_log_id [delete: set null]
+Ref: meal_analysis_results.file_job_id > uploaded_file_processing_jobs.file_job_id [delete: set null]
+Ref: meal_analysis_foods.meal_analysis_id > meal_analysis_results.meal_analysis_id [delete: cascade]
+
+// --- 알림 · 재평가 ---
+Ref: reevaluation_schedules.cycle_id > challenge_cycles.cycle_id [delete: set null]
+Ref: reevaluation_schedules.completed_health_record_id > health_records.health_record_id [delete: set null]
+Ref: notification_deliveries.reevaluation_schedule_id > reevaluation_schedules.reevaluation_schedule_id [delete: set null]
+
+// --- 피드백 (대상이 삭제돼도 피드백 통계는 유지) ---
+Ref: feedbacks.prediction_id > predictions.prediction_id [delete: set null]
+Ref: feedbacks.recommendation_batch_id > challenge_recommendation_batches.recommendation_batch_id [delete: set null]
+Ref: feedbacks.cycle_challenge_id > cycle_challenges.cycle_challenge_id [delete: set null]
+Ref: feedbacks.recommendation_candidate_id > challenge_recommendation_candidates.recommendation_candidate_id [delete: set null]
