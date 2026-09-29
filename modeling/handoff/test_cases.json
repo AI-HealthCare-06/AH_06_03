@@ -1,0 +1,1133 @@
+[
+  {
+    "case_id": "T1_45세남성_흡연_데모예시",
+    "input": {
+      "age": 45,
+      "sex": "M",
+      "height_cm": 172,
+      "weight_kg": 78,
+      "waist_cm": 88,
+      "sbp": 145,
+      "dbp": 92,
+      "total_chol": 212,
+      "smoking": "current",
+      "diabetes": false,
+      "htn_status": "none",
+      "parent_htn": "yes",
+      "drink_freq": "2_3_per_week",
+      "drink_amount": "5_6",
+      "breakfast": "1_2",
+      "eatout": "1_per_day",
+      "moderate_min_per_week": 60,
+      "vigorous_min_per_week": 0
+    },
+    "expected_model_a": {
+      "model_code": "MODEL_A",
+      "model_version": "0.1.0",
+      "status": "completed",
+      "skip_reason": null,
+      "probability": 0.150995,
+      "factors": [
+        {
+          "code": "male",
+          "label": "성별(남)",
+          "value": 1,
+          "value_label": "남",
+          "contribution": 0.551428,
+          "direction": "risk_increase",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 1
+        },
+        {
+          "code": "currentSmoker",
+          "label": "흡연",
+          "value": 1,
+          "value_label": "있음",
+          "contribution": 0.386011,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 2
+        },
+        {
+          "code": "sysBP",
+          "label": "수축기혈압",
+          "value": 145.0,
+          "value_label": null,
+          "contribution": 0.186179,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 3
+        },
+        {
+          "code": "BMI",
+          "label": "BMI",
+          "value": 26.365603028664147,
+          "value_label": null,
+          "contribution": 0.001813,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 4
+        },
+        {
+          "code": "totChol",
+          "label": "총콜레스테롤",
+          "value": 212.0,
+          "value_label": null,
+          "contribution": -0.058542,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 5
+        },
+        {
+          "code": "age",
+          "label": "나이",
+          "value": 45.0,
+          "value_label": null,
+          "contribution": -0.308066,
+          "direction": "protective",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 6
+        }
+      ],
+      "top_risk_factor": {
+        "code": "male",
+        "label": "성별(남)",
+        "value": 1,
+        "value_label": "남",
+        "contribution": 0.551428,
+        "direction": "risk_increase",
+        "modifiable": false,
+        "direction_matches_expectation": true,
+        "display_rank": 1
+      },
+      "top_modifiable_factor": {
+        "code": "currentSmoker",
+        "label": "흡연",
+        "value": 1,
+        "value_label": "있음",
+        "contribution": 0.386011,
+        "direction": "risk_increase",
+        "modifiable": true,
+        "direction_matches_expectation": true,
+        "display_rank": 2
+      },
+      "missing_features": [],
+      "risk_level": "borderline",
+      "percentile": null
+    },
+    "expected_model_b": {
+      "model_code": "MODEL_B",
+      "model_version": "0.1.0",
+      "status": "completed",
+      "skip_reason": null,
+      "probability": 0.533377,
+      "factors": [
+        {
+          "code": "male",
+          "label": "성별(남)",
+          "value": 1,
+          "value_label": "남",
+          "contribution": 0.750122,
+          "direction": "risk_increase",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 1
+        },
+        {
+          "code": "parent_htn",
+          "label": "부모 고혈압 가족력",
+          "value": 1,
+          "value_label": "있음",
+          "contribution": 0.32087,
+          "direction": "risk_increase",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 2
+        },
+        {
+          "code": "bmi",
+          "label": "BMI",
+          "value": 26.365603028664147,
+          "value_label": null,
+          "contribution": 0.247144,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 3
+        },
+        {
+          "code": "waist",
+          "label": "허리둘레",
+          "value": 88.0,
+          "value_label": null,
+          "contribution": 0.171312,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 4
+        },
+        {
+          "code": "drink_amount",
+          "label": "한 번 음주량",
+          "value": 3,
+          "value_label": "5–6잔",
+          "contribution": 0.129578,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 5
+        },
+        {
+          "code": "drink_freq",
+          "label": "음주 빈도",
+          "value": 5,
+          "value_label": "주 2–3회",
+          "contribution": 0.057206,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 6
+        },
+        {
+          "code": "breakfast_skip",
+          "label": "아침 결식",
+          "value": 3,
+          "value_label": "아침 주 1–2회",
+          "contribution": 0.001529,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 7
+        },
+        {
+          "code": "eatout",
+          "label": "외식·배달 빈도",
+          "value": 6,
+          "value_label": "하루 1회",
+          "contribution": -0.097446,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": false,
+          "display_rank": 8
+        },
+        {
+          "code": "age",
+          "label": "나이",
+          "value": 45.0,
+          "value_label": null,
+          "contribution": -0.125496,
+          "direction": "protective",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 9
+        },
+        {
+          "code": "smoke_current",
+          "label": "현재 흡연",
+          "value": 1,
+          "value_label": "있음",
+          "contribution": -0.24049,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": false,
+          "display_rank": 10
+        }
+      ],
+      "top_risk_factor": {
+        "code": "male",
+        "label": "성별(남)",
+        "value": 1,
+        "value_label": "남",
+        "contribution": 0.750122,
+        "direction": "risk_increase",
+        "modifiable": false,
+        "direction_matches_expectation": true,
+        "display_rank": 1
+      },
+      "top_modifiable_factor": {
+        "code": "bmi",
+        "label": "BMI",
+        "value": 26.365603028664147,
+        "value_label": null,
+        "contribution": 0.247144,
+        "direction": "risk_increase",
+        "modifiable": true,
+        "direction_matches_expectation": true,
+        "display_rank": 3
+      },
+      "missing_features": [],
+      "risk_level": null,
+      "percentile": null
+    }
+  },
+  {
+    "case_id": "T2_35세여성_비흡연_저위험",
+    "input": {
+      "age": 35,
+      "sex": "F",
+      "height_cm": 162,
+      "weight_kg": 54,
+      "waist_cm": 70,
+      "sbp": 110,
+      "dbp": 70,
+      "total_chol": 180,
+      "smoking": "never",
+      "diabetes": false,
+      "htn_status": "none",
+      "parent_htn": "no",
+      "drink_freq": "lt_monthly",
+      "drink_amount": "1_2",
+      "breakfast": "5_7",
+      "eatout": "1_2_per_week",
+      "moderate_min_per_week": 200,
+      "vigorous_min_per_week": 0
+    },
+    "expected_model_a": {
+      "model_code": "MODEL_A",
+      "model_version": "0.1.0",
+      "status": "completed",
+      "skip_reason": null,
+      "probability": 0.019097,
+      "factors": [
+        {
+          "code": "BMI",
+          "label": "BMI",
+          "value": 20.576131687242793,
+          "value_label": null,
+          "contribution": -0.017587,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 1
+        },
+        {
+          "code": "totChol",
+          "label": "총콜레스테롤",
+          "value": 180.0,
+          "value_label": null,
+          "contribution": -0.134478,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 2
+        },
+        {
+          "code": "sysBP",
+          "label": "수축기혈압",
+          "value": 110.0,
+          "value_label": null,
+          "contribution": -0.332626,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 3
+        },
+        {
+          "code": "age",
+          "label": "나이",
+          "value": 35.0,
+          "value_label": null,
+          "contribution": -0.968596,
+          "direction": "protective",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 4
+        }
+      ],
+      "top_risk_factor": null,
+      "top_modifiable_factor": null,
+      "missing_features": [],
+      "risk_level": "normal",
+      "percentile": null
+    },
+    "expected_model_b": {
+      "model_code": "MODEL_B",
+      "model_version": "0.1.0",
+      "status": "completed",
+      "skip_reason": null,
+      "probability": 0.099669,
+      "factors": [
+        {
+          "code": "eatout",
+          "label": "외식·배달 빈도",
+          "value": 3,
+          "value_label": "주 1–2회",
+          "contribution": 0.040425,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": false,
+          "display_rank": 1
+        },
+        {
+          "code": "aerobic",
+          "label": "유산소 신체활동 실천",
+          "value": 1,
+          "value_label": "있음",
+          "contribution": 0.025881,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": false,
+          "display_rank": 2
+        },
+        {
+          "code": "breakfast_skip",
+          "label": "아침 결식",
+          "value": 1,
+          "value_label": "아침 주 5–7회",
+          "contribution": -0.001589,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 3
+        },
+        {
+          "code": "drink_freq",
+          "label": "음주 빈도",
+          "value": 2,
+          "value_label": "월 1회 미만",
+          "contribution": -0.021517,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 4
+        },
+        {
+          "code": "drink_amount",
+          "label": "한 번 음주량",
+          "value": 1,
+          "value_label": "1–2잔",
+          "contribution": -0.086618,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 5
+        },
+        {
+          "code": "bmi",
+          "label": "BMI",
+          "value": 20.576131687242793,
+          "value_label": null,
+          "contribution": -0.248568,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 6
+        },
+        {
+          "code": "waist",
+          "label": "허리둘레",
+          "value": 70.0,
+          "value_label": null,
+          "contribution": -0.303618,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 7
+        },
+        {
+          "code": "age",
+          "label": "나이",
+          "value": 35.0,
+          "value_label": null,
+          "contribution": -0.524676,
+          "direction": "protective",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 8
+        }
+      ],
+      "top_risk_factor": {
+        "code": "eatout",
+        "label": "외식·배달 빈도",
+        "value": 3,
+        "value_label": "주 1–2회",
+        "contribution": 0.040425,
+        "direction": "risk_increase",
+        "modifiable": true,
+        "direction_matches_expectation": false,
+        "display_rank": 1
+      },
+      "top_modifiable_factor": {
+        "code": "eatout",
+        "label": "외식·배달 빈도",
+        "value": 3,
+        "value_label": "주 1–2회",
+        "contribution": 0.040425,
+        "direction": "risk_increase",
+        "modifiable": true,
+        "direction_matches_expectation": false,
+        "display_rank": 1
+      },
+      "missing_features": [],
+      "risk_level": null,
+      "percentile": null
+    }
+  },
+  {
+    "case_id": "T3_62세남성_고혈압약복용_고위험",
+    "input": {
+      "age": 62,
+      "sex": "M",
+      "height_cm": 170,
+      "weight_kg": 85,
+      "waist_cm": 98,
+      "sbp": 165,
+      "dbp": 98,
+      "total_chol": 260,
+      "smoking": "current",
+      "diabetes": true,
+      "htn_status": "treated",
+      "parent_htn": "yes",
+      "drink_freq": "4plus_per_week",
+      "drink_amount": "7_9",
+      "breakfast": "0",
+      "eatout": "3_4_per_week",
+      "moderate_min_per_week": 0,
+      "vigorous_min_per_week": 0
+    },
+    "expected_model_a": {
+      "model_code": "MODEL_A",
+      "model_version": "0.1.0",
+      "status": "completed",
+      "skip_reason": null,
+      "probability": 0.758454,
+      "factors": [
+        {
+          "code": "age",
+          "label": "나이",
+          "value": 62.0,
+          "value_label": null,
+          "contribution": 0.814835,
+          "direction": "risk_increase",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 1
+        },
+        {
+          "code": "diabetes",
+          "label": "당뇨",
+          "value": 1,
+          "value_label": "있음",
+          "contribution": 0.730864,
+          "direction": "risk_increase",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 2
+        },
+        {
+          "code": "male",
+          "label": "성별(남)",
+          "value": 1,
+          "value_label": "남",
+          "contribution": 0.551428,
+          "direction": "risk_increase",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 3
+        },
+        {
+          "code": "sysBP",
+          "label": "수축기혈압",
+          "value": 165.0,
+          "value_label": null,
+          "contribution": 0.482639,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 4
+        },
+        {
+          "code": "BPMeds",
+          "label": "혈압약 복용",
+          "value": 1,
+          "value_label": "있음",
+          "contribution": 0.445113,
+          "direction": "risk_increase",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 5
+        },
+        {
+          "code": "currentSmoker",
+          "label": "흡연",
+          "value": 1,
+          "value_label": "있음",
+          "contribution": 0.386011,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 6
+        },
+        {
+          "code": "prevalentHyp",
+          "label": "고혈압 진단",
+          "value": 1,
+          "value_label": "있음",
+          "contribution": 0.151593,
+          "direction": "risk_increase",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 7
+        },
+        {
+          "code": "totChol",
+          "label": "총콜레스테롤",
+          "value": 260.0,
+          "value_label": null,
+          "contribution": 0.055362,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 8
+        },
+        {
+          "code": "BMI",
+          "label": "BMI",
+          "value": 29.411764705882355,
+          "value_label": null,
+          "contribution": 0.012021,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 9
+        }
+      ],
+      "top_risk_factor": {
+        "code": "age",
+        "label": "나이",
+        "value": 62.0,
+        "value_label": null,
+        "contribution": 0.814835,
+        "direction": "risk_increase",
+        "modifiable": false,
+        "direction_matches_expectation": true,
+        "display_rank": 1
+      },
+      "top_modifiable_factor": {
+        "code": "sysBP",
+        "label": "수축기혈압",
+        "value": 165.0,
+        "value_label": null,
+        "contribution": 0.482639,
+        "direction": "risk_increase",
+        "modifiable": true,
+        "direction_matches_expectation": true,
+        "display_rank": 4
+      },
+      "missing_features": [],
+      "risk_level": "high",
+      "percentile": null
+    },
+    "expected_model_b": {
+      "model_code": "MODEL_B",
+      "model_version": "0.1.0",
+      "status": "skipped",
+      "skip_reason": "htn_diagnosed"
+    }
+  },
+  {
+    "case_id": "T4_55세여성_고혈압진단_약안먹음",
+    "input": {
+      "age": 55,
+      "sex": "F",
+      "height_cm": 158,
+      "weight_kg": 66,
+      "waist_cm": 86,
+      "sbp": 138,
+      "dbp": 86,
+      "total_chol": 230,
+      "smoking": "never",
+      "diabetes": false,
+      "htn_status": "diagnosed_untreated",
+      "parent_htn": "unknown",
+      "drink_freq": "never_lifetime",
+      "drink_amount": null,
+      "breakfast": "5_7",
+      "eatout": "lt_monthly",
+      "moderate_min_per_week": 90,
+      "vigorous_min_per_week": 30
+    },
+    "expected_model_a": {
+      "model_code": "MODEL_A",
+      "model_version": "0.1.0",
+      "status": "completed",
+      "skip_reason": null,
+      "probability": 0.128651,
+      "factors": [
+        {
+          "code": "age",
+          "label": "나이",
+          "value": 55.0,
+          "value_label": null,
+          "contribution": 0.352464,
+          "direction": "risk_increase",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 1
+        },
+        {
+          "code": "prevalentHyp",
+          "label": "고혈압 진단",
+          "value": 1,
+          "value_label": "있음",
+          "contribution": 0.151593,
+          "direction": "risk_increase",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 2
+        },
+        {
+          "code": "sysBP",
+          "label": "수축기혈압",
+          "value": 138.0,
+          "value_label": null,
+          "contribution": 0.082418,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 3
+        },
+        {
+          "code": "BMI",
+          "label": "BMI",
+          "value": 26.43807082198365,
+          "value_label": null,
+          "contribution": 0.002056,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 4
+        },
+        {
+          "code": "totChol",
+          "label": "총콜레스테롤",
+          "value": 230.0,
+          "value_label": null,
+          "contribution": -0.015828,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 5
+        }
+      ],
+      "top_risk_factor": {
+        "code": "age",
+        "label": "나이",
+        "value": 55.0,
+        "value_label": null,
+        "contribution": 0.352464,
+        "direction": "risk_increase",
+        "modifiable": false,
+        "direction_matches_expectation": true,
+        "display_rank": 1
+      },
+      "top_modifiable_factor": {
+        "code": "sysBP",
+        "label": "수축기혈압",
+        "value": 138.0,
+        "value_label": null,
+        "contribution": 0.082418,
+        "direction": "risk_increase",
+        "modifiable": true,
+        "direction_matches_expectation": true,
+        "display_rank": 3
+      },
+      "missing_features": [],
+      "risk_level": "borderline",
+      "percentile": null
+    },
+    "expected_model_b": {
+      "model_code": "MODEL_B",
+      "model_version": "0.1.0",
+      "status": "skipped",
+      "skip_reason": "htn_diagnosed"
+    }
+  },
+  {
+    "case_id": "T5_27세남성_모델A연령밖",
+    "input": {
+      "age": 27,
+      "sex": "M",
+      "height_cm": 178,
+      "weight_kg": 92,
+      "waist_cm": 95,
+      "sbp": 128,
+      "dbp": 82,
+      "total_chol": 190,
+      "smoking": "current",
+      "diabetes": false,
+      "htn_status": "none",
+      "parent_htn": "yes",
+      "drink_freq": "2_3_per_week",
+      "drink_amount": "10plus",
+      "breakfast": "0",
+      "eatout": "2plus_per_day",
+      "moderate_min_per_week": 0,
+      "vigorous_min_per_week": 0
+    },
+    "expected_model_a": {
+      "model_code": "MODEL_A",
+      "model_version": "0.1.0",
+      "status": "skipped",
+      "skip_reason": "age_out_of_range"
+    },
+    "expected_model_b": {
+      "model_code": "MODEL_B",
+      "model_version": "0.1.0",
+      "status": "completed",
+      "skip_reason": null,
+      "probability": 0.500096,
+      "factors": [
+        {
+          "code": "male",
+          "label": "성별(남)",
+          "value": 1,
+          "value_label": "남",
+          "contribution": 0.750122,
+          "direction": "risk_increase",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 1
+        },
+        {
+          "code": "bmi",
+          "label": "BMI",
+          "value": 29.036737785633125,
+          "value_label": null,
+          "contribution": 0.475854,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 2
+        },
+        {
+          "code": "waist",
+          "label": "허리둘레",
+          "value": 95.0,
+          "value_label": null,
+          "contribution": 0.356007,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 3
+        },
+        {
+          "code": "drink_amount",
+          "label": "한 번 음주량",
+          "value": 5,
+          "value_label": "10잔 이상",
+          "contribution": 0.345774,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 4
+        },
+        {
+          "code": "parent_htn",
+          "label": "부모 고혈압 가족력",
+          "value": 1,
+          "value_label": "있음",
+          "contribution": 0.32087,
+          "direction": "risk_increase",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 5
+        },
+        {
+          "code": "drink_freq",
+          "label": "음주 빈도",
+          "value": 5,
+          "value_label": "주 2–3회",
+          "contribution": 0.057206,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 6
+        },
+        {
+          "code": "breakfast_skip",
+          "label": "아침 결식",
+          "value": 4,
+          "value_label": "아침 거의 안 먹음",
+          "contribution": 0.003088,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 7
+        },
+        {
+          "code": "eatout",
+          "label": "외식·배달 빈도",
+          "value": 7,
+          "value_label": "하루 2회 이상",
+          "contribution": -0.143403,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": false,
+          "display_rank": 8
+        },
+        {
+          "code": "smoke_current",
+          "label": "현재 흡연",
+          "value": 1,
+          "value_label": "있음",
+          "contribution": -0.24049,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": false,
+          "display_rank": 9
+        },
+        {
+          "code": "age",
+          "label": "나이",
+          "value": 27.0,
+          "value_label": null,
+          "contribution": -0.84402,
+          "direction": "protective",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 10
+        }
+      ],
+      "top_risk_factor": {
+        "code": "male",
+        "label": "성별(남)",
+        "value": 1,
+        "value_label": "남",
+        "contribution": 0.750122,
+        "direction": "risk_increase",
+        "modifiable": false,
+        "direction_matches_expectation": true,
+        "display_rank": 1
+      },
+      "top_modifiable_factor": {
+        "code": "bmi",
+        "label": "BMI",
+        "value": 29.036737785633125,
+        "value_label": null,
+        "contribution": 0.475854,
+        "direction": "risk_increase",
+        "modifiable": true,
+        "direction_matches_expectation": true,
+        "display_rank": 2
+      },
+      "missing_features": [],
+      "risk_level": null,
+      "percentile": null
+    }
+  },
+  {
+    "case_id": "T6_48세여성_과거흡연_선택항목결측",
+    "input": {
+      "age": 48,
+      "sex": "F",
+      "height_cm": 165,
+      "weight_kg": 60,
+      "waist_cm": null,
+      "sbp": 122,
+      "dbp": 78,
+      "total_chol": 205,
+      "smoking": "former",
+      "diabetes": false,
+      "htn_status": "none",
+      "parent_htn": "unknown",
+      "drink_freq": "monthly",
+      "drink_amount": null,
+      "breakfast": null,
+      "eatout": null
+    },
+    "expected_model_a": {
+      "model_code": "MODEL_A",
+      "model_version": "0.1.0",
+      "status": "completed",
+      "skip_reason": null,
+      "probability": 0.055298,
+      "factors": [
+        {
+          "code": "BMI",
+          "label": "BMI",
+          "value": 22.03856749311295,
+          "value_label": null,
+          "contribution": -0.012687,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 1
+        },
+        {
+          "code": "totChol",
+          "label": "총콜레스테롤",
+          "value": 205.0,
+          "value_label": null,
+          "contribution": -0.075153,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 2
+        },
+        {
+          "code": "age",
+          "label": "나이",
+          "value": 48.0,
+          "value_label": null,
+          "contribution": -0.109907,
+          "direction": "protective",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 3
+        },
+        {
+          "code": "sysBP",
+          "label": "수축기혈압",
+          "value": 122.0,
+          "value_label": null,
+          "contribution": -0.15475,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 4
+        }
+      ],
+      "top_risk_factor": null,
+      "top_modifiable_factor": null,
+      "missing_features": [],
+      "risk_level": "normal",
+      "percentile": null
+    },
+    "expected_model_b": {
+      "model_code": "MODEL_B",
+      "model_version": "0.1.0",
+      "status": "completed",
+      "skip_reason": null,
+      "probability": 0.153312,
+      "factors": [
+        {
+          "code": "drink_freq",
+          "label": "음주 빈도",
+          "value": 3,
+          "value_label": "월 1회",
+          "contribution": 0.004724,
+          "direction": "risk_increase",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 1
+        },
+        {
+          "code": "breakfast_skip",
+          "label": "아침 결식",
+          "value": 1.0,
+          "value_label": "아침 주 5–7회",
+          "contribution": -0.001589,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 2
+        },
+        {
+          "code": "eatout",
+          "label": "외식·배달 빈도",
+          "value": 4.0,
+          "value_label": "주 3–4회",
+          "contribution": -0.005532,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": false,
+          "display_rank": 3
+        },
+        {
+          "code": "age",
+          "label": "나이",
+          "value": 48.0,
+          "value_label": null,
+          "contribution": -0.005742,
+          "direction": "protective",
+          "modifiable": false,
+          "direction_matches_expectation": true,
+          "display_rank": 4
+        },
+        {
+          "code": "waist",
+          "label": "허리둘레",
+          "value": 81.1,
+          "value_label": null,
+          "contribution": -0.010744,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 5
+        },
+        {
+          "code": "drink_amount",
+          "label": "한 번 음주량",
+          "value": 1.0,
+          "value_label": "1–2잔",
+          "contribution": -0.086618,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 6
+        },
+        {
+          "code": "bmi",
+          "label": "BMI",
+          "value": 22.03856749311295,
+          "value_label": null,
+          "contribution": -0.12335,
+          "direction": "protective",
+          "modifiable": true,
+          "direction_matches_expectation": true,
+          "display_rank": 7
+        },
+        {
+          "code": "smoke_former",
+          "label": "과거 흡연",
+          "value": 1,
+          "value_label": "있음",
+          "contribution": -0.399381,
+          "direction": "protective",
+          "modifiable": false,
+          "direction_matches_expectation": false,
+          "display_rank": 8
+        }
+      ],
+      "top_risk_factor": {
+        "code": "drink_freq",
+        "label": "음주 빈도",
+        "value": 3,
+        "value_label": "월 1회",
+        "contribution": 0.004724,
+        "direction": "risk_increase",
+        "modifiable": true,
+        "direction_matches_expectation": true,
+        "display_rank": 1
+      },
+      "top_modifiable_factor": {
+        "code": "drink_freq",
+        "label": "음주 빈도",
+        "value": 3,
+        "value_label": "월 1회",
+        "contribution": 0.004724,
+        "direction": "risk_increase",
+        "modifiable": true,
+        "direction_matches_expectation": true,
+        "display_rank": 1
+      },
+      "missing_features": [
+        "waist",
+        "parent_htn",
+        "drink_amount",
+        "aerobic",
+        "breakfast_skip",
+        "eatout"
+      ],
+      "risk_level": null,
+      "percentile": null
+    }
+  }
+]
