@@ -3,6 +3,9 @@ from pathlib import Path
 from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
 
+from app.apis.prediction import router as prediction_router
+
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # compose 볼륨으로 마운트되므로 없을 때만 만든다
@@ -11,6 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 app = FastAPI(title="PAEON API")
 
+app.include_router(prediction_router)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.mount("/media", StaticFiles(directory=BASE_DIR / "media"), name="media")
 
