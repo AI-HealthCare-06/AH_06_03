@@ -1,22 +1,24 @@
-"""/predict 창구.
+"""/v1/predict 임시 창구.
  
-주문을 받아 서비스에 넘기고, 결과를 돌려주기만 한다. 계산은 하지 않는다.
+모델 연결 확인용. API 명세서의 정식 흐름(/health/records → /predictions/jobs)이
+완성되면 지운다. 계산은 하지 않고, 받고 넘기고 돌려주기만 한다.
+
 """
 
 from fastapi import APIRouter
 
-from app.schemas.prediction import PredictRequest, PredictResponse
+from app.schemas.prediction import PredictRequest, PredictEnvelope
 from app.services import prediction_service
 
 router = APIRouter(tags=["prediction"])
 
 @router.post(
     "/predict",
-    response_model=PredictResponse,
-    summary="모델 A/B 예측",
-    description="건강정보를 받아 모델 A(10년 관싱동맥질환 위험)와 모델 B(현재 경계군과 닮은 정도) 결과를 따로 돌려준다",
+    response_model=PredictEnvelope,
+    summary="[임시] 모델 A/B 예측",
+    description="모델 연결 확인용 임시 창구. 정식 흐름은 /health/records → /predictions/jobs.",
 
 )
-def predict(req:PredictRequest)->PredictResponse:
-    return prediction_service.predict(req)
+def predict(req:PredictRequest)->PredictEnvelope:
+    return PredictEnvelope(data=prediction_service.predict(req))
 

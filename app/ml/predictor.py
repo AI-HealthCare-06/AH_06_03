@@ -19,8 +19,8 @@ if str(MODELING_DIR) not in sys.path:
 
 import paeon_models
 
-SPEC_A=json.loads(paeon_models.MODEL_SPEC_A.read_text(encoding="utf-8"))
-SPEC_B=json.loads(paeon_models.MODEL_SPEC_B.read_text(encoding="utf-8"))
+SPEC_A=json.loads(paeon_models.SPEC_A.read_text(encoding="utf-8"))
+SPEC_B=json.loads(paeon_models.SPEC_B.read_text(encoding="utf-8"))
 
 def run_model_a(user:dict) -> dict:
     """모델 A를 실행하고 결과를 반환한다"""

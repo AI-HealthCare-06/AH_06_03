@@ -7,7 +7,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 # 선택지 값
 Sex = Literal["M", "F"]
@@ -25,7 +25,6 @@ EatOut=Literal[
     "1_2_per_week", "1_3_per_month", "It_monthly",
 ]
 
-NON_DRINKER={"never_lifetime", "none_past_year"}
 
 # 입력
 class PredictRequest(BaseModel):
@@ -44,7 +43,7 @@ class PredictRequest(BaseModel):
     dbp: float=Field(ge=30, le=160, description="이완기혈압(mmHg)")
     total_chol: float=Field(ge=50, le=600, description="총콜레스테롤(mg/dL)")
     smoking: Smoking
-    diabates: bool
+    diabetes: bool
     htn_status: HtnStatus
     parent_htn: ParentHtn
     drink_freq: DrinlFreq
@@ -58,7 +57,7 @@ class PredictRequest(BaseModel):
 
     # 생활습관 설문
     breakfast: Breakfast | None = None
-    eat_out: EatOut | None = None
+    eatout: EatOut | None = None
     moderate_min_per_week: float | None = Field(default=None, ge=0, le=5000)
     vigorous_min_per_week: float | None = Field(default=None, ge=0, le=5000)
     aerobic: Literal[0, 1] | None = Field(default=None, description="분 대신 직접 보낼 때")
@@ -102,6 +101,8 @@ class PredictResponse(BaseModel):
     disclaimer: str = DISCLAIMER
 
 
-
+class PredictEnvelope(BaseModel):
+    """API 명세서 공통 규칙: 성공 응답은 {"data": ...}로 감싼다."""
+    data: PredictResponse
 
     
