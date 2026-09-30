@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 챌린지 선택</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .cat{background:var(--cream); border:1px solid var(--sage-light); border-radius:18px; overflow:hidden; margin-bottom:10px}
+  .cat>header{display:flex; align-items:center; gap:8px; padding:10px 16px; border-bottom:1px solid var(--sage-light)}
+  .cat>header h3{font-size:14px; margin:0}
+  .slot{display:flex; gap:10px; align-items:flex-start; background:#fff; border:1.5px solid var(--sage-light); border-radius:16px; padding:12px 14px; font-size:13.5px; margin:8px 10px}
+  .slot[data-k="fixed"]{background:var(--cream)}
+  .slot[data-k="out"]{opacity:.6; border-style:dashed; background:transparent}
+  .slot .st{font-weight:700}
+  .slot .sd{font-size:12px; color:var(--muted)}
+  .pickable{cursor:pointer}
+  .pickable[data-on="1"]{border-color:var(--sage-deep); background:var(--sage-light)}
+  .lvl{font-size:10.5px; font-weight:700; border-radius:999px; padding:0 8px; border:1px solid currentColor; margin-left:6px; white-space:nowrap}
+  .lvl[data-l="하"]{color:var(--ok)} .lvl[data-l="중"]{color:var(--warn)} .lvl[data-l="상"]{color:var(--risk)}
+  .countbar{font-size:12.5px; color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen">
+        <p class="lede">고정 미션 2개는 정해져 있고, 아래에서 선택 미션 1개를 고릅니다. 한 사이클에 총 3개입니다.</p>
+        <p class="sect">고정 미션 2개 — 흡연 한 칸, 음주 한 칸</p>
+        <div id="fixed-list"></div>
+        <p class="sect">선택 미션 1개 — 카테고리 제한 없음</p>
+        <div id="cat-list"></div>
+        <div class="countbar">선택 <b id="pick-count">0</b> / 1</div>
+        <p class="sect" id="out-title" style="display:none"></p>
+        <div id="out-list"></div>
+        <button type="button" id="start-btn" class="cta" disabled>4주 챌린지 시작</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script>
+if (!localStorage.getItem('paeon-cycle')) {
+
+const health = JSON.parse(localStorage.getItem('paeon-health') || 'null');
+const survey = JSON.parse(localStorage.getItem('paeon-survey') || 'null');
+
+const M = {
+  b1: { id: 'b1', t: '금연 유지 (전자담배 포함)', d: '전자담배도 포함입니다', lv: '상', bp: -2 },
+  b2: { id: 'b2', t: '표준잔 지키기 · 남 2 / 여 1', d: '초과 입력 시 경고와 함께 해당 일차를 실패로 처리합니다', lv: '중', bp: -2 },
+  s1: { id: 's1', cat: 'salt', t: '국물 남기기 주 5회', d: '국·찌개·라면은 한 번에 염분이 많이 들어갑니다', lv: '하', bp: -5 },
+  s2: { id: 's2', cat: 'salt', t: '라면 주 1회 이하', d: '단일 식품 중 염분이 가장 눈에 띕니다', lv: '중', bp: -3 },
+  a2: { id: 'a2', cat: 'act', t: '하루 30분 걷기 주 5일', d: '유산소 주 5회 이상', lv: '중', bp: -6 },
+  o2: { id: 'o2', cat: 'out', t: '집밥 저염식 주 3회', d: '가공식품 대신 신선한 채소·과일·육류', lv: '중', bp: -4 },
+  m1: { id: 'm1', cat: 'morn', t: '아침 거르지 않기 주 5일', d: '근거 확인이 필요한 항목(검토 중)', lv: '중', bp: 0 },
+  w2: { id: 'w2', cat: 'wt', t: '저녁 밥 2/3공기', d: '저녁 식사량 줄이기', lv: '중', bp: -2 },
+};
+const CATS = [
+  { id: 'salt', n: '나트륨 줄이기', ids: ['s1', 's2'] },
+  { id: 'act', n: '신체 활동', ids: ['a2'] },
+  { id: 'out', n: '외식 · 배달 조절', ids: ['o2'] },
+  { id: 'morn', n: '아침 식사', ids: ['m1'], note: '검토 중' },
+  { id: 'wt', n: '체중 관리', ids: ['w2'], note: 'Backlog' },
+];
+
+const bmi = health.weight_kg / Math.pow(health.height_cm / 100, 2);
+const isDrinker = !['never_lifetime', 'none_past_year'].includes(health.drink_freq);
+
+function excludeReason(m) {
+  if (m.cat === 'salt' && survey.sodium_score <= 4) return '이미 싱겁게 드십니다';
+  if (m.id === 'a2' && survey.aerobic === 1) return '권고 수준을 이미 실천하고 있습니다';
+  if (m.cat === 'out' && ['lt_monthly', '1_3_per_month', '1_2_per_week'].includes(survey.eatout)) return '외식·배달 빈도가 낮습니다';
+  if (m.cat === 'morn' && survey.breakfast === '5_7') return '아침을 대체로 드십니다';
+  if (m.cat === 'wt' && bmi < 25) return 'BMI가 권고 범위입니다';
+  return null;
+}
+
+function fixedMissions() {
+  const used = new Set();
+  const salt = ['s1', 's2']; let si = 0;
+  const nextSalt = () => { while (si < salt.length) { const m = M[salt[si++]]; if (!used.has(m.id)) return m; } return null; };
+  const fb = ['a2', 'o2', 'w2']; let fi = 0;
+  const nextFb = () => { while (fi < fb.length) { const m = M[fb[fi++]]; if (!used.has(m.id) && !excludeReason(m)) return m; } return null; };
+  const out = [];
+  const fill = (base, keep, from) => {
+    if (keep) { used.add(base.id); out.push({ ...base, from }); return; }
+    const m = survey.sodium_score > 4 ? nextSalt() : nextFb();
+    if (m) { used.add(m.id); out.push({ ...m, from: from + ' → 대체' }); }
+  };
+  fill(M.b1, health.smoking === 'current', '흡연');
+  fill(M.b2, isDrinker, '음주');
+  return out;
+}
+
+const fx = fixedMissions();
+const usedIds = new Set(fx.map(m => m.id));
+let picked = null;
+
+document.getElementById('fixed-list').innerHTML = fx.map(m => `
+  <div class="slot" data-k="fixed"><span>📌</span>
+    <span><div class="st">${m.t} <span class="lvl" data-l="${m.lv}">${m.lv}</span><span style="font-size:10.5px;color:var(--sage-deep);border:1px solid var(--sage-deep);border-radius:999px;padding:0 8px;margin-left:6px">${m.from}</span></div>
+    <div class="sd">${m.d}</div></span>
+  </div>`).join('');
+
+const catList = document.getElementById('cat-list');
+const outList = document.getElementById('out-list');
+const outs = [];
+CATS.forEach(c => {
+  const ms = c.ids.map(id => M[id]).filter(m => !usedIds.has(m.id));
+  const avail = ms.filter(m => !excludeReason(m));
+  if (!avail.length) {
+    const why = ms.length ? excludeReason(ms[0]) : null;
+    if (why) outs.push([c.n + ' 미션', why]);
+    return;
+  }
+  ms.filter(m => excludeReason(m)).forEach(m => outs.push([m.t, excludeReason(m)]));
+  const cat = document.createElement('div');
+  cat.className = 'cat';
+  cat.innerHTML = `<header><h3>${c.n}</h3>${c.note ? `<span class="lvl" style="color:var(--faint)">${c.note}</span>` : ''}</header>`;
+  avail.forEach(m => {
+    const slot = document.createElement('div');
+    slot.className = 'slot pickable';
+    slot.dataset.on = '0';
+    slot.dataset.id = m.id;
+    slot.innerHTML = `<span>⬜</span><span><div class="st">${m.t} <span class="lvl" data-l="${m.lv}">${m.lv}</span></div><div class="sd">${m.d}</div></span>`;
+    slot.addEventListener('click', () => {
+      picked = (picked === m.id) ? null : m.id;
+      document.querySelectorAll('.pickable').forEach(s => { s.dataset.on = (s.dataset.id === picked) ? '1' : '0'; s.querySelector('span').textContent = (s.dataset.id === picked) ? '✅' : '⬜'; });
+      document.getElementById('pick-count').textContent = picked ? '1' : '0';
+      document.getElementById('start-btn').disabled = !picked;
+    });
+    cat.appendChild(slot);
+  });
+  catList.appendChild(cat);
+});
+if (outs.length) {
+  document.getElementById('out-title').style.display = 'block';
+  document.getElementById('out-title').textContent = `제외한 미션 ${outs.length}개 — 이미 하고 계신 것은 다시 시키지 않습니다`;
+  outList.innerHTML = outs.map(([t, w]) => `<div class="slot" data-k="out"><span>—</span><span><div class="st">${t}</div><div class="sd">${w}</div></span></div>`).join('');
+}
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  const missions = [...fx, ...(picked ? [M[picked]] : [])];
+  localStorage.setItem('paeon-cycle', JSON.stringify({ missions, startedOn: new Date().toISOString().slice(0, 10) }));
+  localStorage.setItem('paeon-progress', JSON.stringify({ days: [], bpLog: [] }));
+  window.location.href = 'challenge-progress.html';
+});
+
+} else {
+  window.location.replace('challenge-progress.html');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 생활습관 설문</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .substeps{display:flex; gap:6px; flex-wrap:wrap}
+  .substeps span{font-size:12px; border:1px solid var(--sage-light); border-radius:999px; padding:4px 12px; color:var(--muted); background:var(--cream); font-weight:700}
+  .substeps span[data-on="1"]{background:var(--sage-deep); border-color:var(--sage-deep); color:#fff}
+  .substeps span[data-done="1"]{color:var(--ink)}
+  .trk{background:var(--track); border-radius:999px; height:10px; overflow:hidden}
+  .trk i{display:block; height:100%; background:var(--sage-deep); border-radius:999px}
+  .q{display:flex; flex-direction:column; gap:7px; margin-top:12px}
+  .qt{font-size:13.5px; font-weight:700}
+  .qh{font-size:11.5px; color:var(--muted)}
+  .optrow{display:flex; flex-wrap:wrap; gap:8px}
+  .opt{border:1.5px solid var(--sage-light); background:#fff; color:var(--ink); border-radius:16px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer}
+  .opt input{position:absolute; opacity:0; pointer-events:none}
+  .opt[data-on="1"]{border-color:var(--sage-deep); background:var(--sage-light)}
+  .opt .badge{font-size:10.5px; color:var(--muted); margin-left:6px; font-weight:500}
+  .step{display:none}
+  .step[data-active="1"]{display:flex; flex-direction:column; gap:14px}
+  .kpis{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+  .kpi{background:#fff; border:1px solid var(--sage-light); border-radius:14px; padding:10px 8px; text-align:center}
+  .kpi .k{font-size:11.5px; color:var(--muted)}
+  .kpi .v{font-size:18px; font-weight:900; margin-top:2px}
+  .modal-backdrop{position:fixed; inset:0; background:rgba(56,64,56,.45); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100}
+  .modal-card{background:#fff; border-radius:20px; padding:24px 22px; max-width:340px; width:100%; text-align:center; box-shadow:0 12px 30px rgba(56,64,56,.2)}
+  .modal-card b{font-size:15px}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen">
+        <div class="substeps" id="substeps"></div>
+        <div class="trk"><i id="progress-bar" style="width:0%"></i></div>
+
+        <div class="step" data-step="0">
+          <div class="q">
+            <div class="qt">국·찌개·라면을 국물까지 드시는 일이 일주일에 몇 번인가요</div>
+            <div class="optrow" data-opt="salt1">
+              <label class="opt"><input type="radio" name="salt1" value="0">0회</label>
+              <label class="opt"><input type="radio" name="salt1" value="1.5">1–2회</label>
+              <label class="opt"><input type="radio" name="salt1" value="3.5">3–4회</label>
+              <label class="opt"><input type="radio" name="salt1" value="5.5">5–6회</label>
+              <label class="opt"><input type="radio" name="salt1" value="7">7회 이상</label>
+            </div>
+          </div>
+          <div class="q">
+            <div class="qt">라면·즉석국 같은 인스턴트를 일주일에 몇 번 드시나요</div>
+            <div class="optrow" data-opt="salt2">
+              <label class="opt"><input type="radio" name="salt2" value="0">0회</label>
+              <label class="opt"><input type="radio" name="salt2" value="1">1회</label>
+              <label class="opt"><input type="radio" name="salt2" value="2">2회</label>
+              <label class="opt"><input type="radio" name="salt2" value="3">3회 이상</label>
+            </div>
+          </div>
+          <div class="q">
+            <div class="qt">김치·장아찌·젓갈을 하루 몇 끼에 드시나요</div>
+            <div class="optrow" data-opt="salt3">
+              <label class="opt"><input type="radio" name="salt3" value="0">안 먹음</label>
+              <label class="opt"><input type="radio" name="salt3" value="1">1끼</label>
+              <label class="opt"><input type="radio" name="salt3" value="2">2끼</label>
+              <label class="opt"><input type="radio" name="salt3" value="3">3끼</label>
+            </div>
+          </div>
+          <div class="q">
+            <div class="qt">식탁에서 소금이나 간장을 더 넣으시나요</div>
+            <div class="optrow" data-opt="salt4">
+              <label class="opt"><input type="radio" name="salt4" value="2">항상</label>
+              <label class="opt"><input type="radio" name="salt4" value="1">자주</label>
+              <label class="opt"><input type="radio" name="salt4" value="0.5">가끔</label>
+              <label class="opt"><input type="radio" name="salt4" value="0">안 함</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="step" data-step="1">
+          <div class="q">
+            <div class="qt">최근 일주일에 하신 운동을 모두 골라주세요</div>
+            <div class="qh">고르면 강도는 자동으로 붙습니다. 여러 개 골라도 됩니다.</div>
+            <div class="optrow" id="sport-list"></div>
+          </div>
+          <div id="sport-detail"></div>
+          <div class="callout" id="act-summary"></div>
+        </div>
+
+        <div class="step" data-step="2">
+          <div class="q">
+            <div class="qt">배달 음식을 일주일에 몇 번 드시나요</div>
+            <div class="optrow" data-opt="o1">
+              <label class="opt"><input type="radio" name="o1" value="0">0회</label>
+              <label class="opt"><input type="radio" name="o1" value="1.5">1–2회</label>
+              <label class="opt"><input type="radio" name="o1" value="3.5">3–4회</label>
+              <label class="opt"><input type="radio" name="o1" value="5">5회 이상</label>
+            </div>
+          </div>
+          <div class="q">
+            <div class="qt">식당·구내식당 외식을 일주일에 몇 번 하시나요</div>
+            <div class="optrow" data-opt="o2">
+              <label class="opt"><input type="radio" name="o2" value="0">0회</label>
+              <label class="opt"><input type="radio" name="o2" value="1.5">1–2회</label>
+              <label class="opt"><input type="radio" name="o2" value="4">3–5회</label>
+              <label class="opt"><input type="radio" name="o2" value="7.5">6–9회</label>
+              <label class="opt"><input type="radio" name="o2" value="10">10회 이상</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="step" data-step="3">
+          <div class="q">
+            <div class="qt">최근 일주일 동안 아침을 며칠 드셨나요</div>
+            <div class="optrow" data-opt="m1">
+              <label class="opt"><input type="radio" name="m1" value="0">0일</label>
+              <label class="opt"><input type="radio" name="m1" value="1.5">1–2일</label>
+              <label class="opt"><input type="radio" name="m1" value="3.5">3–4일</label>
+              <label class="opt"><input type="radio" name="m1" value="5.5">5–6일</label>
+              <label class="opt"><input type="radio" name="m1" value="7">매일</label>
+            </div>
+          </div>
+          <p class="hint">아침 식사 미션은 근거 확인이 필요해 "검토" 상태입니다.</p>
+        </div>
+
+        <div class="step" data-step="4">
+          <div class="q">
+            <div class="qt">최근 1년 사이 체중이 어떻게 달라졌나요</div>
+            <div class="optrow" data-opt="w2">
+              <label class="opt"><input type="radio" name="w2" value="2">3kg 이상 늘었다</label>
+              <label class="opt"><input type="radio" name="w2" value="0">비슷하다</label>
+              <label class="opt"><input type="radio" name="w2" value="-1">3kg 이상 줄었다</label>
+            </div>
+          </div>
+          <p class="hint">체중 관리 미션은 상세 정책이 정해지지 않아 Backlog 상태입니다.</p>
+        </div>
+
+        <div class="step" data-step="5">
+          <div class="q">
+            <div class="qt">혈압을 주 1회 재실 수 있나요</div>
+            <div class="qh">모델 입력이 아니라 혈압 기록 안내 여부를 정하는 답입니다</div>
+            <div class="optrow" data-opt="x3">
+              <label class="opt"><input type="radio" name="x3" value="2">집에 혈압계가 있다</label>
+              <label class="opt"><input type="radio" name="x3" value="1">약국·보건소를 이용할 수 있다</label>
+              <label class="opt"><input type="radio" name="x3" value="0">어렵다</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="step" data-step="6">
+          <div class="callout"><b>설문이 끝났습니다</b><br>답변에서 챌린지 추천에 쓸 값을 뽑았습니다. 위험 점수는 건강정보(W04) 값으로 계산합니다.</div>
+          <div class="kpis" id="final-kpis"></div>
+        </div>
+
+        <p id="form-err" class="err" style="display:none"></p>
+
+        <div style="display:flex; gap:8px">
+          <button type="button" id="prev-btn" class="ghost">이전</button>
+          <button type="button" id="next-btn" class="cta">다음</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="success-modal" class="modal-backdrop" style="display:none">
+  <div class="modal-card">
+    <div style="font-size:32px">✅</div>
+    <b>설문 제출 완료!</b>
+    <p class="muted" style="margin-top:6px">답변에서 챌린지 추천에 쓸 값을 뽑았습니다.</p>
+    <a class="cta" style="display:block; text-align:center; text-decoration:none; margin-top:14px" href="review.html">입력 검토로</a>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+const SUB = ['나트륨', '신체 활동', '외식·배달', '아침 식사', '체중 관리', '혈압 측정', '완료'];
+const SPORTS = [
+  { id: 'walk', n: '걷기', tier: '저강도', w: 0.8 },
+  { id: 'fwalk', n: '빠르게 걷기', tier: '중강도', w: 1 },
+  { id: 'bike', n: '자전거', tier: '중강도', w: 1 },
+  { id: 'yoga', n: '요가·필라테스', tier: '중강도', w: 1 },
+  { id: 'run', n: '달리기', tier: '고강도', w: 2 },
+  { id: 'hike', n: '등산', tier: '고강도', w: 2 },
+];
+const SP = {};
+
+let step = 0;
+
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+function radioVal(name) {
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? Number(el.value) : null;
+}
+
+function deriveSalt() {
+  const n1 = radioVal('salt1') ?? 0, n2 = radioVal('salt2') ?? 0, n3 = radioVal('salt3') ?? 0, n4 = radioVal('salt4') ?? 0;
+  return clamp(n1 + n2 + n3 * 2 + n4, 0, 14);
+}
+function deriveAct() {
+  let act = 0;
+  for (const sp of SPORTS) { const v = SP[sp.id]; if (v) act += v.days * v.min * sp.w; }
+  return Math.round(act);
+}
+function deriveEatoutWeekly() {
+  return (radioVal('o1') ?? 0) + (radioVal('o2') ?? 0);
+}
+function eatoutCode(weekly) {
+  if (weekly >= 14) return '2plus_per_day'; if (weekly >= 7) return '1_per_day'; if (weekly >= 5) return '5_6_per_week';
+  if (weekly >= 3) return '3_4_per_week'; if (weekly >= 1) return '1_2_per_week'; return 'lt_monthly';
+}
+function breakfastCode(m1) {
+  if (m1 >= 5.5) return '5_7'; if (m1 >= 3.5) return '3_4'; if (m1 >= 1) return '1_2'; return '0';
+}
+
+function renderSportList() {
+  const box = document.getElementById('sport-list');
+  box.innerHTML = '';
+  const none = document.createElement('label');
+  none.className = 'opt';
+  none.dataset.on = Object.keys(SP).length === 0 ? '1' : '0';
+  none.textContent = '안 함';
+  none.addEventListener('click', (e) => {
+    e.preventDefault();
+    Object.keys(SP).forEach(k => delete SP[k]);
+    renderSportList();
+    renderSportDetail();
+  });
+  box.appendChild(none);
+  SPORTS.forEach(sp => {
+    const on = !!SP[sp.id];
+    const label = document.createElement('label');
+    label.className = 'opt';
+    label.dataset.on = on ? '1' : '0';
+    label.innerHTML = `${sp.n} <span class="badge">${sp.tier}</span>`;
+    label.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (SP[sp.id]) delete SP[sp.id]; else SP[sp.id] = { days: 3, min: 45 };
+      renderSportList();
+      renderSportDetail();
+    });
+    box.appendChild(label);
+  });
+}
+function renderSportDetail() {
+  const box = document.getElementById('sport-detail');
+  box.innerHTML = '';
+  SPORTS.filter(sp => SP[sp.id]).forEach(sp => {
+    const v = SP[sp.id];
+    const card = document.createElement('div');
+    card.className = 'callout';
+    card.style.marginTop = '8px';
+    card.innerHTML = `<b>${sp.n} · ${sp.tier}</b>
+      <div class="qh" style="margin:6px 0 4px">주 며칠</div>
+      <div class="optrow" data-days></div>
+      <div class="qh" style="margin:8px 0 4px">하루 평균</div>
+      <div class="optrow" data-min></div>`;
+    const daysRow = card.querySelector('[data-days]');
+    [0, 1, 2, 3, 4, 5, 6, 7].forEach(n => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'opt'; b.dataset.on = v.days === n ? '1' : '0'; b.textContent = n;
+      b.addEventListener('click', () => { v.days = n; renderSportDetail(); renderActSummary(); });
+      daysRow.appendChild(b);
+    });
+    const minRow = card.querySelector('[data-min]');
+    [[20, '10–29분'], [45, '30–59분'], [75, '60분 이상']].forEach(([n, label]) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'opt'; b.dataset.on = v.min === n ? '1' : '0'; b.textContent = label;
+      b.addEventListener('click', () => { v.min = n; renderSportDetail(); renderActSummary(); });
+      minRow.appendChild(b);
+    });
+    box.appendChild(card);
+  });
+  renderActSummary();
+}
+function renderActSummary() {
+  document.getElementById('act-summary').innerHTML =
+    `<b>중강도 환산 ${deriveAct()}분 / 권고 150분</b><br>고강도 1분 = 중강도 2분으로 셉니다. 저강도 걷기는 0.8배로 셉니다.`;
+}
+
+function renderSubsteps() {
+  const box = document.getElementById('substeps');
+  box.innerHTML = '';
+  SUB.forEach((name, i) => {
+    const span = document.createElement('span');
+    span.dataset.on = i === step ? '1' : '0';
+    span.dataset.done = i < step ? '1' : '0';
+    span.textContent = name;
+    box.appendChild(span);
+  });
+  document.getElementById('progress-bar').style.width = Math.round(step / (SUB.length - 1) * 100) + '%';
+}
+
+const STEP_REQUIRED = { 0: ['salt1', 'salt2', 'salt3', 'salt4'], 2: ['o1', 'o2'], 3: ['m1'], 4: ['w2'], 5: ['x3'] };
+function stepValid(s) {
+  const req = STEP_REQUIRED[s];
+  return !req || req.every(name => radioVal(name) !== null);
+}
+function updateNextBtn() {
+  const btn = document.getElementById('next-btn');
+  const valid = stepValid(step);
+  btn.disabled = !valid;
+  btn.textContent = !valid ? '모두 답해주세요' : (step < SUB.length - 1 ? '다음' : '입력 검토로');
+}
+
+document.addEventListener('change', (e) => {
+  if (e.target.type !== 'radio') return;
+  const row = e.target.closest('.optrow');
+  row.querySelectorAll('.opt').forEach(o => o.dataset.on = o.querySelector('input').checked ? '1' : '0');
+  updateNextBtn();
+});
+
+function renderStep() {
+  document.querySelectorAll('.step').forEach(el => el.dataset.active = (Number(el.dataset.step) === step) ? '1' : '0');
+  if (step === 1) { renderSportList(); renderSportDetail(); }
+  if (step === 6) {
+    document.getElementById('final-kpis').innerHTML = `
+      <div class="kpi"><div class="k">나트륨 습관</div><div class="v">${deriveSalt().toFixed(1)}회/주</div></div>
+      <div class="kpi"><div class="k">외식·배달</div><div class="v">${deriveEatoutWeekly().toFixed(1)}회/주</div></div>
+      <div class="kpi"><div class="k">신체활동</div><div class="v">${deriveAct()}분/주</div></div>`;
+  }
+  document.getElementById('prev-btn').style.visibility = step === 0 ? 'hidden' : 'visible';
+  updateNextBtn();
+  renderSubsteps();
+}
+
+document.getElementById('prev-btn').addEventListener('click', () => { if (step > 0) { step--; renderStep(); } });
+document.getElementById('next-btn').addEventListener('click', async () => {
+  if (!stepValid(step)) return;
+  if (step < SUB.length - 1) { step++; renderStep(); return; }
+
+  const errEl = document.getElementById('form-err');
+  errEl.style.display = 'none';
+  const nextBtn = document.getElementById('next-btn');
+  nextBtn.disabled = true; nextBtn.textContent = '제출하는 중...';
+
+  const payload = {
+    sodium_score: deriveSalt(),
+    aerobic: deriveAct() >= 150 ? 1 : 0,
+    eatout: eatoutCode(deriveEatoutWeekly()),
+    breakfast: breakfastCode(radioVal('m1') ?? 0),
+  };
+  try {
+    await apiSubmitSurvey(payload);
+    localStorage.setItem('paeon-survey', JSON.stringify(payload));
+    document.getElementById('success-modal').style.display = 'flex';
+  } catch (e) {
+    errEl.textContent = e.message; errEl.style.display = 'block';
+    nextBtn.disabled = false; nextBtn.textContent = '입력 검토로';
+  }
+});
+
+renderStep();
+</script>
+</body>
+</html>

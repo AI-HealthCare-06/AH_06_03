@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 추이 · 4주 비교</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .state{display:flex; gap:6px; flex-wrap:wrap}
+  .state button{border:1px solid var(--sage); background:#fff; border-radius:999px; padding:5px 12px; font-size:12px; color:var(--muted)}
+  .state button[data-on="1"]{background:var(--sage-deep); border-color:var(--sage-deep); color:#fff; font-weight:700}
+  figure{margin:0; background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px 18px}
+  figcaption{font-size:12.5px; color:var(--muted); margin-bottom:8px}
+  .chart{width:100%; height:auto; display:block}
+  .deltarow{display:grid; grid-template-columns:1fr auto 1fr; gap:10px; align-items:center; background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:16px}
+  .deltarow .side{text-align:center}
+  .deltarow .side .lb{font-size:11.5px; color:var(--muted)}
+  .deltarow .side .vv{font-size:26px; font-weight:900}
+  .deltarow .arrow{font-size:22px; color:var(--faint)}
+  .tworow{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .mini{background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px; text-align:center}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen">
+        <div class="state" id="tabs">
+          <button type="button" data-t="trend" data-on="1">추이 · 변화 추적</button>
+          <button type="button" data-t="compare" data-on="0">4주 전 · 후 비교</button>
+        </div>
+        <div id="body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+function cssv(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+const COLOR = { normal: 'var(--ok)', borderline: 'var(--warn)', high: 'var(--risk)' };
+
+const profile = JSON.parse(localStorage.getItem('paeon-profile') || 'null');
+const elig = JSON.parse(localStorage.getItem('paeon-eligibility') || 'null');
+const health = JSON.parse(localStorage.getItem('paeon-health') || 'null');
+const survey = JSON.parse(localStorage.getItem('paeon-survey') || 'null');
+const cycle = JSON.parse(localStorage.getItem('paeon-cycle') || 'null');
+const progress = JSON.parse(localStorage.getItem('paeon-progress') || '{"days":[],"bpLog":[]}');
+
+function projectedHealth() {
+  const done = cycle ? progress.days.length / 28 : 0;
+  const planDrop = cycle ? Math.min(12, -cycle.missions.reduce((s, m) => s + (m.bp || 0), 0)) * done : 0;
+  const measured = progress.bpLog.length ? progress.bpLog[progress.bpLog.length - 1].sys : null;
+  const sbp2 = measured != null ? measured : health.sbp - planDrop;
+  const quitMission = cycle && cycle.missions.some(m => m.id === 'b1');
+  return { ...health, sbp: sbp2, smokingFrac: (health.smoking === 'current' && quitMission) ? (1 - done) : (health.smoking === 'current' ? 1 : 0) };
+}
+
+function shortDate(iso) { if (!iso) return ''; const [, m, d] = iso.split('-'); return `${Number(m)}/${Number(d)}`; }
+function bpPoints(health, bpLog, extra) {
+  const pts = [{ v: health.sbp, d: health.recorded_at ? shortDate(health.recorded_at) : '시작' }];
+  bpLog.forEach(l => pts.push({ v: l.sys, d: l.date ? shortDate(l.date) : `${l.w}주차` }));
+  if (extra != null) pts.push({ v: extra, d: '예상' });
+  return pts;
+}
+
+function bpChart(points) {
+  const series = points.map(p => p.v);
+  const W = 356, H = 144, padL = 32, padR = 16, padT = 20, padB = 34;
+  const lo = Math.min(120, ...series) - 4, hi = Math.max(150, ...series) + 4;
+  const Xp = i => padL + (series.length > 1 ? i * (W - padL - padR) / (series.length - 1) : 0);
+  const Yp = v => padT + (hi - v) / (hi - lo) * (H - padT - padB);
+  const s = [`<svg class="chart" viewBox="0 0 ${W} ${H}">`];
+  s.push(`<line x1="${padL}" y1="${Yp(140).toFixed(1)}" x2="${W - padR}" y2="${Yp(140).toFixed(1)}" stroke="${cssv('--danger')}" stroke-width="1.5" stroke-dasharray="5 4"/>`);
+  s.push(`<polyline fill="none" stroke="${cssv('--accent')}" stroke-width="2.5" points="${points.map((p, i) => Xp(i).toFixed(1) + ',' + Yp(p.v).toFixed(1)).join(' ')}"/>`);
+  points.forEach((p, i) => {
+    const x = Xp(i).toFixed(1), y = Yp(p.v);
+    s.push(`<circle cx="${x}" cy="${y.toFixed(1)}" r="4" fill="#fff" stroke="${cssv('--accent')}" stroke-width="2"/>`);
+    s.push(`<text x="${x}" y="${(y - 9).toFixed(1)}" font-size="10.5" font-weight="700" text-anchor="middle" fill="${cssv('--ink')}">${p.v}</text>`);
+    s.push(`<text x="${x}" y="${H - 8}" font-size="9.5" text-anchor="middle" fill="${cssv('--muted')}">${p.d}</text>`);
+  });
+  s.push('</svg>');
+  return s.join('');
+}
+
+function renderTrend() {
+  const body = document.getElementById('body');
+  if (elig.ageBand !== 'in' || elig.chd) {
+    body.innerHTML = '<div class="callout"><b>모델 A 예측 대상이 아닙니다</b><br>예측 이력이 없어 위험 추이는 그리지 않습니다.</div>';
+    return;
+  }
+  if (!cycle || progress.days.length === 0) {
+    body.innerHTML = '<div class="callout"><b>기록이 쌓이면 여기에 변화가 보입니다</b><br>챌린지 인증이나 혈압 기록 후 다시 와 주세요.</div><a class="ghost" style="display:block;text-align:center;text-decoration:none;margin-top:8px" href="challenge-progress.html">챌린지 인증하러 가기</a>';
+    return;
+  }
+  const xA0 = buildXA(profile, health);
+  const r0 = riskOf(MODEL_A_FEATS, MODEL_A_INTERCEPT, xA0), b0 = band(r0);
+  const proj = projectedHealth();
+  const xA1 = { ...buildXA(profile, proj), currentSmoker: proj.smokingFrac };
+  const r1 = riskOf(MODEL_A_FEATS, MODEL_A_INTERCEPT, xA1), b1 = band(r1);
+  const d = r1 - r0;
+  body.innerHTML = `
+    <figure><figcaption>수축기 혈압 · <b>주 1회 측정</b></figcaption>${bpChart(bpPoints(health, progress.bpLog))}</figure>
+    <div class="speech" style="background:var(--sage-light);border-radius:18px;padding:13px 18px;margin-top:10px">
+      <div style="font-size:11px;color:var(--muted);font-weight:700">최초 대비 변화</div>
+      <div style="font-weight:700;color:${d < 0 ? 'var(--ok)' : d > 0 ? 'var(--risk)' : 'var(--muted)'}">
+        ${d < 0 ? '▼ 처음보다 낮아졌습니다' : d > 0 ? '▲ 처음보다 높아졌습니다' : '– 변화가 없습니다'} (${b0.label} → ${b1.label})
+      </div>
+    </div>`;
+}
+
+function renderCompare() {
+  const body = document.getElementById('body');
+  if (elig.ageBand !== 'in' || elig.chd) {
+    body.innerHTML = '<div class="callout"><b>모델 A 예측 대상이 아닙니다</b><br>전·후 위험도 비교는 제공하지 않습니다.</div>';
+    return;
+  }
+  const xA0 = buildXA(profile, health);
+  const r0 = riskOf(MODEL_A_FEATS, MODEL_A_INTERCEPT, xA0), v0 = vascularAge(xA0), b0 = band(r0);
+  const proj = projectedHealth();
+  const xA1 = { ...buildXA(profile, proj), currentSmoker: proj.smokingFrac };
+  const r1 = riskOf(MODEL_A_FEATS, MODEL_A_INTERCEPT, xA1), v1 = vascularAge(xA1), b1 = band(r1);
+  body.innerHTML = `
+    <p class="lede">바뀐 입력(혈압·흡연)만 다시 받아 같은 모델 A에 전·후 데이터를 각각 넣어 비교했습니다. 확률(%)은 표시하지 않고 범주로만 비교합니다.</p>
+    <div class="deltarow">
+      <div class="side"><div class="lb">시작</div><div class="vv" style="color:${COLOR[b0.code]}">${b0.label}</div><div class="hint">혈관 나이 ${Math.round(v0)}세</div></div>
+      <div class="arrow">→</div>
+      <div class="side"><div class="lb">4주 후</div><div class="vv" style="color:${COLOR[b1.code]}">${b1.label}</div><div class="hint">혈관 나이 ${Math.round(v1)}세</div></div>
+    </div>
+    <figure style="margin-top:10px"><figcaption>수축기 혈압 추이</figcaption>${bpChart(progress.bpLog.length ? bpPoints(health, progress.bpLog) : bpPoints(health, [], proj.sbp))}</figure>
+    <div class="callout" style="margin-top:10px">10년 위험은 4주 사이 바뀌는 입력이 적어 크게 움직이지 않습니다. 혈압 변화를 함께 확인해 주세요.</div>`;
+}
+
+document.getElementById('tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  document.querySelectorAll('#tabs button').forEach(b => b.dataset.on = (b === btn) ? '1' : '0');
+  btn.dataset.t === 'trend' ? renderTrend() : renderCompare();
+});
+renderTrend();
+</script>
+</body>
+</html>
