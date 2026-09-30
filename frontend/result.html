@@ -11,8 +11,6 @@
   .riskrow{display:flex; align-items:center; gap:10px; background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px 18px}
   .chip{font-size:11.5px; font-weight:700; border-radius:999px; padding:3px 11px; border:1.5px solid currentColor; white-space:nowrap}
   .riskrow .pct{font-size:30px; font-weight:900; margin-left:auto}
-  .agebox{background:var(--cream); border:1px solid var(--sage-light); border-radius:18px; padding:16px; text-align:center}
-  .agebox .big{font-size:34px; font-weight:900; line-height:1.1}
   figure{margin:0; background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px 18px}
   figcaption{font-size:12.5px; color:var(--muted); margin-bottom:8px}
   .bars{display:grid; grid-template-columns:110px 1fr 46px; gap:8px 10px; align-items:center; font-size:13px}
@@ -37,16 +35,17 @@
 <script>
 const COLOR = { normal: 'var(--ok)', borderline: 'var(--warn)', high: 'var(--risk)', hypertension: 'var(--risk)', prehypertension: 'var(--warn)', elevated: 'var(--warn)' };
 const BP_LABEL = { normal: '정상', elevated: '주의혈압', prehypertension: '고혈압전단계', hypertension: '고혈압' };
+const RISK_LABEL = { normal: '정상', borderline: '경계', high: '위험' };
 const A_SKIP_MSG = { age_out_of_range: '만 32~70세가 아니어서 예측할 수 없습니다', cad_diagnosed: '관상동맥질환 진단 이력이 있어 예측할 수 없습니다' };
 const B_SKIP_MSG = { age_out_of_range: '19세 미만이어서 예측할 수 없습니다', htn_diagnosed: '고혈압으로 진단·치료 중이라 예측할 수 없습니다' };
 
 function bars(factors) {
-  const mx = Math.max(0.2, ...factors.map(f => Math.abs(f.c)));
+  const mx = Math.max(0.2, ...factors.map(f => Math.abs(f.contribution)));
   return factors.map(f => {
-    const col = !f.modifiable ? 'var(--sage)' : (f.c >= 0 ? 'var(--sage-deep)' : 'var(--sage)');
-    const width = Math.abs(f.c) / mx * 100;
-    const val = (f.c >= 0 ? '+' : '−') + Math.abs(f.c * 100).toFixed(1);
-    return `<span>${f.label}${f.dirOK === false ? ' ⚠️' : ''}</span>
+    const col = !f.modifiable ? 'var(--sage)' : (f.contribution >= 0 ? 'var(--sage-deep)' : 'var(--sage)');
+    const width = Math.abs(f.contribution) / mx * 100;
+    const val = (f.contribution >= 0 ? '+' : '−') + Math.abs(f.contribution * 100).toFixed(1);
+    return `<span>${f.label}${f.direction_matches_expectation === false ? ' ⚠️' : ''}</span>
       <span class="bb"><i style="width:${width}%;background:${col}"></i></span>
       <span class="bv">${val}</span>`;
   }).join('');
@@ -63,26 +62,25 @@ if (!pred) {
     <span style="font-size:12px;color:var(--muted)">입력 혈압 판정</span>
   </div>`;
 
-  if (!pred.model_a) {
-    html += `<div class="callout"><b>${A_SKIP_MSG[pred.model_a_skip_reason] || '이번엔 예측할 수 없습니다'}</b></div>`;
+  if (pred.model_a.status !== 'completed') {
+    html += `<div class="callout"><b>${A_SKIP_MSG[pred.model_a.skip_reason] || '이번엔 예측할 수 없습니다'}</b></div>`;
   } else {
     const a = pred.model_a;
     html += `<p class="sect">10년 내 관상동맥질환 위험</p>
       <div class="riskrow" style="border-color:${COLOR[a.risk_level]}">
-        <span class="chip" style="color:${COLOR[a.risk_level]}">${a.risk_label}</span>
+        <span class="chip" style="color:${COLOR[a.risk_level]}">${RISK_LABEL[a.risk_level]}</span>
         <span style="font-size:12px;color:var(--muted)">같은 조건의 사람들과 비교한 범주입니다</span>
       </div>
-      <div class="agebox"><div class="big">${a.vascular_age}세</div><div class="sub">혈관 나이 · 추정치</div></div>
       <figure><figcaption>위험을 올린 요인 · <b>진한 막대는 바꿀 수 있는 요인</b></figcaption>
         <div class="bars">${bars(a.factors)}</div>
       </figure>`;
   }
 
-  if (!pred.model_b) {
-    html += `<div class="callout"><b>모델 B: ${B_SKIP_MSG[pred.model_b_skip_reason] || '이번엔 예측할 수 없습니다'}</b></div>`;
+  if (pred.model_b.status !== 'completed') {
+    html += `<div class="callout"><b>모델 B: ${B_SKIP_MSG[pred.model_b.skip_reason] || '이번엔 예측할 수 없습니다'}</b></div>`;
   } else {
     const b = pred.model_b;
-    const reversed = b.factors.some(f => f.dirOK === false);
+    const reversed = b.factors.some(f => f.direction_matches_expectation === false);
     html += `<p class="sect">혈압 외 특징이 경계군과 닮은 정도</p>
       <div class="riskrow" style="border-color:var(--accent)">
         <span class="chip" style="color:var(--accent)">유사율</span>

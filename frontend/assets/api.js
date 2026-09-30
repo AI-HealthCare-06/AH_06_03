@@ -1,5 +1,7 @@
-const API_BASE = 'http://localhost:8000/v1';
+const API_BASE = 'http://13.125.205.161:8000/v1';
 const USE_MOCK = true;
+// predict만 혜림님 임시 창구가 실제로 떠있어서 따로 뺌 — 나머지(signup/login/health/survey)는 백엔드 준비되면 USE_MOCK 끄기
+const USE_MOCK_PREDICT = false;
 
 async function apiSignup(email, password, birthDate) {
   if (USE_MOCK) {
@@ -100,7 +102,7 @@ const MODEL_B_INTERCEPT = -0.768114;
 
 function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
 function contribs(feats, x) {
-  return feats.map(f => ({ ...f, c: f.coef * ((x[f.k] == null ? f.impute : x[f.k]) - f.baseline) }));
+  return feats.map(f => ({ ...f, contribution: f.coef * ((x[f.k] == null ? f.impute : x[f.k]) - f.baseline), direction_matches_expectation: f.dirOK }));
 }
 function riskOf(feats, intercept, x) {
   const sum = feats.reduce((s, f) => s + f.coef * ((x[f.k] == null ? f.impute : x[f.k]) - f.mean), 0);
@@ -108,10 +110,6 @@ function riskOf(feats, intercept, x) {
 }
 function band(r) {
   return r < 0.10 ? { code: 'normal', label: '정상' } : r <= 0.20 ? { code: 'borderline', label: '경계' } : { code: 'high', label: '위험' };
-}
-function vascularAge(x) {
-  const c = contribs(MODEL_A_FEATS, x).filter(f => f.k !== 'age' && f.k !== 'male').reduce((s, f) => s + f.c, 0);
-  return Math.max(20, Math.min(90, x.age + c / 0.066053));
 }
 function bpStage(sbp, dbp) {
   if (sbp >= 140 || dbp >= 90) return 'hypertension';
@@ -127,7 +125,7 @@ function ageFromBirth(birthDateStr) {
   return age;
 }
 function topFactors(feats, x, minAbs) {
-  return contribs(feats, x).filter(f => f.k !== 'male' && Math.abs(f.c) > minAbs).sort((p, q) => q.c - p.c);
+  return contribs(feats, x).filter(f => f.k !== 'male' && Math.abs(f.contribution) > minAbs).sort((p, q) => q.contribution - p.contribution);
 }
 
 function buildXA(profile, health) {
@@ -156,39 +154,38 @@ function buildXB(profile, health, survey) {
 }
 
 async function apiRequestPrediction(profile, elig, health, survey) {
-  if (!USE_MOCK) {
-    const res = await fetch(`${API_BASE}/predictions/jobs`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAccessToken()}` },
-      body: JSON.stringify({ health_record_id: health.health_record_id, request_type: 'auto' }),
-    });
-    const body = await res.json();
-    if (!res.ok) throw new Error(body.error?.message || '예측 요청에 실패했습니다');
-    return body;
+  const stage = bpStage(health.sbp, health.dbp);
+
+  if (!USE_MOCK_PREDICT) {
+    const body = await apiPredictV1Temp(profile, health, survey);
+    return { data: { ...body.data, bp_stage: stage, htn_status: health.htn_status } };
   }
 
   console.log('[MOCK] apiRequestPrediction', { profile, elig, health, survey });
   await sleep(500);
 
-  const stage = bpStage(health.sbp, health.dbp);
   const skipAReason = elig.ageBand !== 'in' ? 'age_out_of_range' : elig.chd ? 'cad_diagnosed' : null;
   const skipBReason = elig.ageBand === 'under19' ? 'age_out_of_range' : health.htn_status !== 'none' ? 'htn_diagnosed' : null;
 
-  let modelA = null;
-  if (!skipAReason) {
+  let modelA;
+  if (skipAReason) {
+    modelA = { status: 'skipped', skip_reason: skipAReason, factors: [] };
+  } else {
     const xA = buildXA(profile, health);
     const r = riskOf(MODEL_A_FEATS, MODEL_A_INTERCEPT, xA);
-    modelA = { risk_level: band(r).code, risk_label: band(r).label, vascular_age: Math.round(vascularAge(xA)), factors: topFactors(MODEL_A_FEATS, xA, 0.004) };
+    modelA = { status: 'completed', skip_reason: null, risk_level: band(r).code, factors: topFactors(MODEL_A_FEATS, xA, 0.004) };
   }
 
-  let modelB = null;
-  if (!skipBReason) {
+  let modelB;
+  if (skipBReason) {
+    modelB = { status: 'skipped', skip_reason: skipBReason, factors: [] };
+  } else {
     const xB = buildXB(profile, health, survey);
     const r = riskOf(MODEL_B_FEATS, MODEL_B_INTERCEPT, xB);
-    modelB = { probability: r, factors: topFactors(MODEL_B_FEATS, xB, 0.004) };
+    modelB = { status: 'completed', skip_reason: null, probability: r, factors: topFactors(MODEL_B_FEATS, xB, 0.004) };
   }
 
-  return { data: { bp_stage: stage, htn_status: health.htn_status, model_a: modelA, model_a_skip_reason: skipAReason, model_b: modelB, model_b_skip_reason: skipBReason } };
+  return { data: { bp_stage: stage, htn_status: health.htn_status, model_a: modelA, model_b: modelB } };
 }
 
 // 혜림님 임시 창구(POST /v1/predict) 전용 — 정식 /predictions/jobs 생기면 지울 예정.
