@@ -1,4 +1,4 @@
-const API_BASE = 'http://13.125.205.161:8000/v1';
+const API_BASE = 'https://54-116-113-17.sslip.io/v1';
 const USE_MOCK = true;
 // predict만 혜림님 임시 창구가 실제로 떠있어서 따로 뺌 — 나머지(signup/login/health/survey)는 백엔드 준비되면 USE_MOCK 끄기
 const USE_MOCK_PREDICT = false;
