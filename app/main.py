@@ -2,6 +2,11 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+from app.apis.prediction import router as prediction_router
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -11,6 +16,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 app = FastAPI(title="PAEON API")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+app.include_router(prediction_router, prefix="/v1")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.mount("/media", StaticFiles(directory=BASE_DIR / "media"), name="media")
 
