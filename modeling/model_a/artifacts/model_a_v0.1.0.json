@@ -1,0 +1,140 @@
+{
+  "model_code": "MODEL_A",
+  "version": "0.1.0",
+  "target": "10년 내 관상동맥질환(TenYearCHD) 발생 확률",
+  "calibration": "없음 (미국 1950–60년대 데이터 그대로. 한국인 위험이 높게 나옴)",
+  "formula": "p = 1 / (1 + exp(-(intercept + Σ coef·(x − mean))))",
+  "contribution": "coef·(x − baseline). baseline = 있다/없다 요인은 0(없음), 숫자 요인은 학습 데이터 평균",
+  "intercept": -1.98072,
+  "feats": [
+    {
+      "k": "age",
+      "label": "나이",
+      "coef": 0.066053,
+      "mean": 49.663915,
+      "impute": 49.0,
+      "modifiable": false,
+      "input": "프로필 나이",
+      "direction_matches_expectation": true,
+      "baseline": 49.663915
+    },
+    {
+      "k": "male",
+      "label": "성별(남)",
+      "coef": 0.551428,
+      "mean": 0.428656,
+      "impute": 0.0,
+      "modifiable": false,
+      "input": "프로필 성별",
+      "direction_matches_expectation": true,
+      "baseline": 0.0,
+      "value_labels": {
+        "0": "여",
+        "1": "남"
+      }
+    },
+    {
+      "k": "sysBP",
+      "label": "수축기혈압",
+      "coef": 0.014823,
+      "mean": 132.439858,
+      "impute": 128.0,
+      "modifiable": true,
+      "input": "수축기혈압 mmHg",
+      "direction_matches_expectation": true,
+      "baseline": 132.439858
+    },
+    {
+      "k": "totChol",
+      "label": "총콜레스테롤",
+      "coef": 0.002373,
+      "mean": 236.670106,
+      "impute": 234.0,
+      "modifiable": true,
+      "input": "총콜레스테롤 mg/dL",
+      "direction_matches_expectation": true,
+      "baseline": 236.670106
+    },
+    {
+      "k": "currentSmoker",
+      "label": "흡연",
+      "coef": 0.386011,
+      "mean": 0.49204,
+      "impute": 0.0,
+      "modifiable": true,
+      "input": "흡연 여부",
+      "direction_matches_expectation": true,
+      "baseline": 0.0,
+      "value_labels": {
+        "0": "없음",
+        "1": "있음"
+      }
+    },
+    {
+      "k": "diabetes",
+      "label": "당뇨",
+      "coef": 0.730864,
+      "mean": 0.025943,
+      "impute": 0.0,
+      "modifiable": false,
+      "input": "당뇨병 여부",
+      "direction_matches_expectation": true,
+      "baseline": 0.0,
+      "value_labels": {
+        "0": "없음",
+        "1": "있음"
+      }
+    },
+    {
+      "k": "BPMeds",
+      "label": "혈압약 복용",
+      "coef": 0.445113,
+      "mean": 0.028302,
+      "impute": 0.0,
+      "modifiable": false,
+      "input": "고혈압 진단·치료 상태 = 약 복용 중",
+      "direction_matches_expectation": true,
+      "baseline": 0.0,
+      "value_labels": {
+        "0": "없음",
+        "1": "있음"
+      }
+    },
+    {
+      "k": "prevalentHyp",
+      "label": "고혈압 진단",
+      "coef": 0.151593,
+      "mean": 0.310436,
+      "impute": 0.0,
+      "modifiable": false,
+      "input": "고혈압 진단·치료 상태 ≠ 진단 없음",
+      "direction_matches_expectation": true,
+      "baseline": 0.0,
+      "value_labels": {
+        "0": "없음",
+        "1": "있음"
+      }
+    },
+    {
+      "k": "BMI",
+      "label": "BMI",
+      "coef": 0.003351,
+      "mean": 25.824534,
+      "impute": 25.38,
+      "modifiable": true,
+      "input": "신장·체중 → 서버 계산",
+      "direction_matches_expectation": true,
+      "baseline": 25.824534
+    }
+  ],
+  "bands": {
+    "정상": "p < 0.10",
+    "경계": "0.10 ≤ p ≤ 0.20",
+    "위험": "p > 0.20",
+    "source": "데모 코드 기준 (첫 번째 사이클 잠정)"
+  },
+  "age_range": [
+    32,
+    70
+  ]
+}

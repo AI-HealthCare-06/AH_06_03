@@ -1,0 +1,208 @@
+{
+  "model_code": "MODEL_B",
+  "version": "0.1.0",
+  "target": "현재 고혈압 경계군(주의혈압·고혈압전단계)과 닮은 정도 (혈압 제외 특징으로 추정한 확률)",
+  "label": "HE_HP 1→0, 2·3→1, 4 학습 제외",
+  "formula": "p = 1 / (1 + exp(-(intercept + Σ coef·(x − mean))))",
+  "contribution": "coef·(x − baseline). baseline = 있다/없다 요인은 0(없음), 숫자·단계 요인은 학습 데이터 평균",
+  "intercept": -0.768114,
+  "feats": [
+    {
+      "k": "age",
+      "label": "나이",
+      "coef": 0.039918,
+      "mean": 48.143845,
+      "impute": 48.0,
+      "modifiable": false,
+      "source": "age (80 = 80세 이상)",
+      "expected_sign": 1,
+      "direction_matches_expectation": true,
+      "baseline": 48.143845
+    },
+    {
+      "k": "male",
+      "label": "성별(남)",
+      "coef": 0.750122,
+      "mean": 0.406597,
+      "impute": 0.0,
+      "modifiable": false,
+      "source": "sex 1=남",
+      "expected_sign": 0,
+      "direction_matches_expectation": true,
+      "baseline": 0.0,
+      "value_labels": {
+        "0": "여",
+        "1": "남"
+      }
+    },
+    {
+      "k": "bmi",
+      "label": "BMI",
+      "coef": 0.085623,
+      "mean": 23.479185,
+      "impute": 23.096938,
+      "modifiable": true,
+      "source": "HE_BMI",
+      "expected_sign": 1,
+      "direction_matches_expectation": true,
+      "baseline": 23.479185
+    },
+    {
+      "k": "waist",
+      "label": "허리둘레",
+      "coef": 0.026385,
+      "mean": 81.507209,
+      "impute": 81.1,
+      "modifiable": true,
+      "source": "HE_wc",
+      "expected_sign": 1,
+      "direction_matches_expectation": true,
+      "baseline": 81.507209
+    },
+    {
+      "k": "parent_htn",
+      "label": "부모 고혈압 가족력",
+      "coef": 0.32087,
+      "mean": 0.356949,
+      "impute": 0.0,
+      "modifiable": false,
+      "source": "HE_HPfh1·2 중 하나라도 1이면 1, 둘 다 0이면 0, 그 외 결측",
+      "expected_sign": 1,
+      "direction_matches_expectation": true,
+      "baseline": 0.0,
+      "value_labels": {
+        "0": "없음",
+        "1": "있음"
+      }
+    },
+    {
+      "k": "smoke_current",
+      "label": "현재 흡연",
+      "coef": -0.24049,
+      "mean": 0.148039,
+      "impute": 0.0,
+      "modifiable": true,
+      "source": "BS3_1 1·2",
+      "expected_sign": 1,
+      "direction_matches_expectation": false,
+      "baseline": 0.0,
+      "value_labels": {
+        "0": "없음",
+        "1": "있음"
+      }
+    },
+    {
+      "k": "smoke_former",
+      "label": "과거 흡연",
+      "coef": -0.399381,
+      "mean": 0.208683,
+      "impute": 0.0,
+      "modifiable": false,
+      "source": "BS3_1 3 (기준 = 8 피운 적 없음)",
+      "expected_sign": 1,
+      "direction_matches_expectation": false,
+      "baseline": 0.0,
+      "value_labels": {
+        "0": "없음",
+        "1": "있음"
+      }
+    },
+    {
+      "k": "drink_freq",
+      "label": "음주 빈도",
+      "coef": 0.026241,
+      "mean": 2.819995,
+      "impute": 3.0,
+      "modifiable": true,
+      "source": "BD1_11 8→0, 1~6 그대로",
+      "expected_sign": 1,
+      "direction_matches_expectation": true,
+      "baseline": 2.819995,
+      "value_labels": {
+        "0": "평생 안 마심",
+        "1": "최근 1년 안 마심",
+        "2": "월 1회 미만",
+        "3": "월 1회",
+        "4": "월 2–4회",
+        "5": "주 2–3회",
+        "6": "주 4회 이상"
+      }
+    },
+    {
+      "k": "drink_amount",
+      "label": "한 번 음주량",
+      "coef": 0.108098,
+      "mean": 1.801292,
+      "impute": 1.0,
+      "modifiable": true,
+      "source": "BD2_1 8→0, 1~5 그대로",
+      "expected_sign": 1,
+      "direction_matches_expectation": true,
+      "baseline": 1.801292,
+      "value_labels": {
+        "0": "안 마심",
+        "1": "1–2잔",
+        "2": "3–4잔",
+        "3": "5–6잔",
+        "4": "7–9잔",
+        "5": "10잔 이상"
+      }
+    },
+    {
+      "k": "aerobic",
+      "label": "유산소 신체활동 실천",
+      "coef": 0.025881,
+      "mean": 0.460667,
+      "impute": 0.0,
+      "modifiable": true,
+      "source": "pa_aerobic",
+      "expected_sign": -1,
+      "direction_matches_expectation": false,
+      "baseline": 0.0,
+      "value_labels": {
+        "0": "없음",
+        "1": "있음"
+      }
+    },
+    {
+      "k": "breakfast_skip",
+      "label": "아침 결식",
+      "coef": 0.001559,
+      "mean": 2.019497,
+      "impute": 1.0,
+      "modifiable": true,
+      "source": "L_BR_FQ 1~4 (클수록 결식)",
+      "expected_sign": 1,
+      "direction_matches_expectation": true,
+      "baseline": 2.019497,
+      "value_labels": {
+        "1": "아침 주 5–7회",
+        "2": "아침 주 3–4회",
+        "3": "아침 주 1–2회",
+        "4": "아침 거의 안 먹음"
+      }
+    },
+    {
+      "k": "eatout",
+      "label": "외식·배달 빈도",
+      "coef": -0.045957,
+      "mean": 3.879619,
+      "impute": 4.0,
+      "modifiable": true,
+      "source": "8 − L_OUT_FQ (클수록 잦음)",
+      "expected_sign": 1,
+      "direction_matches_expectation": false,
+      "baseline": 3.879619,
+      "value_labels": {
+        "1": "월 1회 미만",
+        "2": "월 1–3회",
+        "3": "주 1–2회",
+        "4": "주 3–4회",
+        "5": "주 5–6회",
+        "6": "하루 1회",
+        "7": "하루 2회 이상"
+      }
+    }
+  ],
+  "age_min": 19
+}

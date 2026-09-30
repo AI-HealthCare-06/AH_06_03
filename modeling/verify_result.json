@@ -1,0 +1,13 @@
+{
+  "consistency_model_a": {
+    "n": 985,
+    "max_abs_diff": 4.996079575048107e-07,
+    "n_diff_gt_1e-4": 0
+  },
+  "consistency_model_b": {
+    "n": 2000,
+    "max_abs_diff": 4.997752789948073e-07,
+    "n_diff_gt_1e-4": 0
+  },
+  "repeat_100x10_max_deviation": 0.0
+}
