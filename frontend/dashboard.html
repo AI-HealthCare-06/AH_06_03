@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 홈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .state{display:flex; gap:6px; flex-wrap:wrap}
+  .state button{border:1px solid var(--sage); background:#fff; border-radius:999px; padding:5px 12px; font-size:12px; color:var(--muted)}
+  .state button[data-on="1"]{background:var(--sage-deep); border-color:var(--sage-deep); color:#fff; font-weight:700}
+  .hero{background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:16px 20px}
+  .hero h1{font-size:18px; line-height:1.35; margin:0}
+  .hero p{font-size:12.5px; color:var(--muted); margin-top:4px}
+  .tworow{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .mini{background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px; text-align:center}
+  .mini .lb{font-size:11.5px; color:var(--muted)}
+  .mini .vv{font-size:26px; font-weight:900}
+  .mini .sb{font-size:12px; color:var(--muted)}
+  figure{margin:0; background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px 18px}
+  figcaption{font-size:12.5px; color:var(--muted); margin-bottom:8px}
+  .chart{width:100%; height:auto; display:block}
+
+  .panels{display:flex; gap:16px; align-items:flex-start}
+  @media (max-width:700px){ .panels{flex-direction:column} }
+  .left-col{width:230px; flex:none; display:flex; flex-direction:column; gap:16px}
+  @media (max-width:700px){ .left-col{width:auto} }
+
+  .pio-big-card{background:var(--cream); border:1px solid var(--sage-light); border-radius:20px; padding:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; text-align:center}
+  .pio-big-card svg{width:110px; height:110px}
+  .pio-big-card .pt{font-size:13.5px; font-weight:700}
+
+  .cal-card{flex:1; min-width:0; background:#fff; border:1px solid var(--sage-light); border-radius:20px; padding:16px 18px}
+  .cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
+  .cal-head .ym{font-family:'Gowun Dodum','Noto Sans KR',sans-serif; font-size:16px; font-weight:700}
+  .dow-row{display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:11px; color:var(--muted); font-weight:700; margin-bottom:4px}
+  .dow-row span:first-child{color:var(--danger)}
+  .day-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px 0}
+  .day{position:relative; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; font-size:12.5px; color:var(--ink)}
+  .day.blank{visibility:hidden}
+  .day .num{position:relative; z-index:1}
+  .day.today .num{color:#fff; font-weight:900}
+  .day.today::before{content:''; position:absolute; width:26px; height:26px; border-radius:999px; background:var(--petal2)}
+  .day .dots{position:absolute; bottom:4px; left:50%; transform:translateX(-50%); display:flex; gap:3px}
+  .day .dot{width:4px; height:4px; border-radius:999px; background:var(--peach)}
+  .day .dot-bp{width:4px; height:4px; border-radius:999px; background:var(--sage-deep)}
+  .day.sun .num{color:var(--danger)}
+  .day.clickable{cursor:pointer}
+  .day.picked:not(.today)::before{content:''; position:absolute; width:26px; height:26px; border-radius:999px; border:2px solid var(--sage-deep)}
+  .cal-legend{display:flex; gap:14px; margin-top:10px; font-size:11px; color:var(--muted); flex-wrap:wrap}
+  .cal-legend span{display:inline-flex; align-items:center; gap:5px}
+  .dot-sample{width:5px; height:5px; border-radius:999px; background:var(--peach); display:inline-block}
+  .dot-bp-sample{width:5px; height:5px; border-radius:999px; background:var(--sage-deep); display:inline-block}
+  .ring-sample{width:12px; height:12px; border-radius:999px; background:var(--petal2); display:inline-block}
+  .day-detail{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:10px; padding:10px 12px; background:var(--cream); border-radius:12px; font-size:12px; color:var(--muted)}
+  .day-detail b{color:var(--ink); font-weight:700; white-space:nowrap}
+
+  .today-card{background:var(--cream); border:1px solid var(--sage-light); border-radius:20px; padding:16px 18px; display:flex; flex-direction:column; gap:10px}
+  .today-card .tt{font-size:12px; color:var(--muted); font-weight:700}
+  .today-card .dd{font-family:'Gowun Dodum','Noto Sans KR',sans-serif; font-size:22px; font-weight:700}
+  .mission{display:flex; align-items:center; gap:8px; background:#fff; border:1.5px solid var(--sage-light); border-radius:14px; padding:9px 12px; font-size:12.5px; font-weight:600}
+  .mission .mark{width:18px; height:18px; border-radius:999px; border:2px solid var(--sage); flex:none}
+  .mission.done .mark{background:var(--petal2); border-color:var(--petal2)}
+  .mission.done{color:var(--muted); text-decoration:line-through}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" id="screen"></div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script>
+function cssv(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function shortDate(iso) { if (!iso) return ''; const [, m, d] = iso.split('-'); return `${Number(m)}/${Number(d)}`; }
+function bpPoints(health, bpLog) {
+  const pts = [{ v: health.sbp, d: health.recorded_at ? shortDate(health.recorded_at) : '시작' }];
+  bpLog.forEach(l => pts.push({ v: l.sys, d: l.date ? shortDate(l.date) : `${l.w}주차` }));
+  return pts;
+}
+
+function bpChart(points) {
+  const series = points.map(p => p.v);
+  const W = 356, H = 144, padL = 32, padR = 16, padT = 20, padB = 34;
+  const lo = Math.min(120, ...series) - 4, hi = Math.max(150, ...series) + 4;
+  const Xp = i => padL + (series.length > 1 ? i * (W - padL - padR) / (series.length - 1) : 0);
+  const Yp = v => padT + (hi - v) / (hi - lo) * (H - padT - padB);
+  const s = [`<svg class="chart" viewBox="0 0 ${W} ${H}">`];
+  s.push(`<line x1="${padL}" y1="${Yp(140).toFixed(1)}" x2="${W - padR}" y2="${Yp(140).toFixed(1)}" stroke="${cssv('--danger')}" stroke-width="1.5" stroke-dasharray="5 4"/>`);
+  s.push(`<text x="${W - padR - 60}" y="${(Yp(140) - 4).toFixed(1)}" font-size="10" fill="${cssv('--danger')}">고혈압 140</text>`);
+  s.push(`<polyline fill="none" stroke="${cssv('--accent')}" stroke-width="2.5" points="${points.map((p, i) => Xp(i).toFixed(1) + ',' + Yp(p.v).toFixed(1)).join(' ')}"/>`);
+  points.forEach((p, i) => {
+    const x = Xp(i).toFixed(1), y = Yp(p.v);
+    s.push(`<circle cx="${x}" cy="${y.toFixed(1)}" r="4" fill="#fff" stroke="${cssv('--accent')}" stroke-width="2"/>`);
+    s.push(`<text x="${x}" y="${(y - 9).toFixed(1)}" font-size="10.5" font-weight="700" text-anchor="middle" fill="${cssv('--ink')}">${p.v}</text>`);
+    s.push(`<text x="${x}" y="${H - 8}" font-size="9.5" text-anchor="middle" fill="${cssv('--muted')}">${p.d}</text>`);
+  });
+  s.push('</svg>');
+  return s.join('');
+}
+
+const profile = JSON.parse(localStorage.getItem('paeon-profile') || 'null');
+const health = JSON.parse(localStorage.getItem('paeon-health') || 'null');
+const pred = JSON.parse(localStorage.getItem('paeon-prediction') || 'null');
+const cycle = JSON.parse(localStorage.getItem('paeon-cycle') || 'null');
+const progress = JSON.parse(localStorage.getItem('paeon-progress') || '{"days":[],"bpLog":[]}');
+
+const COLOR = { normal: 'var(--ok)', borderline: 'var(--warn)', high: 'var(--risk)' };
+let state = health ? (cycle ? 'active' : 'empty') : 'empty';
+let selectedDetailIdx = null;
+
+const PIO_BODY = `
+  <g style="fill:var(--stem)"><ellipse cx="50" cy="76" rx="8" ry="16" transform="rotate(35 50 76)"/><ellipse cx="50" cy="76" rx="8" ry="16" transform="rotate(-35 50 76)"/></g>
+  <g style="fill:var(--petal1)">
+    <ellipse cx="50" cy="26" rx="14" ry="21"/><ellipse cx="50" cy="26" rx="14" ry="21" transform="rotate(60 50 50)"/>
+    <ellipse cx="50" cy="26" rx="14" ry="21" transform="rotate(120 50 50)"/><ellipse cx="50" cy="26" rx="14" ry="21" transform="rotate(180 50 50)"/>
+    <ellipse cx="50" cy="26" rx="14" ry="21" transform="rotate(240 50 50)"/><ellipse cx="50" cy="26" rx="14" ry="21" transform="rotate(300 50 50)"/>
+  </g>
+  <g style="fill:var(--petal2)">
+    <ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(30 50 50)"/><ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(90 50 50)"/>
+    <ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(150 50 50)"/><ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(210 50 50)"/>
+    <ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(270 50 50)"/><ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(330 50 50)"/>
+  </g>
+  <circle cx="50" cy="50" r="14" style="fill:var(--center)"/>`;
+
+const PIO_FACES = {
+  cry: `<path d="M43,49 Q45,46 48,49" stroke="var(--ink)" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <path d="M52,49 Q55,46 57,49" stroke="var(--ink)" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <path d="M45,58 Q50,54.5 55,58" stroke="var(--ink)" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    <path d="M44,50 Q42,56 44,60 Q46,58 45,52 Z" style="fill:#7EB6E0" opacity="0.85"/>
+    <path d="M56,50 Q58,56 56,60 Q54,58 55,52 Z" style="fill:#7EB6E0" opacity="0.85"/>`,
+  smile: `<circle cx="45" cy="48" r="2" style="fill:var(--ink)"/><circle cx="55" cy="48" r="2" style="fill:var(--ink)"/>
+    <circle cx="40" cy="52" r="2.6" style="fill:var(--petal2)" opacity="0.55"/><circle cx="60" cy="52" r="2.6" style="fill:var(--petal2)" opacity="0.55"/>
+    <path d="M46,54 Q50,57.5 54,54" stroke="var(--ink)" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
+  cheer: `<path d="M42,47 Q45,43 48,47" stroke="var(--ink)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M52,47 Q55,43 58,47" stroke="var(--ink)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <circle cx="40" cy="53" r="2.8" style="fill:var(--petal2)" opacity="0.6"/><circle cx="60" cy="53" r="2.8" style="fill:var(--petal2)" opacity="0.6"/>
+    <path d="M44,53 Q50,60 56,53" stroke="var(--ink)" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+};
+
+function panelsHtml() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const startedOn = cycle ? new Date(cycle.startedOn + 'T00:00:00') : null;
+  const todayIdx = startedOn ? Math.round((today - startedOn) / 86400000) : -1;
+  const missionLog = progress.missionLog || {};
+  const todaySet = (todayIdx >= 0 && todayIdx < 28)
+    ? (missionLog[todayIdx] ? new Set(missionLog[todayIdx]) : (progress.days.includes(todayIdx) ? new Set(cycle.missions.map(m => m.id)) : new Set()))
+    : new Set();
+  const todayDone = todayIdx >= 0 && todayIdx < 28 && progress.days.includes(todayIdx);
+  const todayCount = todaySet.size;
+
+  let pioState, pioText;
+  if (todayCount === 0) { pioState = 'cry'; pioText = '오늘 챌린지, 아직이에요'; }
+  else if (todayDone || todayCount >= cycle.missions.length) { pioState = 'cheer'; pioText = '오늘 목표 달성했어요!'; }
+  else { pioState = 'smile'; pioText = `오늘 ${todayCount}회 실천 중`; }
+
+  const missionsHtml = cycle.missions.map(m => `<div class="mission${todaySet.has(m.id) ? ' done' : ''}"><span class="mark"></span>${m.t}</div>`).join('');
+
+  const y = today.getFullYear(), m = today.getMonth();
+  const firstDow = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const hasDot = d => {
+    if (!startedOn) return false;
+    const idx = Math.round((new Date(y, m, d) - startedOn) / 86400000);
+    return idx >= 0 && idx < 28 && progress.days.includes(idx);
+  };
+  const hasBp = d => progress.bpLog.some(l => l.date === `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+  const idxOf = d => startedOn ? Math.round((new Date(y, m, d) - startedOn) / 86400000) : -1;
+  let dayGrid = '';
+  for (let i = 0; i < firstDow; i++) dayGrid += `<div class="day blank"></div>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dow = (firstDow + d - 1) % 7;
+    const idx = idxOf(d);
+    const inCycle = idx >= 0 && idx < 28;
+    const chal = hasDot(d), bp = hasBp(d);
+    const dots = (chal || bp) ? `<span class="dots">${chal ? '<span class="dot"></span>' : ''}${bp ? '<span class="dot-bp"></span>' : ''}</span>` : '';
+    dayGrid += `<div class="day${d === today.getDate() ? ' today' : ''}${dow === 0 ? ' sun' : ''}${inCycle ? ' clickable' : ''}${inCycle && idx === selectedDetailIdx ? ' picked' : ''}"${inCycle ? ` data-idx="${idx}"` : ''}><span class="num">${d}</span>${dots}</div>`;
+  }
+
+  const detailIdx = selectedDetailIdx != null ? selectedDetailIdx : todayIdx;
+  let detailHtml = '';
+  if (detailIdx >= 0 && detailIdx < 28) {
+    const dDate = new Date(startedOn.getTime() + detailIdx * 86400000);
+    const label = `${dDate.getMonth() + 1}월 ${dDate.getDate()}일 (${['일', '월', '화', '수', '목', '금', '토'][dDate.getDay()]})`;
+    const status = detailIdx > todayIdx ? '아직 오지 않은 날이에요' : progress.days.includes(detailIdx) ? `미션 ${cycle.missions.length}개 모두 실천했어요` : '실천 기록이 없어요';
+    detailHtml = `<div class="day-detail"><b>${label}</b><span>${status}</span></div>`;
+  }
+
+  return `<div class="panels">
+    <div class="left-col">
+      <div class="pio-big-card">
+        <svg viewBox="0 0 100 100">${PIO_BODY}${PIO_FACES[pioState]}</svg>
+        <span class="pt">${pioText}</span>
+      </div>
+      <div class="today-card">
+        <div><div class="tt">${['일', '월', '화', '수', '목', '금', '토'][today.getDay()]}요일</div><div class="dd">${today.getMonth() + 1}월 ${today.getDate()}일</div></div>
+        ${missionsHtml}
+        <a class="cta" style="display:block;text-align:center;text-decoration:none;margin-top:4px" href="challenge-progress.html">오늘 챌린지 인증하기</a>
+      </div>
+    </div>
+    <div class="cal-card">
+      <div class="cal-head"><div class="ym">${y}년 ${m + 1}월</div></div>
+      <div class="dow-row"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+      <div class="day-grid">${dayGrid}</div>
+      <div class="cal-legend"><span><i class="ring-sample"></i>오늘</span><span><i class="dot-sample"></i>챌린지 완료</span><span><i class="dot-bp-sample"></i>혈압 측정</span></div>
+      ${detailHtml}
+    </div>
+  </div>`;
+}
+
+function render() {
+  const screen = document.getElementById('screen');
+  const sw = `<div class="state">
+    <button type="button" data-s="empty" data-on="${state === 'empty' ? '1' : '0'}">입력 전</button>
+    <button type="button" data-s="active" data-on="${state === 'active' ? '1' : '0'}">진행 중</button>
+    <button type="button" data-s="redo" data-on="${state === 'redo' ? '1' : '0'}">4주 완료</button>
+  </div>`;
+
+  const H = {
+    empty: ['혈압, 마지막으로 재신 게 언제인가요?', '검진 결과지가 있으면 사진 한 장으로 끝납니다.', '건강정보 입력하기', 'input.html'],
+    active: ['오늘도 챌린지 실천해 볼까요?', `${cycle ? cycle.missions.map(m => m.t).join(' · ') : ''}`, '오늘 챌린지 인증하기', 'challenge-progress.html'],
+    redo: ['4주가 끝났습니다. 얼마나 달라졌을까요?', '바뀐 항목만 다시 입력하면 같은 모델로 비교해 드립니다.', '4주 결과 확인하기', 'trend.html'],
+  }[state];
+
+  let body = `<div class="hero"><h1>${H[0]}</h1><p>${H[1]}</p></div>`;
+  if (state !== 'active') {
+    body += `<a class="cta" style="display:block;text-align:center;text-decoration:none" href="${H[3]}">${H[2]}</a>`;
+  }
+
+  if (state !== 'empty' && pred) {
+    const a = pred.model_a;
+    body += `<div class="tworow">
+      <div class="mini"><div class="lb">10년 관상동맥질환 위험</div>${a ? `<div class="vv" style="color:${COLOR[a.risk_level]}">${a.risk_label}</div><div class="sb">범주만 표시(보정 전)</div>` : '<div class="sb">예측 대상 아님</div>'}</div>
+      <div class="mini"><div class="lb">혈관 나이</div>${a ? `<div class="vv">${a.vascular_age}세</div><div class="sb">실제 ${profile ? '' : ''}나이 기준 추정</div>` : '<div class="sb">-</div>'}</div>
+    </div>`;
+    if (state === 'active' && cycle) body += panelsHtml();
+    body += `<figure><figcaption>수축기 혈압 · <b>주 1회 측정</b></figcaption>${bpChart(bpPoints(health, progress.bpLog))}</figure>`;
+    body += `<div class="callout"><b>이번 주 챌린지 ${Math.min(5, progress.days.length)} / 5일</b></div>`;
+  } else if (state === 'empty') {
+    body += `<div class="callout"><b>아직 예측할 정보가 없습니다</b><br>건강정보를 입력하면 여기에 결과가 표시됩니다.</div>`;
+  }
+
+  screen.innerHTML = sw + body;
+  screen.querySelectorAll('.state button').forEach(b => b.addEventListener('click', () => { state = b.dataset.s; render(); }));
+  screen.querySelectorAll('.day[data-idx]').forEach(el => el.addEventListener('click', () => { selectedDetailIdx = Number(el.dataset.idx); render(); }));
+}
+render();
+</script>
+</body>
+</html>
