@@ -1,8 +1,8 @@
-// 모델 A v0.1.0 — artifacts JSON에서 자동 생성. 계수·평균은 원래 단위. 결측이면 impute 값 사용
+// 모델 A v0.1.1 — artifacts JSON에서 자동 생성. 계수·평균은 원래 단위. 결측이면 impute 값 사용
 // 확률: p = σ(INTERCEPT + Σ coef·(x − mean)) / 기여도: coef·(x − baseline), 0이면 '해당 없음'으로 표시 안 함
 const MODEL_A_FEATS = [
-  {k:'age', label:'나이', coef:0.066053, mean:49.663915, baseline:49.663915, impute:49.0, modifiable:false, dirOK:true, valueLabels:null},
-  {k:'male', label:'성별(남)', coef:0.551428, mean:0.428656, baseline:0.0, impute:0.0, modifiable:false, dirOK:true, valueLabels:{"0": "여", "1": "남"}},
+  {k:'age', fixed:true, label:'나이', coef:0.066053, mean:49.663915, baseline:49.663915, impute:49.0, modifiable:false, dirOK:true, valueLabels:null},
+  {k:'male', fixed:true, label:'성별(남)', coef:0.551428, mean:0.428656, baseline:0.0, impute:0.0, modifiable:false, dirOK:true, valueLabels:{"0": "여", "1": "남"}},
   {k:'sysBP', label:'수축기혈압', coef:0.014823, mean:132.439858, baseline:132.439858, impute:128.0, modifiable:true, dirOK:true, valueLabels:null},
   {k:'totChol', label:'총콜레스테롤', coef:0.002373, mean:236.670106, baseline:236.670106, impute:234.0, modifiable:true, dirOK:true, valueLabels:null},
   {k:'currentSmoker', label:'흡연', coef:0.386011, mean:0.49204, baseline:0.0, impute:0.0, modifiable:true, dirOK:true, valueLabels:{"0": "없음", "1": "있음"}},
@@ -12,6 +12,7 @@ const MODEL_A_FEATS = [
   {k:'BMI', label:'BMI', coef:0.003351, mean:25.824534, baseline:25.824534, impute:25.38, modifiable:true, dirOK:true, valueLabels:null},
 ];
 const MODEL_A_INTERCEPT = -1.98072;
+const MODEL_A_AGE_COEF = 0.066053;  // 혈관 나이: age + Σ(fixed 아닌 요인 coef·(x − mean)) / AGE_COEF, 20~90 (데모 vascAge 식과 같음)
 
 // 모델 B v0.1.0 — artifacts JSON에서 자동 생성. 계수·평균은 원래 단위. 결측이면 impute 값 사용
 // 확률: p = σ(INTERCEPT + Σ coef·(x − mean)) / 기여도: coef·(x − baseline), 0이면 '해당 없음'으로 표시 안 함

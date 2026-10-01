@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0",
+  "version": "0.1.1",
   "data": "framingham.csv",
   "n_total": 4240,
   "n_train": 3392,

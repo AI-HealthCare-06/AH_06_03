@@ -1,6 +1,6 @@
 {
   "model_code": "MODEL_A",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "target": "10년 내 관상동맥질환(TenYearCHD) 발생 확률",
   "calibration": "없음 (미국 1950–60년대 데이터 그대로. 한국인 위험이 높게 나옴)",
   "formula": "p = 1 / (1 + exp(-(intercept + Σ coef·(x − mean))))",
@@ -136,5 +136,18 @@
   "age_range": [
     32,
     70
-  ]
+  ],
+  "vascular_age": {
+    "formula": "age + Σ_{k ∉ fixed} coef_k·(x_k − mean_k) / age_coef, clamp [20, 90]",
+    "fixed": [
+      "age",
+      "male"
+    ],
+    "age_coef": 0.066053,
+    "clamp": [
+      20,
+      90
+    ],
+    "note": "기여도는 평균 기준(모든 위험 요인이 학습 데이터 평균이면 혈관 나이 = 실제 나이). 추정치로 표기"
+  }
 }
