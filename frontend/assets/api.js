@@ -51,6 +51,30 @@ async function apiSubmitHealthRecord(payload) {
   return body;
 }
 
+// 검진 결과지 사진 → Clova OCR → OpenAI 구조화. 혜림님이 백엔드 엔드포인트 만들면 USE_MOCK 끄기.
+async function apiOcrHealthRecord(file) {
+  if (USE_MOCK) {
+    console.log('[MOCK] apiOcrHealthRecord', file && file.name);
+    await sleep(1200);
+    return {
+      data: {
+        fields: { height_cm: 172, weight_kg: 78, waist_cm: 88, sbp: 138, dbp: 86, total_chol: 210, hdl: 44 },
+        missing: ['fasting_glucose'],
+      },
+    };
+  }
+  const form = new FormData();
+  form.append('image', file);
+  const res = await fetch(`${API_BASE}/health/records/ocr`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${getAccessToken()}` },
+    body: form,
+  });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.error?.message || '인식에 실패했습니다');
+  return body;
+}
+
 function getAccessToken() {
   try { return localStorage.getItem('paeon-access-token') || ''; } catch (e) { return ''; }
 }

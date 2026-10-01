@@ -33,6 +33,17 @@
           </div>
 
           <form id="health-form" class="screen">
+            <div class="card plain" id="ocr-card">
+              <p class="sect" style="margin-top:0">검진 결과지 사진으로 빠르게 입력</p>
+              <p class="hint">사진 한 장이면 아래 칸이 자동으로 채워져요. 인식된 값은 꼭 확인해주세요.</p>
+              <label class="ghost" style="display:block; text-align:center; cursor:pointer">
+                <span id="ocr-label-text">📷 사진 업로드</span>
+                <input type="file" accept="image/*" id="ocr-input" style="display:none">
+              </label>
+              <div id="ocr-result"></div>
+            </div>
+            <p class="hint" style="text-align:center">또는 아래에서 직접 입력</p>
+
             <p class="sect">기본 정보</p>
             <div class="grid2">
               <div class="field">
@@ -194,6 +205,37 @@ drinkFreqSelect.addEventListener('change', () => {
 
 function showError(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
 function clearError() { errEl.style.display = 'none'; }
+
+const OCR_FIELD_MAP = { height_cm: 'height', weight_kg: 'weight', waist_cm: 'waist', sbp: 'sbp', dbp: 'dbp', total_chol: 'total-chol', hdl: 'hdl', fasting_glucose: 'glucose' };
+const OCR_FIELD_LABEL = { height_cm: '키', weight_kg: '몸무게', waist_cm: '허리둘레', sbp: '수축기 혈압', dbp: '이완기 혈압', total_chol: '총콜레스테롤', hdl: 'HDL 콜레스테롤', fasting_glucose: '공복혈당' };
+const ocrInput = document.getElementById('ocr-input');
+const ocrLabelText = document.getElementById('ocr-label-text');
+const ocrResult = document.getElementById('ocr-result');
+
+ocrInput.addEventListener('change', async () => {
+  const file = ocrInput.files[0];
+  if (!file) return;
+  ocrLabelText.textContent = '읽는 중...';
+  ocrResult.innerHTML = '';
+  try {
+    const res = await apiOcrHealthRecord(file);
+    const { fields, missing } = res.data;
+    let filledCount = 0;
+    Object.entries(fields).forEach(([key, val]) => {
+      const elId = OCR_FIELD_MAP[key];
+      if (elId && val != null) { document.getElementById(elId).value = val; filledCount++; }
+    });
+    const missingNames = (missing || []).map(k => OCR_FIELD_LABEL[k]).filter(Boolean);
+    ocrResult.innerHTML = missingNames.length
+      ? `<div class="callout"><b>${filledCount}개 항목을 채웠습니다</b><br>${missingNames.join(', ')}은(는) 직접 입력해주세요</div>`
+      : `<div class="callout"><b>${filledCount}개 항목을 채웠습니다</b><br>값을 확인하고 필요하면 수정해주세요</div>`;
+  } catch (e) {
+    ocrResult.innerHTML = `<div class="callout" style="border-color:var(--danger)"><b>⚠️ 인식할 수 없는 서식입니다</b><br>글자가 흐리거나 잘린 것 같아요. 아래에서 직접 입력해주세요</div>`;
+  } finally {
+    ocrLabelText.textContent = '📷 사진 업로드';
+    ocrInput.value = '';
+  }
+});
 
 function optionLabel(selectId, value) {
   const opt = Array.from(document.getElementById(selectId).options).find(o => o.value === String(value));
