@@ -11,7 +11,17 @@ router = APIRouter(tags=["auth"])
 
 @router.post("/auth/signup", status_code=status.HTTP_201_CREATED, response_model=DataResponse[SignupResult])
 async def signup(req: SignupRequest, db: AsyncSession = Depends(async_get_db)):
-    return DataResponse(data=await auth_service.signup(db, req.email, req.password, req.birth_date))
+    return DataResponse(
+        data=await auth_service.signup(
+            db, 
+            req.email, 
+            req.password, 
+            req.birth_date,
+            guardian_name=req.guardian_name,
+            guardian_relation=req.guardian_relation,
+            guardian_contact=req.guardian_contact,
+            )
+        )
 
 
 @router.post("/auth/login", response_model=DataResponse[TokenResult])

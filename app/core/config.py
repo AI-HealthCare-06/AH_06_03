@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     # 로그인 토큰 (NFR-SEC-002). 실제 값은 .env에만 적는다.
     JWT_SECRET: str = "change-me-jwt-secret"
     JWT_ALGORITHM: str = "HS256"
+    # 보호자 정보 암호화 열쇠 (Fernet). 실제 값은 .env에만 적는다.
+    GUARDIAN_ENC_KEY: str = ""
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 14
 

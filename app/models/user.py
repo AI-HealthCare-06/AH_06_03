@@ -20,10 +20,35 @@ class User(Base, TimestampMixin):
     email: Mapped[str]=mapped_column(String(255), unique=True, nullable=False)
     password_hash: Mapped[str]=mapped_column(String(255), nullable=False)
     status: Mapped[str]=mapped_column(
-        Enum("active", "deleted", name="user_status"), nullable=False, default="active"
+        Enum("active", "deleted", "panding_guardian", name="user_status"), nullable=False, default="active"
     )
     deleted_at: Mapped[datetime | None]=mapped_column(DateTime, nullable=True)
 
+# 보호자 정보 추가 표
+class GuardianConsentVerification(Base):
+    """만 14세 미만 회원의 법정대리인 동의 기록 (REQ-CONSENT-003)."""
+    __tablename__ = "guardian_consent_verifications"
+
+    guardian_verification_id: Mapped[str] = mapped_column(CHAR(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        CHAR(36), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    guardian_name_enc: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    guardian_relation: Mapped[str] = mapped_column(
+        Enum("parent", "legal_guardian", name="guardian_relation"), nullable=False
+    )
+    guardian_contact_enc: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    verification_method: Mapped[str] = mapped_column(Enum("sms", "email", name="verification_method"), nullable=False)
+    verification_status: Mapped[str] = mapped_column(
+        Enum("pending", "verified", "expired", "purged", name="guardian_verification_status"),
+        nullable=False,
+        default="pending",
+    )
+    collected_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    purge_due_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
+    purged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+                                                       
 
 # 회원 추가 정보 표
 class UserProfile(Base, TimestampMixin):
