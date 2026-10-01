@@ -6,7 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 from app.apis.prediction import router as prediction_router
-
+from app.apis.auth import router as auth_router
+from app.core.errors import register_error_handlers
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -15,6 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 (BASE_DIR / "media").mkdir(exist_ok=True)
 
 app = FastAPI(title="PAEON API")
+register_error_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,6 +30,7 @@ app.add_middleware(
 
 
 app.include_router(prediction_router, prefix="/v1")
+app.include_router(auth_router,prefix="/v1")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.mount("/media", StaticFiles(directory=BASE_DIR / "media"), name="media")
 
