@@ -1,11 +1,16 @@
 const API_BASE = 'https://54-116-113-17.sslip.io/v1';
 const USE_MOCK = true;
-// predict만 혜림님 임시 창구가 실제로 떠있어서 따로 뺌 — 나머지(signup/login/health/survey)는 백엔드 준비되면 USE_MOCK 끄기
+// predict·auth는 혜림님 엔드포인트가 실제로 떠있어서 따로 뺌 — health/survey는 백엔드 준비되면 USE_MOCK 끄기
 const USE_MOCK_PREDICT = false;
+const USE_MOCK_AUTH = false;
 
-async function apiSignup(email, password, birthDate) {
-  if (USE_MOCK) {
-    console.log('[MOCK] apiSignup', { email, birthDate });
+function friendlyError(e) { return e instanceof TypeError ? '서버 연결에 실패했어요. 잠시 후 다시 시도해주세요.' : e.message; }
+
+// PR #22 기준: signup은 만 14세 미만이면 무조건 403 AUTH_GUARDIAN_CONSENT_REQUIRED (보호자 필드를 아직 안 받음).
+// guardian-consent.html은 백엔드가 그 필드를 받기 전까지 opts.forceMock:true로 호출해서 mock 유지.
+async function apiSignup(email, password, birthDate, opts = {}) {
+  if (USE_MOCK_AUTH || opts.forceMock) {
+    console.log('[MOCK] apiSignup', { email, birthDate, forceMock: !!opts.forceMock });
     await sleep(400);
     return { data: { user_id: 'mock-user-1' } };
   }
@@ -20,7 +25,7 @@ async function apiSignup(email, password, birthDate) {
 }
 
 async function apiLogin(email, password) {
-  if (USE_MOCK) {
+  if (USE_MOCK_AUTH) {
     console.log('[MOCK] apiLogin', { email });
     await sleep(300);
     return { data: { access_token: 'mock-token', refresh_token: 'mock-refresh' } };
@@ -249,7 +254,7 @@ async function apiPredictV1Temp(profile, health, survey) {
     body: JSON.stringify(buildPredictV1Payload(profile, health, survey)),
   });
   const body = await res.json();
-  if (!res.ok) throw new Error(Array.isArray(body.detail) ? body.detail.map(d => `${d.loc?.join('.')}: ${d.msg}`).join(', ') : (body.detail || '예측 요청에 실패했습니다'));
+  if (!res.ok) throw new Error(body.error?.message || '예측 요청에 실패했습니다');
   return body;
 }
 

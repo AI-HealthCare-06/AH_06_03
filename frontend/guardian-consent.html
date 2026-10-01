@@ -101,7 +101,7 @@ if (!pending) {
     submitBtn.disabled = true;
     submitBtn.textContent = '처리하는 중...';
     try {
-      await apiSignup(pending.email, pending.pw, pending.birth);
+      await apiSignup(pending.email, pending.pw, pending.birth, { forceMock: true });
       ['paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-progress'].forEach(k => localStorage.removeItem(k));
       localStorage.setItem('paeon-profile', JSON.stringify({ email: pending.email, birth: pending.birth }));
       localStorage.setItem('paeon-guardian-consent', JSON.stringify({
@@ -113,7 +113,7 @@ if (!pending) {
       localStorage.removeItem('paeon-pending-signup');
       document.getElementById('success-modal').style.display = 'flex';
     } catch (e) {
-      errEl.textContent = e.message;
+      errEl.textContent = friendlyError(e);
       errEl.style.display = 'block';
       submitBtn.disabled = false;
       submitBtn.textContent = '동의하고 가입 완료';

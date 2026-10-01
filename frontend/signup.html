@@ -136,9 +136,14 @@ form.addEventListener('submit', async (event) => {
     await apiSignup(email, pw, birth);
     ['paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-progress'].forEach(k => localStorage.removeItem(k));
     localStorage.setItem('paeon-profile', JSON.stringify({ email, birth }));
+    try {
+      const loginRes = await apiLogin(email, pw);
+      localStorage.setItem('paeon-access-token', loginRes.data.access_token);
+      localStorage.setItem('paeon-refresh-token', loginRes.data.refresh_token);
+    } catch (e) { /* 가입은 됐으니 로그인은 나중에 직접 해도 됨 */ }
     document.getElementById('success-modal').style.display = 'flex';
   } catch (e) {
-    showError(e.message);
+    showError(friendlyError(e));
     submitBtn.disabled = false;
     submitBtn.textContent = '가입하기';
   }
