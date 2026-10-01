@@ -23,7 +23,7 @@
     },
     "expected_model_a": {
       "model_code": "MODEL_A",
-      "model_version": "0.1.0",
+      "model_version": "0.1.1",
       "status": "completed",
       "skip_reason": null,
       "probability": 0.150995,
@@ -119,7 +119,8 @@
       },
       "missing_features": [],
       "risk_level": "borderline",
-      "percentile": null
+      "percentile": null,
+      "vascular_age": 48.7
     },
     "expected_model_b": {
       "model_code": "MODEL_B",
@@ -290,7 +291,7 @@
     },
     "expected_model_a": {
       "model_code": "MODEL_A",
-      "model_version": "0.1.0",
+      "model_version": "0.1.1",
       "status": "completed",
       "skip_reason": null,
       "probability": 0.019097,
@@ -344,7 +345,8 @@
       "top_modifiable_factor": null,
       "missing_features": [],
       "risk_level": "normal",
-      "percentile": null
+      "percentile": null,
+      "vascular_age": 23.6
     },
     "expected_model_b": {
       "model_code": "MODEL_B",
@@ -493,7 +495,7 @@
     },
     "expected_model_a": {
       "model_code": "MODEL_A",
-      "model_version": "0.1.0",
+      "model_version": "0.1.1",
       "status": "completed",
       "skip_reason": null,
       "probability": 0.758454,
@@ -622,7 +624,8 @@
       },
       "missing_features": [],
       "risk_level": "high",
-      "percentile": null
+      "percentile": null,
+      "vascular_age": 90
     },
     "expected_model_b": {
       "model_code": "MODEL_B",
@@ -655,7 +658,7 @@
     },
     "expected_model_a": {
       "model_code": "MODEL_A",
-      "model_version": "0.1.0",
+      "model_version": "0.1.1",
       "status": "completed",
       "skip_reason": null,
       "probability": 0.128651,
@@ -740,7 +743,8 @@
       },
       "missing_features": [],
       "risk_level": "borderline",
-      "percentile": null
+      "percentile": null,
+      "vascular_age": 54.3
     },
     "expected_model_b": {
       "model_code": "MODEL_B",
@@ -773,7 +777,7 @@
     },
     "expected_model_a": {
       "model_code": "MODEL_A",
-      "model_version": "0.1.0",
+      "model_version": "0.1.1",
       "status": "skipped",
       "skip_reason": "age_out_of_range"
     },
@@ -944,7 +948,7 @@
     },
     "expected_model_a": {
       "model_code": "MODEL_A",
-      "model_version": "0.1.0",
+      "model_version": "0.1.1",
       "status": "completed",
       "skip_reason": null,
       "probability": 0.055298,
@@ -998,7 +1002,8 @@
       "top_modifiable_factor": null,
       "missing_features": [],
       "risk_level": "normal",
-      "percentile": null
+      "percentile": null,
+      "vascular_age": 40.3
     },
     "expected_model_b": {
       "model_code": "MODEL_B",

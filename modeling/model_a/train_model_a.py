@@ -1,9 +1,9 @@
-"""모델 A v0.1.0 — Framingham 10년 관상동맥질환(TenYearCHD), 보정 없음 (첫 번째 사이클).
+"""모델 A v0.1.1 — Framingham 10년 관상동맥질환(TenYearCHD), 보정 없음 (첫 번째 사이클).
 
 입력: $PAEON_DATA_DIR/framingham.csv
 출력: modeling/model_a/artifacts/
-  - model_a_v0.1.0.json   로지스틱 계수 (데모 FEATS 형식: coef·mean + intercept, 원래 단위)
-  - model_a_xgb_v0.1.0.json  XGBoost 비교 모델
+  - model_a_v0.1.1.json   로지스틱 계수 (데모 FEATS 형식: coef·mean + intercept, 원래 단위)
+  - model_a_xgb_v0.1.1.json  XGBoost 비교 모델
   - metrics_model_a.json  성능 기록 (NFR-ML-003)
 피처는 PRD REQ-HEALTH-002 입력 항목에서 받을 수 있는 것만 사용.
   HDL: Framingham에 없음 / glucose: 수시 혈당이라 한국 공복혈당과 다름 → 첫 번째 사이클 제외
@@ -26,7 +26,7 @@ import xgboost as xgb
 DATA_DIR = Path(os.environ.get("PAEON_DATA_DIR", Path(__file__).resolve().parents[3] / "데이터"))
 DATA = DATA_DIR / "framingham.csv"
 OUT = Path(__file__).resolve().parent / "artifacts"
-VERSION = "0.1.0"
+VERSION = "0.1.1"  # 0.1.1 (10/1): vascular_age 환산 정보 추가, 계수·확률은 0.1.0과 같음
 SEED = 42
 
 # (피처, 화면 라벨, 개선 가능 여부, PRD 입력 항목)
@@ -113,6 +113,14 @@ def main():
                   for (k, lab, mod, src), c, mu, md in zip(FEATS, coef, sc.mean_, imp.statistics_)],
         "bands": {"정상": "p < 0.10", "경계": "0.10 ≤ p ≤ 0.20", "위험": "p > 0.20", "source": "데모 코드 기준 (첫 번째 사이클 잠정)"},
         "age_range": [32, 70],
+        # 혈관 나이 = 학습이 아니라 후처리 환산식 (데모 paeon_mvp_demo.html vascAge 와 같은 식)
+        "vascular_age": {
+            "formula": "age + Σ_{k ∉ fixed} coef_k·(x_k − mean_k) / age_coef, clamp [20, 90]",
+            "fixed": ["age", "male"],
+            "age_coef": round(float(coef[F.index("age")]), 6),
+            "clamp": [20, 90],
+            "note": "기여도는 평균 기준(모든 위험 요인이 학습 데이터 평균이면 혈관 나이 = 실제 나이). 추정치로 표기",
+        },
     }
     (OUT / f"model_a_v{VERSION}.json").write_text(json.dumps(spec, ensure_ascii=False, indent=2))
     xg.named_steps["xgbclassifier"].save_model(OUT / f"model_a_xgb_v{VERSION}.json")

@@ -17,7 +17,7 @@ import math
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent
-SPEC_A = BASE / "model_a" / "artifacts" / "model_a_v0.1.0.json"
+SPEC_A = BASE / "model_a" / "artifacts" / "model_a_v0.1.1.json"
 SPEC_B = BASE / "model_b" / "artifacts" / "model_b_v0.1.0.json"
 
 # ── 선택지 → 모델 값 변환표 (학습 데이터 코드와 1:1) ─────────────────────
@@ -144,8 +144,22 @@ def predict_model_a(inp: dict, spec: dict | None = None) -> dict:
     p = out["probability"]
     out["risk_level"] = "normal" if p < 0.10 else ("borderline" if p <= 0.20 else "high")
     out["percentile"] = None  # 첫 번째 사이클 미제공 (한국인 기준 상대 위치는 보정 사이클에서)
+    out["vascular_age"] = vascular_age(spec, features_a(inp))
     return {"model_code": spec["model_code"], "model_version": spec["version"], "status": "completed",
             "skip_reason": None, **out}
+
+
+def vascular_age(spec: dict, x: dict) -> float:
+    """혈관 나이 (추정치, 학습 아닌 후처리). 나이·성별 외 요인이 평균 대비 올린 위험을 '나이 몇 년치'로 환산해 더함."""
+    va = spec["vascular_age"]
+    extra = 0.0
+    for f in spec["feats"]:
+        if f["k"] in va["fixed"]:
+            continue
+        v = x.get(f["k"])
+        extra += f["coef"] * ((f["impute"] if v is None else v) - f["mean"])
+    lo, hi = va["clamp"]
+    return round(min(max(x["age"] + extra / va["age_coef"], lo), hi), 1)
 
 
 def predict_model_b(inp: dict, spec: dict | None = None) -> dict:

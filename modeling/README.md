@@ -1,6 +1,6 @@
 # modeling — PAEON 예측 모델 (모델 A · 모델 B)
 
-담당: 김혜성 · 현재 버전: 모델 A v0.1.0 / 모델 B v0.1.0 (첫 번째 사이클, 보정 없음)
+담당: 김혜성 · 현재 버전: 모델 A v0.1.1 / 모델 B v0.1.0 (첫 번째 사이클, 보정 없음)
 
 ## 먼저 읽을 것
 1. `handoff/데이터_특성.md` — 모델이 말할 수 있는 것·없는 것, 팀이 결정할 것
@@ -12,7 +12,7 @@ modeling/
   paeon_models.py          추론 함수 predict_model_a / predict_model_b (전처리 포함, 표준 라이브러리만)
   model_a/                 모델 A: Framingham 10년 관상동맥질환
     train_model_a.py
-    artifacts/             model_a_v0.1.0.json(서비스용 계수) · metrics · XGBoost 비교 모델
+    artifacts/             model_a_v0.1.1.json(서비스용 계수) · metrics · XGBoost 비교 모델
   model_b/                 모델 B: 국민건강영양조사 현재 경계군과 닮은 정도
     train_model_b.py
     artifacts/
@@ -40,3 +40,10 @@ python3 modeling/verify_models.py
 
 ## 데이터 출처
 국민건강영양조사, 2022–2024. 질병관리청 / Kaggle Framingham Heart Study dataset — 자세한 내용은 `handoff/데이터_특성.md`
+
+## 버전 이력
+| 모델 | 버전 | 날짜 | 내용 |
+|---|---|---|---|
+| A | 0.1.0 | 2026-09-29 | 첫 번째 사이클 첫 버전 (로지스틱회귀, 보정 없음) |
+| A | 0.1.1 | 2026-10-01 | 응답에 `vascular_age`(혈관 나이) 추가. **계수·확률은 0.1.0과 같음** |
+| B | 0.1.0 | 2026-09-29 | 첫 번째 사이클 첫 버전 (로지스틱회귀, 조사구 단위 분할) |
