@@ -55,6 +55,8 @@ const cycle = JSON.parse(localStorage.getItem('paeon-cycle') || 'null');
 const progress = JSON.parse(localStorage.getItem('paeon-progress') || '{"days":[],"bpLog":[]}');
 
 function projectedHealth() {
+  const recheck = JSON.parse(localStorage.getItem('paeon-recheck') || 'null');
+  if (recheck) return { ...health, sbp: recheck.sbp, smokingFrac: recheck.smoking === 'current' ? 1 : 0 };
   const done = cycle ? progress.days.length / 28 : 0;
   const planDrop = cycle ? Math.min(12, -cycle.missions.reduce((s, m) => s + (m.bp || 0), 0)) * done : 0;
   const measured = progress.bpLog.length ? progress.bpLog[progress.bpLog.length - 1].sys : null;
@@ -127,15 +129,50 @@ function renderCompare() {
   const proj = projectedHealth();
   const xA1 = { ...buildXA(profile, proj), currentSmoker: proj.smokingFrac };
   const r1 = riskOf(MODEL_A_FEATS, MODEL_A_INTERCEPT, xA1), v1 = vascularAge(xA1), b1 = band(r1);
+  const recheck = JSON.parse(localStorage.getItem('paeon-recheck') || 'null');
   body.innerHTML = `
     <p class="lede">바뀐 입력(혈압·흡연)만 다시 받아 같은 모델 A에 전·후 데이터를 각각 넣어 비교했습니다. 확률(%)은 표시하지 않고 범주로만 비교합니다.</p>
     <div class="deltarow">
       <div class="side"><div class="lb">시작</div><div class="vv" style="color:${COLOR[b0.code]}">${b0.label}</div><div class="hint">혈관 나이 ${Math.round(v0)}세</div></div>
       <div class="arrow">→</div>
-      <div class="side"><div class="lb">4주 후</div><div class="vv" style="color:${COLOR[b1.code]}">${b1.label}</div><div class="hint">혈관 나이 ${Math.round(v1)}세</div></div>
+      <div class="side"><div class="lb">4주 후${recheck ? '' : ' (예상)'}</div><div class="vv" style="color:${COLOR[b1.code]}">${b1.label}</div><div class="hint">혈관 나이 ${Math.round(v1)}세</div></div>
     </div>
     <figure style="margin-top:10px"><figcaption>수축기 혈압 추이</figcaption>${bpChart(progress.bpLog.length ? bpPoints(health, progress.bpLog) : bpPoints(health, [], proj.sbp))}</figure>
-    <div class="callout" style="margin-top:10px">10년 위험은 4주 사이 바뀌는 입력이 적어 크게 움직이지 않습니다. 혈압 변화를 함께 확인해 주세요.</div>`;
+    <div class="callout" style="margin-top:10px">10년 위험은 4주 사이 바뀌는 입력이 적어 크게 움직이지 않습니다. 혈압 변화를 함께 확인해 주세요.</div>
+    <div id="recheck-card" style="background:var(--cream); border:1.5px solid var(--sage-light); border-radius:18px; padding:16px 18px; margin-top:12px; display:flex; flex-direction:column; gap:10px">
+      <p class="sect" style="margin:0">${recheck ? '다시 측정한 값 수정하기' : '4주 후 실제로 다시 측정했어요'}</p>
+      <p class="hint">혈압·흡연 상태만 새로 입력하면 그 값으로 비교해드려요. 입력 안 하면 챌린지 진행률 기반 예상치로 보여드려요.</p>
+      <div class="grid2">
+        <div class="field"><label>수축기 혈압</label><input id="rc-sbp" type="number" value="${recheck ? recheck.sbp : ''}"></div>
+        <div class="field"><label>이완기 혈압</label><input id="rc-dbp" type="number" value="${recheck ? recheck.dbp : ''}"></div>
+      </div>
+      <div class="field">
+        <label>현재 흡연 상태</label>
+        <select id="rc-smoking">
+          <option value="never" ${recheck && recheck.smoking === 'never' ? 'selected' : ''}>피운 적 없음</option>
+          <option value="former" ${recheck && recheck.smoking === 'former' ? 'selected' : ''}>끊음</option>
+          <option value="current" ${!recheck || recheck.smoking === 'current' ? 'selected' : ''}>현재 피움</option>
+        </select>
+      </div>
+      <p id="rc-err" class="err" style="display:none"></p>
+      <button type="button" id="rc-save" class="cta">이 값으로 비교하기</button>
+      ${recheck ? '<button type="button" id="rc-clear" class="ghost">예상치로 되돌리기</button>' : ''}
+    </div>`;
+
+  document.getElementById('rc-save').addEventListener('click', () => {
+    const sbp = Number(document.getElementById('rc-sbp').value);
+    const dbp = Number(document.getElementById('rc-dbp').value);
+    if (!sbp || !dbp) {
+      const err = document.getElementById('rc-err');
+      err.textContent = '혈압을 입력해주세요';
+      err.style.display = 'block';
+      return;
+    }
+    localStorage.setItem('paeon-recheck', JSON.stringify({ sbp, dbp, smoking: document.getElementById('rc-smoking').value, recorded_at: new Date().toISOString().slice(0, 10) }));
+    renderCompare();
+  });
+  const clearBtn = document.getElementById('rc-clear');
+  if (clearBtn) clearBtn.addEventListener('click', () => { localStorage.removeItem('paeon-recheck'); renderCompare(); });
 }
 
 document.getElementById('tabs').addEventListener('click', (e) => {

@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 캘린더</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  /* 캘린더 — 대시보드/챌린지 화면과 동일한 모양(.cal-card/.day 구조)에 사진 레이어만 추가 */
+  .cal-card{background:#fff; border:1px solid var(--sage-light); border-radius:20px; padding:16px 18px}
+  .cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
+  .cal-head .ym{font-family:'Gowun Dodum','Noto Sans KR',sans-serif; font-size:16px; font-weight:700; cursor:pointer; padding:4px 8px; border-radius:10px}
+  .cal-head .ym:hover{background:var(--cream)}
+  .cal-head .nav{display:flex; gap:6px}
+  .cal-head .nav button{width:30px; height:30px; padding:0; display:flex; align-items:center; justify-content:center; line-height:1; border-radius:999px; border:1px solid var(--sage-light); background:#fff; color:var(--muted); font-size:15px}
+  .jump-pop{display:flex; gap:6px; align-items:center; background:var(--cream); border-radius:14px; padding:8px 10px; margin-bottom:10px}
+  .jump-pop input,.jump-pop select{font:inherit; font-size:13px; padding:6px 8px; border-radius:8px; border:1.5px solid var(--sage-light)}
+  .jump-pop input{width:70px}
+
+  .dow-row{display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:11px; color:var(--muted); font-weight:700; margin-bottom:4px}
+  .dow-row span:first-child{color:var(--danger)}
+  .day-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px 0}
+  .day{position:relative; cursor:pointer}
+  .day::before{content:''; display:block; padding-top:100%}
+  .day.blank{visibility:hidden; cursor:default}
+  .day-inner{position:absolute; inset:0; display:flex; align-items:flex-start; justify-content:center; padding-top:6px; font-size:12.5px; color:var(--ink); overflow:hidden; border-radius:8px}
+  .day .num{position:relative; z-index:2}
+  .day .photo{position:absolute; inset:0; background-size:cover; background-position:center; z-index:0}
+  .day.has-photo .num{color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.55)}
+  .day.today .num::before{content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:26px; height:26px; border-radius:999px; background:var(--petal2); z-index:-1}
+  .day.today .num{color:#fff; font-weight:900}
+  .day.picked:not(.today) .num::before{content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:26px; height:26px; border-radius:999px; border:2px solid var(--sage-deep); z-index:-1}
+  .day.sun .num{color:var(--danger)}
+  .day .dots{position:absolute; bottom:4px; left:50%; transform:translateX(-50%); display:flex; gap:3px; z-index:2}
+  .day .dot{width:4px; height:4px; border-radius:999px; background:var(--peach)}
+  .day .dot-bp{width:4px; height:4px; border-radius:999px; background:var(--sage-deep)}
+  .day .dot-evt{width:4px; height:4px; border-radius:999px; background:var(--dots)}
+  .cal-legend{display:flex; gap:14px; margin-top:10px; font-size:11px; color:var(--muted); flex-wrap:wrap}
+  .cal-legend span{display:inline-flex; align-items:center; gap:5px}
+  .dot-sample{width:5px; height:5px; border-radius:999px; background:var(--peach); display:inline-block}
+  .dot-bp-sample{width:5px; height:5px; border-radius:999px; background:var(--sage-deep); display:inline-block}
+  .dot-evt-sample{width:5px; height:5px; border-radius:999px; background:var(--dots); display:inline-block}
+  .ring-sample{width:12px; height:12px; border-radius:999px; background:var(--petal2); display:inline-block}
+
+  /* 입력칸 — style.css의 .field는 input/select만 스타일링해서 textarea엔 직접 지정 */
+  .field textarea{font:inherit; font-size:13.5px; padding:10px 12px; border-radius:12px; border:1.5px solid var(--sage-light); background:#fff; color:var(--ink); width:100%; resize:vertical}
+
+  .detail2{background:var(--cream); border:1px solid var(--sage-light); border-radius:20px; padding:18px 20px; display:flex; flex-direction:column; gap:14px}
+  .diary-box{display:flex; flex-direction:column; gap:8px}
+  .diary-box textarea{min-height:64px}
+  .diary-box .diary-actions{display:flex; justify-content:flex-end}
+
+  .cat-tabs{display:flex; gap:8px}
+  .cat-tab{flex:1; padding:10px 6px; border-radius:12px; border:1.5px solid var(--sage-light); background:#fff; font-size:12.5px; font-weight:700; color:var(--muted)}
+  .cat-tab.active{background:var(--sage-deep); color:#fff; border-color:var(--sage-deep)}
+
+  .cat-body{background:#fff; border:1px solid var(--sage-light); border-radius:16px; padding:14px 16px; display:flex; flex-direction:column; gap:10px}
+
+  .thumb-big{display:flex; align-items:center; justify-content:center; width:140px; height:140px; margin:0 auto; border-radius:16px; border:1.5px dashed var(--sage); background:var(--cream); background-size:cover; background-position:center; cursor:pointer}
+
+  .small-btn{font-size:11px; padding:4px 10px; border-radius:999px; border:1.5px solid var(--sage); background:#fff; color:var(--ink); font-weight:700}
+  .small-btn.danger{border-color:var(--risk); color:var(--risk)}
+
+  .list-row{display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--cream); border-radius:12px; padding:8px 12px}
+  .list-row .lr-main{display:flex; flex-direction:column; gap:2px; min-width:0}
+  .list-row .lr-main b{font-size:13px}
+  .list-row .lr-actions{display:flex; gap:6px; flex:none}
+
+  .todo-row{display:flex; align-items:center; gap:8px; background:var(--cream); border-radius:12px; padding:8px 12px; font-size:13px}
+  .todo-row .chk{width:16px; height:16px; border-radius:999px; border:2px solid var(--sage); flex:none; cursor:pointer}
+  .todo-row.done .chk{background:var(--petal2); border-color:var(--petal2)}
+  .todo-row.done .tx{color:var(--muted); text-decoration:line-through}
+  .todo-row .tx{flex:1}
+  .todo-row .lr-actions{display:flex; gap:6px; flex:none}
+  .todo-edit-row{display:flex; gap:8px; align-items:center}
+  .todo-edit-row input{flex:1}
+
+  .event-form{display:flex; flex-direction:column; gap:10px}
+  .allday-row{display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:var(--muted)}
+  .add-row{display:flex; gap:8px}
+  .add-row input{flex:1; font:inherit; font-size:13.5px; padding:10px 12px; border-radius:12px; border:1.5px solid var(--sage-light); background:#fff; color:var(--ink)}
+  .add-row button{flex:none}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen">
+        <a href="dashboard.html" class="hint" style="text-decoration:none">‹ 홈으로</a>
+
+        <div id="cal-wrap"></div>
+        <div id="detail-wrap"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script>
+const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+function localIso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+const STORE_KEY = 'paeon-calendar';
+function load() { return JSON.parse(localStorage.getItem(STORE_KEY) || '{"entries":{}}'); }
+let store = load();
+function save() { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+
+const cycle = JSON.parse(localStorage.getItem('paeon-cycle') || 'null');
+const progress = JSON.parse(localStorage.getItem('paeon-progress') || '{"days":[],"bpLog":[]}');
+const cycleStartedOn = cycle ? new Date(cycle.startedOn + 'T00:00:00') : null;
+function chalOnDate(dt) {
+  if (!cycleStartedOn) return false;
+  const idx = Math.round((dt - cycleStartedOn) / 86400000);
+  return idx >= 0 && idx < 28 && progress.days.includes(idx);
+}
+function bpOnDate(dt) { return progress.bpLog.some(l => l.date === localIso(dt)); }
+
+const today = new Date(); today.setHours(0, 0, 0, 0);
+
+function blankEntry() { return { photo: null, diary: '', events: [], todos: [] }; }
+function entryFor(key) { return store.entries[key] || blankEntry(); }
+function ensureEntry(key) { if (!store.entries[key]) store.entries[key] = blankEntry(); return store.entries[key]; }
+
+const params = new URLSearchParams(location.search);
+const qDate = params.get('date');
+const initialDate = (qDate && /^\d{4}-\d{2}-\d{2}$/.test(qDate)) ? new Date(qDate + 'T00:00:00') : today;
+
+let viewYear = initialDate.getFullYear(), viewMonth = initialDate.getMonth();
+let selectedKey = localIso(initialDate);
+let jumpOpen = false;
+let activeCat = 'photo';
+let eventFormOpen = false, editingEventIndex = null, draftEvent = null;
+let editingTodoIndex = null;
+
+function selectDay(key) {
+  selectedKey = key; activeCat = 'photo';
+  eventFormOpen = false; editingEventIndex = null; draftEvent = null; editingTodoIndex = null;
+  render();
+}
+
+function jumpHtml() {
+  if (!jumpOpen) return '';
+  const opts = Array.from({ length: 12 }, (_, i) => `<option value="${i}" ${i === viewMonth ? 'selected' : ''}>${i + 1}월</option>`).join('');
+  return `<div class="jump-pop">
+    <input type="number" id="jump-year" value="${viewYear}">
+    <select id="jump-month">${opts}</select>
+    <button type="button" id="jump-go" class="ghost" style="width:auto; padding:8px 14px">이동</button>
+  </div>`;
+}
+
+function calendarCellsHtml() {
+  const firstDow = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  let cells = '';
+  for (let i = 0; i < firstDow; i++) cells += `<div class="day blank"></div>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dt = new Date(viewYear, viewMonth, d);
+    const key = localIso(dt);
+    const entry = store.entries[key];
+    const cls = ['day'];
+    if (key === localIso(today)) cls.push('today');
+    if (key === selectedKey) cls.push('picked');
+    if (dt.getDay() === 0) cls.push('sun');
+    if (entry && entry.photo) cls.push('has-photo');
+    const photoLayer = entry && entry.photo ? `<span class="photo" style="background-image:url('${entry.photo}')"></span>` : '';
+    const hasChal = chalOnDate(dt);
+    const hasBp = bpOnDate(dt);
+    const hasEvt = !!(entry && entry.events && entry.events.length);
+    const dots = (hasChal || hasBp || hasEvt) ? `<span class="dots">${hasChal ? '<span class="dot"></span>' : ''}${hasBp ? '<span class="dot-bp"></span>' : ''}${hasEvt ? '<span class="dot-evt"></span>' : ''}</span>` : '';
+    cells += `<div class="${cls.join(' ')}" data-key="${key}"><div class="day-inner">${photoLayer}<span class="num">${d}</span>${dots}</div></div>`;
+  }
+  return cells;
+}
+
+function photoPanelHtml(entry) {
+  return `<div class="cat-body" style="align-items:center">
+    <label class="thumb-big" id="thumb" style="${entry.photo ? `background-image:url('${entry.photo}')` : ''}">${entry.photo ? '' : '<span class="hint">눌러서 사진 선택</span>'}<input type="file" accept="image/*" id="photo-input" style="display:none"></label>
+    ${entry.photo ? `<button type="button" class="small-btn danger" id="photo-remove">사진 삭제</button>` : ''}
+  </div>`;
+}
+
+function eventFormHtml() {
+  const ev = draftEvent;
+  return `<div class="cat-body">
+    <div class="event-form">
+      <div class="field"><label>제목</label><input id="ev-title" value="${escapeHtml(ev.title)}" placeholder="예: 요가 수업"></div>
+      <label class="allday-row"><input type="checkbox" id="ev-allday" ${ev.allDay ? 'checked' : ''}> 하루종일</label>
+      <div class="grid2" id="ev-time-row" style="${ev.allDay ? 'display:none' : ''}">
+        <div class="field"><label>시작</label><input type="time" id="ev-start" value="${ev.start}"></div>
+        <div class="field"><label>종료</label><input type="time" id="ev-end" value="${ev.end}"></div>
+      </div>
+      <div class="field"><label>위치</label><input id="ev-location" value="${escapeHtml(ev.location)}" placeholder="위치"></div>
+      <div class="field"><label>URL</label><input id="ev-url" value="${escapeHtml(ev.url)}" placeholder="https://"></div>
+      <div class="field"><label>메모</label><textarea id="ev-memo" placeholder="메모">${escapeHtml(ev.memo)}</textarea></div>
+      <div style="display:flex; gap:8px">
+        <button type="button" id="ev-save" class="cta" style="flex:1">저장</button>
+        <button type="button" id="ev-cancel" class="ghost" style="flex:1">취소</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function eventListHtml(entry) {
+  if (eventFormOpen) return eventFormHtml();
+  const rows = entry.events.length
+    ? entry.events.map((ev, i) => `<div class="list-row">
+        <div class="lr-main"><b>${escapeHtml(ev.title || '(제목 없음)')}</b><span class="hint">${ev.allDay ? '하루종일' : `${ev.start}–${ev.end}`}${ev.location ? ' · ' + escapeHtml(ev.location) : ''}</span></div>
+        <div class="lr-actions"><button type="button" class="small-btn" data-act="edit-event" data-i="${i}">수정</button><button type="button" class="small-btn danger" data-act="del-event" data-i="${i}">삭제</button></div>
+      </div>`).join('')
+    : `<p class="hint">등록된 일정이 없어요</p>`;
+  return `<div class="cat-body">
+    ${rows}
+    <button type="button" id="event-add" class="ghost">+ 일정 추가</button>
+  </div>`;
+}
+
+function todoListHtml(entry) {
+  const rows = entry.todos.length
+    ? entry.todos.map((t, i) => editingTodoIndex === i
+        ? `<div class="todo-edit-row"><input id="todo-edit-input" value="${escapeHtml(t.text)}"><button type="button" class="small-btn" data-act="save-todo" data-i="${i}">완료</button></div>`
+        : `<div class="todo-row${t.done ? ' done' : ''}">
+            <span class="chk" data-act="toggle-todo" data-i="${i}"></span><span class="tx">${escapeHtml(t.text)}</span>
+            <div class="lr-actions"><button type="button" class="small-btn" data-act="edit-todo" data-i="${i}">수정</button><button type="button" class="small-btn danger" data-act="del-todo" data-i="${i}">삭제</button></div>
+          </div>`).join('')
+    : `<p class="hint">할 일이 없어요</p>`;
+  return `<div class="cat-body">
+    ${rows}
+    <div class="add-row">
+      <input id="todo-input" placeholder="할 일 추가">
+      <button type="button" id="todo-add" class="ghost" style="width:auto; padding:10px 18px">추가</button>
+    </div>
+  </div>`;
+}
+
+function detailHtml() {
+  const entry = entryFor(selectedKey);
+  const d = new Date(selectedKey + 'T00:00:00');
+  const label = `${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`;
+  const catBody = activeCat === 'photo' ? photoPanelHtml(entry) : activeCat === 'event' ? eventListHtml(entry) : todoListHtml(entry);
+  return `<div class="detail2">
+    <h4>선택한 날 — ${label}</h4>
+
+    <div class="diary-box">
+      <div class="field"><label>일기</label><textarea id="diary-text" placeholder="오늘 챌린지는 어땠나요?">${escapeHtml(entry.diary)}</textarea></div>
+      <div class="diary-actions"><button type="button" id="diary-save" class="small-btn" style="padding:8px 18px; font-size:12.5px">등록</button></div>
+    </div>
+
+    <div class="cat-tabs">
+      <button type="button" class="cat-tab${activeCat === 'photo' ? ' active' : ''}" data-cat="photo">📷 사진</button>
+      <button type="button" class="cat-tab${activeCat === 'event' ? ' active' : ''}" data-cat="event">📅 일정</button>
+      <button type="button" class="cat-tab${activeCat === 'todo' ? ' active' : ''}" data-cat="todo">✅ 할 일</button>
+    </div>
+    ${catBody}
+  </div>`;
+}
+
+function wire() {
+  document.getElementById('cal-prev').addEventListener('click', () => { viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } jumpOpen = false; render(); });
+  document.getElementById('cal-next').addEventListener('click', () => { viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } jumpOpen = false; render(); });
+  document.getElementById('ym-label').addEventListener('click', () => { jumpOpen = !jumpOpen; render(); });
+  const jumpGo = document.getElementById('jump-go');
+  if (jumpGo) jumpGo.addEventListener('click', () => {
+    viewYear = Number(document.getElementById('jump-year').value) || viewYear;
+    viewMonth = Number(document.getElementById('jump-month').value);
+    jumpOpen = false; render();
+  });
+  document.querySelectorAll('.day[data-key]').forEach(el => el.addEventListener('click', () => selectDay(el.dataset.key)));
+
+  document.querySelectorAll('.cat-tab[data-cat]').forEach(btn => btn.addEventListener('click', () => {
+    activeCat = btn.dataset.cat;
+    eventFormOpen = false; editingEventIndex = null; draftEvent = null; editingTodoIndex = null;
+    render();
+  }));
+
+  document.getElementById('diary-save').addEventListener('click', () => {
+    ensureEntry(selectedKey).diary = document.getElementById('diary-text').value;
+    save();
+    const btn = document.getElementById('diary-save');
+    btn.textContent = '등록됨'; setTimeout(() => { if (document.getElementById('diary-save')) document.getElementById('diary-save').textContent = '등록'; }, 1200);
+  });
+
+  if (activeCat === 'photo') {
+    const photoInput = document.getElementById('photo-input');
+    photoInput.addEventListener('change', () => {
+      const file = photoInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => { ensureEntry(selectedKey).photo = reader.result; save(); render(); };
+      reader.readAsDataURL(file);
+    });
+    const rm = document.getElementById('photo-remove');
+    if (rm) rm.addEventListener('click', () => { ensureEntry(selectedKey).photo = null; save(); render(); });
+  }
+
+  if (activeCat === 'event') {
+    if (eventFormOpen) {
+      document.getElementById('ev-allday').addEventListener('change', e => {
+        document.getElementById('ev-time-row').style.display = e.target.checked ? 'none' : '';
+      });
+      document.getElementById('ev-save').addEventListener('click', () => {
+        const ev = {
+          title: document.getElementById('ev-title').value.trim(),
+          allDay: document.getElementById('ev-allday').checked,
+          start: document.getElementById('ev-start').value,
+          end: document.getElementById('ev-end').value,
+          location: document.getElementById('ev-location').value.trim(),
+          url: document.getElementById('ev-url').value.trim(),
+          memo: document.getElementById('ev-memo').value.trim(),
+        };
+        const entry = ensureEntry(selectedKey);
+        if (editingEventIndex != null) entry.events[editingEventIndex] = ev; else entry.events.push(ev);
+        save();
+        eventFormOpen = false; editingEventIndex = null; draftEvent = null;
+        render();
+      });
+      document.getElementById('ev-cancel').addEventListener('click', () => {
+        eventFormOpen = false; editingEventIndex = null; draftEvent = null; render();
+      });
+    } else {
+      const addBtn = document.getElementById('event-add');
+      if (addBtn) addBtn.addEventListener('click', () => {
+        eventFormOpen = true; editingEventIndex = null;
+        draftEvent = { title: '', allDay: false, start: '09:00', end: '10:00', location: '', url: '', memo: '' };
+        render();
+      });
+      document.querySelectorAll('[data-act="edit-event"]').forEach(btn => btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.i);
+        eventFormOpen = true; editingEventIndex = i;
+        draftEvent = { ...entryFor(selectedKey).events[i] };
+        render();
+      }));
+      document.querySelectorAll('[data-act="del-event"]').forEach(btn => btn.addEventListener('click', () => {
+        entryFor(selectedKey).events.splice(Number(btn.dataset.i), 1);
+        save(); render();
+      }));
+    }
+  }
+
+  if (activeCat === 'todo') {
+    document.getElementById('todo-add').addEventListener('click', () => {
+      const input = document.getElementById('todo-input');
+      if (!input.value.trim()) return;
+      ensureEntry(selectedKey).todos.push({ text: input.value.trim(), done: false });
+      save(); render();
+    });
+    document.querySelectorAll('[data-act="toggle-todo"]').forEach(el => el.addEventListener('click', () => {
+      const i = Number(el.dataset.i);
+      const entry = entryFor(selectedKey);
+      entry.todos[i].done = !entry.todos[i].done;
+      save(); render();
+    }));
+    document.querySelectorAll('[data-act="edit-todo"]').forEach(btn => btn.addEventListener('click', () => {
+      editingTodoIndex = Number(btn.dataset.i); render();
+    }));
+    document.querySelectorAll('[data-act="del-todo"]').forEach(btn => btn.addEventListener('click', () => {
+      entryFor(selectedKey).todos.splice(Number(btn.dataset.i), 1);
+      save(); render();
+    }));
+    const saveTodoBtn = document.querySelector('[data-act="save-todo"]');
+    if (saveTodoBtn) saveTodoBtn.addEventListener('click', () => {
+      const i = Number(saveTodoBtn.dataset.i);
+      const val = document.getElementById('todo-edit-input').value.trim();
+      if (val) entryFor(selectedKey).todos[i].text = val;
+      editingTodoIndex = null;
+      save(); render();
+    });
+  }
+}
+
+function render() {
+  document.getElementById('cal-wrap').innerHTML = `<div class="cal-card">
+    <div class="cal-head">
+      <div class="ym" id="ym-label">${viewYear}년 ${viewMonth + 1}월 ▾</div>
+      <div class="nav"><button type="button" id="cal-prev">‹</button><button type="button" id="cal-next">›</button></div>
+    </div>
+    ${jumpHtml()}
+    <div class="dow-row"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+    <div class="day-grid">${calendarCellsHtml()}</div>
+    <div class="cal-legend"><span><i class="ring-sample"></i>오늘</span><span><i class="dot-sample"></i>챌린지 완료</span><span><i class="dot-bp-sample"></i>혈압 측정</span><span><i class="dot-evt-sample"></i>일정</span></div>
+  </div>`;
+  document.getElementById('detail-wrap').innerHTML = detailHtml();
+  wire();
+}
+
+render();
+</script>
+</body>
+</html>

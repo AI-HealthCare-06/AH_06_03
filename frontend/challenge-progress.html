@@ -45,7 +45,16 @@
   .mission.done .mark{background:var(--petal2); border-color:var(--petal2)}
   .mission.done{color:var(--muted); text-decoration:line-through}
 
-  .bplog{display:grid; grid-template-columns:auto 1fr auto; gap:4px 12px; font-size:12.5px; align-items:center}
+  .bplog{display:flex; flex-direction:column}
+  .bplog-row{display:flex; align-items:center; gap:10px; padding:10px 0 10px 16px; border-left:2px solid var(--sage-light); margin-left:5px; position:relative}
+  .bplog-row:last-child{border-left-color:transparent}
+  .bplog-row .bp-dot{position:absolute; left:-6px; top:50%; transform:translateY(-50%); width:10px; height:10px; border-radius:999px; border:2px solid #fff; box-shadow:0 0 0 1.5px var(--sage-light)}
+  .bplog-row .bp-date{font-size:11.5px; color:var(--muted); width:72px; flex:none}
+  .bplog-row .bp-val{font-size:15.5px; font-weight:800; flex:1}
+  .bplog-row .bp-val .unit{font-weight:500; color:var(--muted); font-size:12px}
+  .bp-badge{font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px; flex:none; white-space:nowrap}
+  .bp-badge.ok{background:var(--ok-soft); color:var(--ok)}
+  .bp-badge.high{background:var(--risk-soft); color:var(--risk)}
   .inline{display:flex; gap:8px; align-items:flex-end}
   .inline .field{flex:1}
   .inline button{width:auto; padding:10px 20px}
@@ -168,9 +177,15 @@ function bpSectionHtml() {
 }
 
 function renderBpLog() {
-  document.getElementById('bp-log').innerHTML = progress.bpLog.map(l =>
-    `<span class="num">${l.date || l.w + '주차'}</span><span class="num">${l.sys}/${l.dia} mmHg</span><span class="hint">${l.sys >= 140 ? '고혈압 기준 이상' : ''}</span>`
-  ).join('');
+  document.getElementById('bp-log').innerHTML = progress.bpLog.map(l => {
+    const high = l.sys >= 140;
+    return `<div class="bplog-row">
+      <span class="bp-dot" style="background:${high ? 'var(--risk)' : 'var(--ok)'}"></span>
+      <span class="bp-date">${l.date || l.w + '주차'}</span>
+      <span class="bp-val">${l.sys}/${l.dia} <span class="unit">mmHg</span></span>
+      <span class="bp-badge ${high ? 'high' : 'ok'}">${high ? '고혈압 기준 이상' : '정상 범위'}</span>
+    </div>`;
+  }).join('');
 }
 
 function wireEvents() {

@@ -48,14 +48,11 @@
   .day .dot-bp{width:4px; height:4px; border-radius:999px; background:var(--sage-deep)}
   .day.sun .num{color:var(--danger)}
   .day.clickable{cursor:pointer}
-  .day.picked:not(.today)::before{content:''; position:absolute; width:26px; height:26px; border-radius:999px; border:2px solid var(--sage-deep)}
   .cal-legend{display:flex; gap:14px; margin-top:10px; font-size:11px; color:var(--muted); flex-wrap:wrap}
   .cal-legend span{display:inline-flex; align-items:center; gap:5px}
   .dot-sample{width:5px; height:5px; border-radius:999px; background:var(--peach); display:inline-block}
   .dot-bp-sample{width:5px; height:5px; border-radius:999px; background:var(--sage-deep); display:inline-block}
   .ring-sample{width:12px; height:12px; border-radius:999px; background:var(--petal2); display:inline-block}
-  .day-detail{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:10px; padding:10px 12px; background:var(--cream); border-radius:12px; font-size:12px; color:var(--muted)}
-  .day-detail b{color:var(--ink); font-weight:700; white-space:nowrap}
 
   .today-card{background:var(--cream); border:1px solid var(--sage-light); border-radius:20px; padding:16px 18px; display:flex; flex-direction:column; gap:10px}
   .today-card .tt{font-size:12px; color:var(--muted); font-weight:700}
@@ -115,8 +112,8 @@ const cycle = JSON.parse(localStorage.getItem('paeon-cycle') || 'null');
 const progress = JSON.parse(localStorage.getItem('paeon-progress') || '{"days":[],"bpLog":[]}');
 
 const COLOR = { normal: 'var(--ok)', borderline: 'var(--warn)', high: 'var(--risk)' };
+const RISK_LABEL = { normal: '정상', borderline: '경계', high: '위험' };
 let state = health ? (cycle ? 'active' : 'empty') : 'empty';
-let selectedDetailIdx = null;
 
 const PIO_BODY = `
   <g style="fill:var(--stem)"><ellipse cx="50" cy="76" rx="8" ry="16" transform="rotate(35 50 76)"/><ellipse cx="50" cy="76" rx="8" ry="16" transform="rotate(-35 50 76)"/></g>
@@ -174,25 +171,14 @@ function panelsHtml() {
     return idx >= 0 && idx < 28 && progress.days.includes(idx);
   };
   const hasBp = d => progress.bpLog.some(l => l.date === `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
-  const idxOf = d => startedOn ? Math.round((new Date(y, m, d) - startedOn) / 86400000) : -1;
   let dayGrid = '';
   for (let i = 0; i < firstDow; i++) dayGrid += `<div class="day blank"></div>`;
   for (let d = 1; d <= daysInMonth; d++) {
     const dow = (firstDow + d - 1) % 7;
-    const idx = idxOf(d);
-    const inCycle = idx >= 0 && idx < 28;
+    const dateKey = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const chal = hasDot(d), bp = hasBp(d);
     const dots = (chal || bp) ? `<span class="dots">${chal ? '<span class="dot"></span>' : ''}${bp ? '<span class="dot-bp"></span>' : ''}</span>` : '';
-    dayGrid += `<div class="day${d === today.getDate() ? ' today' : ''}${dow === 0 ? ' sun' : ''}${inCycle ? ' clickable' : ''}${inCycle && idx === selectedDetailIdx ? ' picked' : ''}"${inCycle ? ` data-idx="${idx}"` : ''}><span class="num">${d}</span>${dots}</div>`;
-  }
-
-  const detailIdx = selectedDetailIdx != null ? selectedDetailIdx : todayIdx;
-  let detailHtml = '';
-  if (detailIdx >= 0 && detailIdx < 28) {
-    const dDate = new Date(startedOn.getTime() + detailIdx * 86400000);
-    const label = `${dDate.getMonth() + 1}월 ${dDate.getDate()}일 (${['일', '월', '화', '수', '목', '금', '토'][dDate.getDay()]})`;
-    const status = detailIdx > todayIdx ? '아직 오지 않은 날이에요' : progress.days.includes(detailIdx) ? `미션 ${cycle.missions.length}개 모두 실천했어요` : '실천 기록이 없어요';
-    detailHtml = `<div class="day-detail"><b>${label}</b><span>${status}</span></div>`;
+    dayGrid += `<div class="day clickable${d === today.getDate() ? ' today' : ''}${dow === 0 ? ' sun' : ''}" data-date="${dateKey}"><span class="num">${d}</span>${dots}</div>`;
   }
 
   return `<div class="panels">
@@ -212,7 +198,6 @@ function panelsHtml() {
       <div class="dow-row"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
       <div class="day-grid">${dayGrid}</div>
       <div class="cal-legend"><span><i class="ring-sample"></i>오늘</span><span><i class="dot-sample"></i>챌린지 완료</span><span><i class="dot-bp-sample"></i>혈압 측정</span></div>
-      ${detailHtml}
     </div>
   </div>`;
 }
@@ -237,10 +222,10 @@ function render() {
   }
 
   if (state !== 'empty' && pred) {
-    const a = pred.model_a;
+    const a = pred.model_a && pred.model_a.status === 'completed' ? pred.model_a : null;
     body += `<div class="tworow">
-      <div class="mini"><div class="lb">10년 관상동맥질환 위험</div>${a ? `<div class="vv" style="color:${COLOR[a.risk_level]}">${a.risk_label}</div><div class="sb">범주만 표시(보정 전)</div>` : '<div class="sb">예측 대상 아님</div>'}</div>
-      <div class="mini"><div class="lb">혈관 나이</div>${a ? `<div class="vv">${a.vascular_age}세</div><div class="sb">실제 ${profile ? '' : ''}나이 기준 추정</div>` : '<div class="sb">-</div>'}</div>
+      <div class="mini"><div class="lb">10년 관상동맥질환 위험</div>${a ? `<div class="vv" style="color:${COLOR[a.risk_level]}">${RISK_LABEL[a.risk_level]}</div><div class="sb">범주만 표시(보정 전)</div>` : '<div class="sb">예측 대상 아님</div>'}</div>
+      <div class="mini"><div class="lb">혈관 나이(추정)</div>${a && a.vascular_age != null ? `<div class="vv">${a.vascular_age}세</div><div class="sb">실제 나이와 차이가 클 수 있어요</div>` : '<div class="sb">-</div>'}</div>
     </div>`;
     if (state === 'active' && cycle) body += panelsHtml();
     body += `<figure><figcaption>수축기 혈압 · <b>주 1회 측정</b></figcaption>${bpChart(bpPoints(health, progress.bpLog))}</figure>`;
@@ -251,7 +236,7 @@ function render() {
 
   screen.innerHTML = sw + body;
   screen.querySelectorAll('.state button').forEach(b => b.addEventListener('click', () => { state = b.dataset.s; render(); }));
-  screen.querySelectorAll('.day[data-idx]').forEach(el => el.addEventListener('click', () => { selectedDetailIdx = Number(el.dataset.idx); render(); }));
+  screen.querySelectorAll('.day[data-date]').forEach(el => el.addEventListener('click', () => { window.location.href = 'calendar-diary.html?date=' + el.dataset.date; }));
 }
 render();
 </script>
