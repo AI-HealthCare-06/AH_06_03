@@ -73,7 +73,7 @@ document.getElementById('submit-btn').addEventListener('click', async () => {
     localStorage.setItem('paeon-prediction', JSON.stringify(result.data));
     window.location.href = 'result.html';
   } catch (e) {
-    errEl.textContent = e instanceof TypeError ? '서버 연결에 실패했어요. 잠시 후 다시 시도해주세요.' : e.message;
+    errEl.textContent = friendlyError(e);
     errEl.style.display = 'block';
     btn.disabled = false;
     btn.textContent = '위험도 분석하기';

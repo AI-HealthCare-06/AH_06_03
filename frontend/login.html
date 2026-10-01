@@ -33,7 +33,7 @@
           <button type="submit" id="submit-btn" class="cta" style="margin-top:14px">로그인</button>
         </form>
 
-        <p class="hint" style="text-align:center; margin-top:10px">계정이 없으신가요? <a href="signup.html">회원가입</a></p>
+        <p class="hint" style="text-align:center; margin-top:10px">계정이 없으신가요? <a href="signup.html" style="color:var(--muted); font-weight:700; text-decoration:underline">회원가입</a></p>
       </div>
     </div>
   </div>
@@ -64,7 +64,7 @@ form.addEventListener('submit', async (event) => {
     }
     window.location.href = 'dashboard.html';
   } catch (e) {
-    errEl.textContent = e.message;
+    errEl.textContent = friendlyError(e);
     errEl.style.display = 'block';
     submitBtn.disabled = false;
     submitBtn.textContent = '로그인';
