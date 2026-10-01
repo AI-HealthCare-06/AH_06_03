@@ -6,18 +6,23 @@ const USE_MOCK_AUTH = false;
 
 function friendlyError(e) { return e instanceof TypeError ? '서버 연결에 실패했어요. 잠시 후 다시 시도해주세요.' : e.message; }
 
-// PR #22 기준: signup은 만 14세 미만이면 무조건 403 AUTH_GUARDIAN_CONSENT_REQUIRED (보호자 필드를 아직 안 받음).
-// guardian-consent.html은 백엔드가 그 필드를 받기 전까지 opts.forceMock:true로 호출해서 mock 유지.
+// opts.guardian = { name, relation, contact } — 만 14세 미만만. relation은 "parent" | "legal_guardian".
 async function apiSignup(email, password, birthDate, opts = {}) {
   if (USE_MOCK_AUTH || opts.forceMock) {
-    console.log('[MOCK] apiSignup', { email, birthDate, forceMock: !!opts.forceMock });
+    console.log('[MOCK] apiSignup', { email, birthDate, guardian: opts.guardian, forceMock: !!opts.forceMock });
     await sleep(400);
-    return { data: { user_id: 'mock-user-1' } };
+    return { data: { user_id: 'mock-user-1', guardian_verification_status: opts.guardian ? 'pending' : null } };
+  }
+  const payload = { email, password, birth_date: birthDate };
+  if (opts.guardian) {
+    payload.guardian_name = opts.guardian.name;
+    payload.guardian_relation = opts.guardian.relation;
+    payload.guardian_contact = opts.guardian.contact;
   }
   const res = await fetch(`${API_BASE}/auth/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, birth_date: birthDate }),
+    body: JSON.stringify(payload),
   });
   const body = await res.json();
   if (!res.ok) throw new Error(body.error?.message || '회원가입에 실패했습니다');
