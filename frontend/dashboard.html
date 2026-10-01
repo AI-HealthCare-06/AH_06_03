@@ -223,7 +223,10 @@ function render() {
 
   if (state !== 'empty' && pred) {
     const a = pred.model_a && pred.model_a.status === 'completed' ? pred.model_a : null;
-    body += `<div class="mini"><div class="lb">10년 관상동맥질환 위험</div>${a ? `<div class="vv" style="color:${COLOR[a.risk_level]}">${RISK_LABEL[a.risk_level]}</div><div class="sb">범주만 표시(보정 전)</div>` : '<div class="sb">예측 대상 아님</div>'}</div>`;
+    body += `<div class="tworow">
+      <div class="mini"><div class="lb">10년 관상동맥질환 위험</div>${a ? `<div class="vv" style="color:${COLOR[a.risk_level]}">${RISK_LABEL[a.risk_level]}</div><div class="sb">범주만 표시(보정 전)</div>` : '<div class="sb">예측 대상 아님</div>'}</div>
+      <div class="mini"><div class="lb">혈관 나이(추정)</div>${a && a.vascular_age != null ? `<div class="vv">${a.vascular_age}세</div><div class="sb">실제 나이와 차이가 클 수 있어요</div>` : '<div class="sb">-</div>'}</div>
+    </div>`;
     if (state === 'active' && cycle) body += panelsHtml();
     body += `<figure><figcaption>수축기 혈압 · <b>주 1회 측정</b></figcaption>${bpChart(bpPoints(health, progress.bpLog))}</figure>`;
     body += `<div class="callout"><b>이번 주 챌린지 ${Math.min(5, progress.days.length)} / 5일</b></div>`;

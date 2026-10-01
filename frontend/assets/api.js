@@ -111,6 +111,11 @@ function riskOf(feats, intercept, x) {
 function band(r) {
   return r < 0.10 ? { code: 'normal', label: '정상' } : r <= 0.20 ? { code: 'borderline', label: '경계' } : { code: 'high', label: '위험' };
 }
+const MODEL_A_AGE_COEF = 0.066053;
+function vascularAge(x) {
+  const sum = contribs(MODEL_A_FEATS, x).filter(f => f.k !== 'age' && f.k !== 'male').reduce((s, f) => s + f.contribution, 0);
+  return Math.max(20, Math.min(90, x.age + sum / MODEL_A_AGE_COEF));
+}
 function bpStage(sbp, dbp) {
   if (sbp >= 140 || dbp >= 90) return 'hypertension';
   if (sbp >= 130 || dbp >= 80) return 'prehypertension';
@@ -173,7 +178,7 @@ async function apiRequestPrediction(profile, elig, health, survey) {
   } else {
     const xA = buildXA(profile, health);
     const r = riskOf(MODEL_A_FEATS, MODEL_A_INTERCEPT, xA);
-    modelA = { status: 'completed', skip_reason: null, risk_level: band(r).code, factors: topFactors(MODEL_A_FEATS, xA, 0.004) };
+    modelA = { status: 'completed', skip_reason: null, risk_level: band(r).code, vascular_age: Math.round(vascularAge(xA) * 10) / 10, factors: topFactors(MODEL_A_FEATS, xA, 0.004) };
   }
 
   let modelB;
