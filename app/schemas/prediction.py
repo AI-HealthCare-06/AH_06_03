@@ -85,6 +85,7 @@ class ModelResult(BaseModel):
     probability:float | None=None # 점수
     risk_level:Literal["normal", "borderline", "high"] | None=None # 신호등
     percentile:float | None=None # 같은 나이/성별 중 등수
+    vascular_age: float | None = None # 혈관 나이
     factors:list[Factor]=[] # 요인들
     top_risk_factor: Factor | None=None # 1등 위험 요인
     top_modifiable_factor: Factor | None=None # 1등으로 바꿀 수 있는 요인
