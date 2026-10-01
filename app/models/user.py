@@ -33,3 +33,16 @@ class UserProfile(Base, TimestampMixin):
     sex: Mapped[str | None]=mapped_column(Enum("male","female", name="sex_type"),nullable=True)
     birth_date: Mapped[date]=mapped_column(Date, nullable=False)
 
+
+# 회원 세션 표
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+
+    session_id: Mapped[str] = mapped_column(CHAR(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        CHAR(36), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    refresh_token_hash: Mapped[str] = mapped_column(CHAR(64), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)

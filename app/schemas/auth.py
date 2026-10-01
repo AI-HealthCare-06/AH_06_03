@@ -13,4 +13,15 @@ class SignupRequest(BaseModel):
 
 class SignupResult(BaseModel):
     user_id: str
-    
+
+class LoginRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=72)
+
+class TokenResult(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int  # 팔찌 유효 시간(초)

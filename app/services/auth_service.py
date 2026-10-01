@@ -1,15 +1,25 @@
 """ 회원가입/로그인 매니저, 판단을 한다 """
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.errors import AppError
-from app.core.security import hash_password, utcnow
+from app.core.security import (
+    create_access_token,
+    hash_password,
+    hash_token,
+    new_refresh_token,
+    utcnow,
+    verify_password,
+)
 from app.repositories import user_repository
-from app.schemas.auth import SignupResult
+from app.schemas.auth import SignupResult, TokenResult
+
 
 MIN_AGE =14
+INVALID_LOGIN = AppError(401, "AUTH_INVALID_CREDENTIALS", "이메일 또는 비밀번호가 맞지 않습니다.")
 
 def _age_on(birth_date: date, today: date) -> int:
     return today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
@@ -36,3 +46,27 @@ async def signup(db: AsyncSession, email: str, password: str, birth_date: date) 
 
     return SignupResult(user_id=user.user_id)
 
+async def _issue_tokens(db: AsyncSession, user_id: str) -> TokenResult:
+    """팔찌와 쿠폰을 발급한다. 쿠폰 기록은 DB에 남긴다."""
+    now = utcnow()
+    refresh_token = new_refresh_token()
+    await user_repository.create_session(
+        db,
+        user_id=user_id,
+        refresh_token_hash=hash_token(refresh_token),
+        expires_at=now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+        now=now,
+    )
+    await db.commit()
+    return TokenResult(
+        access_token=create_access_token(user_id),
+        refresh_token=refresh_token,
+        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+
+
+async def login(db: AsyncSession, email: str, password: str) -> TokenResult:
+    user = await user_repository.get_user_by_email(db, email.lower())
+    if user is None or user.status != "active" or not verify_password(password, user.password_hash):
+        raise INVALID_LOGIN
+    return await _issue_tokens(db, user.user_id)
