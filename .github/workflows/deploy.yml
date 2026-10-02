@@ -18,3 +18,17 @@ jobs:
             cd ~/AH_06_03
             git pull origin main
             sudo docker compose up --build -d
+
+      - name: Notify Discord on success
+        if: success()
+        run: |
+          curl -s -H "Content-Type: application/json" \
+            -d "{\"content\": \"✅ **배포 성공** — ${{ github.actor }}님의 push(${{ github.sha }})가 서버에 반영됐어요.\"}" \
+            "${{ secrets.DISCORD_WEBHOOK }}"
+
+      - name: Notify Discord on failure
+        if: failure()
+        run: |
+          curl -s -H "Content-Type: application/json" \
+            -d "{\"content\": \"🚨 **배포 실패** — ${{ github.actor }}님의 push가 서버 반영에 실패했어요. Actions 탭에서 로그 확인해주세요.\"}" \
+            "${{ secrets.DISCORD_WEBHOOK }}"
