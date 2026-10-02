@@ -7,6 +7,7 @@ import bcrypt
 import jwt
 
 from app.core.config import settings
+from cryptography.fernet import Fernet
 
 def utcnow() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
@@ -49,3 +50,19 @@ def new_refresh_token() -> str:
 def hash_token(token: str) -> str:
     """쿠폰을 SHA-256으로 간다. 같은 쿠폰은 항상 같은 결과가 나온다."""
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+def _fernet() -> Fernet:
+    """보호자 정보용 자물쇠 상자. 열쇠는 .env의 GUARDIAN_ENC_KEY."""
+    if not settings.GUARDIAN_ENC_KEY:
+        raise RuntimeError("GUARDIAN_ENC_KEY가 .env에 없습니다.")
+    return Fernet(settings.GUARDIAN_ENC_KEY)
+
+
+def encrypt_text(plain: str) -> str:
+    """글자를 잠근다. DB의 *_enc 칸에 넣는다."""
+    return _fernet().encrypt(plain.encode("utf-8")).decode("utf-8")
+
+
+def decrypt_text(locked: str) -> str:
+    """잠긴 글자를 연다. 보호자에게 연락할 때만 쓴다."""
+    return _fernet().decrypt(locked.encode("utf-8")).decode("utf-8")
