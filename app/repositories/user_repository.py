@@ -54,3 +54,10 @@ async def create_guardian_verification(
     )
     db.add(record)
     return record
+
+async def get_user_by_id(db: AsyncSession, user_id: str) -> User | None:
+    return await db.get(User, user_id)
+
+
+async def get_profile(db: AsyncSession, user_id: str) -> UserProfile | None:
+    return await db.get(UserProfile, user_id)

@@ -40,3 +40,9 @@ class TokenResult(BaseModel):
     token_type: str = "bearer"
     expires_in: int  # 팔찌 유효 시간(초)
 
+class MeResult(BaseModel):
+    user_id: str
+    email: str
+    sex: str | None
+    birth_date: date
+

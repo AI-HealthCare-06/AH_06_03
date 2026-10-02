@@ -16,7 +16,7 @@ from app.core.security import (
     verify_password,
 )
 from app.repositories import user_repository
-from app.schemas.auth import SignupResult, TokenResult
+from app.schemas.auth import SignupResult, TokenResult, MeResult
 
 
 MIN_AGE =14
@@ -104,3 +104,15 @@ async def login(db: AsyncSession, email: str, password: str) -> TokenResult:
     if user.status == "pending_guardian":
         raise AppError(403, "AUTH_GUARDIAN_PENDING", "법정대리인 동의가 확인된 뒤 이용할 수 있습니다.")
     return await _issue_tokens(db, user.user_id)
+
+async def get_me(db: AsyncSession, user_id: str) -> MeResult:
+    user = await user_repository.get_user_by_id(db, user_id)
+    profile = await user_repository.get_profile(db, user_id)
+    if user is None or profile is None or user.status != "active":
+        raise AppError(401, "AUTH_UNAUTHORIZED", "다시 로그인해 주세요.")
+    return MeResult(
+        user_id=user.user_id,
+        email=user.email,
+        sex=profile.sex,
+        birth_date=profile.birth_date,
+    )
