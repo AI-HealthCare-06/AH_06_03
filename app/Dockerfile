@@ -15,3 +15,6 @@ RUN uv sync --no-install-project
 ENV PATH="/.venv/bin:$PATH"
 
 COPY app ./app
+COPY modeling ./modeling
+COPY alembic.ini ./alembic.ini
+COPY alembic ./alembic
