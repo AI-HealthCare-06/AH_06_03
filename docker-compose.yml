@@ -23,6 +23,17 @@ services:
       mysql:
         condition: service_healthy
 
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+    depends_on:
+      - fastapi
+
   mysql:
     image: mysql:8.0
     volumes:
@@ -43,3 +54,4 @@ volumes:
   mysql_volume:
   static_volume:
   media_volume:
+  caddy_data:
