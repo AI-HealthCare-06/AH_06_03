@@ -52,4 +52,8 @@ class ProfileUpdateRequest(BaseModel):
 
     sex: Literal["male", "female"]
 
+class RefreshRequest(BaseModel):
+    """🎟️ 쿠폰 신청서 (재발급·로그아웃에서 같이 씀)."""
+    model_config = ConfigDict(extra="forbid")
 
+    refresh_token: str
