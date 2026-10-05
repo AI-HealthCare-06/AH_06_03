@@ -51,3 +51,11 @@ async def update_me(
 @router.post("/auth/token/refresh", response_model=DataResponse[TokenResult])
 async def refresh(req: RefreshRequest, db: AsyncSession = Depends(async_get_db)):
     return DataResponse(data=await auth_service.refresh(db, req.refresh_token))
+
+@router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+    req: RefreshRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(async_get_db),
+):
+    await auth_service.logout(db, user_id, req.refresh_token)

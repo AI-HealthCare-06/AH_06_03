@@ -138,3 +138,10 @@ async def refresh(db: AsyncSession, refresh_token: str) -> TokenResult:
     # 쓴 쿠폰 버리기 (구멍 뚫기)
     session.revoked_at = now
     return await _issue_tokens(db, session.user_id)
+
+async def logout(db: AsyncSession, user_id: str, refresh_token: str) -> None:
+    """쿠폰 버리기. 내 쿠폰이고 아직 안 버렸을 때만."""
+    session = await user_repository.get_session_by_token_hash(db, hash_token(refresh_token))
+    if session is not None and session.user_id == user_id and session.revoked_at is None:
+        session.revoked_at = utcnow()
+        await db.commit()
