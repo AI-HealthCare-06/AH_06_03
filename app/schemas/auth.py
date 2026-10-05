@@ -46,3 +46,10 @@ class MeResult(BaseModel):
     sex: str | None
     birth_date: date
 
+class ProfileUpdateRequest(BaseModel):
+    """내 프로필 고치기 신청서 (W04에서 성별 입력)."""
+    model_config = ConfigDict(extra="forbid")
+
+    sex: Literal["male", "female"]
+
+

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db.databases import async_get_db
-from app.schemas.auth import LoginRequest, SignupRequest, SignupResult, TokenResult
+from app.schemas.auth import LoginRequest, MeResult, ProfileUpdateRequest, SignupRequest, SignupResult, TokenResult
 from app.schemas.common import DataResponse
 from app.services import auth_service
 
@@ -37,3 +37,11 @@ async def me(
     db: AsyncSession = Depends(async_get_db),
 ):
     return DataResponse(data=await auth_service.get_me(db, user_id))
+
+@router.patch("/users/me", response_model=DataResponse[MeResult])
+async def update_me(
+    req: ProfileUpdateRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(async_get_db),
+):
+    return DataResponse(data=await auth_service.update_me(db, user_id, req.sex))

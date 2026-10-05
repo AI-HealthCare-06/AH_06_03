@@ -116,3 +116,12 @@ async def get_me(db: AsyncSession, user_id: str) -> MeResult:
         sex=profile.sex,
         birth_date=profile.birth_date,
     )
+
+async def update_me(db: AsyncSession, user_id: str, sex: str) -> MeResult:
+    """내 프로필 고치기. 지금은 성별만."""
+    profile = await user_repository.get_profile(db, user_id)
+    if profile is None:
+        raise AppError(401, "AUTH_UNAUTHORIZED", "다시 로그인해 주세요.")
+    profile.sex = sex
+    await db.commit()
+    return await get_me(db, user_id)
