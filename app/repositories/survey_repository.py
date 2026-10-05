@@ -92,3 +92,26 @@ async def get_answered_question_ids(db: AsyncSession, survey_instance_id: str) -
         .where(SurveyResponse.survey_instance_id == survey_instance_id)
     )
     return set(result.scalars().all())
+
+async def get_answers_for_model(db: AsyncSession, survey_instance_id: str) -> dict[str, str]:
+    """✔️ 답안지의 답을 {질문 이름: 고른 보기의 모델 값}으로 꺼낸다."""
+    result = await db.execute(
+        select(SurveyQuestion.question_code, SurveyOption.model_value_code)
+        .select_from(SurveyResponse)
+        .join(SurveyQuestion, SurveyQuestion.question_id == SurveyResponse.question_id)
+        .join(SurveyOption, SurveyOption.option_id == SurveyResponse.option_id)
+        .where(SurveyResponse.survey_instance_id == survey_instance_id)
+    )
+    return {q_code: model_value for q_code, model_value in result.all()}
+
+
+async def get_latest_submitted(db: AsyncSession, user_id: str) -> SurveyInstance | None:
+    """📋 이 사람이 가장 최근에 제출한 답안지."""
+    result = await db.execute(
+        select(SurveyInstance)
+        .where(SurveyInstance.user_id == user_id)
+        .where(SurveyInstance.status == "submitted")
+        .order_by(SurveyInstance.submitted_at.desc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()

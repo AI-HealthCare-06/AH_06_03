@@ -58,3 +58,10 @@ async def create_measurements(
         db.add(m)
         created.append(m)
     return created
+
+async def get_measurements(db: AsyncSession, health_record_id: str) -> list[HealthMeasurement]:
+    """📦 상자 안의 물건을 전부 꺼낸다."""
+    result = await db.execute(
+        select(HealthMeasurement).where(HealthMeasurement.health_record_id == health_record_id)
+    )
+    return list(result.scalars().all())

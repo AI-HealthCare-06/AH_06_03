@@ -3,3 +3,4 @@
 from app.models.user import User, UserProfile, UserSession, GuardianConsentVerification
 from app.models.health import HealthInputSchema, HealthMeasurement, HealthRecord  # noqa: F401
 from app.models.survey import SurveyInstance, SurveyOption, SurveyQuestion, SurveyResponse, SurveyVersion  # noqa: F401
+from app.models.prediction import Prediction, PredictionFactor, PredictionJob  # noqa: F401
