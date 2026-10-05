@@ -26,3 +26,10 @@ async def create_job(
             db, user_id, req.health_record_id, req.survey_instance_id, req.request_type
         )
     )
+
+@router.get("/predictions/latest", response_model=DataResponse[PredictionJobResult])
+async def get_latest(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(async_get_db),
+):
+    return DataResponse(data=await prediction_job_service.get_latest(db, user_id))

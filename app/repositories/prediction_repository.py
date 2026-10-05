@@ -1,6 +1,6 @@
 """예측 결과 창고 담당. DB에 넣고 꺼내는 일만 한다."""
 from datetime import datetime
-
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.prediction import Prediction, PredictionFactor, PredictionJob
@@ -56,3 +56,32 @@ async def save_result(
             display_rank=f["display_rank"],
         ))
     return p
+
+async def get_latest_completed_job(db: AsyncSession, user_id: str) -> PredictionJob | None:
+    """🎫 이 사람의 가장 최근 완료된 번호표."""
+    result = await db.execute(
+        select(PredictionJob)
+        .where(PredictionJob.user_id == user_id)
+        .where(PredictionJob.status == "completed")
+        .order_by(PredictionJob.completed_at.desc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_predictions(db: AsyncSession, prediction_job_id: str) -> list[Prediction]:
+    """📊 그 번호표의 모델별 결과들."""
+    result = await db.execute(select(Prediction).where(Prediction.prediction_job_id == prediction_job_id))
+    return list(result.scalars().all())
+
+
+async def get_factors(db: AsyncSession, prediction_ids: list[str]) -> list[PredictionFactor]:
+    """🔹 그 결과들의 요인을 한 번에 (화면 순서대로)."""
+    if not prediction_ids:
+        return []
+    result = await db.execute(
+        select(PredictionFactor)
+        .where(PredictionFactor.prediction_id.in_(prediction_ids))
+        .order_by(PredictionFactor.display_rank)
+    )
+    return list(result.scalars().all())

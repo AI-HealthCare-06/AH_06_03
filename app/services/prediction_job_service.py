@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import AppError
 from app.core.security import utcnow
 from app.repositories import health_repository, prediction_repository, survey_repository, user_repository
-from app.schemas.prediction import PredictionJobResult
+from app.schemas.prediction import PredictionJobResult,Factor,ModelResult
 from app.services import prediction_service
 from app.services.model_input import build_model_input
 
@@ -61,4 +61,56 @@ async def create_job(
         status=job.status,
         model_a=result.model_a,
         model_b=result.model_b,
+    )
+
+def _to_model_result(p, factors: list) -> ModelResult:
+    """DB 줄 → 모델 결과 모양으로 거꾸로 번역."""
+    fs = [
+        Factor(
+            code=f.factor_code,
+            label=f.label,
+            value_label=f.value_label,
+            contribution=f.importance,
+            direction=f.direction,
+            modifiable=f.modifiable,
+            direction_matches_expectation=f.direction_matches_expectation,
+            display_rank=f.display_rank,
+        )
+        for f in factors
+    ]
+    risk_up = [f for f in fs if f.direction == "risk_increase"]
+    return ModelResult(
+        model_code=p.model_code,
+        model_version=p.model_version,
+        status=p.status,
+        skip_reason=p.skip_reason,
+        probability=p.score,
+        risk_level=p.risk_level,
+        vascular_age=p.vascular_age,
+        factors=fs,
+        top_risk_factor=risk_up[0] if risk_up else None,
+        top_modifiable_factor=next((f for f in risk_up if f.modifiable), None),
+        missing_features=p.missing_features or [],
+    )
+
+
+async def get_latest(db: AsyncSession, user_id: str) -> PredictionJobResult:
+    """내 최근 예측 결과 다시 보기."""
+    job = await prediction_repository.get_latest_completed_job(db, user_id)
+    if job is None:
+        raise AppError(404, "PREDICTION_NOT_FOUND", "아직 예측 결과가 없습니다.")
+
+    predictions = await prediction_repository.get_predictions(db, job.prediction_job_id)
+    factors = await prediction_repository.get_factors(db, [p.prediction_id for p in predictions])
+
+    baskets = {}
+    for f in factors:
+        baskets.setdefault(f.prediction_id, []).append(f)
+
+    results = {p.model_code: _to_model_result(p, baskets.get(p.prediction_id, [])) for p in predictions}
+    return PredictionJobResult(
+        prediction_job_id=job.prediction_job_id,
+        status=job.status,
+        model_a=results["MODEL_A"],
+        model_b=results["MODEL_B"],
     )
