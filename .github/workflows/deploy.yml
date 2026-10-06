@@ -18,6 +18,7 @@ jobs:
             cd ~/AH_06_03
             git pull origin main
             sudo docker compose up --build -d
+            sudo docker compose exec -T fastapi alembic upgrade head
 
       - name: Notify Discord on success
         if: success()
