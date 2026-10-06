@@ -31,6 +31,8 @@
 <script src="assets/common.js"></script>
 <script src="assets/api.js"></script>
 <script>
+let me = null;
+const SEX_LABEL = { male: '남', female: '여' };
 const state = { rating: null, saved: false, consent: true, mp: null, gone: false, pwd: '' };
 
 function render() {
@@ -51,6 +53,7 @@ function render() {
       <button type="button" id="save-fb" class="ghost" style="margin-top:8px">${state.saved ? '저장했습니다 ✓' : '평가 저장'}</button>
     </div>
     <p class="sect">내 정보</p>
+    ${me ? `<div class="callout"><b>${me.email}</b><br>생년월일 ${me.birth_date} · 성별 ${SEX_LABEL[me.sex] || '미입력'}</div>` : ''}
     <div class="tworow">
       <button type="button" class="opt" data-mp="rec" data-on="${state.mp === 'rec' ? '1' : '0'}">🩺 검진 기록</button>
       <button type="button" class="opt" data-mp="chal" data-on="${state.mp === 'chal' ? '1' : '0'}">🌱 챌린지 기록</button>
@@ -100,6 +103,7 @@ function wire() {
   if (confirmBtn) confirmBtn.addEventListener('click', () => { state.gone = true; render(); });
 }
 render();
+apiGetMe().then(m => { me = m; render(); }).catch(() => {});
 </script>
 </body>
 </html>

@@ -91,7 +91,9 @@ async function apiCall(method, path, payload, failMsg, retried = false) {
       return goLogin();
     }
     if (code === 'AUTH_UNAUTHORIZED' || code === 'AUTH_TOKEN_EXPIRED' || code === 'AUTH_INVALID_REFRESH_TOKEN') return goLogin();
-    throw new Error(body.error?.message || failMsg);
+    const err = new Error(body.error?.message || failMsg);
+    err.code = code;
+    throw err;
   }
   return body;
 }
@@ -313,6 +315,42 @@ async function apiPredictionJob() {
     ...(survey_instance_id ? { survey_instance_id } : {}),
     request_type: 'initial',
   }, '예측 요청에 실패했습니다');
+}
+
+// 내 정보 조회 (이메일·성별·생년월일)
+async function apiGetMe() {
+  return (await apiCall('GET', '/users/me', undefined, '내 정보를 불러오지 못했습니다')).data;
+}
+
+// 가장 최근 예측 결과. 아직 예측한 적이 없으면(404 PREDICTION_NOT_FOUND) null.
+async function apiGetLatestPrediction() {
+  try {
+    return (await apiCall('GET', '/predictions/latest', undefined, '예측 결과를 불러오지 못했습니다')).data;
+  } catch (e) {
+    if (e.code === 'PREDICTION_NOT_FOUND') return null;
+    throw e;
+  }
+}
+
+// 로그인 직후: 서버에 있는 내 정보·최근 예측을 이 브라우저에 채운다 (다른 기기에서 로그인해도 이어서 보이게). 실패해도 로그인은 그대로 진행.
+async function apiSyncAfterLogin() {
+  const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+  try {
+    const me = await apiGetMe();
+    localStorage.setItem('paeon-profile', JSON.stringify({ ...(read('paeon-profile') || {}), email: me.email, birth: me.birth_date, sex: me.sex }));
+  } catch (e) { /* 내 정보는 없어도 진행 */ }
+  try {
+    const latest = await apiGetLatestPrediction();
+    if (latest) {
+      const health = read('paeon-health');
+      const prev = read('paeon-prediction') || {};
+      localStorage.setItem('paeon-prediction', JSON.stringify({
+        ...latest,
+        bp_stage: health ? bpStage(health.sbp, health.dbp) : prev.bp_stage,
+        htn_status: health ? health.htn_status : prev.htn_status,
+      }));
+    }
+  } catch (e) { /* 결과는 없어도 진행 */ }
 }
 
 // 로그아웃: 서버 쿠폰을 폐기하고 이 브라우저의 로그인·저장 데이터를 지운다.

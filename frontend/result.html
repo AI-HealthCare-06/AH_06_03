@@ -59,10 +59,10 @@ const screen = document.getElementById('screen');
 if (!pred) {
   screen.innerHTML = '<div class="callout"><b>예측 결과가 없어요</b><br>입력 검토 화면에서 "위험도 분석하기"를 먼저 눌러주세요.</div>';
 } else {
-  let html = `<div class="riskrow" style="border-color:${COLOR[pred.bp_stage]}">
+  let html = pred.bp_stage ? `<div class="riskrow" style="border-color:${COLOR[pred.bp_stage]}">
     <span class="chip" style="color:${COLOR[pred.bp_stage]}">${BP_LABEL[pred.bp_stage]}</span>
     <span style="font-size:12px;color:var(--muted)">입력 혈압 판정</span>
-  </div>`;
+  </div>` : '';
 
   if (pred.model_a.status !== 'completed') {
     html += `<div class="callout"><b>${A_SKIP_MSG[pred.model_a.skip_reason] || '이번엔 예측할 수 없습니다'}</b></div>`;
