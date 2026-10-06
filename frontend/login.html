@@ -62,6 +62,7 @@ form.addEventListener('submit', async (event) => {
     if (!localStorage.getItem('paeon-profile')) {
       localStorage.setItem('paeon-profile', JSON.stringify({ email }));
     }
+    await apiSyncAfterLogin();
     window.location.href = 'dashboard.html';
   } catch (e) {
     errEl.textContent = friendlyError(e);

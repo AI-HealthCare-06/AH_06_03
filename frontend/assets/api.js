@@ -1,23 +1,31 @@
-const API_BASE = 'https://54-116-113-17.sslip.io/v1';
+// 로컬(5500 포트)에서 열면 내 컴퓨터 서버, 아니면 배포 서버
+const API_BASE = ['5500'].includes(location.port) ? 'http://127.0.0.1:8000/v1' : 'https://54-116-113-17.sslip.io/v1';
 const USE_MOCK = true;
-// predict·auth는 혜림님 엔드포인트가 실제로 떠있어서 따로 뺌 — health/survey는 백엔드 준비되면 USE_MOCK 끄기
+// predict·auth·health·survey는 서버 연결됨. USE_MOCK(OCR 등 아직 서버 없는 것)만 true
 const USE_MOCK_PREDICT = false;
 const USE_MOCK_AUTH = false;
+const USE_MOCK_HEALTH = false;
+const USE_MOCK_SURVEY = false;
 
 function friendlyError(e) { return e instanceof TypeError ? '서버 연결에 실패했어요. 잠시 후 다시 시도해주세요.' : e.message; }
 
-// PR #22 기준: signup은 만 14세 미만이면 무조건 403 AUTH_GUARDIAN_CONSENT_REQUIRED (보호자 필드를 아직 안 받음).
-// guardian-consent.html은 백엔드가 그 필드를 받기 전까지 opts.forceMock:true로 호출해서 mock 유지.
+// opts.guardian = { name, relation, contact } — 만 14세 미만만. relation은 "parent" | "legal_guardian".
 async function apiSignup(email, password, birthDate, opts = {}) {
   if (USE_MOCK_AUTH || opts.forceMock) {
-    console.log('[MOCK] apiSignup', { email, birthDate, forceMock: !!opts.forceMock });
+    console.log('[MOCK] apiSignup', { email, birthDate, guardian: opts.guardian, forceMock: !!opts.forceMock });
     await sleep(400);
-    return { data: { user_id: 'mock-user-1' } };
+    return { data: { user_id: 'mock-user-1', guardian_verification_status: opts.guardian ? 'pending' : null } };
+  }
+  const payload = { email, password, birth_date: birthDate };
+  if (opts.guardian) {
+    payload.guardian_name = opts.guardian.name;
+    payload.guardian_relation = opts.guardian.relation;
+    payload.guardian_contact = opts.guardian.contact;
   }
   const res = await fetch(`${API_BASE}/auth/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, birth_date: birthDate }),
+    body: JSON.stringify(payload),
   });
   const body = await res.json();
   if (!res.ok) throw new Error(body.error?.message || '회원가입에 실패했습니다');
@@ -40,20 +48,83 @@ async function apiLogin(email, password) {
   return body;
 }
 
+// 로그인이 필요한 요청 공통 창구. 팔찌 만료(401 AUTH_TOKEN_EXPIRED)면 재발급 후 원래 요청을 한 번 다시 보낸다.
+let refreshing = null; // 동시에 여러 요청이 만료돼도 재발급은 한 번만 (쓴 쿠폰은 버려지므로)
+
+function goLogin() {
+  try { localStorage.removeItem('paeon-access-token'); localStorage.removeItem('paeon-refresh-token'); } catch (e) {}
+  location.href = 'login.html';
+  return new Promise(() => {}); // 이동 중에는 호출한 쪽이 에러를 띄우지 않게 멈춰 둔다
+}
+
+function refreshTokens() {
+  if (!refreshing) {
+    refreshing = (async () => {
+      const refresh_token = localStorage.getItem('paeon-refresh-token') || '';
+      const res = await fetch(`${API_BASE}/auth/token/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token }),
+      });
+      if (!res.ok) return false;
+      const { data } = await res.json();
+      localStorage.setItem('paeon-access-token', data.access_token);
+      localStorage.setItem('paeon-refresh-token', data.refresh_token); // 쿠폰도 새로 오므로 꼭 교체
+      return true;
+    })().catch(() => false).finally(() => { refreshing = null; });
+  }
+  return refreshing;
+}
+
+async function apiCall(method, path, payload, failMsg, retried = false) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAccessToken()}` },
+    body: payload === undefined ? undefined : JSON.stringify(payload),
+  });
+  if (res.status === 204) return null;
+  const body = await res.json();
+  if (!res.ok) {
+    const code = body.error?.code;
+    if (code === 'AUTH_TOKEN_EXPIRED' && !retried) {
+      if (await refreshTokens()) return apiCall(method, path, payload, failMsg, true);
+      return goLogin();
+    }
+    if (code === 'AUTH_UNAUTHORIZED' || code === 'AUTH_TOKEN_EXPIRED' || code === 'AUTH_INVALID_REFRESH_TOKEN') return goLogin();
+    const err = new Error(body.error?.message || failMsg);
+    err.code = code;
+    throw err;
+  }
+  return body;
+}
+
+// 건강기록 3단계 저장: 성별(PATCH users/me) → 기록 상자(POST records) → 측정값(POST measurements)
 async function apiSubmitHealthRecord(payload) {
-  if (USE_MOCK) {
+  if (USE_MOCK_HEALTH) {
     console.log('[MOCK] apiSubmitHealthRecord', payload);
     await sleep(400);
     return { data: { health_record_id: 'mock-record-1' } };
   }
-  const res = await fetch(`${API_BASE}/health/records`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAccessToken()}` },
-    body: JSON.stringify(payload),
-  });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.error?.message || '건강정보 저장에 실패했습니다');
-  return body;
+  const num = (code, v) => ({ metric_code: code, value_num: v });
+  const cat = (code, v) => ({ metric_code: code, value_code: String(v) });
+  const measurements = [
+    num('SBP', payload.sbp), num('DBP', payload.dbp),
+    num('HEIGHT', payload.height_cm), num('WEIGHT', payload.weight_kg), num('WAIST', payload.waist_cm),
+    num('TOTAL_CHOL', payload.total_chol), num('HDL', payload.hdl),
+    cat('SMOKING', payload.smoking), cat('DIABETES', payload.diabetes),
+    cat('HTN_STATUS', payload.htn_status), cat('PARENT_HTN', payload.parent_htn),
+    cat('ALCOHOL_FREQ', payload.drink_freq),
+  ];
+  if (payload.drink_amount) measurements.push(cat('ALCOHOL_AMOUNT', payload.drink_amount));
+  if (payload.fasting_glucose != null) measurements.push(num('FASTING_GLUCOSE', payload.fasting_glucose));
+
+  await apiCall('PATCH', '/users/me', { sex: payload.sex }, '성별 저장에 실패했습니다');
+  const rec = await apiCall('POST', '/health/records',
+    { input_type: 'initial', examination_date: payload.recorded_at.slice(0, 10) }, '건강기록 생성에 실패했습니다');
+  const id = rec.data.health_record_id;
+  try { localStorage.setItem('paeon-health-record-id', id); } catch (e) {}
+  await apiCall('POST', `/health/records/${id}/measurements`, { measurements }, '건강정보 저장에 실패했습니다');
+  return rec;
 }
 
 // 검진 결과지 사진 → Clova OCR → OpenAI 구조화. 혜림님이 백엔드 엔드포인트 만들면 USE_MOCK 끄기.
@@ -84,20 +155,31 @@ function getAccessToken() {
   try { return localStorage.getItem('paeon-access-token') || ''; } catch (e) { return ''; }
 }
 
+// 설문 제출 4단계: 설문지 받기 → 답안지 만들기 → 답 적기 → 내기. 화면이 계산한 코드(breakfast·eatout·aerobic)를 보기 코드로 바꿔 보낸다.
 async function apiSubmitSurvey(payload) {
-  if (USE_MOCK) {
+  if (USE_MOCK_SURVEY) {
     console.log('[MOCK] apiSubmitSurvey', payload);
     await sleep(400);
     return { data: { survey_instance_id: 'mock-survey-1' } };
   }
-  const res = await fetch(`${API_BASE}/survey-instances`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAccessToken()}` },
-    body: JSON.stringify(payload),
+  const answers = {
+    BREAKFAST: payload.breakfast,
+    EATOUT: payload.eatout,
+    AEROBIC: payload.aerobic ? 'yes' : 'no',
+  };
+  const survey = (await apiCall('GET', '/surveys/initial_lifestyle/active', undefined, '설문을 불러오지 못했습니다')).data;
+  const responses = survey.questions.map(q => {
+    const opt = q.options.find(o => o.option_code === answers[q.question_code]);
+    if (!opt) throw new Error('설문 보기를 찾지 못했습니다. 잠시 후 다시 시도해주세요.');
+    return { question_id: q.question_id, option_id: opt.option_id };
   });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.error?.message || '설문 제출에 실패했습니다');
-  return body;
+  const recordId = (() => { try { return localStorage.getItem('paeon-health-record-id'); } catch (e) { return null; } })();
+  const inst = (await apiCall('POST', '/survey-instances',
+    { survey_version_id: survey.survey_version_id, health_record_id: recordId }, '설문을 시작하지 못했습니다')).data;
+  const base = `/survey-instances/${inst.survey_instance_id}`;
+  try { localStorage.setItem('paeon-survey-instance-id', inst.survey_instance_id); } catch (e) {}
+  await apiCall('POST', `${base}/responses`, { responses }, '설문 저장에 실패했습니다');
+  return apiCall('POST', `${base}/submit`, undefined, '설문 제출에 실패했습니다');
 }
 
 const MODEL_A_FEATS = [
@@ -191,7 +273,7 @@ async function apiRequestPrediction(profile, elig, health, survey) {
   const stage = bpStage(health.sbp, health.dbp);
 
   if (!USE_MOCK_PREDICT) {
-    const body = await apiPredictV1Temp(profile, health, survey);
+    const body = await apiPredictionJob();
     return { data: { ...body.data, bp_stage: stage, htn_status: health.htn_status } };
   }
 
@@ -222,7 +304,66 @@ async function apiRequestPrediction(profile, elig, health, survey) {
   return { data: { bp_stage: stage, htn_status: health.htn_status, model_a: modelA, model_b: modelB } };
 }
 
-// 혜림님 임시 창구(POST /v1/predict) 전용 — 정식 /predictions/jobs 생기면 지울 예정.
+// 정식 예측 창구: 저장해 둔 건강기록·설문 번호로 신청 → 결과(model_a/model_b)를 바로 돌려받는다.
+async function apiPredictionJob() {
+  const get = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  const health_record_id = get('paeon-health-record-id');
+  if (!health_record_id) throw new Error('건강정보가 서버에 저장되어 있지 않아요. 건강정보를 다시 저장해주세요.');
+  const survey_instance_id = get('paeon-survey-instance-id');
+  return apiCall('POST', '/predictions/jobs', {
+    health_record_id,
+    ...(survey_instance_id ? { survey_instance_id } : {}),
+    request_type: 'initial',
+  }, '예측 요청에 실패했습니다');
+}
+
+// 내 정보 조회 (이메일·성별·생년월일)
+async function apiGetMe() {
+  return (await apiCall('GET', '/users/me', undefined, '내 정보를 불러오지 못했습니다')).data;
+}
+
+// 가장 최근 예측 결과. 아직 예측한 적이 없으면(404 PREDICTION_NOT_FOUND) null.
+async function apiGetLatestPrediction() {
+  try {
+    return (await apiCall('GET', '/predictions/latest', undefined, '예측 결과를 불러오지 못했습니다')).data;
+  } catch (e) {
+    if (e.code === 'PREDICTION_NOT_FOUND') return null;
+    throw e;
+  }
+}
+
+// 로그인 직후: 서버에 있는 내 정보·최근 예측을 이 브라우저에 채운다 (다른 기기에서 로그인해도 이어서 보이게). 실패해도 로그인은 그대로 진행.
+async function apiSyncAfterLogin() {
+  const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+  try {
+    const me = await apiGetMe();
+    localStorage.setItem('paeon-profile', JSON.stringify({ ...(read('paeon-profile') || {}), email: me.email, birth: me.birth_date, sex: me.sex }));
+  } catch (e) { /* 내 정보는 없어도 진행 */ }
+  try {
+    const latest = await apiGetLatestPrediction();
+    if (latest) {
+      const health = read('paeon-health');
+      const prev = read('paeon-prediction') || {};
+      localStorage.setItem('paeon-prediction', JSON.stringify({
+        ...latest,
+        bp_stage: health ? bpStage(health.sbp, health.dbp) : prev.bp_stage,
+        htn_status: health ? health.htn_status : prev.htn_status,
+      }));
+    }
+  } catch (e) { /* 결과는 없어도 진행 */ }
+}
+
+// 로그아웃: 서버 쿠폰을 폐기하고 이 브라우저의 로그인·저장 데이터를 지운다.
+async function apiLogout() {
+  const refresh_token = localStorage.getItem('paeon-refresh-token') || '';
+  try { await apiCall('POST', '/auth/logout', { refresh_token }, '로그아웃에 실패했습니다'); } catch (e) { /* 서버 실패여도 이 기기에서는 로그아웃 */ }
+  ['paeon-access-token', 'paeon-refresh-token', 'paeon-health-record-id', 'paeon-survey-instance-id',
+   'paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-progress']
+    .forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+  location.href = 'login.html';
+}
+
+// (구) 혜림님 임시 창구(POST /v1/predict) 전용 — 정식 /predictions/jobs 생기면 지울 예정.
 // 요청 필드는 modeling/handoff/모델_연결_명세.md §1과 글자 하나까지 동일해야 함.
 function buildPredictV1Payload(profile, health, survey) {
   const isDrinker = !['', 'never_lifetime', 'none_past_year'].includes(health.drink_freq);

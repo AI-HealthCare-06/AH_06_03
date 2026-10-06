@@ -62,7 +62,7 @@ if (!pending) {
         <select id="g-relation" required>
           <option value="">선택</option>
           <option value="parent">부·모</option>
-          <option value="guardian">그 외 법정대리인</option>
+          <option value="legal_guardian">그 외 법정대리인</option>
         </select>
       </div>
       <div class="field" style="margin-top:10px">
@@ -100,15 +100,19 @@ if (!pending) {
 
     submitBtn.disabled = true;
     submitBtn.textContent = '처리하는 중...';
+    const guardian = {
+      name: document.getElementById('g-name').value,
+      relation: document.getElementById('g-relation').value,
+      contact: document.getElementById('g-contact').value,
+    };
     try {
-      await apiSignup(pending.email, pending.pw, pending.birth, { forceMock: true });
+      const signupRes = await apiSignup(pending.email, pending.pw, pending.birth, { guardian });
       ['paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-progress'].forEach(k => localStorage.removeItem(k));
       localStorage.setItem('paeon-profile', JSON.stringify({ email: pending.email, birth: pending.birth }));
       localStorage.setItem('paeon-guardian-consent', JSON.stringify({
-        name: document.getElementById('g-name').value,
-        relation: document.getElementById('g-relation').value,
-        contact: document.getElementById('g-contact').value,
+        ...guardian,
         consented_at: new Date().toISOString(),
+        verification_status: signupRes.data.guardian_verification_status || null,
       }));
       localStorage.removeItem('paeon-pending-signup');
       document.getElementById('success-modal').style.display = 'flex';
