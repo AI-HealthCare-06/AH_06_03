@@ -118,13 +118,40 @@ async function apiSubmitHealthRecord(payload) {
   if (payload.drink_amount) measurements.push(cat('ALCOHOL_AMOUNT', payload.drink_amount));
   if (payload.fasting_glucose != null) measurements.push(num('FASTING_GLUCOSE', payload.fasting_glucose));
 
+  const date = payload.recorded_at.slice(0, 10);
   await apiCall('PATCH', '/users/me', { sex: payload.sex }, '성별 저장에 실패했습니다');
-  const rec = await apiCall('POST', '/health/records',
-    { input_type: 'initial', examination_date: payload.recorded_at.slice(0, 10) }, '건강기록 생성에 실패했습니다');
-  const id = rec.data.health_record_id;
+
+  // 같은 날 같은 종류의 기록이 이미 있으면(409) 목록에서 찾아 다시 쓴다. 같은 지표를 다시 보내면 서버가 새 값으로 바꿔 준다.
+  const recordIdFor = async (inputType) => {
+    try {
+      return (await apiCall('POST', '/health/records', { input_type: inputType, examination_date: date }, '건강기록 생성에 실패했습니다')).data.health_record_id;
+    } catch (e) {
+      if (e.code !== 'HEALTH_RECORD_DUPLICATED') throw e;
+      const list = (await apiCall('GET', '/health/records', undefined, '건강기록 목록을 불러오지 못했습니다')).data;
+      const found = list.find(r => r.input_type === inputType && r.examination_date === date);
+      if (!found) throw e;
+      return found.health_record_id;
+    }
+  };
+  const save = (id) => apiCall('POST', `/health/records/${id}/measurements`, { measurements }, '건강정보 저장에 실패했습니다');
+
+  let id = await recordIdFor('initial');
+  let res;
+  try {
+    res = await save(id);
+  } catch (e) {
+    if (e.code !== 'HEALTH_RECORD_LOCKED') throw e;
+    // 이미 예측에 쓴 기록은 서버가 잠가서 못 고친다 → 오늘 날짜의 직접 입력(manual) 기록에 새로 저장
+    id = await recordIdFor('manual');
+    try {
+      res = await save(id);
+    } catch (e2) {
+      if (e2.code === 'HEALTH_RECORD_LOCKED') throw new Error('오늘 입력한 기록은 이미 분석에 사용돼서 더 고칠 수 없어요. 내일 다시 입력해주세요.');
+      throw e2;
+    }
+  }
   try { localStorage.setItem('paeon-health-record-id', id); } catch (e) {}
-  await apiCall('POST', `/health/records/${id}/measurements`, { measurements }, '건강정보 저장에 실패했습니다');
-  return rec;
+  return { data: { health_record_id: id } };
 }
 
 // 검진 결과지 사진 → Clova OCR → OpenAI 구조화. 혜림님이 백엔드 엔드포인트 만들면 USE_MOCK 끄기.
