@@ -175,6 +175,7 @@ async function apiSubmitSurvey(payload) {
   const inst = (await apiCall('POST', '/survey-instances',
     { survey_version_id: survey.survey_version_id, health_record_id: recordId }, '설문을 시작하지 못했습니다')).data;
   const base = `/survey-instances/${inst.survey_instance_id}`;
+  try { localStorage.setItem('paeon-survey-instance-id', inst.survey_instance_id); } catch (e) {}
   await apiCall('POST', `${base}/responses`, { responses }, '설문 저장에 실패했습니다');
   return apiCall('POST', `${base}/submit`, undefined, '설문 제출에 실패했습니다');
 }
@@ -270,7 +271,7 @@ async function apiRequestPrediction(profile, elig, health, survey) {
   const stage = bpStage(health.sbp, health.dbp);
 
   if (!USE_MOCK_PREDICT) {
-    const body = await apiPredictV1Temp(profile, health, survey);
+    const body = await apiPredictionJob();
     return { data: { ...body.data, bp_stage: stage, htn_status: health.htn_status } };
   }
 
@@ -301,7 +302,30 @@ async function apiRequestPrediction(profile, elig, health, survey) {
   return { data: { bp_stage: stage, htn_status: health.htn_status, model_a: modelA, model_b: modelB } };
 }
 
-// 혜림님 임시 창구(POST /v1/predict) 전용 — 정식 /predictions/jobs 생기면 지울 예정.
+// 정식 예측 창구: 저장해 둔 건강기록·설문 번호로 신청 → 결과(model_a/model_b)를 바로 돌려받는다.
+async function apiPredictionJob() {
+  const get = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  const health_record_id = get('paeon-health-record-id');
+  if (!health_record_id) throw new Error('건강정보가 서버에 저장되어 있지 않아요. 건강정보를 다시 저장해주세요.');
+  const survey_instance_id = get('paeon-survey-instance-id');
+  return apiCall('POST', '/predictions/jobs', {
+    health_record_id,
+    ...(survey_instance_id ? { survey_instance_id } : {}),
+    request_type: 'initial',
+  }, '예측 요청에 실패했습니다');
+}
+
+// 로그아웃: 서버 쿠폰을 폐기하고 이 브라우저의 로그인·저장 데이터를 지운다.
+async function apiLogout() {
+  const refresh_token = localStorage.getItem('paeon-refresh-token') || '';
+  try { await apiCall('POST', '/auth/logout', { refresh_token }, '로그아웃에 실패했습니다'); } catch (e) { /* 서버 실패여도 이 기기에서는 로그아웃 */ }
+  ['paeon-access-token', 'paeon-refresh-token', 'paeon-health-record-id', 'paeon-survey-instance-id',
+   'paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-progress']
+    .forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+  location.href = 'login.html';
+}
+
+// (구) 혜림님 임시 창구(POST /v1/predict) 전용 — 정식 /predictions/jobs 생기면 지울 예정.
 // 요청 필드는 modeling/handoff/모델_연결_명세.md §1과 글자 하나까지 동일해야 함.
 function buildPredictV1Payload(profile, health, survey) {
   const isDrinker = !['', 'never_lifetime', 'none_past_year'].includes(health.drink_freq);

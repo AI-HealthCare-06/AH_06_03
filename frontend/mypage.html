@@ -29,6 +29,7 @@
 </div>
 
 <script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
 <script>
 const state = { rating: null, saved: false, consent: true, mp: null, gone: false, pwd: '' };
 
@@ -61,6 +62,7 @@ function render() {
       <button type="button" id="toggle-consent" class="ghost">${state.consent ? '건강정보 처리 동의 철회' : '건강정보 처리 동의 다시 하기'}</button>
       <button type="button" id="download" class="ghost">내 데이터 내려받기</button>
     </div>
+    <button type="button" id="logout-btn" class="ghost" style="margin-top:6px">로그아웃</button>
     <button type="button" id="delete-btn" class="ghost" style="margin-top:6px">회원 탈퇴</button>
     ${state.mp === 'delete' ? `<div class="warnbox"><b>회원 탈퇴 — 재인증이 필요합니다</b><br>삭제: 건강정보·설문·예측·챌린지 기록
       <div class="field" style="margin-top:8px"><label>비밀번호 다시 입력</label><input id="pwd" type="password"></div>
@@ -90,6 +92,7 @@ function wire() {
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
     a.download = 'paeon-my-data.json'; a.click();
   });
+  document.getElementById('logout-btn').addEventListener('click', apiLogout);
   document.getElementById('delete-btn').addEventListener('click', () => { state.mp = state.mp === 'delete' ? null : 'delete'; render(); });
   const cancelBtn = document.getElementById('cancel-delete');
   if (cancelBtn) cancelBtn.addEventListener('click', () => { state.mp = null; render(); });
