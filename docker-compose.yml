@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: app/Dockerfile
-    entrypoint: sh -c "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    entrypoint: sh -c "uvicorn app.main:app --host 0.0.0.0 --port 8000"
     env_file: .env
     environment:
       DB_HOST: mysql
@@ -22,6 +22,9 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 1g
+    memswap_limit: 1g
 
   caddy:
     image: caddy:2
@@ -33,6 +36,7 @@ services:
       - caddy_data:/data
     depends_on:
       - fastapi
+    restart: unless-stopped
 
   mysql:
     image: mysql:8.0
@@ -49,6 +53,7 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
       retries: 5
+    restart: unless-stopped
 
 volumes:
   mysql_volume:
