@@ -61,3 +61,10 @@ async def get_user_by_id(db: AsyncSession, user_id: str) -> User | None:
 
 async def get_profile(db: AsyncSession, user_id: str) -> UserProfile | None:
     return await db.get(UserProfile, user_id)
+
+async def get_session_by_token_hash(db: AsyncSession, refresh_token_hash: str) -> UserSession | None:
+    """🎟️ 갈아 둔 쿠폰 값으로 쿠폰 기록을 찾는다."""
+    result = await db.execute(
+        select(UserSession).where(UserSession.refresh_token_hash == refresh_token_hash)
+    )
+    return result.scalar_one_or_none()

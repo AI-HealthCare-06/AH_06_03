@@ -116,3 +116,32 @@ async def get_me(db: AsyncSession, user_id: str) -> MeResult:
         sex=profile.sex,
         birth_date=profile.birth_date,
     )
+
+async def update_me(db: AsyncSession, user_id: str, sex: str) -> MeResult:
+    """내 프로필 고치기. 지금은 성별만."""
+    profile = await user_repository.get_profile(db, user_id)
+    if profile is None:
+        raise AppError(401, "AUTH_UNAUTHORIZED", "다시 로그인해 주세요.")
+    profile.sex = sex
+    await db.commit()
+    return await get_me(db, user_id)
+
+async def refresh(db: AsyncSession, refresh_token: str) -> TokenResult:
+    """쿠폰을 내면 새 팔찌 + 새 쿠폰. 쓴 쿠폰은 버린다."""
+    session = await user_repository.get_session_by_token_hash(db, hash_token(refresh_token))
+    now = utcnow()
+
+    # 1. 그런 쿠폰이 있나?  2. 아직 안 버렸나?  3. 아직 안 지났나?
+    if session is None or session.revoked_at is not None or session.expires_at <= now:
+        raise AppError(401, "AUTH_INVALID_REFRESH_TOKEN", "다시 로그인해 주세요.")
+
+    # 쓴 쿠폰 버리기 (구멍 뚫기)
+    session.revoked_at = now
+    return await _issue_tokens(db, session.user_id)
+
+async def logout(db: AsyncSession, user_id: str, refresh_token: str) -> None:
+    """쿠폰 버리기. 내 쿠폰이고 아직 안 버렸을 때만."""
+    session = await user_repository.get_session_by_token_hash(db, hash_token(refresh_token))
+    if session is not None and session.user_id == user_id and session.revoked_at is None:
+        session.revoked_at = utcnow()
+        await db.commit()

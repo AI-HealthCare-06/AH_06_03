@@ -25,12 +25,15 @@ def _run_safely(model_code: str, run, user: dict) -> ModelResult:
         return ModelResult(model_code=model_code, status="failed", error=FAILED_MESSAGE)
 
 # 본체 함수
-def predict(req:PredictRequest) -> PredictResponse:
-    """두 모델을 실행하고 결과를 담아 반환한다"""
-    user = req.model_dump() # 접수 서류를 짝 모음으로 변환
+def predict_dict(user: dict) -> PredictResponse:
+    """번역된 사전을 받아 모델 A·B를 따로 실행한다. 점수를 합치지 않는다."""
     return PredictResponse(
         model_a=_run_safely("MODEL_A", predictor.run_model_a, user),
-        model_b=_run_safely("MODEL_B", predictor.run_model_b, user)
-    ) # 두 모델 실행 후 결과 담기
+        model_b=_run_safely("MODEL_B", predictor.run_model_b, user),
+    )
 
+
+def predict(req: PredictRequest) -> PredictResponse:
+    """임시 창구(/v1/predict)용. 신청서를 사전으로 바꿔서 predict_dict에 넘긴다."""
+    return predict_dict(req.model_dump())
 

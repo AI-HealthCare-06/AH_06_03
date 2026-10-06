@@ -20,7 +20,7 @@ class User(Base, TimestampMixin):
     email: Mapped[str]=mapped_column(String(255), unique=True, nullable=False)
     password_hash: Mapped[str]=mapped_column(String(255), nullable=False)
     status: Mapped[str]=mapped_column(
-        Enum("active", "deleted", "panding_guardian", name="user_status"), nullable=False, default="active"
+        Enum("active", "deleted", "pending_guardian", name="user_status"), nullable=False, default="active"
     )
     deleted_at: Mapped[datetime | None]=mapped_column(DateTime, nullable=True)
 
