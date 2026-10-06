@@ -80,7 +80,7 @@
 function cssv(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 function shortDate(iso) { if (!iso) return ''; const [, m, d] = iso.split('-'); return `${Number(m)}/${Number(d)}`; }
 function bpPoints(health, bpLog) {
-  const pts = [{ v: health.sbp, d: health.recorded_at ? shortDate(health.recorded_at) : '시작' }];
+  const pts = health ? [{ v: health.sbp, d: health.recorded_at ? shortDate(health.recorded_at) : '시작' }] : [];
   bpLog.forEach(l => pts.push({ v: l.sys, d: l.date ? shortDate(l.date) : `${l.w}주차` }));
   return pts;
 }
@@ -113,7 +113,8 @@ const progress = JSON.parse(localStorage.getItem('paeon-progress') || '{"days":[
 
 const COLOR = { normal: 'var(--ok)', borderline: 'var(--warn)', high: 'var(--risk)' };
 const RISK_LABEL = { normal: '정상', borderline: '경계', high: '위험' };
-let state = health ? (cycle ? 'active' : 'empty') : 'empty';
+// 예측 결과(또는 건강정보)가 있으면 챌린지 시작 전에도 캘린더를 보여 주는 'ready' 상태
+let state = (health || pred) ? (cycle ? 'active' : 'ready') : 'empty';
 
 const PIO_BODY = `
   <g style="fill:var(--stem)"><ellipse cx="50" cy="76" rx="8" ry="16" transform="rotate(35 50 76)"/><ellipse cx="50" cy="76" rx="8" ry="16" transform="rotate(-35 50 76)"/></g>
@@ -156,11 +157,12 @@ function panelsHtml() {
   const todayCount = todaySet.size;
 
   let pioState, pioText;
-  if (todayCount === 0) { pioState = 'cry'; pioText = '오늘 챌린지, 아직이에요'; }
+  if (!cycle) { pioState = 'smile'; pioText = '챌린지를 시작하면 오늘 할 일이 여기에 보여요'; }
+  else if (todayCount === 0) { pioState = 'cry'; pioText = '오늘 챌린지, 아직이에요'; }
   else if (todayDone || todayCount >= cycle.missions.length) { pioState = 'cheer'; pioText = '오늘 목표 달성했어요!'; }
   else { pioState = 'smile'; pioText = `오늘 ${todayCount}회 실천 중`; }
 
-  const missionsHtml = cycle.missions.map(m => `<div class="mission${todaySet.has(m.id) ? ' done' : ''}"><span class="mark"></span>${m.t}</div>`).join('');
+  const missionsHtml = !cycle ? '' : cycle.missions.map(m => `<div class="mission${todaySet.has(m.id) ? ' done' : ''}"><span class="mark"></span>${m.t}</div>`).join('');
 
   const y = today.getFullYear(), m = today.getMonth();
   const firstDow = new Date(y, m, 1).getDay();
@@ -190,7 +192,7 @@ function panelsHtml() {
       <div class="today-card">
         <div><div class="tt">${['일', '월', '화', '수', '목', '금', '토'][today.getDay()]}요일</div><div class="dd">${today.getMonth() + 1}월 ${today.getDate()}일</div></div>
         ${missionsHtml}
-        <a class="cta" style="display:block;text-align:center;text-decoration:none;margin-top:4px" href="challenge-progress.html">오늘 챌린지 인증하기</a>
+        <a class="cta" style="display:block;text-align:center;text-decoration:none;margin-top:4px" href="${cycle ? 'challenge-progress.html' : 'challenges.html'}">${cycle ? '오늘 챌린지 인증하기' : '4주 챌린지 시작'}</a>
       </div>
     </div>
     <div class="cal-card">
@@ -211,13 +213,14 @@ function render() {
   </div>`;
 
   const H = {
-    empty: ['혈압, 마지막으로 재신 게 언제인가요?', '검진 결과지가 있으면 사진 한 장으로 끝납니다.', '건강정보 입력하기', 'input.html'],
+    empty: ['혈압, 마지막으로 재신 게 언제인가요?', '검진 결과지가 있으면 사진 한 장으로 끝납니다.', '건강정보 입력하기', 'health-info.html'],
     active: ['오늘도 챌린지 실천해 볼까요?', `${cycle ? cycle.missions.map(m => m.t).join(' · ') : ''}`, '오늘 챌린지 인증하기', 'challenge-progress.html'],
+    ready: ['예측이 끝났어요. 챌린지를 시작해 볼까요?', '결과에 맞는 4주 챌린지를 골라 보세요.', '4주 챌린지 시작', 'challenges.html'],
     redo: ['4주가 끝났습니다. 얼마나 달라졌을까요?', '바뀐 항목만 다시 입력하면 같은 모델로 비교해 드립니다.', '4주 결과 확인하기', 'trend.html'],
   }[state];
 
   let body = `<div class="hero"><h1>${H[0]}</h1><p>${H[1]}</p></div>`;
-  if (state !== 'active') {
+  if (state !== 'active' && state !== 'ready') {
     body += `<a class="cta" style="display:block;text-align:center;text-decoration:none" href="${H[3]}">${H[2]}</a>`;
   }
 
@@ -227,8 +230,9 @@ function render() {
       <div class="mini"><div class="lb">10년 관상동맥질환 위험</div>${a ? `<div class="vv" style="color:${COLOR[a.risk_level]}">${RISK_LABEL[a.risk_level]}</div><div class="sb">범주만 표시(보정 전)</div>` : '<div class="sb">예측 대상 아님</div>'}</div>
       <div class="mini"><div class="lb">혈관 나이(추정)</div>${a && a.vascular_age != null ? `<div class="vv">${a.vascular_age}세</div><div class="sb">실제 나이와 차이가 클 수 있어요</div>` : '<div class="sb">-</div>'}</div>
     </div>`;
-    if (state === 'active' && cycle) body += panelsHtml();
-    body += `<figure><figcaption>수축기 혈압 · <b>주 1회 측정</b></figcaption>${bpChart(bpPoints(health, progress.bpLog))}</figure>`;
+    if ((state === 'active' && cycle) || state === 'ready') body += panelsHtml();
+    const bpPts = bpPoints(health, progress.bpLog);
+    if (bpPts.length) body += `<figure><figcaption>수축기 혈압 · <b>주 1회 측정</b></figcaption>${bpChart(bpPts)}</figure>`;
     body += `<div class="callout"><b>이번 주 챌린지 ${Math.min(5, progress.days.length)} / 5일</b></div>`;
   } else if (state === 'empty') {
     body += `<div class="callout"><b>아직 예측할 정보가 없습니다</b><br>건강정보를 입력하면 여기에 결과가 표시됩니다.</div>`;
