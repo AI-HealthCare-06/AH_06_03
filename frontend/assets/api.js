@@ -1,8 +1,11 @@
-const API_BASE = 'https://54-116-113-17.sslip.io/v1';
+// 로컬(5500 포트)에서 열면 내 컴퓨터 서버, 아니면 배포 서버
+const API_BASE = ['5500'].includes(location.port) ? 'http://127.0.0.1:8000/v1' : 'https://54-116-113-17.sslip.io/v1';
 const USE_MOCK = true;
-// predict·auth는 혜림님 엔드포인트가 실제로 떠있어서 따로 뺌 — health/survey는 백엔드 준비되면 USE_MOCK 끄기
+// predict·auth·health·survey는 서버 연결됨. USE_MOCK(OCR 등 아직 서버 없는 것)만 true
 const USE_MOCK_PREDICT = false;
 const USE_MOCK_AUTH = false;
+const USE_MOCK_HEALTH = false;
+const USE_MOCK_SURVEY = false;
 
 function friendlyError(e) { return e instanceof TypeError ? '서버 연결에 실패했어요. 잠시 후 다시 시도해주세요.' : e.message; }
 
@@ -45,20 +48,81 @@ async function apiLogin(email, password) {
   return body;
 }
 
+// 로그인이 필요한 요청 공통 창구. 팔찌 만료(401 AUTH_TOKEN_EXPIRED)면 재발급 후 원래 요청을 한 번 다시 보낸다.
+let refreshing = null; // 동시에 여러 요청이 만료돼도 재발급은 한 번만 (쓴 쿠폰은 버려지므로)
+
+function goLogin() {
+  try { localStorage.removeItem('paeon-access-token'); localStorage.removeItem('paeon-refresh-token'); } catch (e) {}
+  location.href = 'login.html';
+  return new Promise(() => {}); // 이동 중에는 호출한 쪽이 에러를 띄우지 않게 멈춰 둔다
+}
+
+function refreshTokens() {
+  if (!refreshing) {
+    refreshing = (async () => {
+      const refresh_token = localStorage.getItem('paeon-refresh-token') || '';
+      const res = await fetch(`${API_BASE}/auth/token/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token }),
+      });
+      if (!res.ok) return false;
+      const { data } = await res.json();
+      localStorage.setItem('paeon-access-token', data.access_token);
+      localStorage.setItem('paeon-refresh-token', data.refresh_token); // 쿠폰도 새로 오므로 꼭 교체
+      return true;
+    })().catch(() => false).finally(() => { refreshing = null; });
+  }
+  return refreshing;
+}
+
+async function apiCall(method, path, payload, failMsg, retried = false) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAccessToken()}` },
+    body: payload === undefined ? undefined : JSON.stringify(payload),
+  });
+  if (res.status === 204) return null;
+  const body = await res.json();
+  if (!res.ok) {
+    const code = body.error?.code;
+    if (code === 'AUTH_TOKEN_EXPIRED' && !retried) {
+      if (await refreshTokens()) return apiCall(method, path, payload, failMsg, true);
+      return goLogin();
+    }
+    if (code === 'AUTH_UNAUTHORIZED' || code === 'AUTH_TOKEN_EXPIRED' || code === 'AUTH_INVALID_REFRESH_TOKEN') return goLogin();
+    throw new Error(body.error?.message || failMsg);
+  }
+  return body;
+}
+
+// 건강기록 3단계 저장: 성별(PATCH users/me) → 기록 상자(POST records) → 측정값(POST measurements)
 async function apiSubmitHealthRecord(payload) {
-  if (USE_MOCK) {
+  if (USE_MOCK_HEALTH) {
     console.log('[MOCK] apiSubmitHealthRecord', payload);
     await sleep(400);
     return { data: { health_record_id: 'mock-record-1' } };
   }
-  const res = await fetch(`${API_BASE}/health/records`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAccessToken()}` },
-    body: JSON.stringify(payload),
-  });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.error?.message || '건강정보 저장에 실패했습니다');
-  return body;
+  const num = (code, v) => ({ metric_code: code, value_num: v });
+  const cat = (code, v) => ({ metric_code: code, value_code: String(v) });
+  const measurements = [
+    num('SBP', payload.sbp), num('DBP', payload.dbp),
+    num('HEIGHT', payload.height_cm), num('WEIGHT', payload.weight_kg), num('WAIST', payload.waist_cm),
+    num('TOTAL_CHOL', payload.total_chol), num('HDL', payload.hdl),
+    cat('SMOKING', payload.smoking), cat('DIABETES', payload.diabetes),
+    cat('HTN_STATUS', payload.htn_status), cat('PARENT_HTN', payload.parent_htn),
+    cat('ALCOHOL_FREQ', payload.drink_freq),
+  ];
+  if (payload.drink_amount) measurements.push(cat('ALCOHOL_AMOUNT', payload.drink_amount));
+  if (payload.fasting_glucose != null) measurements.push(num('FASTING_GLUCOSE', payload.fasting_glucose));
+
+  await apiCall('PATCH', '/users/me', { sex: payload.sex }, '성별 저장에 실패했습니다');
+  const rec = await apiCall('POST', '/health/records',
+    { input_type: 'initial', examination_date: payload.recorded_at.slice(0, 10) }, '건강기록 생성에 실패했습니다');
+  const id = rec.data.health_record_id;
+  try { localStorage.setItem('paeon-health-record-id', id); } catch (e) {}
+  await apiCall('POST', `/health/records/${id}/measurements`, { measurements }, '건강정보 저장에 실패했습니다');
+  return rec;
 }
 
 // 검진 결과지 사진 → Clova OCR → OpenAI 구조화. 혜림님이 백엔드 엔드포인트 만들면 USE_MOCK 끄기.
@@ -89,20 +153,30 @@ function getAccessToken() {
   try { return localStorage.getItem('paeon-access-token') || ''; } catch (e) { return ''; }
 }
 
+// 설문 제출 4단계: 설문지 받기 → 답안지 만들기 → 답 적기 → 내기. 화면이 계산한 코드(breakfast·eatout·aerobic)를 보기 코드로 바꿔 보낸다.
 async function apiSubmitSurvey(payload) {
-  if (USE_MOCK) {
+  if (USE_MOCK_SURVEY) {
     console.log('[MOCK] apiSubmitSurvey', payload);
     await sleep(400);
     return { data: { survey_instance_id: 'mock-survey-1' } };
   }
-  const res = await fetch(`${API_BASE}/survey-instances`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAccessToken()}` },
-    body: JSON.stringify(payload),
+  const answers = {
+    BREAKFAST: payload.breakfast,
+    EATOUT: payload.eatout,
+    AEROBIC: payload.aerobic ? 'yes' : 'no',
+  };
+  const survey = (await apiCall('GET', '/surveys/initial_lifestyle/active', undefined, '설문을 불러오지 못했습니다')).data;
+  const responses = survey.questions.map(q => {
+    const opt = q.options.find(o => o.option_code === answers[q.question_code]);
+    if (!opt) throw new Error('설문 보기를 찾지 못했습니다. 잠시 후 다시 시도해주세요.');
+    return { question_id: q.question_id, option_id: opt.option_id };
   });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.error?.message || '설문 제출에 실패했습니다');
-  return body;
+  const recordId = (() => { try { return localStorage.getItem('paeon-health-record-id'); } catch (e) { return null; } })();
+  const inst = (await apiCall('POST', '/survey-instances',
+    { survey_version_id: survey.survey_version_id, health_record_id: recordId }, '설문을 시작하지 못했습니다')).data;
+  const base = `/survey-instances/${inst.survey_instance_id}`;
+  await apiCall('POST', `${base}/responses`, { responses }, '설문 저장에 실패했습니다');
+  return apiCall('POST', `${base}/submit`, undefined, '설문 제출에 실패했습니다');
 }
 
 const MODEL_A_FEATS = [
