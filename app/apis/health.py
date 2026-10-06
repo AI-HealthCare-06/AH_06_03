@@ -40,3 +40,10 @@ async def add_measurements(
 ):
     items = [m.model_dump() for m in req.measurements]
     return DataResponse(data=await health_service.add_measurements(db, user_id, health_record_id, items))
+
+@router.get("/health/records", response_model=DataResponse[list[HealthRecordResult]])
+async def list_records(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(async_get_db),
+):
+    return DataResponse(data=await health_service.list_records(db, user_id))

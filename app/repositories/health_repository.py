@@ -65,3 +65,13 @@ async def get_measurements(db: AsyncSession, health_record_id: str) -> list[Heal
         select(HealthMeasurement).where(HealthMeasurement.health_record_id == health_record_id)
     )
     return list(result.scalars().all())
+
+async def get_records_by_user(db: AsyncSession, user_id: str, limit: int = 20) -> list[HealthRecord]:
+    """📦 내 상자들, 최근 검진부터."""
+    result = await db.execute(
+        select(HealthRecord)
+        .where(HealthRecord.user_id == user_id)
+        .order_by(HealthRecord.examination_date.desc(), HealthRecord.created_at.desc())
+        .limit(limit)
+    )
+    return list(result.scalars().all())

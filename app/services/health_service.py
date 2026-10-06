@@ -123,3 +123,15 @@ async def add_measurements(
         )
         for m in created
     ]
+
+async def list_records(db: AsyncSession, user_id: str) -> list[HealthRecordResult]:
+    """내 건강기록 목록 (최근 검진부터)."""
+    records = await health_repository.get_records_by_user(db, user_id)
+    return [
+        HealthRecordResult(
+            health_record_id=r.health_record_id,
+            input_type=r.input_type,
+            examination_date=r.examination_date,
+        )
+        for r in records
+    ]
