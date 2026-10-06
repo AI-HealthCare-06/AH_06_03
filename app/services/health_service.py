@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
 from app.core.security import utcnow
-from app.repositories import health_repository
+from app.repositories import health_repository, prediction_repository
 from app.schemas.health import HealthRecordResult, MeasurementResult
 
 # 정해진 지표 이름 (ERD v9, 모델_연결_명세 §1.2)
@@ -96,13 +96,36 @@ def _bmi_item(items: list[dict]) -> dict | None:
 async def add_measurements(
     db: AsyncSession, user_id: str, health_record_id: str, items: list[dict]
 ) -> list[MeasurementResult]:
+    """물건 넣기. 같은 지표가 다시 오면 새 값으로 바꾼다. 예측에 쓴 상자는 잠근다."""
+    # 1. 내 상자인가?
     record = await _get_my_record(db, user_id, health_record_id)
 
+    # 2. 예측에 쓴 상자인가? → 잠금
+    if await prediction_repository.is_record_used(db, record.health_record_id):
+        raise AppError(409, "HEALTH_RECORD_LOCKED", "이미 예측에 사용된 건강기록은 고칠 수 없습니다.")
+
+    # 3. 값 검사
     checked = [_check_item(item) for item in items]
-    bmi = _bmi_item(checked)
+    codes = [c["metric_code"] for c in checked]
+    if len(set(codes)) != len(codes):
+        raise AppError(422, "HEALTH_METRIC_DUPLICATED", "한 번에 같은 지표를 두 번 보냈습니다.")
+
+    # 4. BMI 다시 계산: 상자에 남을 값 + 이번에 온 값
+    existing = await health_repository.get_measurements(db, record.health_record_id)
+    kept = [
+        {"metric_code": m.metric_code, "value_num": m.value_num}
+        for m in existing
+        if m.metric_code not in codes and m.metric_code != "BMI"
+    ]
+    bmi = _bmi_item(kept + checked)
+
+    # 5. 예전 물건 빼기 (바뀌는 지표 + BMI를 새로 계산했으면 예전 BMI도)
+    to_delete = codes + (["BMI"] if bmi is not None else [])
+    await health_repository.delete_measurements(db, record.health_record_id, to_delete)
     if bmi is not None:
         checked.append(bmi)
 
+    # 6. 새 물건 넣기 → 진짜 저장
     try:
         created = await health_repository.create_measurements(
             db, record.health_record_id, record.examination_date, checked, utcnow()

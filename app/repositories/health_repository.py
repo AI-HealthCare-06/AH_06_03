@@ -1,5 +1,5 @@
 """건강기록 창고 담당. DB에 넣고 꺼내는 일만 한다."""
-from sqlalchemy import select
+from sqlalchemy import select,delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import date, datetime
 from app.models.health import HealthInputSchema, HealthRecord, HealthMeasurement
@@ -75,3 +75,11 @@ async def get_records_by_user(db: AsyncSession, user_id: str, limit: int = 20) -
         .limit(limit)
     )
     return list(result.scalars().all())
+
+async def delete_measurements(db: AsyncSession, health_record_id: str, metric_codes: list[str]) -> None:
+    """📦 이 상자에서, 이 지표들의 예전 물건을 뺀다 (값 바꾸기용)."""
+    await db.execute(
+        delete(HealthMeasurement)
+        .where(HealthMeasurement.health_record_id == health_record_id)
+        .where(HealthMeasurement.metric_code.in_(metric_codes))
+    )

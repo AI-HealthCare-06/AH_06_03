@@ -85,3 +85,12 @@ async def get_factors(db: AsyncSession, prediction_ids: list[str]) -> list[Predi
         .order_by(PredictionFactor.display_rank)
     )
     return list(result.scalars().all())
+
+async def is_record_used(db: AsyncSession, health_record_id: str) -> bool:
+    """🔒 이 상자로 예측한 번호표가 하나라도 있나?"""
+    result = await db.execute(
+        select(PredictionJob.prediction_job_id)
+        .where(PredictionJob.health_record_id == health_record_id)
+        .limit(1)
+    )
+    return result.scalar_one_or_none() is not None
