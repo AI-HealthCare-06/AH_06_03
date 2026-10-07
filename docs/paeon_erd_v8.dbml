@@ -240,7 +240,7 @@ Enum proof_type {
 Enum challenge_rule_type {
   recommend
   exclude
-  replace     [note: '고정 미션 비해당 시 나트륨 미션 → (나트륨도 낮으면) 기여도 최대 개선 가능 요인 미션']
+  replace     [note: '고정 미션 비해당 시 대체 순서 나트륨 → 신체 활동 → 외식·배달 → 아침 식사 (REQ-CHAL-008 v2.0, 가이드 §3.3)']
   difficulty
 }
 Enum candidate_status {
@@ -541,7 +541,7 @@ weekly_bp는 이 부분 유니크에서 빠지므로 검진일과 같은 날 혈
 Table health_measurements {
   measurement_id uuid [pk]
   health_record_id uuid [not null]
-  metric_code varchar(50) [not null, note: '필수: SBP, DBP, HEIGHT, WEIGHT, WAIST, SMOKING, ALCOHOL_FREQ, ALCOHOL_AMOUNT(음주자만), DIABETES, HTN_STATUS, TOTAL_CHOL, HDL, PARENT_HTN / 선택: FASTING_GLUCOSE, EXERCISE_FREQ / 계산: BMI, BP_STAGE']
+  metric_code varchar(50) [not null, note: '필수: SBP, DBP, HEIGHT, WEIGHT, WAIST, SMOKING, ECIG, ALCOHOL_FREQ, ALCOHOL_AMOUNT(음주자만), DIABETES, HTN_STATUS, TOTAL_CHOL, HDL, PARENT_HTN / 선택: FASTING_GLUCOSE / 계산: BMI, BP_STAGE']
   value_num decimal(12,4) [note: '수치형 지표']
   value_code varchar(50) [note: '범주형 지표. 값은 모델_연결_명세 §1.2 변환표의 값과 동일하게 저장(아래 Note)']
   unit varchar(20) [note: '수치형만. mmHg, cm, kg, mg/dL']
@@ -554,19 +554,21 @@ Table health_measurements {
     metric_code
   }
   Note: '''REQ-HEALTH-002,008. BMI는 HEIGHT/WEIGHT로 서버 계산(input_method=calculated).
-4주 재평가(명세 §8): SBP·DBP·SMOKING·ALCOHOL_FREQ·ALCOHOL_AMOUNT·WEIGHT·WAIST는 새로 받고,
+4주 재평가(명세 §8, 가이드 §6): SBP·DBP·SMOKING·ECIG·ALCOHOL_FREQ·ALCOHOL_AMOUNT·WEIGHT·WAIST는 새로 받고,
   HEIGHT·TOTAL_CHOL·HDL·FASTING_GLUCOSE·DIABETES·HTN_STATUS·PARENT_HTN은 carried_forward + source_measurement_id로 직전 값 참조.
 필수·선택 구분은 REQ-HEALTH-002(v1.9) 기준. 스키마 버전별 계약은 health_input_schemas·model_feature_contracts.required로 관리.
 WAIST: 허리둘레 cm(value_num).
 value_code 값 (명세 §1.2, 학습 데이터 코드와 1:1):
-  SMOKING(BS3_1): current / former / never
+  SMOKING(BS3_1, 일반담배만): current / former / never — 화면 선택지 "매일 피움"·"가끔 피움"은 둘 다 current
+  ECIG(전자담배, 모델 입력 아님): daily / occasional / none — 금연 칸 판정(smoker)에만 사용
   ALCOHOL_FREQ(BD1_11): never_lifetime / none_past_year / lt_monthly / monthly / 2_4_per_month / 2_3_per_week / 4plus_per_week
   ALCOHOL_AMOUNT(BD2_1): 1_2 / 3_4 / 5_6 / 7_9 / 10plus — ALCOHOL_FREQ가 never_lifetime·none_past_year면 묻지 않고 행을 만들지 않는다
   DIABETES: true / false · PARENT_HTN: yes / no / unknown
   BP_STAGE(계산, 명세 §6 HE_HP 기준): normal / elevated / prehypertension / hypertension — 모델이 아닌 규칙 판정
 나이·성별은 user_profiles에서 참조하고 검진 입력에서 다시 받지 않는다(REQ-HEALTH-001·002).
 마이그레이션: CHECK (metric_code <> 'ALCOHOL_AMOUNT' OR value_code IN ('1_2','3_4','5_6','7_9','10plus'))
-마이그레이션: CHECK (metric_code <> 'SMOKING' OR value_code IN ('current','former','never')) — ALCOHOL_FREQ·PARENT_HTN·BP_STAGE도 같은 방식
+마이그레이션: CHECK (metric_code <> 'SMOKING' OR value_code IN ('current','former','never')) — ECIG·ALCOHOL_FREQ·PARENT_HTN·BP_STAGE도 같은 방식
+선택 지표 EXERCISE_FREQ는 v2.0에서 삭제(운동은 생활습관 설문 P1로 받음, 가이드 §1.2)
 HTN_STATUS: none(진단 없음) / diagnosed_untreated(진단·미치료) / treated(치료 중)
 마이그레이션: CHECK (metric_code <> 'HTN_STATUS' OR value_code IN ('none','diagnosed_untreated','treated'))
 마이그레이션: CHECK ((value_num IS NULL) <> (value_code IS NULL))
@@ -650,8 +652,8 @@ Table survey_options {
   option_code varchar(50) [not null]
   option_text varchar(255) [not null]
   numeric_score decimal(8,2)
-  model_value_code varchar(50) [note: 'MODEL_B 입력 문항은 명세 §1.2 값(breakfast: 5_7/3_4/1_2/0, eatout: 2plus_per_day~lt_monthly)']
-  derived_value jsonb [note: '운동 종목→강도 자동 분류, 나트륨 0~2점 등']
+  model_value_code varchar(50) [note: '모델 B v0.2.0부터 생활습관 설문은 모델 입력이 아님 → 설문 v2 문항은 NULL. (설문 v1의 BREAKFAST·EATOUT·AEROBIC 값은 v0.1.0 기록용)']
+  derived_value jsonb [note: '분류 코드 등 보조값. 나트륨 지수 문항 점수는 numeric_score(가이드 §1.2)']
   display_order int [not null]
   Indexes {
     (question_id, option_code) [unique]
@@ -799,10 +801,10 @@ Table model_feature_contracts {
   Note: '''REQ-HEALTH-002,008, REQ-PRED-007, NFR-ML-001.
 MODEL_A 피처(명세 §2.2): age, male, sysBP, totChol, currentSmoker, diabetes, BPMeds, prevalentHyp, BMI
   (HTN_STATUS → prevalentHyp·BPMeds, SMOKING=current → currentSmoker). HDL은 학습 데이터에 없어 사용하지 않음.
-MODEL_B 피처(명세 §2.2): age, male, bmi, waist, parent_htn, smoke_current, smoke_former, drink_freq, drink_amount, aerobic, breakfast_skip, eatout
-  (설문 REQ-HEALTH-005: 외식·배달, 아침, 신체활동 주당 중강도·고강도 분 → aerobic 파생). SBP·DBP는 입력이 아님(판정·대시보드용).
+MODEL_B 피처 v0.2.0(명세 §2.2): age, male, bmi, waist, parent_htn, smoke_current, smoke_former, drink_freq, drink_amount
+  (v0.1.0의 aerobic·breakfast_skip·eatout 제외, 사유는 가이드 부록 A). 생활습관 설문은 모델 입력이 아님. SBP·DBP는 입력이 아님(판정·대시보드용).
 비어 있는 피처는 중앙값으로 채우고 missing_features로 보고(prediction_feature_values.missing_reason='imputed_median').
-나트륨 5문항 점수(REQ-PRED-008)는 모델 입력이 아니라 챌린지 후보 판정에만 쓴다.
+나트륨 지수(REQ-PRED-008 v2.0)는 모델 입력이 아니라 챌린지 후보 판정에만 쓴다.
 정확한 피처 목록·변환표는 modeling/handoff/모델_연결_명세.md를 기준으로 시드한다.
 4주 재예측(명세 §8): 같은 모델 버전·같은 피처. 새로 받는 값과 이월 값은 health_measurements Note 참고.
 age는 최초 예측 값을 유지한다(생일이 끼어도 전·후 비교가 흔들리지 않게).'''
@@ -908,9 +910,9 @@ Table prediction_factors {
   }
   Note: '''REQ-PRED-003, REQ-CHAL-008(기여도 최대 개선 가능 요인 대체).
 기여도 0(해당 없음) 요인은 저장하지 않는다. top_risk_factor = direction=risk_increase 중 display_rank 최소,
-  top_modifiable_factor = 그중 modifiable=true 최소(→ factor_challenge_links로 챌린지 연결).
-v0.1.0: MODEL_A는 전부 true, MODEL_B는 smoke_current·smoke_former·eatout·aerobic이 false(표시만, 걸러내지 않음).
-화면 표시 방식(숨김·주석·그대로 노출)은 팀 결정 필요.'''
+  top_modifiable_factor = 그중 modifiable=true 최소 (결과 화면 설명용, 챌린지 추천에는 쓰지 않음).
+v0.2.0: MODEL_A는 전부 true, MODEL_B는 smoke_current·smoke_former가 false.
+화면 표시: direction_matches_expectation=false 요인은 요인 목록에 표시하지 않음 (REQ-PRED-003 v2.0).'''
 }
 
 Table result_disclosures {
@@ -943,10 +945,10 @@ Table challenges {
   challenge_code varchar(50) [not null, unique]
   challenge_name varchar(150) [not null]
   description text [not null]
-  mission_role mission_role_type [not null, note: 'fixed=흡연·음주, replacement=나트륨 미션 우선, 나트륨도 낮으면 기여도 최대 개선 가능 요인 미션(REQ-CHAL-008), selectable=카테고리 제한 없이 선택(선택 미션 1개)']
+  mission_role mission_role_type [not null, note: 'fixed=SMK-1·ALC-1, selectable=나머지 7개. 고정 칸 대체는 challenge_eligibility_rules의 replace 규칙으로 처리(가이드 §4)']
   proof_type proof_type [not null]
   active boolean [not null, default: true]
-  Note: 'REQ-CHAL-001,003,008; NFR-ARCH-005. 카테고리당 최소 3개, 전체 30개 내외.'
+  Note: 'REQ-CHAL-001,003,008; NFR-ARCH-005. v2.0 시드 = 미션 9개(SMK-1, ALC-1, NA-1·2, ACT-1·2·3, OUT-1, BRK-1), 가이드 §4.'
 }
 
 Table factor_challenge_links {
@@ -960,7 +962,7 @@ Table factor_challenge_links {
     (model_id, factor_code, category_id) [unique]
   }
   Note: '''모델_연결_명세 §7 요인 → 챌린지 카테고리 연결표를 데이터로 관리(NFR-ARCH-005).
-REQ-PRED-003(개선 가능 요인 → 챌린지), REQ-CHAL-008(나트륨도 낮으면 top_modifiable_factor로 대체)에서 조회.
+v2.0: 챌린지 추천·대체에는 쓰지 않음 (REQ-PRED-003·CHAL-008 v2.0). 결과 화면에서 요인 옆에 관련 카테고리를 안내할 때만 조회.
 v0.1.0 시드 예: B waist·bmi / A BMI → 체중 관리(Backlog, pending_decision) · B drink_freq·drink_amount → 절주(linked)
   · A currentSmoker → 금연(linked) · B eatout → 외식·배달, B aerobic → 신체 활동(반대 방향, pending_decision)
   · A sysBP → 나트륨·신체 활동·체중 관리 중 선택(pending_decision) · A totChol → not_linked'''
@@ -987,9 +989,9 @@ Table challenge_eligibility_rules {
   priority int [not null]
   active boolean [not null, default: true]
   Note: '''REQ-CHAL-001,008,009; NFR-ML-006, NFR-SAFE-007(복약자 문구 제한 규칙 포함 가능).
-replace 규칙 시드(REQ-CHAL-008): 건강정보 입력의 SMOKING·ALCOHOL_FREQ로 비흡연·비음주 판정 → 해당 고정 칸을 나트륨 미션으로 대체.
-  나트륨 등급(REQ-PRED-008)도 하이면 prediction_factors 중 modifiable=true·risk_increase 기여도 최대 요인의 미션으로 대체.
-NFR-ML-006: 후보 미션은 MODEL_A 수정 가능 요인(SHAP 상위 5위 이내)과 feature_definition_id로 연결된 것만 채택, 연결 근거 없으면 제외 또는 참고용.'''
+replace 규칙 시드(REQ-CHAL-008 v2.0): 비흡연(SMOKING≠current 그리고 ECIG=none)·비음주(ALCOHOL_FREQ ∈ never_lifetime·none_past_year) → 해당 고정 칸을
+  대체 순서 high_sodium → low_activity → frequent_eatout → breakfast_skip의 첫 카테고리 대표 미션으로 채움 (두 칸은 다른 카테고리, 없으면 비움). 모델 출력은 쓰지 않음.
+NFR-ML-006 v2.0: 미션은 임상시험·메타분석·정부 지침 근거가 있는 것만 채택 (가이드 §4, 부록 B).'''
 }
 
 
@@ -1001,7 +1003,7 @@ Table user_classifications {
   user_id uuid [not null]
   survey_instance_id uuid [note: '설문 기반 분류일 때']
   health_record_id uuid [note: '건강정보 입력 기반 분류일 때(흡연·음주·복약)']
-  classification_code varchar(50) [not null, note: 'smoker, drinker(건강정보 입력) / sodium_grade(하·중·상, REQ-PRED-008) / on_bp_medication(HTN_STATUS=treated) 등']
+  classification_code varchar(50) [not null, note: '건강정보 입력: smoker, drinker, bp_160_100, on_bp_medication / 설문: high_sodium, low_activity, has_baseline_steps, frequent_eatout, breakfast_skip, bp_measurable (조건은 가이드 §2.2)']
   classification_value jsonb
   classified_at timestamptz [not null]
   Indexes {
