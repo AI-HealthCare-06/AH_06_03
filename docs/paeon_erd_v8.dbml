@@ -560,7 +560,7 @@ Table health_measurements {
 WAIST: 허리둘레 cm(value_num).
 value_code 값 (명세 §1.2, 학습 데이터 코드와 1:1):
   SMOKING(BS3_1, 일반담배만): current / former / never — 화면 선택지 "매일 피움"·"가끔 피움"은 둘 다 current
-  ECIG(전자담배, 모델 입력 아님): daily / occasional / none — 금연 칸 판정(smoker)에만 사용
+  ECIG(전자담배, 모델 입력 아님): daily / occasional / none — 금연 칸 판정에는 쓰지 않음(근거가 일반담배 흡연자 대상). 일반담배 흡연자의 금연 미션 안내에만 사용
   ALCOHOL_FREQ(BD1_11): never_lifetime / none_past_year / lt_monthly / monthly / 2_4_per_month / 2_3_per_week / 4plus_per_week
   ALCOHOL_AMOUNT(BD2_1): 1_2 / 3_4 / 5_6 / 7_9 / 10plus — ALCOHOL_FREQ가 never_lifetime·none_past_year면 묻지 않고 행을 만들지 않는다
   DIABETES: true / false · PARENT_HTN: yes / no / unknown
@@ -989,7 +989,7 @@ Table challenge_eligibility_rules {
   priority int [not null]
   active boolean [not null, default: true]
   Note: '''REQ-CHAL-001,008,009; NFR-ML-006, NFR-SAFE-007(복약자 문구 제한 규칙 포함 가능).
-replace 규칙 시드(REQ-CHAL-008 v2.0): 비흡연(SMOKING≠current 그리고 ECIG=none)·비음주(ALCOHOL_FREQ ∈ never_lifetime·none_past_year) → 해당 고정 칸을
+replace 규칙 시드(REQ-CHAL-008 v2.0): 금연 칸 비해당(SMOKING≠current)·절주 칸 비해당(ALCOHOL_FREQ ∈ never_lifetime·none_past_year 또는 ALCOHOL_AMOUNT=1_2) → 해당 고정 칸을
   대체 순서 high_sodium → low_activity → frequent_eatout → breakfast_skip의 첫 카테고리 대표 미션으로 채움 (두 칸은 다른 카테고리, 없으면 비움). 모델 출력은 쓰지 않음.
 NFR-ML-006 v2.0: 미션은 임상시험·메타분석·정부 지침 근거가 있는 것만 채택 (가이드 §4, 부록 B).'''
 }
@@ -1003,7 +1003,7 @@ Table user_classifications {
   user_id uuid [not null]
   survey_instance_id uuid [note: '설문 기반 분류일 때']
   health_record_id uuid [note: '건강정보 입력 기반 분류일 때(흡연·음주·복약)']
-  classification_code varchar(50) [not null, note: '건강정보 입력: smoker, drinker, bp_160_100, on_bp_medication / 설문: high_sodium, low_activity, has_baseline_steps, frequent_eatout, breakfast_skip, bp_measurable (조건은 가이드 §2.2)']
+  classification_code varchar(50) [not null, note: '건강정보 입력: smoker(일반담배 현재 흡연), drinker(한 번 3잔 이상), bp_160_100, on_bp_medication / 설문: high_sodium(나트륨 지수 150 초과 또는 지수 적용 범위 밖), low_activity, has_baseline_steps, frequent_eatout(외식 주 5회 이상+high_sodium), breakfast_skip, bp_measurable (조건은 가이드 §2.2)']
   classification_value jsonb
   classified_at timestamptz [not null]
   Indexes {
