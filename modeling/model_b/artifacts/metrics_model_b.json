@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "data": "KNHANES_2022_2024_selected.parquet",
   "population": "19세 이상, HE_HP 1·2·3",
   "n_total": 11022,
@@ -19,10 +19,7 @@
     "smoke_current": 0.0155,
     "smoke_former": 0.0155,
     "drink_freq": 0.0152,
-    "drink_amount": 0.0152,
-    "aerobic": 0.0704,
-    "breakfast_skip": 0.0333,
-    "eatout": 0.0333
+    "drink_amount": 0.0152
   },
   "features": [
     "age",
@@ -33,119 +30,107 @@
     "smoke_current",
     "smoke_former",
     "drink_freq",
-    "drink_amount",
-    "aerobic",
-    "breakfast_skip",
-    "eatout"
+    "drink_amount"
   ],
   "split": "조사구(psu) 단위 80/20 (seed 42) + 학습 데이터 GroupKFold 5",
   "models": {
     "logistic": {
-      "cv_auc_mean": 0.7392,
-      "cv_auc_std": 0.0068,
+      "cv_auc_mean": 0.7393,
+      "cv_auc_std": 0.0065,
       "test_at_0.5": {
         "threshold": 0.5,
-        "auc": 0.7454,
-        "f1": 0.4763,
-        "sensitivity": 0.4041,
-        "specificity": 0.8532,
+        "auc": 0.7435,
+        "f1": 0.4627,
+        "sensitivity": 0.3878,
+        "specificity": 0.8553,
         "confusion": {
-          "tn": 1250,
-          "fp": 215,
-          "fn": 438,
-          "tp": 297
+          "tn": 1253,
+          "fp": 212,
+          "fn": 450,
+          "tp": 285
         }
       },
       "test_at_youden_train": {
-        "threshold": 0.3208,
-        "auc": 0.7454,
-        "f1": 0.5882,
-        "sensitivity": 0.7347,
-        "specificity": 0.6171,
+        "threshold": 0.2892,
+        "auc": 0.7435,
+        "f1": 0.5887,
+        "sensitivity": 0.7878,
+        "specificity": 0.5543,
         "confusion": {
-          "tn": 904,
-          "fp": 561,
-          "fn": 195,
-          "tp": 540
+          "tn": 812,
+          "fp": 653,
+          "fn": 156,
+          "tp": 579
         }
       },
-      "brier": 0.1871,
-      "mean_pred_test": 0.3431,
-      "random_split_test_auc": 0.7435,
+      "brier": 0.1876,
+      "mean_pred_test": 0.3426,
+      "random_split_test_auc": 0.7419,
       "mean_abs_contribution_test": {
-        "age": 0.5554,
-        "male": 0.3619,
-        "bmi": 0.2461,
-        "waist": 0.2265,
-        "drink_amount": 0.153,
-        "parent_htn": 0.1496,
-        "smoke_former": 0.1356,
-        "eatout": 0.062,
-        "smoke_current": 0.0594,
-        "drink_freq": 0.0373,
-        "aerobic": 0.0129,
-        "breakfast_skip": 0.0017
+        "age": 0.5766,
+        "male": 0.3507,
+        "bmi": 0.2471,
+        "waist": 0.2237,
+        "drink_amount": 0.1497,
+        "parent_htn": 0.1481,
+        "smoke_former": 0.1374,
+        "smoke_current": 0.0603,
+        "drink_freq": 0.0328
       },
       "odds_ratio_per_unit": {
-        "age": 1.0407,
-        "male": 2.1173,
-        "bmi": 1.0894,
-        "waist": 1.0267,
-        "parent_htn": 1.3783,
-        "smoke_current": 0.7862,
-        "smoke_former": 0.6707,
-        "drink_freq": 1.0266,
-        "drink_amount": 1.1142,
-        "aerobic": 1.0262,
-        "breakfast_skip": 1.0016,
-        "eatout": 0.9551
+        "age": 1.0423,
+        "male": 2.0683,
+        "bmi": 1.0898,
+        "waist": 1.0264,
+        "parent_htn": 1.3738,
+        "smoke_current": 0.7833,
+        "smoke_former": 0.6671,
+        "drink_freq": 1.0233,
+        "drink_amount": 1.1116
       }
     },
     "xgboost": {
-      "cv_auc_mean": 0.7517,
-      "cv_auc_std": 0.0068,
+      "cv_auc_mean": 0.7516,
+      "cv_auc_std": 0.0065,
       "test_at_0.5": {
         "threshold": 0.5,
-        "auc": 0.7463,
-        "f1": 0.4854,
+        "auc": 0.7439,
+        "f1": 0.4873,
         "sensitivity": 0.4299,
-        "specificity": 0.8287,
+        "specificity": 0.8321,
         "confusion": {
-          "tn": 1214,
-          "fp": 251,
+          "tn": 1219,
+          "fp": 246,
           "fn": 419,
           "tp": 316
         }
       },
       "test_at_youden_train": {
-        "threshold": 0.3568,
-        "auc": 0.7463,
-        "f1": 0.5863,
-        "sensitivity": 0.6952,
-        "specificity": 0.6608,
+        "threshold": 0.3684,
+        "auc": 0.7439,
+        "f1": 0.5799,
+        "sensitivity": 0.6667,
+        "specificity": 0.6826,
         "confusion": {
-          "tn": 968,
-          "fp": 497,
-          "fn": 224,
-          "tp": 511
+          "tn": 1000,
+          "fp": 465,
+          "fn": 245,
+          "tp": 490
         }
       },
-      "brier": 0.1868,
-      "mean_pred_test": 0.3427,
-      "random_split_test_auc": 0.7511,
+      "brier": 0.1877,
+      "mean_pred_test": 0.3419,
+      "random_split_test_auc": 0.7533,
       "mean_abs_shap_test": {
-        "age": 0.5419,
-        "waist": 0.3856,
-        "male": 0.2729,
-        "bmi": 0.2055,
-        "parent_htn": 0.1736,
-        "drink_freq": 0.1485,
-        "drink_amount": 0.084,
-        "smoke_former": 0.0424,
-        "eatout": 0.0384,
-        "smoke_current": 0.0327,
-        "breakfast_skip": 0.0317,
-        "aerobic": 0.0078
+        "age": 0.5651,
+        "waist": 0.3488,
+        "male": 0.2805,
+        "bmi": 0.2367,
+        "parent_htn": 0.1752,
+        "drink_freq": 0.1507,
+        "drink_amount": 0.0873,
+        "smoke_former": 0.0458,
+        "smoke_current": 0.0325
       }
     }
   }
