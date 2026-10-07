@@ -89,30 +89,26 @@ def check_a():
     return {"n": int(mask.sum()), "max_abs_diff": float(diff.max()), "n_diff_gt_1e-4": int((diff > 1e-4).sum())}
 
 
+# 모델 B v0.2.0: 운동·아침·외식은 입력에서 제외 (handoff/생활습관_입력_가이드.md 부록 A)
 CASES = [
     ("T1_45세남성_흡연_데모예시", {"age": 45, "sex": "M", "height_cm": 172, "weight_kg": 78, "waist_cm": 88, "sbp": 145, "dbp": 92,
                          "total_chol": 212, "smoking": "current", "diabetes": False, "htn_status": "none",
-                         "parent_htn": "yes", "drink_freq": "2_3_per_week", "drink_amount": "5_6",
-                         "breakfast": "1_2", "eatout": "1_per_day", "moderate_min_per_week": 60, "vigorous_min_per_week": 0}),
+                         "parent_htn": "yes", "drink_freq": "2_3_per_week", "drink_amount": "5_6"}),
     ("T2_35세여성_비흡연_저위험", {"age": 35, "sex": "F", "height_cm": 162, "weight_kg": 54, "waist_cm": 70, "sbp": 110, "dbp": 70,
                    "total_chol": 180, "smoking": "never", "diabetes": False, "htn_status": "none", "parent_htn": "no",
-                   "drink_freq": "lt_monthly", "drink_amount": "1_2", "breakfast": "5_7", "eatout": "1_2_per_week",
-                   "moderate_min_per_week": 200, "vigorous_min_per_week": 0}),
+                   "drink_freq": "lt_monthly", "drink_amount": "1_2"}),
     ("T3_62세남성_고혈압약복용_고위험", {"age": 62, "sex": "M", "height_cm": 170, "weight_kg": 85, "waist_cm": 98, "sbp": 165, "dbp": 98,
                    "total_chol": 260, "smoking": "current", "diabetes": True, "htn_status": "treated", "parent_htn": "yes",
-                   "drink_freq": "4plus_per_week", "drink_amount": "7_9", "breakfast": "0", "eatout": "3_4_per_week",
-                   "moderate_min_per_week": 0, "vigorous_min_per_week": 0}),
+                   "drink_freq": "4plus_per_week", "drink_amount": "7_9"}),
     ("T4_55세여성_고혈압진단_약안먹음", {"age": 55, "sex": "F", "height_cm": 158, "weight_kg": 66, "waist_cm": 86, "sbp": 138, "dbp": 86,
                          "total_chol": 230, "smoking": "never", "diabetes": False, "htn_status": "diagnosed_untreated",
-                         "parent_htn": "unknown", "drink_freq": "never_lifetime", "drink_amount": None, "breakfast": "5_7",
-                         "eatout": "lt_monthly", "moderate_min_per_week": 90, "vigorous_min_per_week": 30}),
+                         "parent_htn": "unknown", "drink_freq": "never_lifetime", "drink_amount": None}),
     ("T5_27세남성_모델A연령밖", {"age": 27, "sex": "M", "height_cm": 178, "weight_kg": 92, "waist_cm": 95, "sbp": 128, "dbp": 82,
                         "total_chol": 190, "smoking": "current", "diabetes": False, "htn_status": "none", "parent_htn": "yes",
-                        "drink_freq": "2_3_per_week", "drink_amount": "10plus", "breakfast": "0", "eatout": "2plus_per_day",
-                        "moderate_min_per_week": 0, "vigorous_min_per_week": 0}),
+                        "drink_freq": "2_3_per_week", "drink_amount": "10plus"}),
     ("T6_48세여성_과거흡연_선택항목결측", {"age": 48, "sex": "F", "height_cm": 165, "weight_kg": 60, "waist_cm": None, "sbp": 122, "dbp": 78,
                      "total_chol": 205, "smoking": "former", "diabetes": False, "htn_status": "none", "parent_htn": "unknown",
-                     "drink_freq": "monthly", "drink_amount": None, "breakfast": None, "eatout": None}),
+                     "drink_freq": "monthly", "drink_amount": None}),
 ]
 
 

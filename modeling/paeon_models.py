@@ -18,7 +18,7 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent
 SPEC_A = BASE / "model_a" / "artifacts" / "model_a_v0.1.1.json"
-SPEC_B = BASE / "model_b" / "artifacts" / "model_b_v0.1.0.json"
+SPEC_B = BASE / "model_b" / "artifacts" / "model_b_v0.2.0.json"  # v0.2.0: 운동·아침·외식 제외(9개 피처). 그 입력은 받아도 무시됨
 
 # ── 선택지 → 모델 값 변환표 (학습 데이터 코드와 1:1) ─────────────────────
 SMOKING = {"current": "current", "former": "former", "never": "never"}  # BS3_1 1·2 / 3 / 8

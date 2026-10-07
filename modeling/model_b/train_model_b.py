@@ -1,12 +1,14 @@
-"""모델 B v0.1.0 — 국민건강영양조사 2022–2024, 현재 고혈압 경계군(정상 vs 주의·전단계) (첫 번째 사이클).
+"""모델 B v0.2.0 — 국민건강영양조사 2022–2024, 현재 고혈압 경계군(정상 vs 주의·전단계) (첫 번째 사이클).
 
 입력: $PAEON_DATA_DIR/KNHANES_2022_2024_selected.parquet (extract_selected.py 로 재추출)
 출력: modeling/model_b/artifacts/
-  - model_b_v0.1.0.json      로지스틱 계수 (원래 단위, paeon_models.predict_model_b 가 읽음)
-  - model_b_xgb_v0.1.0.json  XGBoost 비교 모델
+  - model_b_v0.2.0.json      로지스틱 계수 (원래 단위, paeon_models.predict_model_b 가 읽음)
+  - model_b_xgb_v0.2.0.json  XGBoost 비교 모델
   - metrics_model_b.json     성능 기록
 라벨: HE_HP 1→0, 2·3→1, 4 제외 (PRD REQ-PRED-009, NFR-ML-008). 혈압(HE_sbp·HE_dbp)은 피처 제외.
 분할: 조사구(psu) 단위 — 같은 가구가 학습·테스트에 갈리지 않게 (계획 문서 §3.2)
+v0.2.0 (2026-10-07): 운동(aerobic)·아침 결식(breakfast_skip)·외식·배달 빈도(eatout) 제외 → 9개 피처.
+  사유: 빼도 성능 차이 없음, 운동·외식은 상식과 반대 방향 학습, 챌린지 근거는 지침·문헌 (handoff/생활습관_입력_가이드.md 부록 A)
 """
 from pathlib import Path
 import json
@@ -26,7 +28,7 @@ import xgboost as xgb
 DATA_DIR = Path(os.environ.get("PAEON_DATA_DIR", Path(__file__).resolve().parents[3] / "데이터"))
 DATA = DATA_DIR / "KNHANES_2022_2024_selected.parquet"
 OUT = Path(__file__).resolve().parent / "artifacts"
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 SEED = 42
 
 # (피처, 화면 라벨, 개선 가능, 원본 변수, 기대 방향 +1 위험↑ / −1 위험↓ / 0 기대 없음)
@@ -41,9 +43,7 @@ FEATS = [
     ("smoke_former", "과거 흡연", False, "BS3_1 3 (기준 = 8 피운 적 없음)", +1),
     ("drink_freq", "음주 빈도", True, "BD1_11 8→0, 1~6 그대로", +1),
     ("drink_amount", "한 번 음주량", True, "BD2_1 8→0, 1~5 그대로", +1),
-    ("aerobic", "유산소 신체활동 실천", True, "pa_aerobic", -1),
-    ("breakfast_skip", "아침 결식", True, "L_BR_FQ 1~4 (클수록 결식)", +1),
-    ("eatout", "외식·배달 빈도", True, "8 − L_OUT_FQ (클수록 잦음)", +1),
+    # v0.2.0에서 제외: aerobic(pa_aerobic), breakfast_skip(L_BR_FQ), eatout(8 − L_OUT_FQ)
 ]
 F = [f[0] for f in FEATS]
 BINARY = {"male", "parent_htn", "smoke_current", "smoke_former", "aerobic"}  # 기여도 기준점 = 0 (없음)
