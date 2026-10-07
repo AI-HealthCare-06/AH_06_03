@@ -213,8 +213,8 @@ Enum disclosure_type {
 
 Enum catalog_status {
   mvp      [note: '미션 카탈로그 상태 MVP']
-  review   [note: '검토(예: 아침 식사)']
-  backlog  [note: 'Backlog(예: 체중 관리)']
+  review   [note: '검토 (v2.1 현재 해당 카테고리 없음)']
+  backlog  [note: 'Backlog (v2.1 현재 해당 카테고리 없음)']
 }
 Enum factor_link_status {
   linked            [note: '요인 → 카테고리 연결 확정']
@@ -935,7 +935,7 @@ Table challenge_categories {
   description text
   display_order int [not null]
   active boolean [not null, default: true]
-  catalog_status catalog_status [not null, default: 'mvp', note: '미션 카탈로그 시트 상태(체중 관리=backlog, 아침 식사=review)']
+  catalog_status catalog_status [not null, default: 'mvp', note: '미션 카탈로그 시트 상태. v2.1: 7개 카테고리(SMOKING·ALCOHOL·SODIUM·ACTIVITY·EATOUT·BREAKFAST·WEIGHT) 모두 mvp (가이드 §3.1)']
   Note: 'REQ-CHAL-001(5~6개), NFR-ARCH-005'
 }
 
@@ -945,10 +945,10 @@ Table challenges {
   challenge_code varchar(50) [not null, unique]
   challenge_name varchar(150) [not null]
   description text [not null]
-  mission_role mission_role_type [not null, note: 'fixed=SMK-1·ALC-1, selectable=나머지 7개. 고정 칸 대체는 challenge_eligibility_rules의 replace 규칙으로 처리(가이드 §4)']
+  mission_role mission_role_type [not null, note: 'fixed=SMK-1·ALC-1, selectable=나머지 8개(WT-1 포함). 고정 칸 대체는 challenge_eligibility_rules의 replace 규칙으로 처리(가이드 §4)']
   proof_type proof_type [not null]
   active boolean [not null, default: true]
-  Note: 'REQ-CHAL-001,003,008; NFR-ARCH-005. v2.0 시드 = 미션 9개(SMK-1, ALC-1, NA-1·2, ACT-1·2·3, OUT-1, BRK-1), 가이드 §4.'
+  Note: 'REQ-CHAL-001,003,008; NFR-ARCH-005. v2.1 시드 = 미션 10개(SMK-1, ALC-1, NA-1·2, ACT-1·2·3, OUT-1, BRK-1, WT-1), 가이드 §4.'
 }
 
 Table factor_challenge_links {
@@ -965,7 +965,8 @@ Table factor_challenge_links {
 v2.0: 챌린지 추천·대체에는 쓰지 않음 (REQ-PRED-003·CHAL-008 v2.0). 결과 화면에서 요인 옆에 관련 카테고리를 안내할 때만 조회.
 v0.1.0 시드 예: B waist·bmi / A BMI → 체중 관리(Backlog, pending_decision) · B drink_freq·drink_amount → 절주(linked)
   · A currentSmoker → 금연(linked) · B eatout → 외식·배달, B aerobic → 신체 활동(반대 방향, pending_decision)
-  · A sysBP → 나트륨·신체 활동·체중 관리 중 선택(pending_decision) · A totChol → not_linked'''
+  · A sysBP → 나트륨·신체 활동·체중 관리 중 선택(pending_decision) · A totChol → not_linked
+v2.1: B waist·bmi / A BMI → 체중 관리(linked, 결과 화면 안내용. WT-1 추천 판정은 user_classifications.overweight로 함)'''
 }
 
 Table challenge_levels {
@@ -1002,8 +1003,8 @@ Table user_classifications {
   user_classification_id uuid [pk]
   user_id uuid [not null]
   survey_instance_id uuid [note: '설문 기반 분류일 때']
-  health_record_id uuid [note: '건강정보 입력 기반 분류일 때(흡연·음주·복약)']
-  classification_code varchar(50) [not null, note: '건강정보 입력: smoker(일반담배 현재 흡연), drinker(한 번 3잔 이상), bp_160_100, on_bp_medication / 설문: high_sodium(나트륨 지수 150 초과 또는 지수 적용 범위 밖), low_activity, has_baseline_steps, frequent_eatout(외식 주 5회 이상+high_sodium), breakfast_skip, bp_measurable (조건은 가이드 §2.2)']
+  health_record_id uuid [note: '건강정보 입력 기반 분류일 때(흡연·음주·복약·체중)']
+  classification_code varchar(50) [not null, note: '건강정보 입력: smoker(일반담배 현재 흡연), drinker(한 번 3잔 이상), bp_160_100, on_bp_medication, overweight(BMI 25 이상, HEIGHT·WEIGHT로 서버 계산) / 설문: high_sodium(나트륨 지수 150 초과 또는 지수 적용 범위 밖), low_activity, has_baseline_steps, frequent_eatout(외식 주 5회 이상+high_sodium), breakfast_skip, bp_measurable (조건은 가이드 §2.2)']
   classification_value jsonb
   classified_at timestamptz [not null]
   Indexes {
