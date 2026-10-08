@@ -1,7 +1,7 @@
 """create challenge tables + seed catalog (카테고리 7 · 미션 10)
 
 Revision ID: 3d0c145a545a
-Revises: e4c9a2b7d815
+Revises: f1d3b7a9c2e4
 Create Date: 2026-10-08 18:00:00.000000
 
 기준: modeling/handoff/생활습관_입력_가이드.md §3.1·§4, ERD v8
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '3d0c145a545a'
-down_revision: Union[str, Sequence[str], None] = 'e4c9a2b7d815'
+down_revision: Union[str, Sequence[str], None] = 'f1d3b7a9c2e4'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
