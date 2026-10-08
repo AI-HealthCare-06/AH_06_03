@@ -5,3 +5,4 @@ from app.models.health import HealthInputSchema, HealthMeasurement, HealthRecord
 from app.models.survey import SurveyInstance, SurveyOption, SurveyQuestion, SurveyResponse, SurveyVersion  # noqa: F401
 from app.models.prediction import Prediction, PredictionFactor, PredictionJob  # noqa: F401
 from app.models.calendar import CalendarEntry, HealthTodo  # noqa: F401
+from app.models.deletion import AccountDeletionRequest  # noqa: F401
