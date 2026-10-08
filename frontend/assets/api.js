@@ -539,6 +539,80 @@ async function apiSyncAfterLogin() {
       }));
     }
   } catch (e) { /* 결과는 없어도 진행 */ }
+  try { await apiGetCurrentCycle(); } catch (e) { /* 챌린지는 없어도 진행 */ }
+}
+
+// ===== 챌린지 (서버 저장, 가이드 §3·§5) =====
+const LEVEL_LABEL = { low: '하', medium: '중', high: '상' };
+
+// 추천: 고정 2칸 + 선택 후보 + 제외 사유 + 설문 미응답 카테고리
+async function apiGetChallengeRecommendations() {
+  return (await apiCall('GET', '/challenges/recommendations', undefined, '챌린지 추천을 불러오지 못했습니다')).data;
+}
+
+// 진행 중인 사이클. 없으면 null.
+async function apiGetCurrentCycle() {
+  try {
+    const cycle = (await apiCall('GET', '/challenges/cycles/current', undefined, '챌린지를 불러오지 못했습니다')).data;
+    cacheCycle(cycle);
+    return cycle;
+  } catch (e) {
+    if (e.code === 'CHALLENGE_CYCLE_NOT_FOUND') { cacheCycle(null); return null; }
+    throw e;
+  }
+}
+
+// 지난 사이클 포함 전체 이력 (최근부터)
+async function apiListCycles() {
+  return (await apiCall('GET', '/challenges/cycles', undefined, '챌린지 이력을 불러오지 못했습니다')).data;
+}
+
+async function apiStartCycle(selectedCode) {
+  const cycle = (await apiCall('POST', '/challenges/cycles', { selected_code: selectedCode }, '챌린지를 시작하지 못했습니다')).data;
+  cacheCycle(cycle);
+  return cycle;
+}
+
+// 오늘 기록 저장·수정 (날짜는 서버가 오늘로 정함)
+async function apiRecordChallengeLog(code, answer, quantity) {
+  const payload = {};
+  if (answer !== undefined && answer !== null) payload.answer = answer;
+  if (quantity !== undefined && quantity !== null) payload.quantity = quantity;
+  return (await apiCall('PUT', `/challenges/cycles/current/logs/${encodeURIComponent(code)}`, payload, '기록을 저장하지 못했습니다')).data;
+}
+
+async function apiStopCycle(reasonCode) {
+  const cycle = (await apiCall('POST', '/challenges/cycles/current/stop', { reason_code: reasonCode || null }, '챌린지를 중단하지 못했습니다')).data;
+  cacheCycle(null);
+  return cycle;
+}
+
+// 서버 사이클 → 대시보드·캘린더가 읽는 기존 저장 형식(paeon-cycle·paeon-progress)으로 맞춘다.
+// 혈압 기록(bpLog)은 아직 이 브라우저에만 있으므로 그대로 둔다.
+function cacheCycle(cycle) {
+  try {
+    const prev = JSON.parse(localStorage.getItem('paeon-progress') || 'null') || {};
+    const bpLog = prev.bpLog || [];
+    if (!cycle) {
+      localStorage.removeItem('paeon-cycle');
+      localStorage.setItem('paeon-progress', JSON.stringify({ days: [], bpLog }));
+      return;
+    }
+    const start = new Date(cycle.started_on + 'T00:00:00');
+    const idxOf = (d) => Math.round((new Date(d + 'T00:00:00') - start) / 86400000);
+    const missionLog = {};
+    cycle.missions.forEach(m => m.logs.forEach(l => {
+      if (l.status !== 'completed') return;
+      const i = idxOf(l.log_date);
+      (missionLog[i] = missionLog[i] || []).push(m.card.code);
+    }));
+    const days = Object.keys(missionLog).map(Number).filter(i => missionLog[i].length === cycle.missions.length);
+    localStorage.setItem('paeon-cycle', JSON.stringify({
+      cycleId: cycle.cycle_id, cycleNumber: cycle.cycle_number, startedOn: cycle.started_on,
+      missions: cycle.missions.map(m => ({ id: m.card.code, t: m.card.name, lv: LEVEL_LABEL[m.card.difficulty], cat: m.card.category })),
+    }));
+    localStorage.setItem('paeon-progress', JSON.stringify({ days, missionLog, bpLog }));
+  } catch (e) { /* 저장 공간을 못 쓰면 화면은 서버 값으로만 그린다 */ }
 }
 
 // 로그아웃: 서버 쿠폰을 폐기하고, 이 계정의 기록은 계정별로 보관해 둔 뒤 로그인 화면으로 간다.
