@@ -36,12 +36,10 @@
   .day .dots{position:absolute; bottom:4px; left:50%; transform:translateX(-50%); display:flex; gap:3px; z-index:2}
   .day .dot{width:4px; height:4px; border-radius:999px; background:var(--peach)}
   .day .dot-bp{width:4px; height:4px; border-radius:999px; background:var(--sage-deep)}
-  .day .dot-evt{width:4px; height:4px; border-radius:999px; background:var(--dots)}
   .cal-legend{display:flex; gap:14px; margin-top:10px; font-size:11px; color:var(--muted); flex-wrap:wrap}
   .cal-legend span{display:inline-flex; align-items:center; gap:5px}
   .dot-sample{width:5px; height:5px; border-radius:999px; background:var(--peach); display:inline-block}
   .dot-bp-sample{width:5px; height:5px; border-radius:999px; background:var(--sage-deep); display:inline-block}
-  .dot-evt-sample{width:5px; height:5px; border-radius:999px; background:var(--dots); display:inline-block}
   .ring-sample{width:12px; height:12px; border-radius:999px; background:var(--petal2); display:inline-block}
 
   /* 입력칸 — style.css의 .field는 input/select만 스타일링해서 textarea엔 직접 지정 */
@@ -77,11 +75,15 @@
   .todo-edit-row{display:flex; gap:8px; align-items:center}
   .todo-edit-row input{flex:1}
 
-  .event-form{display:flex; flex-direction:column; gap:10px}
   .allday-row{display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:var(--muted)}
   .add-row{display:flex; gap:8px}
   .add-row input{flex:1; font:inherit; font-size:13.5px; padding:10px 12px; border-radius:12px; border:1.5px solid var(--sage-light); background:#fff; color:var(--ink)}
   .add-row button{flex:none}
+  .ideas{display:flex; flex-wrap:wrap; gap:6px}
+  .idea-chip{border:1.5px dashed var(--sage); background:#fff; color:var(--ink); border-radius:999px; padding:5px 11px; font-size:11.5px; font-weight:600}
+  .chal-log{background:#fff; border:1px solid var(--sage-light); border-radius:16px; padding:12px 16px; display:flex; flex-direction:column; gap:6px}
+  .chal-log .row{display:flex; justify-content:space-between; gap:8px; font-size:12.5px}
+  .chal-log .row .st{color:var(--muted); font-weight:700}
 </style>
 </head>
 <body>
@@ -102,15 +104,57 @@
 </div>
 
 <script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
 <script>
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 function localIso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
+// 저장소: 서버(GET/PUT /calendar/...)가 되면 서버에 저장하고, 서버에 API가 없거나 실패하면 브라우저(localStorage)에 저장한다.
 const STORE_KEY = 'paeon-calendar';
-function load() { return JSON.parse(localStorage.getItem(STORE_KEY) || '{"entries":{}}'); }
+function load() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{"entries":{}}'); } catch (e) { return { entries: {} }; } }
 let store = load();
-function save() { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) { /* 용량 초과 등 */ } }
+let serverOn = true;                 // 서버 저장 가능 여부 (한 번 실패하면 이 화면에서는 브라우저 저장으로)
+let serverNote = '';
+const loadedMonths = new Set();
+async function srv(method, path, body) {
+  if (!serverOn) throw new Error('server off');
+  try { return (await apiCall(method, path, body, '캘린더 저장에 실패했습니다')); }
+  catch (e) { serverOn = false; serverNote = '서버에 저장하지 못해 이 브라우저에만 저장하고 있어요.'; throw e; }
+}
+// 그 달의 서버 기록을 가져와 화면 데이터에 합친다
+async function loadMonth(y, m) {
+  const key = `${y}-${String(m + 1).padStart(2, '0')}`;
+  if (!serverOn || loadedMonths.has(key)) return;
+  loadedMonths.add(key);
+  try {
+    const days = (await srv('GET', `/calendar/days?month=${key}`)).data;
+    const prefix = key + '-';
+    Object.keys(store.entries).filter(k => k.startsWith(prefix)).forEach(k => delete store.entries[k]);   // 서버 값이 기준
+    days.forEach(d => {
+      store.entries[d.entry_date] = { photo: null, hasPhoto: !!d.has_photo, diary: d.diary || '', todos: d.todos.map(t => ({ id: t.todo_id, text: t.text, done: t.done })) };
+    });
+    save(); render(); loadPhoto(selectedKey);
+  } catch (e) { render(); }
+}
+// 사진은 작게 줄여서(가로세로 최대 640px, JPEG) 보낸다. 서버는 약 300KB까지 받는다.
+function shrinkPhoto(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 640 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      let q = 0.75, out = c.toDataURL('image/jpeg', q);
+      while (out.length > 380000 && q > 0.3) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+      URL.revokeObjectURL(img.src); resolve(out);
+    };
+    img.onerror = () => reject(new Error('이미지를 읽지 못했어요'));
+    img.src = URL.createObjectURL(file);
+  });
+}
 
 const cycle = JSON.parse(localStorage.getItem('paeon-cycle') || 'null');
 const progress = JSON.parse(localStorage.getItem('paeon-progress') || '{"days":[],"bpLog":[]}');
@@ -124,7 +168,20 @@ function bpOnDate(dt) { return progress.bpLog.some(l => l.date === localIso(dt))
 
 const today = new Date(); today.setHours(0, 0, 0, 0);
 
-function blankEntry() { return { photo: null, diary: '', events: [], todos: [] }; }
+const STATUS_LABEL = { completed: '완료', failed: '오늘은 못 했어요', skipped: '해당 없음' };
+function chalLogHtml(key) {
+  if (!cycle || !cycleStartedOn) return '';
+  const idx = Math.round((new Date(key + 'T00:00:00') - cycleStartedOn) / 86400000);
+  const day = progress.logs && progress.logs[idx];
+  if (idx < 0 || idx >= 28) return '';
+  const rows = cycle.missions.map(m => {
+    const r = day && day[m.id];
+    return `<div class="row"><span>${escapeHtml(m.t)}</span><span class="st">${r ? STATUS_LABEL[r.status] : '기록 없음'}</span></div>`;
+  }).join('');
+  return `<div class="chal-log"><b style="font-size:13px">이 날의 챌린지 기록</b>${rows}<a href="challenge-progress.html" class="hint" style="color:var(--sage-deep); font-weight:700">챌린지 기록하러 가기</a></div>`;
+}
+
+function blankEntry() { return { photo: null, diary: '', todos: [] }; }
 function entryFor(key) { return store.entries[key] || blankEntry(); }
 function ensureEntry(key) { if (!store.entries[key]) store.entries[key] = blankEntry(); return store.entries[key]; }
 
@@ -136,12 +193,25 @@ let viewYear = initialDate.getFullYear(), viewMonth = initialDate.getMonth();
 let selectedKey = localIso(initialDate);
 let jumpOpen = false;
 let activeCat = 'photo';
-let eventFormOpen = false, editingEventIndex = null, draftEvent = null;
 let editingTodoIndex = null;
 
+async function addTodo(text) {
+  const todo = { text, done: false };
+  ensureEntry(selectedKey).todos.push(todo); save(); render();
+  try { todo.id = (await srv('POST', `/calendar/days/${selectedKey}/todos`, { text })).data.todo_id; save(); } catch (e) { /* 브라우저에만 저장됨 */ }
+}
+
+// 달 목록에는 사진이 없고 has_photo만 온다. 날짜를 고르면 그날 사진을 따로 받는다.
+async function loadPhoto(key) {
+  const e = store.entries[key];
+  if (!serverOn || !e || e.photo || !e.hasPhoto) return;
+  try { e.photo = (await srv('GET', `/calendar/entries/${key}`)).data.photo; render(); } catch (err) { /* 사진 없이 표시 */ }
+}
+
 function selectDay(key) {
+  loadPhoto(key);
   selectedKey = key; activeCat = 'photo';
-  eventFormOpen = false; editingEventIndex = null; draftEvent = null; editingTodoIndex = null;
+  editingTodoIndex = null;
   render();
 }
 
@@ -168,12 +238,11 @@ function calendarCellsHtml() {
     if (key === localIso(today)) cls.push('today');
     if (key === selectedKey) cls.push('picked');
     if (dt.getDay() === 0) cls.push('sun');
-    if (entry && entry.photo) cls.push('has-photo');
-    const photoLayer = entry && entry.photo ? `<span class="photo" style="background-image:url('${entry.photo}')"></span>` : '';
+    if (entry && (entry.photo || entry.hasPhoto)) cls.push('has-photo');
+    const photoLayer = entry && entry.photo ? `<span class="photo" style="background-image:url('${entry.photo}')"></span>` : (entry && entry.hasPhoto ? '<span class="photo" style="display:flex;align-items:center;justify-content:center;background:var(--sage-light);font-size:14px">📷</span>' : '');
     const hasChal = chalOnDate(dt);
     const hasBp = bpOnDate(dt);
-    const hasEvt = !!(entry && entry.events && entry.events.length);
-    const dots = (hasChal || hasBp || hasEvt) ? `<span class="dots">${hasChal ? '<span class="dot"></span>' : ''}${hasBp ? '<span class="dot-bp"></span>' : ''}${hasEvt ? '<span class="dot-evt"></span>' : ''}</span>` : '';
+    const dots = (hasChal || hasBp) ? `<span class="dots">${hasChal ? '<span class="dot"></span>' : ''}${hasBp ? '<span class="dot-bp"></span>' : ''}</span>` : '';
     cells += `<div class="${cls.join(' ')}" data-key="${key}"><div class="day-inner">${photoLayer}<span class="num">${d}</span>${dots}</div></div>`;
   }
   return cells;
@@ -186,40 +255,8 @@ function photoPanelHtml(entry) {
   </div>`;
 }
 
-function eventFormHtml() {
-  const ev = draftEvent;
-  return `<div class="cat-body">
-    <div class="event-form">
-      <div class="field"><label>제목</label><input id="ev-title" value="${escapeHtml(ev.title)}" placeholder="예: 요가 수업"></div>
-      <label class="allday-row"><input type="checkbox" id="ev-allday" ${ev.allDay ? 'checked' : ''}> 하루종일</label>
-      <div class="grid2" id="ev-time-row" style="${ev.allDay ? 'display:none' : ''}">
-        <div class="field"><label>시작</label><input type="time" id="ev-start" value="${ev.start}"></div>
-        <div class="field"><label>종료</label><input type="time" id="ev-end" value="${ev.end}"></div>
-      </div>
-      <div class="field"><label>위치</label><input id="ev-location" value="${escapeHtml(ev.location)}" placeholder="위치"></div>
-      <div class="field"><label>URL</label><input id="ev-url" value="${escapeHtml(ev.url)}" placeholder="https://"></div>
-      <div class="field"><label>메모</label><textarea id="ev-memo" placeholder="메모">${escapeHtml(ev.memo)}</textarea></div>
-      <div style="display:flex; gap:8px">
-        <button type="button" id="ev-save" class="cta" style="flex:1">저장</button>
-        <button type="button" id="ev-cancel" class="ghost" style="flex:1">취소</button>
-      </div>
-    </div>
-  </div>`;
-}
-
-function eventListHtml(entry) {
-  if (eventFormOpen) return eventFormHtml();
-  const rows = entry.events.length
-    ? entry.events.map((ev, i) => `<div class="list-row">
-        <div class="lr-main"><b>${escapeHtml(ev.title || '(제목 없음)')}</b><span class="hint">${ev.allDay ? '하루종일' : `${ev.start}–${ev.end}`}${ev.location ? ' · ' + escapeHtml(ev.location) : ''}</span></div>
-        <div class="lr-actions"><button type="button" class="small-btn" data-act="edit-event" data-i="${i}">수정</button><button type="button" class="small-btn danger" data-act="del-event" data-i="${i}">삭제</button></div>
-      </div>`).join('')
-    : `<p class="hint">등록된 일정이 없어요</p>`;
-  return `<div class="cat-body">
-    ${rows}
-    <button type="button" id="event-add" class="ghost">+ 일정 추가</button>
-  </div>`;
-}
+// 혈압에 도움이 되는 걸로 연구된 활동만 (가이드 §4 미션 ACT-1~3). 다른 건 직접 입력한다.
+const HEALTH_IDEAS = ['빠르게 걷기 30분', '벽 스쿼트 2분 × 4번', '평소보다 2,000보 더 걷기'];
 
 function todoListHtml(entry) {
   const rows = entry.todos.length
@@ -229,13 +266,16 @@ function todoListHtml(entry) {
             <span class="chk" data-act="toggle-todo" data-i="${i}"></span><span class="tx">${escapeHtml(t.text)}</span>
             <div class="lr-actions"><button type="button" class="small-btn" data-act="edit-todo" data-i="${i}">수정</button><button type="button" class="small-btn danger" data-act="del-todo" data-i="${i}">삭제</button></div>
           </div>`).join('')
-    : `<p class="hint">할 일이 없어요</p>`;
+    : `<p class="hint">오늘 할 건강 활동을 추가해 보세요</p>`;
+  const chips = HEALTH_IDEAS.map(t => `<button type="button" class="idea-chip" data-idea="${escapeHtml(t)}">+ ${escapeHtml(t)}</button>`).join('');
   return `<div class="cat-body">
     ${rows}
+    <div class="ideas">${chips}</div>
     <div class="add-row">
-      <input id="todo-input" placeholder="할 일 추가">
+      <input id="todo-input" placeholder="예: 스쿼트 20개 3세트">
       <button type="button" id="todo-add" class="ghost" style="width:auto; padding:10px 18px">추가</button>
     </div>
+    <p class="hint">구체적인 횟수나 시간을 적으면 해내기 쉬워요</p>
   </div>`;
 }
 
@@ -243,9 +283,11 @@ function detailHtml() {
   const entry = entryFor(selectedKey);
   const d = new Date(selectedKey + 'T00:00:00');
   const label = `${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`;
-  const catBody = activeCat === 'photo' ? photoPanelHtml(entry) : activeCat === 'event' ? eventListHtml(entry) : todoListHtml(entry);
+  const catBody = activeCat === 'photo' ? photoPanelHtml(entry) : todoListHtml(entry);
   return `<div class="detail2">
     <h4>선택한 날 — ${label}</h4>
+
+    ${chalLogHtml(selectedKey)}
 
     <div class="diary-box">
       <div class="field"><label>일기</label><textarea id="diary-text" placeholder="오늘 챌린지는 어땠나요?">${escapeHtml(entry.diary)}</textarea></div>
@@ -253,11 +295,11 @@ function detailHtml() {
     </div>
 
     <div class="cat-tabs">
-      <button type="button" class="cat-tab${activeCat === 'photo' ? ' active' : ''}" data-cat="photo">📷 사진</button>
-      <button type="button" class="cat-tab${activeCat === 'event' ? ' active' : ''}" data-cat="event">📅 일정</button>
-      <button type="button" class="cat-tab${activeCat === 'todo' ? ' active' : ''}" data-cat="todo">✅ 할 일</button>
+      <button type="button" class="cat-tab${activeCat === 'photo' ? ' active' : ''}" data-cat="photo">📷 사진 인증</button>
+        <button type="button" class="cat-tab${activeCat === 'todo' ? ' active' : ''}" data-cat="todo">✅ 건강 할 일</button>
     </div>
     ${catBody}
+    ${serverNote ? `<p class="hint" style="color:var(--warn)">${serverNote}</p>` : ''}
   </div>`;
 }
 
@@ -275,15 +317,17 @@ function wire() {
 
   document.querySelectorAll('.cat-tab[data-cat]').forEach(btn => btn.addEventListener('click', () => {
     activeCat = btn.dataset.cat;
-    eventFormOpen = false; editingEventIndex = null; draftEvent = null; editingTodoIndex = null;
+    editingTodoIndex = null;
     render();
   }));
 
-  document.getElementById('diary-save').addEventListener('click', () => {
-    ensureEntry(selectedKey).diary = document.getElementById('diary-text').value;
+  document.getElementById('diary-save').addEventListener('click', async () => {
+    const text = document.getElementById('diary-text').value;
+    ensureEntry(selectedKey).diary = text;
     save();
+    try { await srv('PUT', `/calendar/entries/${selectedKey}`, { diary: text }); } catch (e) { /* 브라우저에만 저장됨 */ }
     const btn = document.getElementById('diary-save');
-    btn.textContent = '등록됨'; setTimeout(() => { if (document.getElementById('diary-save')) document.getElementById('diary-save').textContent = '등록'; }, 1200);
+    if (btn) { btn.textContent = serverOn ? '등록됨' : '이 브라우저에 등록됨'; setTimeout(() => { if (document.getElementById('diary-save')) document.getElementById('diary-save').textContent = '등록'; }, 1500); }
   });
 
   if (activeCat === 'photo') {
@@ -291,83 +335,47 @@ function wire() {
     photoInput.addEventListener('change', () => {
       const file = photoInput.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => { ensureEntry(selectedKey).photo = reader.result; save(); render(); };
-      reader.readAsDataURL(file);
+      shrinkPhoto(file).then(async (data) => {
+        ensureEntry(selectedKey).photo = data; save();
+        try { await srv('PUT', `/calendar/entries/${selectedKey}`, { photo: data }); } catch (e) { /* 브라우저에만 저장됨 */ }
+        render();
+      }).catch(() => {});
     });
     const rm = document.getElementById('photo-remove');
-    if (rm) rm.addEventListener('click', () => { ensureEntry(selectedKey).photo = null; save(); render(); });
-  }
-
-  if (activeCat === 'event') {
-    if (eventFormOpen) {
-      document.getElementById('ev-allday').addEventListener('change', e => {
-        document.getElementById('ev-time-row').style.display = e.target.checked ? 'none' : '';
-      });
-      document.getElementById('ev-save').addEventListener('click', () => {
-        const ev = {
-          title: document.getElementById('ev-title').value.trim(),
-          allDay: document.getElementById('ev-allday').checked,
-          start: document.getElementById('ev-start').value,
-          end: document.getElementById('ev-end').value,
-          location: document.getElementById('ev-location').value.trim(),
-          url: document.getElementById('ev-url').value.trim(),
-          memo: document.getElementById('ev-memo').value.trim(),
-        };
-        const entry = ensureEntry(selectedKey);
-        if (editingEventIndex != null) entry.events[editingEventIndex] = ev; else entry.events.push(ev);
-        save();
-        eventFormOpen = false; editingEventIndex = null; draftEvent = null;
-        render();
-      });
-      document.getElementById('ev-cancel').addEventListener('click', () => {
-        eventFormOpen = false; editingEventIndex = null; draftEvent = null; render();
-      });
-    } else {
-      const addBtn = document.getElementById('event-add');
-      if (addBtn) addBtn.addEventListener('click', () => {
-        eventFormOpen = true; editingEventIndex = null;
-        draftEvent = { title: '', allDay: false, start: '09:00', end: '10:00', location: '', url: '', memo: '' };
-        render();
-      });
-      document.querySelectorAll('[data-act="edit-event"]').forEach(btn => btn.addEventListener('click', () => {
-        const i = Number(btn.dataset.i);
-        eventFormOpen = true; editingEventIndex = i;
-        draftEvent = { ...entryFor(selectedKey).events[i] };
-        render();
-      }));
-      document.querySelectorAll('[data-act="del-event"]').forEach(btn => btn.addEventListener('click', () => {
-        entryFor(selectedKey).events.splice(Number(btn.dataset.i), 1);
-        save(); render();
-      }));
-    }
+    if (rm) rm.addEventListener('click', async () => {
+      ensureEntry(selectedKey).photo = null; save();
+      try { await srv('PUT', `/calendar/entries/${selectedKey}`, { photo: null }); } catch (e) {}
+      render();
+    });
   }
 
   if (activeCat === 'todo') {
     document.getElementById('todo-add').addEventListener('click', () => {
       const input = document.getElementById('todo-input');
       if (!input.value.trim()) return;
-      ensureEntry(selectedKey).todos.push({ text: input.value.trim(), done: false });
-      save(); render();
+      addTodo(input.value.trim());
     });
+    document.querySelectorAll('[data-idea]').forEach(btn => btn.addEventListener('click', () => addTodo(btn.dataset.idea)));
     document.querySelectorAll('[data-act="toggle-todo"]').forEach(el => el.addEventListener('click', () => {
       const i = Number(el.dataset.i);
-      const entry = entryFor(selectedKey);
-      entry.todos[i].done = !entry.todos[i].done;
-      save(); render();
+      const t = entryFor(selectedKey).todos[i];
+      t.done = !t.done; save(); render();
+      if (t.id) srv('PATCH', `/calendar/todos/${t.id}`, { done: t.done }).catch(() => {});
     }));
     document.querySelectorAll('[data-act="edit-todo"]').forEach(btn => btn.addEventListener('click', () => {
       editingTodoIndex = Number(btn.dataset.i); render();
     }));
     document.querySelectorAll('[data-act="del-todo"]').forEach(btn => btn.addEventListener('click', () => {
-      entryFor(selectedKey).todos.splice(Number(btn.dataset.i), 1);
+      const [t] = entryFor(selectedKey).todos.splice(Number(btn.dataset.i), 1);
       save(); render();
+      if (t && t.id) srv('DELETE', `/calendar/todos/${t.id}`).catch(() => {});
     }));
     const saveTodoBtn = document.querySelector('[data-act="save-todo"]');
     if (saveTodoBtn) saveTodoBtn.addEventListener('click', () => {
       const i = Number(saveTodoBtn.dataset.i);
       const val = document.getElementById('todo-edit-input').value.trim();
-      if (val) entryFor(selectedKey).todos[i].text = val;
+      const t = entryFor(selectedKey).todos[i];
+      if (val) { t.text = val; if (t.id) srv('PATCH', `/calendar/todos/${t.id}`, { text: val }).catch(() => {}); }
       editingTodoIndex = null;
       save(); render();
     });
@@ -383,10 +391,11 @@ function render() {
     ${jumpHtml()}
     <div class="dow-row"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
     <div class="day-grid">${calendarCellsHtml()}</div>
-    <div class="cal-legend"><span><i class="ring-sample"></i>오늘</span><span><i class="dot-sample"></i>챌린지 완료</span><span><i class="dot-bp-sample"></i>혈압 측정</span><span><i class="dot-evt-sample"></i>일정</span></div>
+    <div class="cal-legend"><span><i class="ring-sample"></i>오늘</span><span><i class="dot-sample"></i>챌린지 완료</span><span><i class="dot-bp-sample"></i>혈압 측정</span></div>
   </div>`;
   document.getElementById('detail-wrap').innerHTML = detailHtml();
   wire();
+  loadMonth(viewYear, viewMonth);
 }
 
 render();
