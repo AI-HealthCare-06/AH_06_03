@@ -74,6 +74,8 @@ EXPORT_CHILDREN = {
     "health_measurements": ("health_records", "health_record_id"),
     "survey_responses": ("survey_instances", "survey_instance_id"),
     "prediction_factors": ("predictions", "prediction_id"),
+    "cycle_challenges": ("challenge_cycles", "cycle_id"),
+    "challenge_logs": ("cycle_challenges", "cycle_challenge_id"),
 }
 
 

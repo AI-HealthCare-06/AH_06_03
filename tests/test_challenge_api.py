@@ -214,3 +214,15 @@ async def test_step_count_answer_enables_act1(client, db_session, today):
     assert act1["target_config"]["steps_target"] == 7300
     r = await client.put("/v1/challenges/cycles/current/logs/ACT-1", json={"quantity": 7400}, headers=h)
     assert r.json()["data"]["status"] == "completed"
+
+
+async def test_data_export_includes_challenge_missions_and_logs(client, db_session, today):
+    # 내 데이터 내려받기에 챌린지 미션·매일 기록도 들어간다 (개인정보 열람권)
+    h = await make_user(db_session, measurements=SMOKER_DRINKER, answers=SURVEY)
+    await client.post("/v1/challenges/cycles", json={"selected_code": "NA-1"}, headers=h)
+    await client.put("/v1/challenges/cycles/current/logs/NA-1", json={"answer": "left"}, headers=h)
+    await client.put("/v1/challenges/cycles/current/logs/SMK-1", json={"answer": "not_smoked"}, headers=h)
+    exp = (await client.get("/v1/users/me/data-export", headers=h)).json()["data"]
+    assert len(exp["challenge_cycles"]) == 1
+    assert len(exp["cycle_challenges"]) == 3
+    assert len(exp["challenge_logs"]) == 2
