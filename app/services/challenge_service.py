@@ -70,8 +70,9 @@ async def _load_facts(db: AsyncSession, user_id: str):
 
     instance = await survey_repository.get_latest_submitted(db, user_id)
     raw = await challenge_repository.get_survey_answers(db, instance.survey_instance_id) if instance else {}
-    answers = {q: o for q, (o, _) in raw.items()}
-    scores = {q: s for q, (_, s) in raw.items() if q in rules.NA_QUESTIONS and s is not None}
+    answers = {q: o for q, (o, _, _) in raw.items() if o is not None}
+    scores = {q: s for q, (_, s, _) in raw.items() if q in rules.NA_QUESTIONS and s is not None}
+    steps = raw.get("P2", (None, None, None))[2]
 
     diabetes = code_("DIABETES")
     facts = rules.UserFacts(
@@ -81,7 +82,7 @@ async def _load_facts(db: AsyncSession, user_id: str):
         sbp=num("SBP"), dbp=num("DBP"), height_cm=num("HEIGHT"), weight_kg=num("WEIGHT"),
         htn_status=code_("HTN_STATUS"), diabetes=None if diabetes is None else diabetes == "true",
         answers=answers, scores=scores,
-        baseline_steps=None,  # P2 걸음 수: 설문 v2에서 숫자 응답이 저장되면 연결
+        baseline_steps=int(steps) if steps is not None else None,  # P2 걸음 수 (숫자 답, "모르겠어요"면 없음)
     )
     return facts, record, instance
 
@@ -335,7 +336,7 @@ async def stop_cycle(db: AsyncSession, user_id: str, reason_code: str | None, no
 
 
 # ---------------------------------------------------------------- 4주 재입력 → 재예측 → 전후 비교 (가이드 §6, W11-2)
-# 다시 받는 항목 (§6.1). 나머지는 직전 기록에서 가져온다 (carried_forward)
+# 다시 받는 항목 (§6.1). 나머지는 재예측 때 예측 서비스가 직전 기록에서 가져온다 (carried_forward)
 REASSESS_REQUIRED = {"SBP", "DBP", "WEIGHT", "SMOKING", "ALCOHOL_FREQ"}
 REASSESS_ALLOWED = REASSESS_REQUIRED | {"WAIST", "ALCOHOL_AMOUNT", "ECIG"}
 BP_NOTE = "한 번 잰 값이라 차이가 작으면 측정 오차일 수 있어요."
@@ -351,7 +352,7 @@ async def _owned_ended_cycle(db: AsyncSession, user_id: str, cycle_id: str) -> C
 
 async def submit_reassessment(db: AsyncSession, user_id: str, cycle_id: str, exam_date: date | None,
                               items: list[dict]) -> ReviewResult:
-    """4주 재입력 저장 → 모델 A·B 재예측(interim) → 전후 비교."""
+    """4주 재입력 저장 → 모델 A·B 재예측(interim, 직전 값 이월은 예측 서비스가 함) → 전후 비교."""
     cycle = await _owned_ended_cycle(db, user_id, cycle_id)
     if cycle.status in ("active", "stopped"):
         raise AppError(409, "CHALLENGE_CYCLE_NOT_ENDED", "4주가 끝난 챌린지만 재입력할 수 있습니다.")
@@ -367,13 +368,13 @@ async def submit_reassessment(db: AsyncSession, user_id: str, cycle_id: str, exa
     missing = REASSESS_REQUIRED - set(codes)
     if missing:
         raise AppError(422, "REASSESSMENT_INCOMPLETE", f"입력하지 않은 항목이 있습니다: {', '.join(sorted(missing))}")
-    checked = [health_service._check_item(i) for i in items if i["metric_code"] in health_service.METRICS]
+    checked = [health_service._check_item(i) for i in items]
+    freq = next(c for c in checked if c["metric_code"] == "ALCOHOL_FREQ")["value_code"]
+    if freq in health_service.NON_DRINKER and "ALCOHOL_AMOUNT" in codes:
+        raise AppError(422, "HEALTH_ALCOHOL_AMOUNT_NOT_ALLOWED", "술을 마시지 않으면 음주량은 보내지 않습니다.")
 
-    basis = await challenge_repository.get_basis_record(db, user_id, cycle.started_on, cycle.cycle_id)
-    if basis is None:
+    if await challenge_repository.get_basis_record(db, user_id, cycle.started_on, cycle.cycle_id) is None:
         raise AppError(409, "HEALTH_RECORD_REQUIRED", "처음 입력한 건강정보가 없습니다.")
-    prev = await challenge_repository.get_measurement_map(db, basis.health_record_id)
-
     schema = await health_repository.get_active_schema(db)
     if schema is None:
         raise AppError(500, "HEALTH_SCHEMA_NOT_FOUND", "입력 양식 설정이 없습니다. 관리자에게 문의해 주세요.")
@@ -382,35 +383,15 @@ async def submit_reassessment(db: AsyncSession, user_id: str, cycle_id: str, exa
         db, user_id, schema.health_schema_id, "interim_reassessment", exam_date or today_kst(), now
     )
     record.cycle_id = cycle.cycle_id
-
-    # 직전 값 가져오기: 이번에 안 받은 지표 (BMI는 새로 계산)
-    sent = {c["metric_code"] for c in checked}
-    carried = [
-        {"metric_code": m.metric_code, "value_num": m.value_num, "value_code": m.value_code, "unit": m.unit,
-         "input_method": "carried_forward"}
-        for code, m in prev.items() if code not in sent and code != "BMI"
-    ]
-    if "ALCOHOL_AMOUNT" not in sent and "ALCOHOL_FREQ" in sent:
-        # 음주 빈도가 "안 마심"으로 바뀌었으면 예전 음주량을 가져오지 않는다
-        drinks = next(c for c in checked if c["metric_code"] == "ALCOHOL_FREQ")["value_code"]
-        if drinks in ("never_lifetime", "none_past_year"):
-            carried = [c for c in carried if c["metric_code"] != "ALCOHOL_AMOUNT"]
-    all_items = checked + carried
-    bmi = health_service._bmi_item(all_items)
-    if bmi is not None:
-        all_items.append(bmi)
-    created = await health_repository.create_measurements(db, record.health_record_id, record.examination_date,
-                                                           all_items, now)
-    for m, item in zip(created, all_items):
-        if item.get("input_method") == "carried_forward":
-            m.source_measurement_id = prev[item["metric_code"]].measurement_id
+    await health_repository.create_measurements(db, record.health_record_id, record.examination_date, checked, now)
     try:
         await db.commit()
     except IntegrityError:
         await db.rollback()
         raise AppError(409, "HEALTH_RECORD_DUPLICATED", "같은 날짜에 같은 종류의 기록이 이미 있습니다.")
 
-    # 재예측. 모델 하나가 실패해도 결과는 "failed"로 저장되고 비교 화면은 그대로 보여준다
+    # 재예측(interim): 다시 받지 않은 항목(키·콜레스테롤·당뇨·고혈압 진단·가족력)은 예측 서비스가 직전 값으로 채운다
+    # (prediction_job_service._carry_forward). 모델 하나가 실패해도 결과는 "failed"로 저장되고 비교 화면은 그대로 보여준다
     await prediction_job_service.create_job(db, user_id, record.health_record_id, None, "interim")
     return await get_review(db, user_id, cycle_id)
 

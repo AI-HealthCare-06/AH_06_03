@@ -230,7 +230,7 @@ function wireEvents() {
 
 function render() {
   document.getElementById('lede').textContent =
-    `${cycle.cycle_number}번째 사이클 (전체 ${cycle.total_cycles}사이클) · ${cycle.day_number}일째. 목표는 주 단위 횟수이고, 기록은 오늘만 고칠 수 있어요.`;
+    `${cycle.total_cycles * 4}주 중 ${cycle.cycle_number}차 · ${cycle.day_number}일째. 오늘 한 일을 미션별로 기록하세요. 목표는 하루가 아니라 주 단위 횟수이고, 오늘 안에는 언제든 고칠 수 있어요.`;
   document.getElementById('week-strip').innerHTML = weekStripHtml();
   document.getElementById('day-detail').innerHTML = dayDetailHtml();
   document.getElementById('bp-section').innerHTML = bpSectionHtml();
@@ -254,7 +254,7 @@ async function main() {
            <a class="ghost" style="display:block; text-align:center; text-decoration:none; margin-top:8px" href="reassessment.html?cycle=${encodeURIComponent(last.cycle_id)}">4주 변화 다시 보기</a>`
         : `<a class="cta" style="display:block; text-align:center; text-decoration:none" href="reassessment.html?cycle=${encodeURIComponent(last.cycle_id)}">4주 재입력하고 변화 보기</a>`;
       document.getElementById('day-detail').innerHTML =
-        `<div class="callout"><b>${last.cycle_number}번째 사이클 종료 · 달성률 ${Math.round(last.cycle_rate * 100)}%</b><br>${msg}</div>${next}`;
+        `<div class="callout"><b>${last.cycle_number}차 종료 · 달성률 ${Math.round(last.cycle_rate * 100)}%</b><br>${msg}</div>${next}`;
       return;
     }
     location.replace('challenges.html');

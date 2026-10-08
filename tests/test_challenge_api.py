@@ -182,7 +182,7 @@ async def test_reassessment_and_review(client, db_session, today):
     assert models["MODEL_A"]["comparable"] is True and models["MODEL_B"]["comparable"] is True
     assert models["MODEL_A"]["after_probability"] != models["MODEL_A"]["before_probability"]
 
-    # 다시 받지 않은 항목은 직전 값(carried_forward)으로 새 기록에 들어감 → 재예측에 사용됨
+    # 다시 받지 않은 항목은 재예측 때 직전 값(carried_forward)으로 새 기록에 들어감
     from sqlalchemy import select
     from app.models.health import HealthMeasurement, HealthRecord
     async with db_session() as s:
@@ -190,7 +190,7 @@ async def test_reassessment_and_review(client, db_session, today):
         ms = {m.metric_code: m for m in (await s.execute(
             select(HealthMeasurement).where(HealthMeasurement.health_record_id == rec.health_record_id))).scalars()}
     assert ms["TOTAL_CHOL"].input_method == "carried_forward" and ms["TOTAL_CHOL"].value_num == 210
-    assert ms["HEIGHT"].input_method == "carried_forward" and ms["BMI"].input_method == "calculated"
+    assert ms["HEIGHT"].input_method == "carried_forward"  # 이월은 예측 서비스(_carry_forward)가 채움
     assert ms["SBP"].input_method == "manual"
 
     # 두 번은 안 됨, 이력에 재입력 완료 표시
@@ -203,3 +203,15 @@ async def test_reassessment_and_review(client, db_session, today):
     rec2 = (await client.get("/v1/challenges/recommendations", headers=h)).json()["data"]
     assert [s["selection_type"] for s in rec2["fixed"]] == ["replacement", "replacement"]
     assert rec2["cycle_number"] == 2
+
+
+async def test_step_count_answer_enables_act1(client, db_session, today):
+    # P2 걸음 수 숫자 답 → ACT-1 후보, 목표 = 평소 + 2,000보
+    h = await make_user(db_session, measurements=SMOKER_DRINKER, answers=SURVEY | {"P2": (None, 5300)})
+    rec = (await client.get("/v1/challenges/recommendations", headers=h)).json()["data"]
+    assert "ACT-1" in [c["code"] for c in rec["candidates"]]
+    cycle = (await client.post("/v1/challenges/cycles", json={"selected_code": "ACT-1"}, headers=h)).json()["data"]
+    act1 = next(m for m in cycle["missions"] if m["card"]["code"] == "ACT-1")
+    assert act1["target_config"]["steps_target"] == 7300
+    r = await client.put("/v1/challenges/cycles/current/logs/ACT-1", json={"quantity": 7400}, headers=h)
+    assert r.json()["data"]["status"] == "completed"

@@ -150,7 +150,7 @@ function reviewHtml(rv) {
   ${models ? `<p class="sect">예측 결과 변화</p><div class="cmp" style="display:block">${models}</div>
     <p class="note">선별 정보이며 진단이 아니에요.</p>` : ''}
   ${rv.cycle_number < rv.total_cycles
-    ? `<a class="cta" style="display:block; text-align:center; text-decoration:none" href="challenges.html">${rv.cycle_number + 1}번째 사이클 시작하기</a>`
+    ? `<a class="cta" style="display:block; text-align:center; text-decoration:none" href="challenges.html">${rv.cycle_number + 1}차 챌린지 시작하기</a>`
     : `<div class="callout"><b>12주 챌린지를 모두 마쳤어요!</b></div>`}`;
 }
 
@@ -163,7 +163,7 @@ async function main() {
   const lede = document.getElementById('lede');
   const body = document.getElementById('body');
   if (rv.reassessed) {
-    lede.textContent = `${rv.cycle_number}번째 사이클 4주 변화예요.`;
+    lede.textContent = `${rv.cycle_number}차 4주 변화예요.`;
     body.innerHTML = reviewHtml(rv);
     return;
   }
@@ -171,7 +171,7 @@ async function main() {
     lede.textContent = '4주가 끝나면 재입력할 수 있어요.';
     return;
   }
-  lede.textContent = `${rv.cycle_number}번째 사이클 4주가 끝났어요. 지금 상태를 입력하면 처음과 비교해 드려요.`;
+  lede.textContent = `${rv.cycle_number}차 4주가 끝났어요. 지금 상태를 입력하면 처음과 비교해 드려요.`;
   body.innerHTML = formHtml();
   const dfreq = document.getElementById('dfreq');
   dfreq.addEventListener('change', () => {
@@ -185,7 +185,7 @@ async function main() {
     btn.disabled = true; btn.textContent = '저장하는 중...';
     try {
       const res = (await apiCall('POST', `/challenges/cycles/${encodeURIComponent(cycleId)}/reassessment`, { measurements }, '저장하지 못했습니다')).data;
-      lede.textContent = `${res.cycle_number}번째 사이클 4주 변화예요.`;
+      lede.textContent = `${res.cycle_number}차 4주 변화예요.`;
       body.innerHTML = reviewHtml(res);
       window.scrollTo(0, 0);
     } catch (e) {

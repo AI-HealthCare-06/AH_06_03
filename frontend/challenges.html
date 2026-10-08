@@ -36,7 +36,7 @@
   <div class="frame">
     <div class="frame-body">
       <div class="screen">
-        <p class="lede" id="lede">고정 미션 2개와 선택 미션 1개, 한 사이클에 총 3개입니다.</p>
+        <p class="lede" id="lede">미션은 고정 2개와 선택 1개, 모두 3개예요. 고정 미션은 입력하신 정보로 정해져요.</p>
         <div id="err" class="callout" style="display:none"></div>
         <p class="sect" id="fixed-title">고정 미션</p>
         <div id="fixed-list"></div>
@@ -83,17 +83,27 @@ async function main() {
   try { rec = await apiGetChallengeRecommendations(); }
   catch (e) {
     if (e.code === 'HEALTH_RECORD_REQUIRED' || e.code === 'PREDICTION_SEX_REQUIRED') {
-      showError('건강정보를 먼저 입력해 주세요.');
-      document.getElementById('start-btn').textContent = '건강정보 입력하기';
-      document.getElementById('start-btn').disabled = false;
-      document.getElementById('start-btn').onclick = () => { location.href = 'health-info.html'; };
+      document.querySelector('.screen').innerHTML = '<div class="callout"><b>건강정보를 먼저 입력해 주세요</b><br>입력하신 정보로 챌린지를 정해 드려요.</div><a class="cta" style="display:block;text-align:center;text-decoration:none" href="health-info.html">건강정보 입력하기</a>';
       return;
     }
     showError(friendlyError(e)); return;
   }
 
+  if (rec.cycle_number > rec.total_cycles) {
+    document.querySelector('.screen').innerHTML = `<div class="callout"><b>${rec.total_cycles * 4}주 챌린지를 모두 마쳤어요 🎉</b><br>끝까지 해내셨어요.</div>`;
+    return;
+  }
+  // 4주가 끝났는데 재입력 전이면 재입력을 먼저 안내 (다음 차수 추천이 재입력 값으로 바뀜, 가이드 §6.2)
+  try {
+    const last = (await apiListCycles())[0];
+    if (last && ['completed', 'incomplete'].includes(last.status) && !last.reassessed) {
+      document.getElementById('err').style.display = 'block';
+      document.getElementById('err').innerHTML = `<b>${last.cycle_number}차 4주가 끝났어요</b><br>지금 상태를 입력하면 처음과 비교하고, 다음 차수 미션도 바뀐 값으로 골라 드려요. <a href="reassessment.html?cycle=${encodeURIComponent(last.cycle_id)}" style="color:var(--sage-deep); font-weight:700">4주 재입력하기</a>`;
+    }
+  } catch (e) { /* 이력이 없어도 진행 */ }
   document.getElementById('lede').textContent =
-    `${rec.cycle_number}번째 사이클 (전체 ${rec.total_cycles}사이클 · 사이클당 4주). 고정 미션 2개와 선택 미션 1개, 총 3개입니다.`;
+    `${rec.total_cycles * 4}주 챌린지를 4주씩 ${rec.total_cycles}번으로 나눠 해요. 지금은 ${rec.cycle_number}차예요. 미션은 고정 2개와 선택 1개, 모두 3개예요. 고정 미션은 입력하신 정보로 정해져요.`;
+  document.getElementById('start-btn').textContent = `${rec.cycle_number}차 챌린지 시작 (4주)`;
   document.getElementById('notice').textContent = rec.selectable_notice;
 
   document.getElementById('fixed-list').innerHTML = rec.fixed.map(s => s.mission
@@ -138,7 +148,7 @@ async function main() {
   if (rec.excluded.length) {
     const t = document.getElementById('out-title');
     t.style.display = 'block';
-    t.textContent = `이번에 추천하지 않은 미션 ${rec.excluded.length}개`;
+    t.textContent = `추천하지 않은 미션 ${rec.excluded.length}개`;
     document.getElementById('out-list').innerHTML = rec.excluded.map(x =>
       `<div class="slot" data-k="out"><span>—</span><span><div class="st">${esc(x.name)}</div><div class="sd">${esc(x.reason)}</div></span></div>`).join('');
   }
@@ -152,7 +162,7 @@ async function main() {
       location.href = 'challenge-progress.html';
     } catch (e) {
       showError(friendlyError(e));
-      btn.disabled = false; btn.textContent = '4주 챌린지 시작';
+      btn.disabled = false; btn.textContent = `${rec.cycle_number}차 챌린지 시작 (4주)`;
     }
   });
 }

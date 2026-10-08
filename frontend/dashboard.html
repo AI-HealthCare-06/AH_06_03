@@ -117,6 +117,8 @@ const RISK_LABEL = { normal: '정상', borderline: '경계', high: '위험' };
 const cycleNo = cycle ? (cycle.cycleNo || 1) : 1;                 // 12주 = 4주 x 3차
 const cycleDone = cycle && Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(cycle.startedOn + 'T00:00:00')) / 86400000) >= 28;
 let state = (health || pred) ? (cycle ? (cycleDone ? 'redo' : 'active') : 'ready') : 'empty';
+// 4주 재입력은 서버에 저장되는 화면으로 (사이클 번호가 있을 때). 없으면 예전 추이 화면
+const reassessHref = cycle && cycle.cycleId ? `reassessment.html?cycle=${encodeURIComponent(cycle.cycleId)}` : 'trend.html';
 
 const PIO_BODY = `
   <g style="fill:var(--stem)"><ellipse cx="50" cy="76" rx="8" ry="16" transform="rotate(35 50 76)"/><ellipse cx="50" cy="76" rx="8" ry="16" transform="rotate(-35 50 76)"/></g>
@@ -219,14 +221,14 @@ function render() {
     active: ['오늘도 챌린지 실천해 볼까요?', `${cycle ? `${cycleNo}차 · ` + cycle.missions.map(m => m.t).join(' · ') : ''}`, '오늘 챌린지 인증하기', 'challenge-progress.html'],
     ready: ['예측이 끝났어요. 챌린지를 시작해 볼까요?', '결과에 맞는 챌린지를 골라 보세요. 12주를 4주씩 3번으로 나눠 해요.', '4주 챌린지 시작', 'challenges.html'],
     redo: cycleNo >= 3
-      ? ['12주 챌린지를 모두 마쳤어요. 얼마나 달라졌을까요?', '바뀐 항목만 다시 입력하면 같은 모델로 비교해 드려요.', '12주 결과 확인하기', 'trend.html']
-      : [`${cycleNo}차 4주가 끝났어요. 얼마나 달라졌을까요?`, '바뀐 항목만 다시 입력하면 같은 모델로 비교해 드려요.', '4주 결과 확인하기', 'trend.html'],
+      ? ['12주 챌린지를 모두 마쳤어요. 얼마나 달라졌을까요?', '바뀐 항목만 다시 입력하면 같은 모델로 비교해 드려요.', '12주 결과 확인하기', reassessHref]
+      : [`${cycleNo}차 4주가 끝났어요. 얼마나 달라졌을까요?`, '바뀐 항목만 다시 입력하면 같은 모델로 비교해 드려요.', '4주 결과 확인하기', reassessHref],
   }[state];
 
   let body = `<div class="hero"><h1>${H[0]}</h1><p>${H[1]}</p></div>`;
   if (state !== 'active' && state !== 'ready') {
     body += `<a class="cta" style="display:block;text-align:center;text-decoration:none" href="${H[3]}">${H[2]}</a>`;
-    if (state === 'redo' && cycle && cycleNo < 3) body += `<a class="ghost" style="display:block;text-align:center;text-decoration:none" href="challenges.html">다음 4주 챌린지 시작 (${cycleNo + 1}차)</a>`;
+    if (state === 'redo' && cycle && cycleNo < 3 && !cycle.cycleId) body += `<a class="ghost" style="display:block;text-align:center;text-decoration:none" href="challenges.html">다음 4주 챌린지 시작 (${cycleNo + 1}차)</a>`;
   }
 
   if (state !== 'empty' && pred) {

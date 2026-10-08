@@ -84,7 +84,8 @@ async def make_user(Session, *, sex="male", birth=date(1981, 3, 1), measurements
                     exam=date(2026, 10, 8)) -> dict:
     """회원 + 건강기록 + (선택) 설문 답안지를 만들고 인증 헤더를 돌려준다.
     measurements: {"SMOKING": "current", "HEIGHT": 175, ...}
-    answers: {"N0": ("o30", 30), "P1": ("none", None), ...}  질문 코드 → (보기 코드, 점수)"""
+    answers: {"N0": ("o30", 30), "P1": ("none", None), "P2": (None, 5000), ...}
+    질문 코드 → (보기 코드, 점수). 보기 코드가 None이면 숫자 답(점수 자리에 값)"""
     now = datetime(2026, 10, 8, 9, 0)
     async with Session() as s:
         user = User(email=f"{id(measurements)}@test.kr", password_hash="x", status="active")
@@ -110,9 +111,14 @@ async def make_user(Session, *, sex="male", birth=date(1981, 3, 1), measurements
             await s.flush()
             for i, (q_code, (o_code, score)) in enumerate(answers.items(), start=1):
                 q = SurveyQuestion(survey_version_id=ver.survey_version_id, question_code=q_code,
-                                   question_text=q_code, display_order=i, required=False)
+                                   question_text=q_code, display_order=i, required=False,
+                                   answer_type="number" if o_code is None else "single_select")
                 s.add(q)
                 await s.flush()
+                if o_code is None:  # 숫자 답 (P2 걸음 수): 보기 없이 value_num
+                    s.add(SurveyResponse(survey_instance_id=inst.survey_instance_id, question_id=q.question_id,
+                                         value_num=score, created_at=now))
+                    continue
                 o = SurveyOption(question_id=q.question_id, option_code=o_code, option_text=o_code,
                                  numeric_score=score, display_order=1)
                 s.add(o)

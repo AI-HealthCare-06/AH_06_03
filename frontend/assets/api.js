@@ -551,14 +551,21 @@ async function apiGetChallengeRecommendations() {
 }
 
 // 진행 중인 사이클. 없으면 null.
+// 진행 중이 없더라도 방금 4주가 끝났고 4주 재입력 전이면 그 사이클을 저장해 둔다 (대시보드 "4주 완료" → 재입력 안내)
 async function apiGetCurrentCycle() {
   try {
     const cycle = (await apiCall('GET', '/challenges/cycles/current', undefined, '챌린지를 불러오지 못했습니다')).data;
     cacheCycle(cycle);
     return cycle;
   } catch (e) {
-    if (e.code === 'CHALLENGE_CYCLE_NOT_FOUND') { cacheCycle(null); return null; }
-    throw e;
+    if (e.code !== 'CHALLENGE_CYCLE_NOT_FOUND') throw e;
+    const last = (await apiListCycles())[0];
+    if (last && ['completed', 'incomplete'].includes(last.status) && !last.reassessed) {
+      cacheCycle((await apiCall('GET', `/challenges/cycles/${encodeURIComponent(last.cycle_id)}`, undefined, '챌린지를 불러오지 못했습니다')).data);
+    } else {
+      cacheCycle(null);
+    }
+    return null;
   }
 }
 
@@ -600,18 +607,19 @@ function cacheCycle(cycle) {
     }
     const start = new Date(cycle.started_on + 'T00:00:00');
     const idxOf = (d) => Math.round((new Date(d + 'T00:00:00') - start) / 86400000);
-    const missionLog = {};
+    const missionLog = {};  // { 날짜번호: [완료한 미션 코드] }
+    const logs = {};        // { 날짜번호: { 미션 코드: { status, quantity, limit_exceeded } } } — 마이페이지·캘린더가 읽는 형식
     cycle.missions.forEach(m => m.logs.forEach(l => {
-      if (l.status !== 'completed') return;
       const i = idxOf(l.log_date);
-      (missionLog[i] = missionLog[i] || []).push(m.card.code);
+      (logs[i] = logs[i] || {})[m.card.code] = { status: l.status, quantity: l.quantity, limit_exceeded: l.limit_exceeded };
+      if (l.status === 'completed') (missionLog[i] = missionLog[i] || []).push(m.card.code);
     }));
     const days = Object.keys(missionLog).map(Number).filter(i => missionLog[i].length === cycle.missions.length);
     localStorage.setItem('paeon-cycle', JSON.stringify({
-      cycleId: cycle.cycle_id, cycleNumber: cycle.cycle_number, startedOn: cycle.started_on,
+      cycleId: cycle.cycle_id, cycleNo: cycle.cycle_number, status: cycle.status, startedOn: cycle.started_on,
       missions: cycle.missions.map(m => ({ id: m.card.code, t: m.card.name, lv: LEVEL_LABEL[m.card.difficulty], cat: m.card.category })),
     }));
-    localStorage.setItem('paeon-progress', JSON.stringify({ days, missionLog, bpLog }));
+    localStorage.setItem('paeon-progress', JSON.stringify({ days, missionLog, logs, bpLog }));
   } catch (e) { /* 저장 공간을 못 쓰면 화면은 서버 값으로만 그린다 */ }
 }
 

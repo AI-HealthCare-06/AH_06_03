@@ -42,16 +42,19 @@ async def get_measurement_map(db: AsyncSession, health_record_id: str) -> dict[s
     return {m.metric_code: m for m in result.scalars().all()}
 
 
-async def get_survey_answers(db: AsyncSession, survey_instance_id: str) -> dict[str, tuple[str, float | None]]:
-    """답안지의 답을 {질문 코드: (보기 코드, 점수)}로 꺼낸다."""
+async def get_survey_answers(
+    db: AsyncSession, survey_instance_id: str
+) -> dict[str, tuple[str | None, float | None, float | None]]:
+    """답안지의 답을 {질문 코드: (보기 코드, 점수, 숫자 답)}로 꺼낸다. 숫자 답(P2 걸음 수)은 보기가 없다."""
     result = await db.execute(
-        select(SurveyQuestion.question_code, SurveyOption.option_code, SurveyOption.numeric_score)
+        select(SurveyQuestion.question_code, SurveyOption.option_code, SurveyOption.numeric_score,
+               SurveyResponse.value_num)
         .select_from(SurveyResponse)
         .join(SurveyQuestion, SurveyQuestion.question_id == SurveyResponse.question_id)
-        .join(SurveyOption, SurveyOption.option_id == SurveyResponse.option_id)
+        .outerjoin(SurveyOption, SurveyOption.option_id == SurveyResponse.option_id)
         .where(SurveyResponse.survey_instance_id == survey_instance_id)
     )
-    return {q: (o, s) for q, o, s in result.all()}
+    return {q: (o, s, v) for q, o, s, v in result.all()}
 
 
 async def get_active_cycle(db: AsyncSession, user_id: str) -> ChallengeCycle | None:
