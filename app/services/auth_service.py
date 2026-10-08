@@ -16,6 +16,7 @@ from app.core.security import (
     verify_password,
 )
 from app.repositories import user_repository
+from app.services import consent_service
 from app.schemas.auth import SignupResult, TokenResult, MeResult
 
 
@@ -48,6 +49,7 @@ async def signup(
 
     try:
         user = await user_repository.create_user_with_profile(db, email, hash_password(password), birth_date)
+        await consent_service.record_signup_consents(db, user.user_id)   # 가입 화면의 필수 동의 체크 기록
         await db.commit()
     except IntegrityError:
         await db.rollback()

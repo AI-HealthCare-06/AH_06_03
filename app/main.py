@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from starlette.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.apis.health import router as health_router
@@ -8,6 +8,7 @@ from app.apis.survey import router as survey_router
 from app.apis.prediction_job import router as prediction_job_router
 from app.apis.account import router as account_router
 from app.apis.calendar import router as calendar_router
+from app.apis.consent import require_health_consent, router as consent_router
 
 
 from app.apis.prediction import router as prediction_router
@@ -34,13 +35,14 @@ app.add_middleware(
 )
 
 
-app.include_router(prediction_router, prefix="/v1")
+app.include_router(prediction_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.include_router(auth_router,prefix="/v1")
-app.include_router(health_router, prefix="/v1")
-app.include_router(survey_router, prefix="/v1") 
-app.include_router(prediction_job_router,prefix="/v1")
+app.include_router(health_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
+app.include_router(survey_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
+app.include_router(prediction_job_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.include_router(calendar_router, prefix="/v1")
 app.include_router(account_router, prefix="/v1")
+app.include_router(consent_router, prefix="/v1")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.mount("/media", StaticFiles(directory=BASE_DIR / "media"), name="media")
 

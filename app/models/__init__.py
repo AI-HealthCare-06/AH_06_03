@@ -6,3 +6,4 @@ from app.models.survey import SurveyInstance, SurveyOption, SurveyQuestion, Surv
 from app.models.prediction import Prediction, PredictionFactor, PredictionJob  # noqa: F401
 from app.models.calendar import CalendarEntry, HealthTodo  # noqa: F401
 from app.models.deletion import AccountDeletionRequest  # noqa: F401
+from app.models.consent import ConsentPolicy, UserConsent  # noqa: F401
