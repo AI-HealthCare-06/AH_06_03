@@ -106,13 +106,30 @@ async def get_answers_for_model(db: AsyncSession, survey_instance_id: str) -> di
     return {q_code: model_value for q_code, model_value in result.all()}
 
 
-async def get_latest_submitted(db: AsyncSession, user_id: str) -> SurveyInstance | None:
-    """📋 이 사람이 가장 최근에 제출한 답안지."""
+async def get_latest_submitted(db: AsyncSession, user_id: str, survey_type: str | None = None) -> SurveyInstance | None:
+    """📋 이 사람이 가장 최근에 제출한 답안지 (survey_type을 주면 그 종류만)."""
+    query = select(SurveyInstance).where(SurveyInstance.user_id == user_id)
+    if survey_type:
+        query = query.join(SurveyVersion, SurveyVersion.survey_version_id == SurveyInstance.survey_version_id).where(
+            SurveyVersion.survey_type == survey_type
+        )
     result = await db.execute(
-        select(SurveyInstance)
-        .where(SurveyInstance.user_id == user_id)
+        query
         .where(SurveyInstance.status == "submitted")
         .order_by(SurveyInstance.submitted_at.desc())
         .limit(1)
     )
     return result.scalar_one_or_none()
+
+
+async def get_responses_with_codes(db: AsyncSession, survey_instance_id: str) -> list[tuple]:
+    """✔️ 답안지의 답을 (질문 번호, 질문 이름, 보기 번호, 보기 이름, 숫자 답)으로. 숫자 문항(걸음 수)은 보기가 없다."""
+    result = await db.execute(
+        select(SurveyQuestion.question_id, SurveyQuestion.question_code, SurveyOption.option_id, SurveyOption.option_code, SurveyResponse.value_num)
+        .select_from(SurveyResponse)
+        .join(SurveyQuestion, SurveyQuestion.question_id == SurveyResponse.question_id)
+        .outerjoin(SurveyOption, SurveyOption.option_id == SurveyResponse.option_id)
+        .where(SurveyResponse.survey_instance_id == survey_instance_id)
+        .order_by(SurveyQuestion.display_order)
+    )
+    return list(result.all())

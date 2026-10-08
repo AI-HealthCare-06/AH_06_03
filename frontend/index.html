@@ -7,6 +7,20 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
+<style>
+  .home-actions{max-width:340px; margin:0 auto; width:100%; display:flex; flex-direction:column; gap:10px; align-items:stretch}
+  .home-actions .cta,.home-actions .home-login{display:block; text-align:center; text-decoration:none; box-sizing:border-box}
+  .home-actions .hint{text-align:center}
+  .home-login{border-width:2px}
+  .how{max-width:560px; margin:6px auto 0; width:100%}
+  .how-title{font-size:13px; font-weight:700; text-align:center; margin-bottom:10px; color:var(--muted)}
+  .steps{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+  .step{display:flex; flex-direction:column; gap:8px; background:#fff; border:1.5px solid var(--sage-light); border-radius:18px; padding:14px 14px 16px}
+  .step-no{width:24px; height:24px; border-radius:999px; background:var(--sage-deep); color:#fff; font-size:12.5px; font-weight:700; display:inline-flex; align-items:center; justify-content:center}
+  .step b{font-size:13.5px}
+  .step p{font-size:12px; color:var(--muted); margin-top:4px; line-height:1.55}
+  @media (max-width:760px){ .steps{grid-template-columns:1fr} .step{flex-direction:row; align-items:flex-start} }
+</style>
 </head>
 <body>
 
@@ -19,20 +33,34 @@
         <div class="hero-w01">
           <h2>파이온 PAEON</h2>
           <p class="headline">검진 결과지의 "주의", 그래서 뭘 해야 하나요?</p>
-          <p class="lede">입력 → 위험 예측 → 챌린지 → 4주 재평가까지</p>
+          <p class="lede">입력 → 위험 예측 → 12주 챌린지(4주마다 점검)까지</p>
         </div>
 
-        <div style="max-width:340px; margin:0 auto; width:100%">
-          <a class="cta" style="display:block; text-align:center; text-decoration:none; box-sizing:border-box" href="signup.html">
-            내 위험도 확인하기 · 무료
-          </a>
-          <p class="hint" style="text-align:center; margin-top:10px">이미 계정이 있으신가요? <a href="login.html" style="color:var(--muted); font-weight:700; text-decoration:underline">로그인</a></p>
+        <div class="home-actions">
+          <a class="cta" href="signup.html">내 위험도 확인하기 · 무료</a>
+          <a class="ghost home-login" id="home-login" href="login.html">이미 계정이 있어요 · 로그인</a>
+          <p class="hint">가입은 이메일·비밀번호·생년월일이면 돼요</p>
         </div>
 
-        <div class="trio">
-          <div class="opt"><span>📋</span>1 · 건강정보 입력</div>
-          <div class="opt"><span>🔎</span>2 · 위험 요인 확인</div>
-          <div class="opt"><span>🌱</span>3 · 챌린지로 관리</div>
+        <div class="how">
+          <p class="how-title">이렇게 진행돼요</p>
+          <ol class="steps">
+            <li class="step">
+              <span class="step-no">1</span>
+              <div><b>📋 건강정보 입력</b>
+                <p>검진 결과지를 보면서 혈압, 키·몸무게, 허리둘레, 콜레스테롤과 흡연·음주 습관을 입력해요.</p></div>
+            </li>
+            <li class="step">
+              <span class="step-no">2</span>
+              <div><b>🔎 위험 요인 확인</b>
+                <p>10년 내 관상동맥질환 위험 범주와 혈관 나이, 점수에 영향을 준 요인을 보여 줘요.</p></div>
+            </li>
+            <li class="step">
+              <span class="step-no">3</span>
+              <div><b>🌱 챌린지로 관리</b>
+                <p>나트륨 줄이기, 걷기 같은 챌린지를 12주 동안 해요. 4주씩 세 번으로 나눠 하고, 매주 혈압을 기록하면 4주마다 변화를 비교해 드려요.</p></div>
+            </li>
+          </ol>
         </div>
 
         <p class="tip" style="text-align:center">진단이 아닌 선별 정보입니다</p>
@@ -42,5 +70,15 @@
 </div>
 
 <script src="assets/common.js"></script>
+<script>
+// 이미 로그인한 사람은 "로그인" 대신 대시보드로 바로 이어서 가기
+try {
+  if (localStorage.getItem('paeon-access-token')) {
+    const a = document.getElementById('home-login');
+    a.href = 'dashboard.html';
+    a.textContent = '이어서 하기 · 내 대시보드로';
+  }
+} catch (e) {}
+</script>
 </body>
 </html>

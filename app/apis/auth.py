@@ -46,7 +46,7 @@ async def update_me(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(async_get_db),
 ):
-    return DataResponse(data=await auth_service.update_me(db, user_id, req.sex))
+    return DataResponse(data=await auth_service.update_me(db, user_id, req.sex, req.birth_date))
 
 @router.post("/auth/token/refresh", response_model=DataResponse[TokenResult])
 async def refresh(req: RefreshRequest, db: AsyncSession = Depends(async_get_db)):

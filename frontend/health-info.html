@@ -20,6 +20,11 @@
   #ocr-card .sect{margin:0}
   #ocr-result .callout{margin-top:4px}
 </style>
+<style>
+  .cupguide{width:100%; border-collapse:collapse; margin-top:6px; font-size:11.5px; color:var(--muted)}
+  .cupguide th,.cupguide td{border:1px solid var(--sage-light); padding:4px 8px; text-align:left; vertical-align:top}
+  .cupguide th{background:var(--cream); color:var(--ink); font-weight:700}
+</style>
 </head>
 <body>
 
@@ -86,31 +91,40 @@
               <div class="field"></div>
 
               <div class="field">
-                <label for="smoking">흡연 상태</label>
+                <label for="smoking">현재 일반담배(궐련)를 피우십니까?</label>
                 <select id="smoking" required>
                   <option value="">선택</option>
+                  <option value="current_daily">매일 피움</option>
+                  <option value="current_sometimes">가끔 피움</option>
+                  <option value="former">과거엔 피웠으나, 현재 피우지 않음</option>
                   <option value="never">피운 적 없음</option>
-                  <option value="former">과거엔 피웠으나 지금은 안 피움</option>
-                  <option value="current">현재 피움 (매일 또는 가끔)</option>
                 </select>
               </div>
-              <div class="field"></div>
+              <div class="field">
+                <label for="ecig">현재 전자담배(궐련형 또는 액상형)를 사용하십니까?</label>
+                <select id="ecig" required>
+                  <option value="">선택</option>
+                  <option value="daily">매일 사용</option>
+                  <option value="occasional">가끔 사용</option>
+                  <option value="none">사용 안 함</option>
+                </select>
+              </div>
 
               <div class="field">
-                <label for="drink-freq">음주 빈도</label>
+                <label for="drink-freq">최근 1년 동안 술을 얼마나 자주 마십니까?</label>
                 <select id="drink-freq" required>
                   <option value="">선택</option>
                   <option value="never_lifetime">평생 술을 마셔 본 적 없음</option>
-                  <option value="none_past_year">최근 1년간 전혀 마시지 않음</option>
+                  <option value="none_past_year">최근 1년간 전혀 마시지 않았다</option>
                   <option value="lt_monthly">한 달에 1번 미만</option>
                   <option value="monthly">한 달에 1번 정도</option>
                   <option value="2_4_per_month">한 달에 2–4번</option>
-                  <option value="2_3_per_week">일주일에 2–3번</option>
+                  <option value="2_3_per_week">일주일에 2–3번 정도</option>
                   <option value="4plus_per_week">일주일에 4번 이상</option>
                 </select>
               </div>
               <div class="field" id="drink-amount-field" style="display:none">
-                <label for="drink-amount">한 번 음주량</label>
+                <label for="drink-amount">한 번에 술을 얼마나 마십니까?</label>
                 <select id="drink-amount">
                   <option value="1_2">1–2잔</option>
                   <option value="3_4">3–4잔</option>
@@ -118,7 +132,18 @@
                   <option value="7_9">7–9잔</option>
                   <option value="10plus">10잔 이상</option>
                 </select>
-                <p class="hint" style="margin-top:4px">술잔 기준으로 세요. 소주 1병 = 7잔, 캔맥주 1개 = 1.5잔이에요.</p>
+                <p class="hint" style="margin-top:6px">소주·양주 구분 없이 각각의 술잔으로 세어 주세요.</p>
+                <table class="cupguide">
+                  <thead><tr><th>술</th><th>1잔</th><th>병·캔으로 셀 때</th></tr></thead>
+                  <tbody>
+                    <tr><td>소주</td><td>소주잔 1잔</td><td>1병(360ml) = 7잔</td></tr>
+                    <tr><td>맥주</td><td>맥주잔 1잔</td><td>캔 355ml = 1.5잔 · 500ml(캔·병·생맥주 500cc) = 2잔</td></tr>
+                    <tr><td>와인</td><td>와인잔 1잔</td><td>1병(750ml) = 5잔</td></tr>
+                    <tr><td>막걸리</td><td>막걸리 사발 1잔</td><td>1병(750ml) = 3잔</td></tr>
+                    <tr><td>양주</td><td>양주잔 1잔</td><td></td></tr>
+                    <tr><td>소맥</td><td colspan="2">맥주잔 1잔 = 1잔</td></tr>
+                  </tbody>
+                </table>
               </div>
 
               <div class="field">
@@ -207,6 +232,10 @@ drinkFreqSelect.addEventListener('change', () => {
   document.getElementById('drink-amount').required = isDrinker;
 });
 
+// 흡연: 화면은 4지선다(매일/가끔 구분), 서버·모델에는 SMOKING = current/former/never만 보낸다
+const smokingValue = (ui) => (ui.startsWith('current') ? 'current' : ui);
+const smokingUi = (h) => (h.smoking === 'current' ? (h.smoking_freq === 'sometimes' ? 'current_sometimes' : 'current_daily') : h.smoking);
+
 function showError(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
 function clearError() { errEl.style.display = 'none'; }
 
@@ -252,8 +281,9 @@ function renderSummary(health) {
     ['키 / 몸무게', `${health.height_cm}cm / ${health.weight_kg}kg`],
     ['혈압', `${health.sbp}/${health.dbp} mmHg`],
     ['허리둘레', `${health.waist_cm}cm`],
-    ['흡연 상태', optionLabel('smoking', health.smoking)],
-    ['음주 빈도', optionLabel('drink-freq', health.drink_freq)],
+    ['일반담배', optionLabel('smoking', smokingUi(health))],
+    ['전자담배', health.ecig ? optionLabel('ecig', health.ecig) : '입력 안 함'],
+    ['음주 빈도(최근 1년)', optionLabel('drink-freq', health.drink_freq)],
   ];
   if (health.drink_amount) rows.push(['한 번 음주량', optionLabel('drink-amount', health.drink_amount)]);
   rows.push(
@@ -283,7 +313,8 @@ function fillForm(health) {
   document.getElementById('sbp').value = health.sbp;
   document.getElementById('dbp').value = health.dbp;
   document.getElementById('waist').value = health.waist_cm;
-  document.getElementById('smoking').value = health.smoking;
+  document.getElementById('smoking').value = smokingUi(health);
+  document.getElementById('ecig').value = health.ecig || '';
   drinkFreqSelect.value = health.drink_freq;
   drinkFreqSelect.dispatchEvent(new Event('change'));
   if (health.drink_amount) document.getElementById('drink-amount').value = health.drink_amount;
@@ -326,7 +357,9 @@ form.addEventListener('submit', async (event) => {
     waist_cm: Number(document.getElementById('waist').value),
     sbp: Number(document.getElementById('sbp').value),
     dbp: Number(document.getElementById('dbp').value),
-    smoking: document.getElementById('smoking').value,
+    smoking: smokingValue(document.getElementById('smoking').value),
+    smoking_freq: document.getElementById('smoking').value === 'current_sometimes' ? 'sometimes' : (document.getElementById('smoking').value === 'current_daily' ? 'daily' : null),
+    ecig: document.getElementById('ecig').value,
     drink_freq: drinkFreqSelect.value,
     drink_amount: drinkAmountField.style.display === 'none' ? null : document.getElementById('drink-amount').value,
     diabetes: document.getElementById('diabetes').value === 'true',

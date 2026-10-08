@@ -7,6 +7,7 @@ from app.core.db.databases import async_get_db
 from app.schemas.common import DataResponse
 from app.schemas.health import (
     HealthRecordCreateRequest,
+    HealthRecordDetail,
     HealthRecordResult,
     MeasurementResult,
     MeasurementsCreateRequest,
@@ -47,3 +48,21 @@ async def list_records(
     db: AsyncSession = Depends(async_get_db),
 ):
     return DataResponse(data=await health_service.list_records(db, user_id))
+
+
+# 주의: /latest는 /{health_record_id}보다 먼저 선언해야 "latest"가 번호로 읽히지 않는다.
+@router.get("/health/records/latest", response_model=DataResponse[HealthRecordDetail])
+async def get_latest_record(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(async_get_db),
+):
+    return DataResponse(data=await health_service.get_latest_record_detail(db, user_id))
+
+
+@router.get("/health/records/{health_record_id}", response_model=DataResponse[HealthRecordDetail])
+async def get_record(
+    health_record_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(async_get_db),
+):
+    return DataResponse(data=await health_service.get_record_detail(db, user_id, health_record_id))
