@@ -47,10 +47,17 @@ class MeResult(BaseModel):
     birth_date: date
 
 class ProfileUpdateRequest(BaseModel):
-    """내 프로필 고치기 신청서 (W04에서 성별 입력)."""
+    """내 프로필 고치기 신청서 (성별·생년월일, 보낸 것만 바뀜)."""
     model_config = ConfigDict(extra="forbid")
 
-    sex: Literal["male", "female"]
+    sex: Literal["male", "female"] | None = None
+    birth_date: date | None = None
+
+    @model_validator(mode="after")
+    def check_not_empty(self) -> "ProfileUpdateRequest":
+        if self.sex is None and self.birth_date is None:
+            raise ValueError("고칠 값(sex 또는 birth_date)을 보내 주세요.")
+        return self
 
 class RefreshRequest(BaseModel):
     """🎟️ 쿠폰 신청서 (재발급·로그아웃에서 같이 씀)."""

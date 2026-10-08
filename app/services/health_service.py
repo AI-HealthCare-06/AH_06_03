@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import AppError
 from app.core.security import utcnow
 from app.repositories import health_repository
-from app.schemas.health import HealthRecordResult, MeasurementResult
+from app.schemas.health import HealthRecordDetail, HealthRecordResult, MeasurementResult
 
 # 정해진 지표 이름 (ERD v9, 모델_연결_명세 §1.2)
 # "num" = 재는 값 (value_num, 단위 필요) / "code" = 고르는 값 (value_code, 정해진 보기 중 하나)
@@ -166,3 +166,33 @@ async def list_records(db: AsyncSession, user_id: str) -> list[HealthRecordResul
         )
         for r in records
     ]
+
+def _detail(record, measurements) -> HealthRecordDetail:
+    return HealthRecordDetail(
+        health_record_id=record.health_record_id,
+        input_type=record.input_type,
+        examination_date=record.examination_date,
+        measurements=[
+            MeasurementResult(
+                measurement_id=m.measurement_id,
+                metric_code=m.metric_code,
+                value_num=m.value_num,
+                value_code=m.value_code,
+                unit=m.unit,
+                input_method=m.input_method,
+            )
+            for m in measurements
+        ],
+    )
+
+async def get_record_detail(db: AsyncSession, user_id: str, health_record_id: str) -> HealthRecordDetail:
+    """내 건강기록 한 건과 측정값. 남의 것이거나 없으면 404."""
+    record = await _get_my_record(db, user_id, health_record_id)
+    return _detail(record, await health_repository.get_measurements(db, record.health_record_id))
+
+async def get_latest_record_detail(db: AsyncSession, user_id: str) -> HealthRecordDetail:
+    """가장 최근 건강기록 + 측정값 (재로그인 복원용). 하나도 없으면 404."""
+    records = await health_repository.get_records_by_user(db, user_id, limit=1)
+    if not records:
+        raise AppError(404, "HEALTH_RECORD_NOT_FOUND", "건강기록을 찾을 수 없습니다.")
+    return _detail(records[0], await health_repository.get_measurements(db, records[0].health_record_id))

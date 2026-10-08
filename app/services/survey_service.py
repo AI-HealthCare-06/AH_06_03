@@ -4,7 +4,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import AppError
 from app.core.security import utcnow
 from app.repositories import health_repository, survey_repository
-from app.schemas.survey import OptionResult, QuestionResult, SurveyResult, SurveyInstanceResult
+from app.schemas.survey import (
+    OptionResult,
+    QuestionResult,
+    SurveyAnswerResult,
+    SurveyInstanceDetail,
+    SurveyInstanceResult,
+    SurveyResult,
+)
 
 
 async def get_active_survey(db: AsyncSession, survey_type: str) -> SurveyResult:
@@ -142,3 +149,32 @@ async def submit_survey(db: AsyncSession, user_id: str, survey_instance_id: str)
         survey_version_id=instance.survey_version_id,
         status=instance.status,
     )
+
+async def _instance_detail(db: AsyncSession, instance) -> SurveyInstanceDetail:
+    version = await survey_repository.get_version(db, instance.survey_version_id)
+    rows = await survey_repository.get_responses_with_codes(db, instance.survey_instance_id)
+    return SurveyInstanceDetail(
+        survey_instance_id=instance.survey_instance_id,
+        survey_version_id=instance.survey_version_id,
+        survey_type=version.survey_type,
+        version=version.version,
+        status=instance.status,
+        responses=[
+            SurveyAnswerResult(question_id=q_id, question_code=q_code, option_id=o_id, option_code=o_code, value_num=v)
+            for q_id, q_code, o_id, o_code, v in rows
+        ],
+    )
+
+async def get_instance_detail(db: AsyncSession, user_id: str, survey_instance_id: str) -> SurveyInstanceDetail:
+    """내 답안지 한 장과 답. 남의 것이거나 없으면 404."""
+    instance = await survey_repository.get_instance(db, survey_instance_id)
+    if instance is None or instance.user_id != user_id:
+        raise AppError(404, "SURVEY_INSTANCE_NOT_FOUND", "설문 답안지를 찾을 수 없습니다.")
+    return await _instance_detail(db, instance)
+
+async def get_latest_instance_detail(db: AsyncSession, user_id: str, survey_type: str | None = None) -> SurveyInstanceDetail:
+    """가장 최근에 제출한 답안지 (재로그인 복원용, survey_type으로 종류 지정 가능). 없으면 404."""
+    instance = await survey_repository.get_latest_submitted(db, user_id, survey_type)
+    if instance is None:
+        raise AppError(404, "SURVEY_INSTANCE_NOT_FOUND", "설문 답안지를 찾을 수 없습니다.")
+    return await _instance_detail(db, instance)

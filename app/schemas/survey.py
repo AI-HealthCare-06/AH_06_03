@@ -64,3 +64,22 @@ class ResponsesRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     responses: list[ResponseItem] = Field(min_length=1)
+
+
+class SurveyAnswerResult(BaseModel):
+    """✔️ 답 하나를 코드로 풀어서."""
+    question_id: str
+    question_code: str
+    option_id: str | None = None
+    option_code: str | None = None
+    value_num: float | None = None
+
+
+class SurveyInstanceDetail(BaseModel):
+    """📋 답안지 상세: 상태 + 답 전부 (재로그인 복원용)."""
+    survey_instance_id: str
+    survey_version_id: str
+    survey_type: str
+    version: str
+    status: str
+    responses: list[SurveyAnswerResult]
