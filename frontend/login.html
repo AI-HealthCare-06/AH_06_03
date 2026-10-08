@@ -63,7 +63,8 @@ form.addEventListener('submit', async (event) => {
       localStorage.setItem('paeon-profile', JSON.stringify({ email }));
     }
     await apiSyncAfterLogin();
-    window.location.href = 'dashboard.html';
+    // 처음 가입한 사람은 대상 확인부터 시작한다 (이미 한 사람은 서버에서 복원돼 바로 대시보드로)
+    window.location.href = localStorage.getItem('paeon-eligibility') ? 'dashboard.html' : 'eligibility.html';
   } catch (e) {
     errEl.textContent = friendlyError(e);
     errEl.style.display = 'block';

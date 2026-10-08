@@ -58,3 +58,9 @@ button{font:inherit; cursor:pointer}
 .hero-w01 .headline{font-size:19px; font-weight:700; margin:16px 0 4px}
 .trio{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; text-align:left; margin-top:6px}
 .trio .opt{display:flex; align-items:center; gap:8px; border-radius:16px; border:1.5px solid var(--sage-light); background:#fff; padding:8px 14px; font-size:13px; font-weight:600}
+
+/* 비밀번호 보기 버튼 */
+.pw-wrap{position:relative; display:flex}
+.pw-wrap input{padding-right:62px}
+.pw-toggle{position:absolute; right:8px; top:50%; transform:translateY(-50%); border:0; background:none; color:var(--muted); font:inherit; font-size:12px; font-weight:700; cursor:pointer; padding:4px 6px}
+

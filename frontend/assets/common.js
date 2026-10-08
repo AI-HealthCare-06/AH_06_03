@@ -42,7 +42,7 @@ const NAV_ITEMS = [
   { icon: '📝', label: '내 기록', href: 'trend.html', pages: ['trend.html'] },
   { icon: '👤', label: '마이페이지', href: 'mypage.html', pages: ['mypage.html'] },
 ];
-const NO_NAV_PAGES = ['index.html', 'signup.html', 'login.html', 'guardian-consent.html', 'eligibility.html'];
+const NO_NAV_PAGES = ['index.html', 'signup.html', 'login.html', 'eligibility.html', 'privacy.html'];
 
 function renderNav(){
   const body = document.querySelector('.frame-body');
@@ -62,4 +62,28 @@ function renderNav(){
   body.appendChild(shell);
 }
 
-document.addEventListener('DOMContentLoaded', () => { renderHeader(); renderNav(); });
+// 비밀번호 칸 오른쪽에 "보기" 버튼을 붙인다. 나중에 그려지는 칸은 addPasswordToggles(그 영역)를 다시 부른다.
+function addPasswordToggles(root = document) {
+  root.querySelectorAll('input[type=password]').forEach(input => {
+    if (input.dataset.pwToggle) return;
+    input.dataset.pwToggle = '1';
+    const wrap = document.createElement('div');
+    wrap.className = 'pw-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pw-toggle';
+    btn.textContent = '보기';
+    btn.setAttribute('aria-label', '비밀번호 보기');
+    btn.addEventListener('click', () => {
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.textContent = show ? '숨기기' : '보기';
+      btn.setAttribute('aria-label', show ? '비밀번호 숨기기' : '비밀번호 보기');
+    });
+    wrap.appendChild(btn);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => { renderHeader(); renderNav(); addPasswordToggles(); });

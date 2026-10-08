@@ -10,19 +10,13 @@ const SEND_ECIG = false; // 혜림님이 ECIG 지표를 열면 true
 
 function friendlyError(e) { return e instanceof TypeError ? '서버 연결에 실패했어요. 잠시 후 다시 시도해주세요.' : e.message; }
 
-// opts.guardian = { name, relation, contact } — 만 14세 미만만. relation은 "parent" | "legal_guardian".
 async function apiSignup(email, password, birthDate, opts = {}) {
   if (USE_MOCK_AUTH || opts.forceMock) {
-    console.log('[MOCK] apiSignup', { email, birthDate, guardian: opts.guardian, forceMock: !!opts.forceMock });
+    console.log('[MOCK] apiSignup', { email, birthDate, forceMock: !!opts.forceMock });
     await sleep(400);
-    return { data: { user_id: 'mock-user-1', guardian_verification_status: opts.guardian ? 'pending' : null } };
+    return { data: { user_id: 'mock-user-1' } };
   }
   const payload = { email, password, birth_date: birthDate };
-  if (opts.guardian) {
-    payload.guardian_name = opts.guardian.name;
-    payload.guardian_relation = opts.guardian.relation;
-    payload.guardian_contact = opts.guardian.contact;
-  }
   const res = await fetch(`${API_BASE}/auth/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
