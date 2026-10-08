@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.apis.health import router as health_router
 from app.apis.survey import router as survey_router
 from app.apis.prediction_job import router as prediction_job_router
+from app.apis.calendar import router as calendar_router
 
 
 from app.apis.prediction import router as prediction_router
@@ -37,6 +38,7 @@ app.include_router(auth_router,prefix="/v1")
 app.include_router(health_router, prefix="/v1")
 app.include_router(survey_router, prefix="/v1") 
 app.include_router(prediction_job_router,prefix="/v1")
+app.include_router(calendar_router, prefix="/v1")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.mount("/media", StaticFiles(directory=BASE_DIR / "media"), name="media")
 
