@@ -37,12 +37,12 @@
 <script>
 let me = null;
 const SEX_LABEL = { male: '남', female: '여' };
-const state = { rating: null, saved: false, consent: true, mp: null, gone: false, pwd: '' };
+const state = { rating: null, saved: false, consent: true, mp: null, gone: false, pwd: '', err: '' };
 
 function render() {
   const screen = document.getElementById('screen');
   if (state.gone) {
-    screen.innerHTML = `<div class="callout"><b>탈퇴 처리 요청을 접수했습니다</b><br>건강정보·설문·예측·챌린지 기록은 삭제하고, 법령상 보관이 필요한 항목은 익명화해 보관합니다.</div>
+    screen.innerHTML = `<div class="callout"><b>탈퇴가 완료되었습니다</b><br>건강정보·설문·예측·캘린더 기록을 삭제했고, 계정은 익명 처리했어요.</div>
       <a class="cta" style="display:block;text-align:center;text-decoration:none;margin-top:10px" href="index.html">처음으로</a>`;
     return;
   }
@@ -74,7 +74,7 @@ function render() {
     <button type="button" id="delete-btn" class="ghost" style="margin-top:6px">회원 탈퇴</button>
     ${state.mp === 'delete-notice' ? '<div class="warnbox"><b>회원 탈퇴는 아직 준비 중이에요</b><br>지금은 계정과 건강정보가 삭제되지 않아요. 삭제를 원하시면 서비스 담당자에게 알려 주세요.</div>' : ''}
     ${state.mp === 'delete' ? `<div class="warnbox"><b>회원 탈퇴 — 재인증이 필요합니다</b><br>삭제: 건강정보·설문·예측·챌린지 기록
-      <div class="field" style="margin-top:8px"><label>비밀번호 다시 입력</label><input id="pwd" type="password"></div>
+      <div class="field" style="margin-top:8px"><label>비밀번호 다시 입력</label><input id="pwd" type="password"></div>${state.err ? `<p class="err" style="margin-top:6px">${state.err}</p>` : ''}
       <div style="display:flex;gap:8px;margin-top:10px"><button type="button" id="cancel-delete" class="ghost" style="width:auto;padding:8px 18px">취소</button>
       <button type="button" id="confirm-delete" class="cta" style="width:auto;padding:8px 18px">탈퇴하기</button></div></div>` : ''}
   `;
@@ -130,8 +130,10 @@ function wire() {
   document.getElementById('save-fb').addEventListener('click', () => { if (state.rating) { state.saved = true; render(); } });
   document.querySelectorAll('[data-mp]').forEach(b => b.addEventListener('click', () => { state.mp = state.mp === b.dataset.mp ? null : b.dataset.mp; render(); }));
   document.getElementById('toggle-consent').addEventListener('click', () => { state.consent = !state.consent; render(); });
-  document.getElementById('download').addEventListener('click', () => {
-    const data = {
+  document.getElementById('download').addEventListener('click', async () => {
+    let serverData = null;
+    try { serverData = await apiCall('GET', '/users/me/data-export', undefined, ''); } catch (e) { /* 서버에 API가 없으면 아래 브라우저 값으로 */ }
+    const data = serverData || {
       profile: JSON.parse(localStorage.getItem('paeon-profile') || 'null'),
       health: JSON.parse(localStorage.getItem('paeon-health') || 'null'),
       prediction: JSON.parse(localStorage.getItem('paeon-prediction') || 'null'),
@@ -145,7 +147,20 @@ function wire() {
   const cancelBtn = document.getElementById('cancel-delete');
   if (cancelBtn) cancelBtn.addEventListener('click', () => { state.mp = null; render(); });
   const confirmBtn = document.getElementById('confirm-delete');
-  if (confirmBtn) confirmBtn.addEventListener('click', () => { state.mp = 'delete-notice'; render(); });
+  if (confirmBtn) confirmBtn.addEventListener('click', async () => {
+    const pwd = document.getElementById('pwd').value;
+    if (!pwd) { state.err = '비밀번호를 입력해 주세요.'; render(); return; }
+    confirmBtn.disabled = true;
+    try {
+      await apiCall('POST', '/users/me/deletion-requests', { password: pwd }, '');
+      localStorage.clear();                                   // 이 브라우저에 남은 값(계정별 보관본 포함)도 모두 지운다
+      state.gone = true;
+    } catch (e) {
+      state.mp = e.code ? 'delete' : 'delete-notice';        // 코드 없는 실패 = 서버에 탈퇴 API가 없음
+      state.err = e.code === 'AUTH_INVALID_CREDENTIALS' ? '비밀번호가 맞지 않아요.' : (e.code ? (e.message || '탈퇴하지 못했어요.') : '');
+    }
+    render();
+  });
 }
 render();
 apiGetMe().then(m => { me = m; render(); }).catch(() => {});
