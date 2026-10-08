@@ -38,3 +38,10 @@ class MeasurementResult(BaseModel):
     value_code: str | None
     unit: str | None
     input_method: str
+
+class HealthRecordDetail(BaseModel):
+    """건강기록 상세: 상자 정보 + 안에 든 측정값 전부 (재로그인 복원·마이페이지용)."""
+    health_record_id: str
+    input_type: InputType
+    examination_date: date
+    measurements: list[MeasurementResult]
