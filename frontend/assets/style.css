@@ -80,3 +80,10 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .setup-steps li.now .no{background:var(--accent); color:#fff}
 .setup-steps li.now em{color:var(--accent)}
 
+/* 확인 창 (confirmDialog) */
+.confirm-backdrop{position:fixed; inset:0; background:rgba(56,64,56,.45); display:flex; align-items:center; justify-content:center; padding:20px; z-index:200}
+.confirm-card{background:#fff; border-radius:20px; padding:24px 22px; max-width:360px; width:100%; text-align:center; box-shadow:0 12px 30px rgba(56,64,56,.2)}
+.confirm-card b{font-size:16px}
+.confirm-card p{font-size:13.5px; line-height:1.6; color:var(--muted); margin:10px 0 18px}
+.confirm-actions{display:flex; gap:10px}
+.confirm-actions button{flex:1; margin:0}
