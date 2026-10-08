@@ -59,6 +59,10 @@ button{font:inherit; cursor:pointer}
 .trio{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; text-align:left; margin-top:6px}
 .trio .opt{display:flex; align-items:center; gap:8px; border-radius:16px; border:1.5px solid var(--sage-light); background:#fff; padding:8px 14px; font-size:13px; font-weight:600}
 
+/* 숫자 칸의 위아래 화살표(스피너)는 쓰지 않는다 */
+input[type=number]{-moz-appearance:textfield; appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+
 /* 비밀번호 보기 버튼 */
 .pw-wrap{position:relative; display:flex}
 .pw-wrap input{padding-right:62px}

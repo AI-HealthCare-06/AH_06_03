@@ -107,7 +107,7 @@ function renderInfo() {
     ${row('음주(최근 1년)', (L.freq[h.drink_freq] || '-') + (h.drink_amount ? ` · 한 번에 ${L.amount[h.drink_amount]}` : ''))}
     ${row('당뇨병', h.diabetes ? '있음' : '없음')}
     ${row('고혈압 진단·치료', L.htn[h.htn_status] || '-')}
-    ${row('총콜레스테롤 / HDL', `${h.total_chol} / ${h.hdl} mg/dL`)}
+    ${row('총콜레스테롤', `${h.total_chol} mg/dL`)}
     ${row('부모 고혈압 가족력', L.parent[h.parent_htn] || '-')}
     ${row('공복혈당', h.fasting_glucose != null ? `${h.fasting_glucose} mg/dL` : '입력 안 함')}
   </div>

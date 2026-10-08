@@ -115,8 +115,6 @@ def classify(f: UserFacts) -> dict:
         c["frequent_eatout"] = a["E1"] in ("5_6_week", "1_day", "2plus_day") and c["high_sodium"]
     if "B1" in a:
         c["breakfast_skip"] = a["B1"] in ("3_4", "1_2", "0")
-    if "BP_MEASURE_METHOD" in a:
-        c["bp_measurable"] = a["BP_MEASURE_METHOD"] != "difficult"
     return c
 
 

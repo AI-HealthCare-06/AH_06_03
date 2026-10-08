@@ -119,7 +119,7 @@ async function apiSubmitHealthRecord(payload) {
   const measurements = [
     num('SBP', payload.sbp), num('DBP', payload.dbp),
     num('HEIGHT', payload.height_cm), num('WEIGHT', payload.weight_kg), num('WAIST', payload.waist_cm),
-    num('TOTAL_CHOL', payload.total_chol), num('HDL', payload.hdl),
+    num('TOTAL_CHOL', payload.total_chol),
     cat('SMOKING', payload.smoking), cat('DIABETES', payload.diabetes),
     cat('HTN_STATUS', payload.htn_status), cat('PARENT_HTN', payload.parent_htn),
     cat('ALCOHOL_FREQ', payload.drink_freq),
@@ -171,7 +171,7 @@ async function apiOcrHealthRecord(file) {
     await sleep(1200);
     return {
       data: {
-        fields: { height_cm: 172, weight_kg: 78, waist_cm: 88, sbp: 138, dbp: 86, total_chol: 210, hdl: 44 },
+        fields: { height_cm: 172, weight_kg: 78, waist_cm: 88, sbp: 138, dbp: 86, total_chol: 210 },
         missing: ['fasting_glucose'],
       },
     };
@@ -219,7 +219,7 @@ async function apiSubmitSurvey(payload) {
   const a = payload.answers || {};
   const want = isV2
     ? { N0: a.N0, N1: a.N1, N2: a.N2, N3: a.N3, N4: a.N4, N5: a.N5, N6: a.N6, N7: a.N7, N8: a.N8, N9: a.N9, N10: a.N10,
-        P1: a.P1, E1: a.E1, B1: a.B1, BP_MEASURE_METHOD: a.BPM }
+        P1: a.P1, E1: a.E1, B1: a.B1 }
     : { BREAKFAST: a.B1, EATOUT: a.E1 ? EATOUT_V1[a.E1] : undefined, AEROBIC: a.P1 ? (a.P1 === '150plus' ? 'yes' : 'no') : undefined };
   const responses = [];
   for (const q of survey.questions) {
@@ -455,7 +455,7 @@ function buildSurveyPayload(answers, health, profile, steps) {
     answers: { ...answers },
     sodium,
     baseline_steps: steps != null ? steps : (answers.P2 != null ? answers.P2 : null),
-    activity_code: answers.P1, eatout_code: answers.E1, breakfast_code: answers.B1, bp_measure_method: answers.BPM,
+    activity_code: answers.P1, eatout_code: answers.E1, breakfast_code: answers.B1,
     // challenges.html가 가이드 §3 규칙으로 바뀌기 전까지 기존 화면이 읽는 값
     sodium_score: (sodium.status === 'ok' || sodium.status === 'not_applicable') ? (high ? 7 : 2) : undefined,
     aerobic: answers.P1 ? (answers.P1 === '150plus' ? 1 : 0) : undefined,
@@ -499,7 +499,7 @@ async function restoreSurveyFromServer() {
         if (c === 'EATOUT') answers.E1 = EATOUT_FROM_V1[r.option_code];
         else if (c === 'AEROBIC') answers.P1 = r.option_code === 'yes' ? '150plus' : 'lt150';
         else answers.B1 = r.option_code;
-      } else if (c === 'BP_MEASURE_METHOD') answers.BPM = r.option_code;
+      } else if (c === 'BP_MEASURE_METHOD') { /* 문항을 없앴다: 예전에 저장된 답은 쓰지 않는다 */ }
       else if (r.option_code == null && r.value_num != null) answers[c] = r.value_num;   // v2 숫자 문항(P2 걸음 수)
       else answers[c] = serverCodeToScore(c, r.option_code);            // v2: N0..N10(서버 코드→점수), P1, E1, B1
     });
