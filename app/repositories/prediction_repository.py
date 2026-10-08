@@ -126,3 +126,7 @@ async def get_predictions_for_jobs(db: AsyncSession, job_ids: list[str]) -> list
         select(Prediction).where(Prediction.prediction_job_id.in_(job_ids))
     )
     return list(result.scalars().all())
+
+async def get_job(db: AsyncSession, prediction_job_id: str) -> PredictionJob | None:
+    """🎫 번호표 번호로 번호표를 찾는다."""
+    return await db.get(PredictionJob, prediction_job_id)

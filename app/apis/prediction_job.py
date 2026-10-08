@@ -40,3 +40,11 @@ async def list_history(
     db: AsyncSession = Depends(async_get_db),
 ):
     return DataResponse(data=await prediction_job_service.list_history(db, user_id))
+
+@router.get("/predictions/{prediction_job_id}", response_model=DataResponse[PredictionJobResult])
+async def get_detail(
+    prediction_job_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(async_get_db),
+):
+    return DataResponse(data=await prediction_job_service.get_detail(db, user_id, prediction_job_id))

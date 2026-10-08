@@ -97,12 +97,8 @@ def _to_model_result(p, factors: list) -> ModelResult:
     )
 
 
-async def get_latest(db: AsyncSession, user_id: str) -> PredictionJobResult:
-    """내 최근 예측 결과 다시 보기."""
-    job = await prediction_repository.get_latest_completed_job(db, user_id)
-    if job is None:
-        raise AppError(404, "PREDICTION_NOT_FOUND", "아직 예측 결과가 없습니다.")
-
+async def _job_result(db: AsyncSession, job) -> PredictionJobResult:
+    """번호표 하나 → 모델별 결과·요인을 꺼내서 결과지로 조립 (latest·상세가 같이 씀)."""
     predictions = await prediction_repository.get_predictions(db, job.prediction_job_id)
     factors = await prediction_repository.get_factors(db, [p.prediction_id for p in predictions])
 
@@ -117,6 +113,22 @@ async def get_latest(db: AsyncSession, user_id: str) -> PredictionJobResult:
         model_a=results["MODEL_A"],
         model_b=results["MODEL_B"],
     )
+
+
+async def get_latest(db: AsyncSession, user_id: str) -> PredictionJobResult:
+    """내 최근 예측 결과 다시 보기."""
+    job = await prediction_repository.get_latest_completed_job(db, user_id)
+    if job is None:
+        raise AppError(404, "PREDICTION_NOT_FOUND", "아직 예측 결과가 없습니다.")
+    return await _job_result(db, job)
+
+
+async def get_detail(db: AsyncSession, user_id: str, prediction_job_id: str) -> PredictionJobResult:
+    """예측 한 건 상세. 없거나, 남의 것이거나, 아직 안 끝났으면 똑같이 404."""
+    job = await prediction_repository.get_job(db, prediction_job_id)
+    if job is None or job.user_id != user_id or job.status != "completed":
+        raise AppError(404, "PREDICTION_NOT_FOUND", "예측 결과를 찾을 수 없습니다.")
+    return await _job_result(db, job)
 
 async def _carry_forward(db: AsyncSession, user_id: str, record) -> None:
     """4주 상자에 없는 이월 지표를, 내 예전 상자에서 가장 최근 값으로 복사해 넣는다."""
