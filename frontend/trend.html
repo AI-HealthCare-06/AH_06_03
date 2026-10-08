@@ -92,8 +92,11 @@ function bpChart(points) {
   return s.join('');
 }
 
+const NEED_ELIG = '<div class="callout"><b>대상 확인이 필요해요</b><br>나이와 병력 확인을 한 번 해 주시면 변화를 보여 드려요.</div><a class="cta" style="display:block;text-align:center;text-decoration:none;margin-top:8px" href="eligibility.html">대상 확인하러 가기</a>';
+
 function renderTrend() {
   const body = document.getElementById('body');
+  if (!elig) { body.innerHTML = NEED_ELIG; return; }
   if (elig.ageBand !== 'in' || elig.chd) {
     body.innerHTML = '<div class="callout"><b>모델 A 예측 대상이 아닙니다</b><br>예측 이력이 없어 위험 추이는 그리지 않습니다.</div>';
     return;
@@ -120,6 +123,7 @@ function renderTrend() {
 
 function renderCompare() {
   const body = document.getElementById('body');
+  if (!elig) { body.innerHTML = NEED_ELIG; return; }
   if (elig.ageBand !== 'in' || elig.chd) {
     body.innerHTML = '<div class="callout"><b>모델 A 예측 대상이 아닙니다</b><br>전·후 위험도 비교는 제공하지 않습니다.</div>';
     return;

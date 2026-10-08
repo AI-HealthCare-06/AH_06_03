@@ -389,6 +389,22 @@ async function apiPredictionJob() {
   }, '예측 요청에 실패했습니다');
 }
 
+// 대상 확인 답(나이대·관상동맥질환·응급 여부) 서버 저장 / 복원 (PUT·GET /users/me/eligibility).
+// 서버에 API가 없거나 실패해도 화면은 계속 진행하고, 브라우저에 보관한 값을 쓴다.
+async function apiSaveEligibility(elig) {
+  try {
+    await apiCall('PUT', '/users/me/eligibility', { age_band: elig.ageBand, chd: !!elig.chd, emergency: elig.emer || 'no' }, '');
+    return true;
+  } catch (e) { return false; }
+}
+async function restoreEligibilityFromServer() {
+  try {
+    const e = (await apiCall('GET', '/users/me/eligibility', undefined, '')).data;
+    localStorage.setItem('paeon-eligibility', JSON.stringify({ ageBand: e.age_band, chd: e.chd, emer: e.emergency }));
+    return true;
+  } catch (e) { return false; }
+}
+
 // 내 정보 조회 (이메일·성별·생년월일)
 async function apiGetMe() {
   return (await apiCall('GET', '/users/me', undefined, '내 정보를 불러오지 못했습니다')).data;
@@ -524,6 +540,7 @@ async function apiSyncAfterLogin() {
   // 서버에 건강정보·설문 조회 API가 있으면 서버 값으로 복원 (없으면 위에서 되돌린 브라우저 보관본을 그대로 씀)
   try {
     const sex = (read('paeon-profile') || {}).sex;
+    if (!localStorage.getItem('paeon-eligibility')) await restoreEligibilityFromServer();
     await restoreHealthFromServer(sex);
     if (!localStorage.getItem('paeon-survey')) await restoreSurveyFromServer();   // 설문은 걸음 수처럼 서버에 없는 값이 있어 브라우저 값을 우선
   } catch (e) { /* 복원 실패해도 로그인은 진행 */ }
