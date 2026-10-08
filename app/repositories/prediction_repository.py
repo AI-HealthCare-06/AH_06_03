@@ -130,3 +130,18 @@ async def get_predictions_for_jobs(db: AsyncSession, job_ids: list[str]) -> list
 async def get_job(db: AsyncSession, prediction_job_id: str) -> PredictionJob | None:
     """🎫 번호표 번호로 번호표를 찾는다."""
     return await db.get(PredictionJob, prediction_job_id)
+
+async def get_latest_job_by_types(
+    db: AsyncSession, user_id: str, request_types: list[str], before: datetime | None = None
+) -> PredictionJob | None:
+    """🎫 이 종류들 중 가장 최근 완료 번호표. before가 있으면 그 시각 이전 것만."""
+    query = (
+        select(PredictionJob)
+        .where(PredictionJob.user_id == user_id)
+        .where(PredictionJob.status == "completed")
+        .where(PredictionJob.request_type.in_(request_types))
+    )
+    if before is not None:
+        query = query.where(PredictionJob.completed_at < before)
+    result = await db.execute(query.order_by(PredictionJob.completed_at.desc()).limit(1))
+    return result.scalar_one_or_none()

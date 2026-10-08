@@ -107,3 +107,27 @@ async def get_records_by_ids(db: AsyncSession, record_ids: list[str]) -> list[He
         return []
     result = await db.execute(select(HealthRecord).where(HealthRecord.health_record_id.in_(record_ids)))
     return list(result.scalars().all())
+
+async def get_records_in_range(
+    db: AsyncSession, user_id: str, input_type: str, start: date, end: date
+) -> list[HealthRecord]:
+    """📦 이 기간(start~end, 양 끝 포함)의 특정 종류 상자들, 날짜순."""
+    result = await db.execute(
+        select(HealthRecord)
+        .where(HealthRecord.user_id == user_id)
+        .where(HealthRecord.input_type == input_type)
+        .where(HealthRecord.examination_date >= start)
+        .where(HealthRecord.examination_date <= end)
+        .order_by(HealthRecord.examination_date)
+    )
+    return list(result.scalars().all())
+
+
+async def get_measurements_for_records(db: AsyncSession, record_ids: list[str]) -> list[HealthMeasurement]:
+    """📦 여러 상자의 물건을 한 번에."""
+    if not record_ids:
+        return []
+    result = await db.execute(
+        select(HealthMeasurement).where(HealthMeasurement.health_record_id.in_(record_ids))
+    )
+    return list(result.scalars().all())

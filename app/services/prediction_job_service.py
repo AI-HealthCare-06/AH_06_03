@@ -4,13 +4,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import AppError
 from app.core.security import utcnow
 from app.repositories import health_repository, prediction_repository, user_repository
-from app.schemas.prediction import PredictionJobResult,Factor,ModelResult, ModelSummary, PredictionJobResult, PredictionSummary
+from app.schemas.prediction import (
+    Factor, MetricChange, ModelChange, ModelResult, ModelSummary,
+    PredictionJobResult, PredictionSummary, ReassessmentCompareResult, WeeklyBP,
+)
 from app.services import prediction_service
 from app.services.model_input import build_model_input
 
 # 4주 재평가에서 다시 받지 않고 직전 값을 쓰는 지표 (ERD v8 health_measurements Note, 명세 §6.1)
 CARRY_FORWARD = ["HEIGHT", "TOTAL_CHOL", "HDL", "FASTING_GLUCOSE", "DIABETES", "HTN_STATUS", "PARENT_HTN"]
-
+COMPARE_METRICS = ["SBP", "DBP", "WEIGHT", "WAIST"]  # W11-2 혜림 담당 항목 (명세 §6.2-3)
 
 async def create_job(
     db: AsyncSession, user_id: str, health_record_id: str, survey_instance_id: str | None, request_type: str
@@ -197,3 +200,84 @@ async def list_history(db: AsyncSession, user_id: str) -> list[PredictionSummary
         )
         for j in jobs
     ]
+
+def _model_change(before, after) -> ModelChange:
+    """같은 모델 버전이고 둘 다 completed일 때만 비교 가능 (명세 §6.2-2, NFR-ARCH-004)."""
+    if before is None or after is None:
+        reason = "missing"
+    elif before.status != "completed" or after.status != "completed":
+        reason = "skipped"
+    elif before.model_version != after.model_version:
+        reason = "model_version_changed"
+    else:
+        reason = None
+    return ModelChange(
+        comparable=reason is None, reason=reason, before=_summary(before), after=_summary(after)
+    )
+
+
+async def compare_latest(db: AsyncSession, user_id: str) -> ReassessmentCompareResult:
+    """가장 최근 4주 예측과, 그 직전 처음(또는 전체 재검진) 예측을 비교."""
+    after_job = await prediction_repository.get_latest_job_by_types(db, user_id, ["interim"])
+    if after_job is None:
+        raise AppError(404, "REASSESSMENT_NOT_FOUND", "4주 재평가 결과가 없습니다.")
+    before_job = await prediction_repository.get_latest_job_by_types(
+        db, user_id, ["initial", "full"], before=after_job.completed_at
+    )
+    if before_job is None:
+        raise AppError(404, "REASSESSMENT_NOT_FOUND", "비교할 처음 예측 결과가 없습니다.")
+
+    # 측정값 변화
+    records = await health_repository.get_records_by_ids(
+        db, [before_job.health_record_id, after_job.health_record_id]
+    )
+    rec = {r.health_record_id: r for r in records}
+    b_rec, a_rec = rec[before_job.health_record_id], rec[after_job.health_record_id]
+    b_vals = {m.metric_code: m.value_num for m in await health_repository.get_measurements(db, b_rec.health_record_id)}
+    a_vals = {m.metric_code: m.value_num for m in await health_repository.get_measurements(db, a_rec.health_record_id)}
+    measurements = [
+        MetricChange(
+            metric_code=code,
+            before=b_vals.get(code),
+            after=a_vals.get(code),
+            change=round(a_vals[code] - b_vals[code], 1)
+            if b_vals.get(code) is not None and a_vals.get(code) is not None else None,
+        )
+        for code in COMPARE_METRICS
+    ]
+
+    # 그 사이 주간 혈압
+    weekly_records = await health_repository.get_records_in_range(
+        db, user_id, "weekly_bp", b_rec.examination_date, a_rec.examination_date
+    )
+    weekly_meas = await health_repository.get_measurements_for_records(
+        db, [r.health_record_id for r in weekly_records]
+    )
+    by_rec = {}
+    for m in weekly_meas:
+        by_rec.setdefault(m.health_record_id, {})[m.metric_code] = m.value_num
+    weekly_bp = [
+        WeeklyBP(
+            examination_date=r.examination_date,
+            sbp=by_rec.get(r.health_record_id, {}).get("SBP"),
+            dbp=by_rec.get(r.health_record_id, {}).get("DBP"),
+        )
+        for r in weekly_records
+    ]
+
+    # 모델 결과 변화
+    preds = await prediction_repository.get_predictions_for_jobs(
+        db, [before_job.prediction_job_id, after_job.prediction_job_id]
+    )
+    p = {(x.prediction_job_id, x.model_code): x for x in preds}
+
+    return ReassessmentCompareResult(
+        baseline_job_id=before_job.prediction_job_id,
+        interim_job_id=after_job.prediction_job_id,
+        baseline_date=b_rec.examination_date,
+        interim_date=a_rec.examination_date,
+        measurements=measurements,
+        weekly_bp=weekly_bp,
+        model_a=_model_change(p.get((before_job.prediction_job_id, "MODEL_A")), p.get((after_job.prediction_job_id, "MODEL_A"))),
+        model_b=_model_change(p.get((before_job.prediction_job_id, "MODEL_B")), p.get((after_job.prediction_job_id, "MODEL_B"))),
+    )
