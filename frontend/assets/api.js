@@ -77,6 +77,19 @@ function refreshTokens() {
   return refreshing;
 }
 
+// 건강정보 동의를 철회한 사람이 건강정보·설문·예측을 쓰면 서버가 403(CONSENT_WITHDRAWN)을 준다. 화면 위에 안내를 띄우고 마이페이지로 이어 준다.
+function showConsentBanner(message) {
+  if (typeof document === 'undefined' || document.getElementById('consent-banner')) return;
+  const show = () => {
+    const b = document.createElement('div');
+    b.id = 'consent-banner';
+    b.style.cssText = 'position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:9999;max-width:min(92vw,520px);background:#FBEAE5;border:1.5px solid var(--danger,#C97B6B);border-radius:14px;padding:12px 16px;font-size:13px;line-height:1.5;box-shadow:0 6px 20px rgba(0,0,0,.15)';
+    b.innerHTML = `<b>건강정보 동의를 철회한 상태예요</b><br>${message || '다시 동의하면 이어서 이용할 수 있어요.'} <a href="mypage.html" style="font-weight:700;text-decoration:underline">마이페이지에서 다시 동의하기</a> <button type="button" aria-label="닫기" style="float:right;border:0;background:none;font-size:16px;cursor:pointer" onclick="this.parentNode.remove()">×</button>`;
+    document.body.appendChild(b);
+  };
+  document.body ? show() : document.addEventListener('DOMContentLoaded', show);
+}
+
 async function apiCall(method, path, payload, failMsg, retried = false) {
   const res = await fetch(`${API_BASE}${path}`, {
     method,
@@ -92,6 +105,7 @@ async function apiCall(method, path, payload, failMsg, retried = false) {
       return goLogin();
     }
     if (code === 'AUTH_UNAUTHORIZED' || code === 'AUTH_TOKEN_EXPIRED' || code === 'AUTH_INVALID_REFRESH_TOKEN') return goLogin();
+    if (code === 'CONSENT_WITHDRAWN') showConsentBanner();
     const err = new Error(body.error?.message || failMsg);
     err.code = code;
     throw err;
