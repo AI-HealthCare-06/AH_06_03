@@ -133,12 +133,18 @@ def _activity_main(c: dict) -> str:
 REPRESENTATIVE = {"SODIUM": "NA-1", "EATOUT": "OUT-1", "BREAKFAST": "BRK-1"}
 
 
-def _mission_excluded(code: str, c: dict) -> str | None:
-    """카테고리 조건은 맞지만 이 미션만 빠지는 경우의 사유."""
+# 추천에서 빠진 사유의 종류 (화면에서 말투를 나눠 보여 줌)
+KIND_DOING_WELL = "doing_well"    # 이미 잘하고 있어서 (대상이 아님)
+KIND_NEED_INFO = "need_info"      # 정보를 더 입력하면 추천됨
+KIND_NOT_ADVISED = "not_advised"  # 지금은 권하지 않음 (안전)
+
+
+def _mission_excluded(code: str, c: dict) -> tuple[str, str] | None:
+    """카테고리 조건은 맞지만 이 미션만 빠지는 경우의 (종류, 사유)."""
     if code == "ACT-1" and not c.get("has_baseline_steps"):
-        return "평소 걸음 수를 입력하면 추천돼요"
+        return KIND_NEED_INFO, "평소 걸음 수를 입력하면 추천돼요"
     if code == "ACT-3" and c.get("bp_160_100"):
-        return "혈압이 160/100 이상이면 버티기 운동은 권하지 않아요"
+        return KIND_NOT_ADVISED, "혈압이 160/100 이상이면 버티기 운동은 권하지 않아요"
     return None
 
 
@@ -201,12 +207,13 @@ def recommend(c: dict, answers: dict, completed_codes: set[str]) -> Recommendati
             continue
         if not ok:
             if codes:
-                excluded.append({"category": category, "reason": _category_reason(category, c, answers)})
+                excluded.append({"category": category, "kind": KIND_DOING_WELL,
+                                 "reason": _category_reason(category, c, answers)})
             continue
         for code in codes:
-            reason = _mission_excluded(code, c)
-            if reason:
-                excluded.append({"code": code, "reason": reason})
+            why = _mission_excluded(code, c)
+            if why:
+                excluded.append({"code": code, "kind": why[0], "reason": why[1]})
             else:
                 candidates.append(code)
 

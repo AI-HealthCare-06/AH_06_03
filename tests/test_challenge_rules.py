@@ -184,3 +184,14 @@ def test_sodium_low_answers_by_person():
 def test_normal_weight_range():
     assert r.normal_weight_range(170) == (53, 66)
     assert r.waist_limit("male") == 90 and r.waist_limit("female") == 85
+
+
+def test_excluded_items_have_kind():
+    # 추천에서 빠진 이유의 종류: 이미 잘함 / 정보를 입력하면 추천 / 지금은 권하지 않음 (화면 문구가 갈림)
+    f = facts(**LOW, sbp=165, scores=LOW_NA, answers={"P1": "none", "E1": "rare", "B1": "5_7"})
+    rec = r.recommend(r.classify(f), f.answers, set())
+    kinds = {(e.get("code") or e["category"]): e["kind"] for e in rec.excluded}
+    assert kinds["ACT-1"] == "need_info"        # 평소 걸음 수를 모름
+    assert kinds["ACT-3"] == "not_advised"      # 혈압 160/100 이상
+    assert kinds["BREAKFAST"] == "doing_well"   # 아침을 잘 챙김
+    assert kinds["EATOUT"] == "doing_well"

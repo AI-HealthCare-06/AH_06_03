@@ -566,7 +566,6 @@ async function apiSyncAfterLogin() {
 
 // ===== 챌린지 (서버 저장, 가이드 §3·§5) =====
 const LEVEL_LABEL = { low: '하', medium: '중', high: '상' };
-
 // 추천: 고정 2칸 + 선택 후보 + 제외 사유 + 설문 미응답 카테고리
 async function apiGetChallengeRecommendations() {
   return (await apiCall('GET', '/challenges/recommendations', undefined, '챌린지 추천을 불러오지 못했습니다')).data;

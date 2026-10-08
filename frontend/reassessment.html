@@ -126,9 +126,9 @@ function reviewHtml(rv) {
     if (m.model_code === 'MODEL_A') {
       return `<div class="mrow"><span>10년 심혈관 위험</span><span>${RISK[m.before_risk_level]} → <b>${RISK[m.after_risk_level]}</b></span></div>`;
     }
-    const d = m.after_probability - m.before_probability;
-    const word = Math.abs(d) < 0.01 ? '거의 같아요' : (d < 0 ? '줄었어요' : '늘었어요');
-    return `<div class="mrow"><span>혈압 외 특징이 경계군인 사람들과 닮은 정도</span><span><b>${word}</b></span></div>`;
+    const b = Math.round(m.before_probability * 100), a = Math.round(m.after_probability * 100);
+    const word = a === b ? '그대로예요' : (a < b ? '줄었어요' : '늘었어요');
+    return `<div class="mrow"><span>나와 비슷한 사람 100명 중 혈압이 조금 높은 편인 사람</span><span>약 ${b}명 → <b>약 ${a}명</b> (${word})</span></div>`;
   }).join('');
   return `
   <p class="sect">혈압 · 몸 변화</p>
@@ -148,7 +148,7 @@ function reviewHtml(rv) {
     <div class="mrow"><span>음주</span><span>${DRINK[b.drink_freq] || '—'} → <b>${DRINK[a.drink_freq] || '—'}</b></span></div>
   </div>
   ${models ? `<p class="sect">예측 결과 변화</p><div class="cmp" style="display:block">${models}</div>
-    <p class="note">선별 정보이며 진단이 아니에요.</p>` : ''}
+    <p class="note">아직 고혈압 진단을 받지 않은 사람 기준이에요 · 국민건강영양조사 2022~2024 · 선별 정보이며 진단이 아니에요.</p>` : ''}
   ${rv.cycle_number < rv.total_cycles
     ? `<a class="cta" style="display:block; text-align:center; text-decoration:none" href="challenges.html">${rv.cycle_number + 1}차 챌린지 시작하기</a>`
     : `<div class="callout"><b>12주 챌린지를 모두 마쳤어요!</b></div>`}`;
@@ -163,7 +163,7 @@ async function main() {
   const lede = document.getElementById('lede');
   const body = document.getElementById('body');
   if (rv.reassessed) {
-    lede.textContent = `${rv.cycle_number}차 4주 변화예요.`;
+    lede.textContent = `${rv.cycle_number}차 4주 동안의 변화예요.`;
     body.innerHTML = reviewHtml(rv);
     return;
   }
@@ -185,7 +185,7 @@ async function main() {
     btn.disabled = true; btn.textContent = '저장하는 중...';
     try {
       const res = (await apiCall('POST', `/challenges/cycles/${encodeURIComponent(cycleId)}/reassessment`, { measurements }, '저장하지 못했습니다')).data;
-      lede.textContent = `${res.cycle_number}차 4주 변화예요.`;
+      lede.textContent = `${res.cycle_number}차 4주 동안의 변화예요.`;
       body.innerHTML = reviewHtml(res);
       window.scrollTo(0, 0);
     } catch (e) {
