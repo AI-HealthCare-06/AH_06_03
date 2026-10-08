@@ -10,12 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import AppError
 from app.core.security import utcnow
 from app.models.challenge import ChallengeCycle
-from app.repositories import challenge_repository, survey_repository, user_repository
+from app.repositories import challenge_repository, health_repository, survey_repository, user_repository
 from app.schemas.challenge import (
     AnswerOption, CycleMission, CycleResult, CycleSummary, ExcludedItem, FixedSlot, LogResult, MissionCard,
-    RecommendationResult, SodiumResult, SurveyNeeded, WeekProgress,
+    MissionResult, ModelChange, RecommendationResult, ReviewResult, Snapshot, SodiumResult, SurveyNeeded,
+    WeekProgress,
 )
 from app.services import challenge_rules as rules
+from app.services import health_service, prediction_job_service
 from app.services.challenge_catalog import (
     CATEGORY_NAMES, CYCLE_DAYS, KEEP_GOING_MESSAGE, MISSION_COMPLETE_RATE, MISSIONS, PROGRAM_CYCLES,
     SELECTABLE_NOTICE,
@@ -258,7 +260,9 @@ async def get_cycle(db: AsyncSession, user_id: str, cycle_id: str) -> CycleResul
 async def list_cycles(db: AsyncSession, user_id: str) -> list[CycleSummary]:
     await _current_active(db, user_id)  # 끝난 사이클이 있으면 먼저 닫는다
     result = []
-    for cycle in await challenge_repository.get_cycles(db, user_id):
+    cycles = await challenge_repository.get_cycles(db, user_id)
+    reassessed = await challenge_repository.get_reassessed_cycle_ids(db, [c.cycle_id for c in cycles])
+    for cycle in cycles:
         missions = await challenge_repository.get_cycle_missions(db, cycle.cycle_id)
         logs = await challenge_repository.get_logs(db, [cc.cycle_challenge_id for cc, _ in missions])
         rates = [
@@ -272,6 +276,7 @@ async def list_cycles(db: AsyncSession, user_id: str) -> list[CycleSummary]:
             started_on=cycle.started_on, ended_on=cycle.ended_on,
             cycle_rate=sum(rates) / len(rates) if rates else 0.0,
             mission_codes=[ch.challenge_code for _, ch in missions],
+            reassessed=cycle.cycle_id in reassessed,
         ))
     return result
 
@@ -327,3 +332,141 @@ async def stop_cycle(db: AsyncSession, user_id: str, reason_code: str | None, no
     cycle.updated_at = utcnow()
     await db.commit()
     return await _cycle_result(db, cycle, await _sex(db, user_id), today_kst())
+
+
+# ---------------------------------------------------------------- 4주 재입력 → 재예측 → 전후 비교 (가이드 §6, W11-2)
+# 다시 받는 항목 (§6.1). 나머지는 직전 기록에서 가져온다 (carried_forward)
+REASSESS_REQUIRED = {"SBP", "DBP", "WEIGHT", "SMOKING", "ALCOHOL_FREQ"}
+REASSESS_ALLOWED = REASSESS_REQUIRED | {"WAIST", "ALCOHOL_AMOUNT", "ECIG"}
+BP_NOTE = "한 번 잰 값이라 차이가 작으면 측정 오차일 수 있어요."
+
+
+async def _owned_ended_cycle(db: AsyncSession, user_id: str, cycle_id: str) -> ChallengeCycle:
+    cycle = await challenge_repository.get_cycle(db, cycle_id)
+    if cycle is None or cycle.user_id != user_id:
+        raise AppError(404, "CHALLENGE_CYCLE_NOT_FOUND", "챌린지를 찾을 수 없습니다.")
+    await _finalize_if_ended(db, cycle, today_kst())
+    return cycle
+
+
+async def submit_reassessment(db: AsyncSession, user_id: str, cycle_id: str, exam_date: date | None,
+                              items: list[dict]) -> ReviewResult:
+    """4주 재입력 저장 → 모델 A·B 재예측(interim) → 전후 비교."""
+    cycle = await _owned_ended_cycle(db, user_id, cycle_id)
+    if cycle.status in ("active", "stopped"):
+        raise AppError(409, "CHALLENGE_CYCLE_NOT_ENDED", "4주가 끝난 챌린지만 재입력할 수 있습니다.")
+    if await challenge_repository.get_reassessment(db, cycle.cycle_id) is not None:
+        raise AppError(409, "REASSESSMENT_DUPLICATED", "이 사이클의 4주 재입력은 이미 했습니다.")
+
+    codes = [i["metric_code"] for i in items]
+    if len(set(codes)) != len(codes):
+        raise AppError(422, "HEALTH_METRIC_DUPLICATED", "한 번에 같은 지표를 두 번 보냈습니다.")
+    unknown = set(codes) - REASSESS_ALLOWED
+    if unknown:
+        raise AppError(422, "REASSESSMENT_METRIC_INVALID", f"4주 재입력에서 받지 않는 항목입니다: {', '.join(sorted(unknown))}")
+    missing = REASSESS_REQUIRED - set(codes)
+    if missing:
+        raise AppError(422, "REASSESSMENT_INCOMPLETE", f"입력하지 않은 항목이 있습니다: {', '.join(sorted(missing))}")
+    checked = [health_service._check_item(i) for i in items if i["metric_code"] in health_service.METRICS]
+
+    basis = await challenge_repository.get_basis_record(db, user_id, cycle.started_on, cycle.cycle_id)
+    if basis is None:
+        raise AppError(409, "HEALTH_RECORD_REQUIRED", "처음 입력한 건강정보가 없습니다.")
+    prev = await challenge_repository.get_measurement_map(db, basis.health_record_id)
+
+    schema = await health_repository.get_active_schema(db)
+    if schema is None:
+        raise AppError(500, "HEALTH_SCHEMA_NOT_FOUND", "입력 양식 설정이 없습니다. 관리자에게 문의해 주세요.")
+    now = utcnow()
+    record = await health_repository.create_health_record(
+        db, user_id, schema.health_schema_id, "interim_reassessment", exam_date or today_kst(), now
+    )
+    record.cycle_id = cycle.cycle_id
+
+    # 직전 값 가져오기: 이번에 안 받은 지표 (BMI는 새로 계산)
+    sent = {c["metric_code"] for c in checked}
+    carried = [
+        {"metric_code": m.metric_code, "value_num": m.value_num, "value_code": m.value_code, "unit": m.unit,
+         "input_method": "carried_forward"}
+        for code, m in prev.items() if code not in sent and code != "BMI"
+    ]
+    if "ALCOHOL_AMOUNT" not in sent and "ALCOHOL_FREQ" in sent:
+        # 음주 빈도가 "안 마심"으로 바뀌었으면 예전 음주량을 가져오지 않는다
+        drinks = next(c for c in checked if c["metric_code"] == "ALCOHOL_FREQ")["value_code"]
+        if drinks in ("never_lifetime", "none_past_year"):
+            carried = [c for c in carried if c["metric_code"] != "ALCOHOL_AMOUNT"]
+    all_items = checked + carried
+    bmi = health_service._bmi_item(all_items)
+    if bmi is not None:
+        all_items.append(bmi)
+    created = await health_repository.create_measurements(db, record.health_record_id, record.examination_date,
+                                                           all_items, now)
+    for m, item in zip(created, all_items):
+        if item.get("input_method") == "carried_forward":
+            m.source_measurement_id = prev[item["metric_code"]].measurement_id
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise AppError(409, "HEALTH_RECORD_DUPLICATED", "같은 날짜에 같은 종류의 기록이 이미 있습니다.")
+
+    # 재예측. 모델 하나가 실패해도 결과는 "failed"로 저장되고 비교 화면은 그대로 보여준다
+    await prediction_job_service.create_job(db, user_id, record.health_record_id, None, "interim")
+    return await get_review(db, user_id, cycle_id)
+
+
+def _snapshot(record, m: dict) -> Snapshot:
+    def num(code):
+        return m[code].value_num if code in m else None
+
+    def code_(code):
+        return m[code].value_code if code in m else None
+
+    return Snapshot(
+        examination_date=record.examination_date, sbp=num("SBP"), dbp=num("DBP"), weight_kg=num("WEIGHT"),
+        waist_cm=num("WAIST"), smoking=code_("SMOKING"), drink_freq=code_("ALCOHOL_FREQ"),
+        drink_amount=code_("ALCOHOL_AMOUNT"),
+    )
+
+
+async def get_review(db: AsyncSession, user_id: str, cycle_id: str) -> ReviewResult:
+    """W11-2 전후 비교: 혈압·몸무게·허리둘레·미션 달성률·습관·모델 결과 (같은 모델 버전만)."""
+    cycle = await _owned_ended_cycle(db, user_id, cycle_id)
+    sex = await _sex(db, user_id)
+    basis = await challenge_repository.get_basis_record(db, user_id, cycle.started_on, cycle.cycle_id)
+    after = await challenge_repository.get_reassessment(db, cycle.cycle_id)
+    before_m = await challenge_repository.get_measurement_map(db, basis.health_record_id) if basis else {}
+    after_m = await challenge_repository.get_measurement_map(db, after.health_record_id) if after else {}
+
+    detail = await _cycle_result(db, cycle, sex, today_kst())
+    height = (before_m.get("HEIGHT") or after_m.get("HEIGHT"))
+    rng = rules.normal_weight_range(height.value_num) if height and height.value_num else None
+
+    before_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, basis.health_record_id)} if basis else {}
+    after_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, after.health_record_id)} if after else {}
+    models = []
+    for code in ("MODEL_A", "MODEL_B"):
+        b, a = before_p.get(code), after_p.get(code)
+        comparable = bool(b and a and b.status == a.status == "completed" and b.model_version == a.model_version)
+        models.append(ModelChange(
+            model_code=code,
+            before_status=b.status if b else None, before_risk_level=b.risk_level if b else None,
+            before_probability=b.score if b else None,
+            after_status=a.status if a else None, after_risk_level=a.risk_level if a else None,
+            after_probability=a.score if a else None,
+            model_version=(a or b).model_version if (a or b) else None,
+            comparable=comparable,
+        ))
+
+    return ReviewResult(
+        cycle_id=cycle.cycle_id, cycle_number=cycle.cycle_number, total_cycles=PROGRAM_CYCLES,
+        cycle_status=cycle.status, reassessed=after is not None,
+        before=_snapshot(basis, before_m) if basis else None,
+        after=_snapshot(after, after_m) if after else None,
+        missions=[MissionResult(code=m.card.code, name=m.card.name, status=m.status, cycle_rate=m.cycle_rate)
+                  for m in detail.missions],
+        normal_weight_range=list(rng) if rng else None,
+        waist_limit=rules.waist_limit(sex),
+        models=models,
+        bp_note=BP_NOTE,
+    )

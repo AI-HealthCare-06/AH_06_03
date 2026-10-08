@@ -35,7 +35,7 @@ async def test_full_cycle_flow(client, db_session, today):
     codes = [c["code"] for c in rec["candidates"]]
     assert "NA-1" in codes and "BRK-1" in codes
     assert rec["fixed"][1]["mission"]["answers"][-1] == {"code": "3", "label": "3잔 이상"}  # 남성 선택지
-    assert rec["cycle_number"] == 1 and rec["total_cycles"] == 4
+    assert rec["cycle_number"] == 1 and rec["total_cycles"] == 3
     assert rec["sodium"]["sodium_grade"] in ("careful_high", "severe")
 
     assert "WT-1" in codes  # BMI 26.4
@@ -131,3 +131,75 @@ async def test_survey_not_done_and_weight_mission(client, db_session, today):
     assert r.status_code == 201
     r = await client.put("/v1/challenges/cycles/current/logs/WT-1", json={"answer": "yes"}, headers=h)
     assert r.json()["data"]["status"] == "completed"
+
+
+FULL = SMOKER_DRINKER | {"WAIST": 90, "TOTAL_CHOL": 210, "PARENT_HTN": "no"}
+
+
+async def test_reassessment_and_review(client, db_session, today):
+    h = await make_user(db_session, measurements=FULL, answers=SURVEY)
+    basis_id = (await client.get("/v1/health/records", headers=h)).json()["data"][0]["health_record_id"]
+    r = await client.post("/v1/predictions/jobs", json={"health_record_id": basis_id, "request_type": "initial"}, headers=h)
+    assert r.status_code == 201, r.text
+
+    cycle = (await client.post("/v1/challenges/cycles", json={"selected_code": "NA-1"}, headers=h)).json()["data"]
+    cid = cycle["cycle_id"]
+    body = {"measurements": [
+        {"metric_code": "SBP", "value_num": 136}, {"metric_code": "DBP", "value_num": 86},
+        {"metric_code": "WEIGHT", "value_num": 76}, {"metric_code": "WAIST", "value_num": 88},
+        {"metric_code": "SMOKING", "value_code": "former"},
+        {"metric_code": "ALCOHOL_FREQ", "value_code": "2_4_per_month"}, {"metric_code": "ALCOHOL_AMOUNT", "value_code": "1_2"},
+    ]}
+
+    # 4주가 끝나기 전에는 재입력 불가
+    r = await client.post(f"/v1/challenges/cycles/{cid}/reassessment", json=body, headers=h)
+    assert r.status_code == 409 and r.json()["error"]["code"] == "CHALLENGE_CYCLE_NOT_ENDED"
+
+    today["d"] = DAY1 + timedelta(days=28)
+    hist = (await client.get("/v1/challenges/cycles", headers=h)).json()["data"]
+    assert hist[0]["reassessed"] is False
+
+    # 필수 항목 빠짐 → 422
+    r = await client.post(f"/v1/challenges/cycles/{cid}/reassessment",
+                          json={"measurements": body["measurements"][:2]}, headers=h)
+    assert r.status_code == 422 and r.json()["error"]["code"] == "REASSESSMENT_INCOMPLETE"
+    # 다시 받지 않는 항목(키) → 422
+    r = await client.post(f"/v1/challenges/cycles/{cid}/reassessment",
+                          json={"measurements": body["measurements"] + [{"metric_code": "HEIGHT", "value_num": 180}]}, headers=h)
+    assert r.status_code == 422
+
+    r = await client.post(f"/v1/challenges/cycles/{cid}/reassessment", json=body, headers=h)
+    assert r.status_code == 201, r.text
+    rv = r.json()["data"]
+    assert rv["reassessed"] is True
+    assert (rv["before"]["sbp"], rv["after"]["sbp"]) == (145, 136)
+    assert (rv["before"]["weight_kg"], rv["after"]["weight_kg"]) == (78, 76)
+    assert (rv["before"]["smoking"], rv["after"]["smoking"]) == ("current", "former")
+    assert rv["normal_weight_range"] == [55, 68] and rv["waist_limit"] == 90  # 키 172
+    assert rv["bp_note"]
+    assert [m["code"] for m in rv["missions"]] == ["SMK-1", "ALC-1", "NA-1"]
+    models = {m["model_code"]: m for m in rv["models"]}
+    assert models["MODEL_A"]["comparable"] is True and models["MODEL_B"]["comparable"] is True
+    assert models["MODEL_A"]["after_probability"] != models["MODEL_A"]["before_probability"]
+
+    # 다시 받지 않은 항목은 직전 값(carried_forward)으로 새 기록에 들어감 → 재예측에 사용됨
+    from sqlalchemy import select
+    from app.models.health import HealthMeasurement, HealthRecord
+    async with db_session() as s:
+        rec = (await s.execute(select(HealthRecord).where(HealthRecord.cycle_id == cid))).scalar_one()
+        ms = {m.metric_code: m for m in (await s.execute(
+            select(HealthMeasurement).where(HealthMeasurement.health_record_id == rec.health_record_id))).scalars()}
+    assert ms["TOTAL_CHOL"].input_method == "carried_forward" and ms["TOTAL_CHOL"].value_num == 210
+    assert ms["HEIGHT"].input_method == "carried_forward" and ms["BMI"].input_method == "calculated"
+    assert ms["SBP"].input_method == "manual"
+
+    # 두 번은 안 됨, 이력에 재입력 완료 표시
+    r = await client.post(f"/v1/challenges/cycles/{cid}/reassessment", json=body, headers=h)
+    assert r.status_code == 409
+    assert (await client.get("/v1/challenges/cycles", headers=h)).json()["data"][0]["reassessed"] is True
+    assert (await client.get(f"/v1/challenges/cycles/{cid}/review", headers=h)).json()["data"]["after"]["dbp"] == 86
+
+    # 다음 사이클 추천은 4주 재입력 값으로 판정 (흡연 → 과거 흡연, 음주 1–2잔 → 고정 칸 대체)
+    rec2 = (await client.get("/v1/challenges/recommendations", headers=h)).json()["data"]
+    assert [s["selection_type"] for s in rec2["fixed"]] == ["replacement", "replacement"]
+    assert rec2["cycle_number"] == 2

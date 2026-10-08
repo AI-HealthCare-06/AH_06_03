@@ -4,10 +4,10 @@ DB(challenge_categories·challenges·challenge_levels)에는 코드·이름·주
 화면 문구(설명·근거·출처·안내)와 기록 선택지는 이 파일 하나에서만 관리한다.
 """
 
-# 프로그램: 4주 사이클 × 4번 = 16주 (2차 멘토링 10/7, 팀 결정 10/8)
+# 프로그램: 4주 사이클 × 3번 = 12주 (84일. 2차 멘토링 10/7, 팀 결정 10/8)
 CYCLE_WEEKS = 4
 CYCLE_DAYS = CYCLE_WEEKS * 7
-PROGRAM_CYCLES = 4
+PROGRAM_CYCLES = 3
 
 # 사이클 종료 시 미션을 "완료"로 볼 4주 달성률 기준
 MISSION_COMPLETE_RATE = 0.8

@@ -8,6 +8,7 @@ from app.models.challenge import (
     Challenge, ChallengeCategory, ChallengeCycle, ChallengeLevel, ChallengeLog, CycleChallenge, UserClassification,
 )
 from app.models.health import HealthMeasurement, HealthRecord
+from app.models.prediction import Prediction, PredictionJob
 from app.models.survey import SurveyOption, SurveyQuestion, SurveyResponse
 
 
@@ -162,3 +163,55 @@ def add_log(db: AsyncSession, cycle_challenge_id: str, log_date: date, values: d
                        **values)
     db.add(log)
     return log
+
+
+# ---------------------------------------------------------------- 4주 재입력 (가이드 §6)
+async def get_basis_record(db: AsyncSession, user_id: str, on_or_before: date, exclude_cycle_id: str) -> HealthRecord | None:
+    """사이클을 시작할 때 기준이 된 건강기록: 시작일까지의 최초 입력·재평가 중 가장 최근."""
+    result = await db.execute(
+        select(HealthRecord)
+        .where(HealthRecord.user_id == user_id)
+        .where(HealthRecord.input_type.in_(["initial", "interim_reassessment", "full_reassessment"]))
+        .where(HealthRecord.examination_date <= on_or_before)
+        .where((HealthRecord.cycle_id.is_(None)) | (HealthRecord.cycle_id != exclude_cycle_id))
+        .order_by(HealthRecord.examination_date.desc(), HealthRecord.created_at.desc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_reassessment(db: AsyncSession, cycle_id: str) -> HealthRecord | None:
+    result = await db.execute(
+        select(HealthRecord)
+        .where(HealthRecord.cycle_id == cycle_id)
+        .where(HealthRecord.input_type == "interim_reassessment")
+        .order_by(HealthRecord.created_at.desc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_reassessed_cycle_ids(db: AsyncSession, cycle_ids: list[str]) -> set[str]:
+    if not cycle_ids:
+        return set()
+    result = await db.execute(
+        select(HealthRecord.cycle_id)
+        .where(HealthRecord.cycle_id.in_(cycle_ids))
+        .where(HealthRecord.input_type == "interim_reassessment")
+    )
+    return set(result.scalars().all())
+
+
+async def get_latest_job_predictions(db: AsyncSession, health_record_id: str) -> list[Prediction]:
+    """그 건강기록으로 돌린 가장 최근 완료 예측의 모델별 결과."""
+    job = (await db.execute(
+        select(PredictionJob)
+        .where(PredictionJob.health_record_id == health_record_id)
+        .where(PredictionJob.status == "completed")
+        .order_by(PredictionJob.completed_at.desc())
+        .limit(1)
+    )).scalar_one_or_none()
+    if job is None:
+        return []
+    result = await db.execute(select(Prediction).where(Prediction.prediction_job_id == job.prediction_job_id))
+    return list(result.scalars().all())

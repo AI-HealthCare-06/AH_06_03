@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.apis.deps import get_current_user_id
 from app.core.db.databases import async_get_db
 from app.schemas.challenge import (
-    CycleResult, CycleStartRequest, CycleStopRequest, CycleSummary, LogRequest, LogResult, RecommendationResult,
+    CycleResult, CycleStartRequest, CycleStopRequest, CycleSummary, LogRequest, LogResult, ReassessmentRequest,
+    RecommendationResult, ReviewResult,
 )
 from app.schemas.common import DataResponse
 from app.services import challenge_service
@@ -76,3 +77,31 @@ async def stop_cycle(
     db: AsyncSession = Depends(async_get_db),
 ):
     return DataResponse(data=await challenge_service.stop_cycle(db, user_id, req.reason_code, req.note))
+
+
+@router.post(
+    "/challenges/cycles/{cycle_id}/reassessment",
+    status_code=status.HTTP_201_CREATED,
+    response_model=DataResponse[ReviewResult],
+)
+async def submit_reassessment(
+    cycle_id: str,
+    req: ReassessmentRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(async_get_db),
+):
+    """4주 재입력 (가이드 §6.1) → 모델 A·B 재예측 → 전후 비교."""
+    items = [m.model_dump() for m in req.measurements]
+    return DataResponse(
+        data=await challenge_service.submit_reassessment(db, user_id, cycle_id, req.examination_date, items)
+    )
+
+
+@router.get("/challenges/cycles/{cycle_id}/review", response_model=DataResponse[ReviewResult])
+async def get_review(
+    cycle_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(async_get_db),
+):
+    """W11-2 전후 비교."""
+    return DataResponse(data=await challenge_service.get_review(db, user_id, cycle_id))

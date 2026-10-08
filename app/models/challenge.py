@@ -57,7 +57,7 @@ class ChallengeLevel(Base):
 
 
 class ChallengeCycle(Base):
-    """4주 사이클 한 번. 프로그램은 4사이클(16주)."""
+    """4주 사이클 한 번. 프로그램은 3사이클(12주)."""
     __tablename__ = "challenge_cycles"
 
     cycle_id: Mapped[str] = mapped_column(CHAR(36), primary_key=True, default=new_id)

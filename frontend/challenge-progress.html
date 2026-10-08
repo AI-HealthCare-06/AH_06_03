@@ -248,9 +248,13 @@ async function main() {
       const msg = last.status === 'completed'
         ? '4주 목표를 모두 달성했어요! 다음 사이클을 이어서 시작해 볼까요?'
         : '4주가 끝났어요. 이번 기록을 바탕으로 다음 사이클을 다시 골라 볼까요?';
+      // 4주 재입력 전이면 재입력 먼저 (다음 사이클 추천이 재입력 값으로 바뀜, 가이드 §6.2)
+      const next = last.reassessed
+        ? `<a class="cta" style="display:block; text-align:center; text-decoration:none" href="challenges.html">다음 사이클 시작하기</a>
+           <a class="ghost" style="display:block; text-align:center; text-decoration:none; margin-top:8px" href="reassessment.html?cycle=${encodeURIComponent(last.cycle_id)}">4주 변화 다시 보기</a>`
+        : `<a class="cta" style="display:block; text-align:center; text-decoration:none" href="reassessment.html?cycle=${encodeURIComponent(last.cycle_id)}">4주 재입력하고 변화 보기</a>`;
       document.getElementById('day-detail').innerHTML =
-        `<div class="callout"><b>${last.cycle_number}번째 사이클 종료 · 달성률 ${Math.round(last.cycle_rate * 100)}%</b><br>${msg}</div>
-         <a class="cta" style="display:block; text-align:center; text-decoration:none" href="challenges.html">다음 사이클 시작하기</a>`;
+        `<div class="callout"><b>${last.cycle_number}번째 사이클 종료 · 달성률 ${Math.round(last.cycle_rate * 100)}%</b><br>${msg}</div>${next}`;
       return;
     }
     location.replace('challenges.html');
