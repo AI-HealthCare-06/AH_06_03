@@ -54,22 +54,10 @@ const survey = JSON.parse(localStorage.getItem('paeon-survey') || 'null');
 const cycle = JSON.parse(localStorage.getItem('paeon-cycle') || 'null');
 const progress = JSON.parse(localStorage.getItem('paeon-progress') || '{"days":[],"bpLog":[]}');
 
-function projectedHealth() {
-  const recheck = JSON.parse(localStorage.getItem('paeon-recheck') || 'null');
-  if (recheck) return { ...health, sbp: recheck.sbp, smokingFrac: recheck.smoking === 'current' ? 1 : 0 };
-  const done = cycle ? progress.days.length / 28 : 0;
-  const planDrop = cycle ? Math.min(12, -cycle.missions.reduce((s, m) => s + (m.bp || 0), 0)) * done : 0;
-  const measured = progress.bpLog.length ? progress.bpLog[progress.bpLog.length - 1].sys : null;
-  const sbp2 = measured != null ? measured : health.sbp - planDrop;
-  const quitMission = cycle && cycle.missions.some(m => m.id === 'SMK-1');
-  return { ...health, sbp: sbp2, smokingFrac: (health.smoking === 'current' && quitMission) ? (1 - done) : (health.smoking === 'current' ? 1 : 0) };
-}
-
 function shortDate(iso) { if (!iso) return ''; const [, m, d] = iso.split('-'); return `${Number(m)}/${Number(d)}`; }
-function bpPoints(health, bpLog, extra) {
+function bpPoints(health, bpLog) {
   const pts = [{ v: health.sbp, d: health.recorded_at ? shortDate(health.recorded_at) : '시작' }];
   bpLog.forEach(l => pts.push({ v: l.sys, d: l.date ? shortDate(l.date) : `${l.w}주차` }));
-  if (extra != null) pts.push({ v: extra, d: '예상' });
   return pts;
 }
 
@@ -105,20 +93,10 @@ function renderTrend() {
     body.innerHTML = '<div class="callout"><b>기록이 쌓이면 여기에 변화가 보입니다</b><br>챌린지 인증이나 혈압 기록 후 다시 와 주세요.</div><a class="ghost" style="display:block;text-align:center;text-decoration:none;margin-top:8px" href="challenge-progress.html">챌린지 인증하러 가기</a>';
     return;
   }
-  const xA0 = buildXA(profile, health);
-  const r0 = riskOf(MODEL_A_FEATS, MODEL_A_INTERCEPT, xA0), b0 = band(r0);
-  const proj = projectedHealth();
-  const xA1 = { ...buildXA(profile, proj), currentSmoker: proj.smokingFrac };
-  const r1 = riskOf(MODEL_A_FEATS, MODEL_A_INTERCEPT, xA1), b1 = band(r1);
-  const d = r1 - r0;
+  // 예상 위험도는 보여 주지 않는다. 실제로 기록한 주간 혈압만 그린다. 전·후 비교는 4주 재입력 뒤 서버 값으로 보여 준다.
   body.innerHTML = `
     <figure><figcaption>수축기 혈압 · <b>주 1회 측정</b></figcaption>${bpChart(bpPoints(health, progress.bpLog))}</figure>
-    <div class="speech" style="background:var(--sage-light);border-radius:18px;padding:13px 18px;margin-top:10px">
-      <div style="font-size:11px;color:var(--muted);font-weight:700">최초 대비 변화</div>
-      <div style="font-weight:700;color:${d < 0 ? 'var(--ok)' : d > 0 ? 'var(--risk)' : 'var(--muted)'}">
-        ${d < 0 ? '▼ 처음보다 낮아졌습니다' : d > 0 ? '▲ 처음보다 높아졌습니다' : '– 변화가 없습니다'} (${b0.label} → ${b1.label})
-      </div>
-    </div>`;
+    <div class="callout" style="margin-top:10px">4주 재입력을 하면 처음과 비교한 변화를 "4주 전 · 후 비교"에서 보여 드려요.</div>`;
 }
 
 function renderCompare() {
