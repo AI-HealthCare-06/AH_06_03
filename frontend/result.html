@@ -128,11 +128,12 @@ if (!pred) {
     const many = n >= avg;
     bHtml = `<p class="sect">나와 비슷한 사람들의 혈압</p>
       <div class="riskrow" style="border-color:var(--accent)">
-        <span style="flex:1; font-size:13.5px; line-height:1.55">나와 나이·성별·체형·생활습관이 비슷한 한국인 <b>100명 중 약 ${n}명</b>이 혈압 '주의혈압·고혈압전단계'예요.</span>
+        <span style="flex:1; font-size:13.5px; line-height:1.55">아직 고혈압 진단을 받지 않은 사람 중, 나와 나이·성별·체형·생활습관이 비슷한 사람 <b>100명 중 약 ${n}명</b>은 혈압이 조금 높은 편(주의혈압·고혈압전단계)이에요.</span>
         <span class="pct" style="color:var(--accent)">${n}%</span>
       </div>
-      <div class="topline" style="margin-top:10px">비슷한 조건이 아닌 전체 평균은 100명 중 약 ${avg}명이에요. 나와 비슷한 사람들은 평균보다 <b>${many ? '많은' : '적은'} 편</b>이에요.</div>
-      <p class="hint" style="margin:0 0 10px">내 혈압 판정은 위 '입력 혈압 판정'을 따라요. 이 수치로 앞으로 고혈압이 될지는 알 수 없어요.</p>
+      <div class="topline" style="margin-top:10px">고혈압 진단을 받지 않은 사람 전체 평균은 100명 중 약 ${avg}명이에요. 나와 비슷한 사람들은 평균보다 <b>${many ? '많은' : '적은'} 편</b>이에요.</div>
+      <p class="hint" style="margin:0 0 10px">내 혈압 판정은 위 '입력 혈압 판정'을 따라요. 이 수치로 앞으로 고혈압이 될지는 알 수 없어요.
+        <button type="button" style="font:inherit; font-size:11px; color:var(--muted); background:#fff; border:1px solid var(--sage-light); border-radius:999px; padding:0 8px; margin-left:4px; cursor:pointer" onclick="this.nextElementSibling.hidden = !this.nextElementSibling.hidden">출처</button><span hidden> · 국민건강영양조사 2022~2024 기준</span></p>
       <figure><figcaption>관련 요인 · <b>바꿀 수 있는 요인</b></figcaption>
         ${fb.length ? `<div class="bars">${bars(fb)}</div>` : '<div class="topline">표시할 요인이 없어요</div>'}
         ${fixedNote(b.factors)}

@@ -121,7 +121,7 @@ function predictionRows(p) {
   const b = p.model_b;
   if (b && b.status === 'completed') {
     const n = Math.round(b.probability * 100), avg = Math.round(B_AVG * 100);
-    r.push(row('나와 비슷한 사람들의 혈압', `비슷한 한국인 100명 중 약 ${n}명이 혈압 '주의혈압·고혈압전단계' (평균 약 ${avg}명)`));
+    r.push(row('나와 비슷한 사람들의 혈압', `고혈압 진단을 받지 않은 사람 중 나와 비슷한 사람 100명 중 약 ${n}명이 혈압 '주의혈압·고혈압전단계' (평균 약 ${avg}명, 국민건강영양조사 2022~2024 기준)`));
   }
   return r;
 }
@@ -132,7 +132,7 @@ function challengeRows(c, prog) {
   if (c.missions && c.missions.length) r.push(row('미션', c.missions.map(m => esc(m.t)).join('<br>')));
   if (prog && prog.days) r.push(row('모든 미션을 마친 날', `${prog.days.length}일`));
   const bp = (prog && prog.bpLog) || [];
-  if (bp.length) r.push(row('주간 혈압 기록', bp.map(l => `${esc(l.date || (l.w + '주차'))}: ${esc(l.sys)}${l.dia != null ? '/' + esc(l.dia) : ''} mmHg`).join('<br>')));
+  if (bp.length) r.push(row('혈압 기록', bp.map(l => `${esc(l.date || (l.w + '주차'))}: ${esc(l.sys)}${l.dia != null ? '/' + esc(l.dia) : ''} mmHg`).join('<br>')));
   return r;
 }
 
