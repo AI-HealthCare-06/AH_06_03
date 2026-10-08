@@ -35,6 +35,13 @@ class SurveyQuestion(Base):
     display_order: Mapped[int] = mapped_column(Integer, nullable=False)
     required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
+    answer_type: Mapped[str] = mapped_column(
+        Enum("single_select", "number", name="survey_answer_type"),
+        nullable=False, default="single_select", server_default="single_select",
+    )
+    num_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    num_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
 
 class SurveyOption(Base):
     """🔘 보기."""
@@ -84,5 +91,8 @@ class SurveyResponse(Base):
         CHAR(36), ForeignKey("survey_instances.survey_instance_id", ondelete="CASCADE"), nullable=False
     )
     question_id: Mapped[str] = mapped_column(CHAR(36), ForeignKey("survey_questions.question_id"), nullable=False)
-    option_id: Mapped[str] = mapped_column(CHAR(36), ForeignKey("survey_options.option_id"), nullable=False)
+    option_id: Mapped[str | None] = mapped_column(
+        CHAR(36), ForeignKey("survey_options.option_id"), nullable=True
+    )
+    value_num: Mapped[float | None] = mapped_column(Numeric(12, 4, asdecimal=False), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
