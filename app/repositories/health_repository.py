@@ -53,6 +53,7 @@ async def create_measurements(
             unit=item.get("unit"),
             measured_on=measured_on,
             input_method=item.get("input_method", "manual"),
+            source_measurement_id=item.get("source_measurement_id"),
             created_at=now,
         )
         db.add(m)
@@ -83,3 +84,19 @@ async def delete_measurements(db: AsyncSession, health_record_id: str, metric_co
         .where(HealthMeasurement.health_record_id == health_record_id)
         .where(HealthMeasurement.metric_code.in_(metric_codes))
     )
+
+async def get_previous_measurements(
+    db: AsyncSession, user_id: str, exclude_record_id: str, metric_codes: list[str]
+) -> list[HealthMeasurement]:
+    """📦 내 다른 상자들에서, 이 지표들의 물건을 최근 검진부터 꺼낸다 (4주 재평가 이월용)."""
+    if not metric_codes:
+        return []
+    result = await db.execute(
+        select(HealthMeasurement)
+        .join(HealthRecord, HealthRecord.health_record_id == HealthMeasurement.health_record_id)
+        .where(HealthRecord.user_id == user_id)
+        .where(HealthRecord.health_record_id != exclude_record_id)
+        .where(HealthMeasurement.metric_code.in_(metric_codes))
+        .order_by(HealthRecord.examination_date.desc(), HealthRecord.created_at.desc())
+    )
+    return list(result.scalars().all())

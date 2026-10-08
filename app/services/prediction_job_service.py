@@ -8,6 +8,9 @@ from app.schemas.prediction import PredictionJobResult,Factor,ModelResult
 from app.services import prediction_service
 from app.services.model_input import build_model_input
 
+# 4주 재평가에서 다시 받지 않고 직전 값을 쓰는 지표 (ERD v8 health_measurements Note, 명세 §6.1)
+CARRY_FORWARD = ["HEIGHT", "TOTAL_CHOL", "HDL", "FASTING_GLUCOSE", "DIABETES", "HTN_STATUS", "PARENT_HTN"]
+
 
 async def create_job(
     db: AsyncSession, user_id: str, health_record_id: str, survey_instance_id: str | None, request_type: str
@@ -22,12 +25,20 @@ async def create_job(
     if profile is None or profile.sex is None:
         raise AppError(422, "PREDICTION_SEX_REQUIRED", "성별을 먼저 입력해 주세요.")
 
+    # 4. 꺼내기 + 번역하기 (건강정보만)
+    if request_type == "interim":
+        await _carry_forward(db, user_id, record)  # 4주 상자에 없는 이월 지표를 채워 넣기
+        await db.flush()
 
-    # 4. 꺼내기 + 번역하기
-        # 4. 꺼내기 + 번역하기 (건강정보만)
     measurements = await health_repository.get_measurements(db, record.health_record_id)
     items = [{"metric_code": m.metric_code, "value_num": m.value_num, "value_code": m.value_code} for m in measurements]
     user_input = build_model_input(profile.sex, profile.birth_date, record.examination_date, items)
+
+    if request_type == "interim":
+        first = await prediction_repository.get_first_snapshot(db, user_id)
+        if first and "age" in first:
+            user_input["age"] = first["age"]  # 나이는 처음 예측 값 유지 (명세 §6.1)
+
 
     # 5. 번호표 만들기
     now = utcnow()
@@ -106,3 +117,33 @@ async def get_latest(db: AsyncSession, user_id: str) -> PredictionJobResult:
         model_a=results["MODEL_A"],
         model_b=results["MODEL_B"],
     )
+
+async def _carry_forward(db: AsyncSession, user_id: str, record) -> None:
+    """4주 상자에 없는 이월 지표를, 내 예전 상자에서 가장 최근 값으로 복사해 넣는다."""
+    existing = await health_repository.get_measurements(db, record.health_record_id)
+    have = {m.metric_code for m in existing}
+    missing = [code for code in CARRY_FORWARD if code not in have]
+    if not missing:
+        return
+
+    previous = await health_repository.get_previous_measurements(db, user_id, record.health_record_id, missing)
+    picked = {}
+    for m in previous:
+        if m.metric_code not in picked:  # 최근 검진부터 나오니, 처음 나온 게 가장 최근 값
+            picked[m.metric_code] = m
+
+    items = [
+        {
+            "metric_code": m.metric_code,
+            "value_num": m.value_num,
+            "value_code": m.value_code,
+            "unit": m.unit,
+            "input_method": "carried_forward",
+            "source_measurement_id": m.measurement_id,
+        }
+        for m in picked.values()
+    ]
+    if items:
+        await health_repository.create_measurements(
+            db, record.health_record_id, record.examination_date, items, utcnow()
+        )
