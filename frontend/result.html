@@ -19,6 +19,9 @@
   .bb{background:var(--track); border-radius:8px; height:9px; overflow:hidden}
   .bb i{display:block; height:100%; border-radius:8px}
   .bv{text-align:right; font-weight:700; font-size:12px}
+  .topline{font-size:12.5px; margin-bottom:8px}
+  .linkhint{margin-top:10px; font-size:12px; color:var(--muted); background:var(--cream); border:1px solid var(--sage-light); border-radius:12px; padding:8px 12px}
+  .linkhint a{color:var(--sage-deep); font-weight:700}
 </style>
 </head>
 <body>
@@ -41,25 +44,51 @@ const RISK_LABEL = { normal: '정상', borderline: '경계', high: '위험' };
 const A_SKIP_MSG = { age_out_of_range: '만 32~70세가 아니어서 예측할 수 없습니다', cad_diagnosed: '관상동맥질환 진단 이력이 있어 예측할 수 없습니다' };
 const B_SKIP_MSG = { age_out_of_range: '19세 미만이어서 예측할 수 없습니다', htn_diagnosed: '고혈압으로 진단·치료 중이라 예측할 수 없습니다' };
 
+// 명세 §3: 학습 방향이 상식과 반대인 요인(direction_matches_expectation = false)은 요인 목록에 표시하지 않는다.
+const visible = (factors) => (factors || []).filter(f => f.direction_matches_expectation !== false);
+
+// 개선 가능한 1위 요인 → 그 요인을 관리할 수 있는 챌린지 안내 (명세 §7 요인 → 챌린지 연결표, 가이드 §7). 결과 설명용이고 챌린지 추천에는 쓰지 않는다.
+const LINK = {
+  MODEL_A: { currentSmoker: '금연 미션', sysBP: '나트륨 줄이기·신체 활동 미션', BMI: '신체 활동·체중 관리 미션' },
+  MODEL_B: { bmi: '신체 활동·체중 관리 미션', waist: '신체 활동·체중 관리 미션', drink_freq: '절주 미션', drink_amount: '절주 미션' },
+};
+function linkHint(model, res) {
+  const f = res.top_modifiable_factor;
+  const to = f && f.direction_matches_expectation !== false && LINK[model][f.code];
+  return to ? `<div class="linkhint">'<b>${f.label}</b>' 요인은 ${to}으로 관리할 수 있어요 · <a href="challenges.html">챌린지 보기</a></div>` : '';
+}
+function topLine(res) {
+  const t = res.top_risk_factor;
+  return t && t.direction_matches_expectation !== false
+    ? `<div class="topline">가장 영향이 큰 요인: <b>${t.label}</b></div>`
+    : '<div class="topline">위험을 높인 요인이 없어요</div>';
+}
+
 function bars(factors) {
   const mx = Math.max(0.2, ...factors.map(f => Math.abs(f.contribution)));
   return factors.map(f => {
     const col = !f.modifiable ? 'var(--sage)' : (f.contribution >= 0 ? 'var(--sage-deep)' : 'var(--sage)');
     const width = Math.abs(f.contribution) / mx * 100;
     const val = (f.contribution >= 0 ? '+' : '−') + Math.abs(f.contribution * 100).toFixed(1);
-    return `<span>${f.label}${f.direction_matches_expectation === false ? ' ⚠️' : ''}</span>
+    return `<span>${f.label}</span>
       <span class="bb"><i style="width:${width}%;background:${col}"></i></span>
       <span class="bv">${val}</span>`;
   }).join('');
 }
 
-const pred = JSON.parse(localStorage.getItem('paeon-prediction') || 'null');
+function readLocal(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } }
+const pred = readLocal('paeon-prediction');
+const health = readLocal('paeon-health');
 const screen = document.getElementById('screen');
 
 if (!pred) {
   screen.innerHTML = '<div class="callout"><b>예측 결과가 없어요</b><br>입력 검토 화면에서 "위험도 분석하기"를 먼저 눌러주세요.</div>';
 } else {
-  let html = pred.bp_stage ? `<div class="riskrow" style="border-color:${COLOR[pred.bp_stage]}">
+  // 혈압 160/100 이상이면 결과보다 먼저 의료기관 상담 안내 (가이드 §3.4, REQ-PRED-005와 같은 위치)
+  const bp160 = health && (health.sbp >= 160 || health.dbp >= 100);
+  let html = bp160 ? `<div class="callout" style="border-color:var(--risk)"><b>입력하신 혈압이 많이 높아요 (${health.sbp}/${health.dbp} mmHg)</b><br>챌린지를 시작하기 전에 가까운 의료기관에서 상담을 받아 보세요. <a href="guide.html" style="color:var(--sage-deep); font-weight:700">검사 · 상담 안내 보기</a></div>` : '';
+
+  html += pred.bp_stage ? `<div class="riskrow" style="border-color:${COLOR[pred.bp_stage]}">
     <span class="chip" style="color:${COLOR[pred.bp_stage]}">${BP_LABEL[pred.bp_stage]}</span>
     <span style="font-size:12px;color:var(--muted)">입력 혈압 판정</span>
   </div>` : '';
@@ -67,7 +96,7 @@ if (!pred) {
   if (pred.model_a.status !== 'completed') {
     html += `<div class="callout"><b>${A_SKIP_MSG[pred.model_a.skip_reason] || '이번엔 예측할 수 없습니다'}</b></div>`;
   } else {
-    const a = pred.model_a;
+    const a = pred.model_a, fa = visible(a.factors);
     html += `<p class="sect">10년 내 관상동맥질환 위험</p>
       <div class="riskrow" style="border-color:${COLOR[a.risk_level]}">
         <span class="chip" style="color:${COLOR[a.risk_level]}">${RISK_LABEL[a.risk_level]}</span>
@@ -75,15 +104,16 @@ if (!pred) {
       </div>
       ${a.vascular_age != null ? `<div class="agebox"><div class="big">${a.vascular_age}세</div><div class="sub">혈관 나이(추정) · 첫 번째 모델 버전이라 실제 나이와 차이가 클 수 있어요</div></div>` : ''}
       <figure><figcaption>위험을 올린 요인 · <b>진한 막대는 바꿀 수 있는 요인</b></figcaption>
-        <div class="bars">${bars(a.factors)}</div>
+        ${topLine(a)}
+        ${fa.length ? `<div class="bars">${bars(fa)}</div>` : ''}
+        ${linkHint('MODEL_A', a)}
       </figure>`;
   }
 
   if (pred.model_b.status !== 'completed') {
     html += `<div class="callout"><b>모델 B: ${B_SKIP_MSG[pred.model_b.skip_reason] || '이번엔 예측할 수 없습니다'}</b></div>`;
   } else {
-    const b = pred.model_b;
-    const reversed = b.factors.some(f => f.direction_matches_expectation === false);
+    const b = pred.model_b, fb = visible(b.factors);
     html += `<p class="sect">혈압 외 특징이 경계군과 닮은 정도</p>
       <div class="riskrow" style="border-color:var(--accent)">
         <span class="chip" style="color:var(--accent)">유사율</span>
@@ -91,15 +121,13 @@ if (!pred) {
         <span class="pct" style="color:var(--accent)">${Math.round(b.probability * 100)}%</span>
       </div>
       <figure><figcaption>관련 요인 · <b>진한 막대는 바꿀 수 있는 요인</b></figcaption>
-        <div class="bars">${bars(b.factors)}</div>
+        ${fb.length ? `<div class="bars">${bars(fb)}</div>` : '<div class="topline">표시할 요인이 없어요</div>'}
+        ${linkHint('MODEL_B', b)}
       </figure>`;
-    if (reversed) {
-      html += `<div class="callout"><b>⚠️ 일부 요인은 상식과 반대 방향으로 나타났습니다</b><br>모델이 학습한 결과를 그대로 보여드리는 것이며, 이 방향으로 바꾸라는 권고가 아닙니다. 챌린지 추천에도 반영되지 않습니다.</div>`;
-    }
   }
 
   const needsGuide = pred.bp_stage === 'hypertension' && pred.htn_status === 'none';
-  html += `<p class="tip">진단이 아닌 선별 정보입니다. 두 모델의 확률은 서로 다른 질문의 답이라 합치거나 평균 내지 않습니다.</p>
+  html += `<p class="tip">진단이 아닌 선별 정보입니다. AI가 예측한 정보이며, 정확한 진단은 의사에게 문의하세요. 두 모델의 확률은 서로 다른 질문의 답이라 합치거나 평균 내지 않습니다.</p>
     <a class="cta" style="display:block; text-align:center; text-decoration:none" href="${needsGuide ? 'guide.html' : 'challenges.html'}">${needsGuide ? '검사 · 상담 안내 보기' : '맞춤 챌린지 보기'}</a>`;
 
   screen.innerHTML = html;

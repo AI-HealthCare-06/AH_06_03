@@ -61,7 +61,7 @@ function projectedHealth() {
   const planDrop = cycle ? Math.min(12, -cycle.missions.reduce((s, m) => s + (m.bp || 0), 0)) * done : 0;
   const measured = progress.bpLog.length ? progress.bpLog[progress.bpLog.length - 1].sys : null;
   const sbp2 = measured != null ? measured : health.sbp - planDrop;
-  const quitMission = cycle && cycle.missions.some(m => m.id === 'b1');
+  const quitMission = cycle && cycle.missions.some(m => m.id === 'SMK-1');
   return { ...health, sbp: sbp2, smokingFrac: (health.smoking === 'current' && quitMission) ? (1 - done) : (health.smoking === 'current' ? 1 : 0) };
 }
 

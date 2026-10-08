@@ -107,7 +107,7 @@ if (!pending) {
     };
     try {
       const signupRes = await apiSignup(pending.email, pending.pw, pending.birth, { guardian });
-      ['paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-progress'].forEach(k => localStorage.removeItem(k));
+      ['paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-cycle-history', 'paeon-progress'].forEach(k => localStorage.removeItem(k));
       localStorage.setItem('paeon-profile', JSON.stringify({ email: pending.email, birth: pending.birth }));
       localStorage.setItem('paeon-guardian-consent', JSON.stringify({
         ...guardian,
