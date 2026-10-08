@@ -8,9 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
 <style>
-  .state{display:flex; gap:6px; flex-wrap:wrap}
-  .state button{border:1px solid var(--sage); background:#fff; border-radius:999px; padding:5px 12px; font-size:12px; color:var(--muted)}
-  .state button[data-on="1"]{background:var(--sage-deep); border-color:var(--sage-deep); color:#fff; font-weight:700}
   .hero{background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:16px 20px}
   .hero h1{font-size:18px; line-height:1.35; margin:0}
   .hero p{font-size:12.5px; color:var(--muted); margin-top:4px}
@@ -116,7 +113,8 @@ const RISK_LABEL = { normal: '정상', borderline: '경계', high: '위험' };
 // 예측 결과(또는 건강정보)가 있으면 챌린지 시작 전에도 캘린더를 보여 주는 'ready' 상태
 const cycleNo = cycle ? (cycle.cycleNo || 1) : 1;                 // 12주 = 4주 x 3차
 const cycleDone = cycle && Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(cycle.startedOn + 'T00:00:00')) / 86400000) >= 28;
-let state = (health || pred) ? (cycle ? (cycleDone ? 'redo' : 'active') : 'ready') : 'empty';
+// 건강정보만 있고 예측 결과가 없으면(대상 확인·입력 검토를 안 마쳤으면) 'pending': 이어서 하도록 안내
+let state = (health || pred) ? (cycle ? (cycleDone ? 'redo' : 'active') : (pred ? 'ready' : 'pending')) : 'empty';
 // 4주 재입력은 서버에 저장되는 화면으로 (사이클 번호가 있을 때). 없으면 예전 추이 화면
 const reassessHref = cycle && cycle.cycleId ? `reassessment.html?cycle=${encodeURIComponent(cycle.cycleId)}` : 'trend.html';
 
@@ -210,16 +208,12 @@ function panelsHtml() {
 
 function render() {
   const screen = document.getElementById('screen');
-  const sw = `<div class="state">
-    <button type="button" data-s="empty" data-on="${state === 'empty' ? '1' : '0'}">입력 전</button>
-    <button type="button" data-s="active" data-on="${state === 'active' ? '1' : '0'}">진행 중</button>
-    <button type="button" data-s="redo" data-on="${state === 'redo' ? '1' : '0'}">4주 완료</button>
-  </div>`;
-
+  const sp = setupProgress();
   const H = {
     empty: ['혈압, 마지막으로 재신 게 언제인가요?', '검진 결과지가 있으면 사진 한 장으로 끝납니다.', '건강정보 입력하기', 'health-info.html'],
     active: ['오늘도 챌린지 실천해 볼까요?', `${cycle ? `${cycleNo}차 · ` + cycle.missions.map(m => m.t).join(' · ') : ''}`, '오늘 챌린지 인증하기', 'challenge-progress.html'],
     ready: ['예측이 끝났어요. 챌린지를 시작해 볼까요?', '결과에 맞는 챌린지를 골라 보세요. 12주를 4주씩 3번으로 나눠 해요.', '4주 챌린지 시작', 'challenges.html'],
+    pending: ['입력을 이어서 마무리해 주세요', '네 단계를 모두 마치면 위험도 결과를 볼 수 있어요.', sp.next ? `${sp.next.label} 이어서 하기` : '입력 검토로', sp.next ? sp.next.href : 'review.html'],
     redo: cycleNo >= 3
       ? ['12주 챌린지를 모두 마쳤어요. 얼마나 달라졌을까요?', '바뀐 항목만 다시 입력하면 같은 모델로 비교해 드려요.', '12주 결과 확인하기', reassessHref]
       : [`${cycleNo}차 4주가 끝났어요. 얼마나 달라졌을까요?`, '바뀐 항목만 다시 입력하면 같은 모델로 비교해 드려요.', '4주 결과 확인하기', reassessHref],
@@ -241,12 +235,13 @@ function render() {
     const bpPts = bpPoints(health, progress.bpLog);
     if (bpPts.length) body += `<figure><figcaption>수축기 혈압 · <b>주 1회 측정</b></figcaption>${bpChart(bpPts)}</figure>`;
     body += `<div class="callout"><b>이번 주 챌린지 ${Math.min(5, progress.days.length)} / 5일</b></div>`;
+  } else if (state === 'pending') {
+    body += sp.html;
   } else if (state === 'empty') {
     body += `<div class="callout"><b>아직 예측할 정보가 없습니다</b><br>건강정보를 입력하면 여기에 결과가 표시됩니다.</div>`;
   }
 
-  screen.innerHTML = sw + body;
-  screen.querySelectorAll('.state button').forEach(b => b.addEventListener('click', () => { state = b.dataset.s; render(); }));
+  screen.innerHTML = body;
   screen.querySelectorAll('.day[data-date]').forEach(el => el.addEventListener('click', () => { window.location.href = 'calendar-diary.html?date=' + el.dataset.date; }));
 }
 render();

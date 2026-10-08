@@ -58,3 +58,32 @@ button{font:inherit; cursor:pointer}
 .hero-w01 .headline{font-size:19px; font-weight:700; margin:16px 0 4px}
 .trio{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; text-align:left; margin-top:6px}
 .trio .opt{display:flex; align-items:center; gap:8px; border-radius:16px; border:1.5px solid var(--sage-light); background:#fff; padding:8px 14px; font-size:13px; font-weight:600}
+
+/* 숫자 칸의 위아래 화살표(스피너)는 쓰지 않는다 */
+input[type=number]{-moz-appearance:textfield; appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+
+/* 비밀번호 보기 버튼 */
+.pw-wrap{position:relative; display:flex}
+.pw-wrap input{padding-right:62px}
+.pw-toggle{position:absolute; right:8px; top:50%; transform:translateY(-50%); border:0; background:none; color:var(--muted); font:inherit; font-size:12px; font-weight:700; cursor:pointer; padding:4px 6px}
+
+/* 처음 시작 단계 안내 (대시보드·입력 검토) */
+.setup-steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+.setup-steps li{display:flex; align-items:center; gap:12px; background:#fff; border:1.5px solid var(--sage-light); border-radius:14px; padding:12px 16px; font-size:14px; font-weight:700; color:var(--muted)}
+.setup-steps .no{width:26px; height:26px; border-radius:999px; background:var(--sage-light); color:var(--muted); display:inline-flex; align-items:center; justify-content:center; font-size:12.5px; flex:none}
+.setup-steps em{margin-left:auto; font-style:normal; font-size:12px; font-weight:700}
+.setup-steps li.done{color:var(--ink)}
+.setup-steps li.done .no{background:var(--sage-deep); color:#fff}
+.setup-steps li.done em{color:var(--sage-deep)}
+.setup-steps li.now{color:var(--ink); border-color:var(--accent); background:var(--cream)}
+.setup-steps li.now .no{background:var(--accent); color:#fff}
+.setup-steps li.now em{color:var(--accent)}
+
+/* 확인 창 (confirmDialog) */
+.confirm-backdrop{position:fixed; inset:0; background:rgba(56,64,56,.45); display:flex; align-items:center; justify-content:center; padding:20px; z-index:200}
+.confirm-card{background:#fff; border-radius:20px; padding:24px 22px; max-width:360px; width:100%; text-align:center; box-shadow:0 12px 30px rgba(56,64,56,.2)}
+.confirm-card b{font-size:16px}
+.confirm-card p{font-size:13.5px; line-height:1.6; color:var(--muted); margin:10px 0 18px}
+.confirm-actions{display:flex; gap:10px}
+.confirm-actions button{flex:1; margin:0}

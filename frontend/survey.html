@@ -72,7 +72,7 @@
 <script src="assets/api.js"></script>
 <script>
 // 가이드(modeling/handoff/생활습관_입력_가이드.md) §1.2 설문 v2. 문구·선택지·점수는 가이드 그대로.
-const SUB = ['나트륨', '신체 활동', '외식·배달', '아침 식사', '혈압 측정', '완료'];
+const SUB = ['나트륨', '신체 활동', '외식·배달', '아침 식사', '완료'];
 const SCALE5 = ['전혀 그렇지 않다', '약간 그렇다', '보통이다', '많이 그렇다', '매우 그렇다'];
 const FREQ5 = ['월 3회 이하', '주 1–2회', '주 3–6회', '하루 1회', '하루 2–3회'];
 const UP = [2, 4, 6, 8, 10], DOWN = [10, 8, 6, 4, 2];
@@ -98,8 +98,6 @@ const QUESTIONS = [
     opts: [['거의 안 함', 'rare'], ['주 1–2회', '1_2_week'], ['주 3–4회', '3_4_week'], ['주 5–6회', '5_6_week'], ['하루 1회', '1_day'], ['하루 2회 이상', '2plus_day']] },
   { step: 3, code: 'B1', text: '평소 일주일에 아침 식사를 몇 번 하시나요?', hint: '(밥·빵·시리얼·떡 등 식사로 먹은 것. 커피·음료만 마신 경우는 제외)',
     opts: [['주 5–7회', '5_7'], ['주 3–4회', '3_4'], ['주 1–2회', '1_2'], ['거의 안 함', '0']] },
-  { step: 4, code: 'BPM', text: '혈압을 주 1회 재실 수 있나요?',
-    opts: [['집에 혈압계가 있다', 'home_monitor'], ['약국·보건소를 이용할 수 있다', 'pharmacy_health_center'], ['어렵다', 'difficult']] },
 ];
 const N_CODES = ['N0', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10'];
 const answers = {};   // 문항 코드 → 고른 값 (건너뛰면 키 없음)
@@ -186,8 +184,7 @@ function renderFinal() {
     <div class="kpi"><div class="k">추정 나트륨 섭취량</div><div class="v">${na[0]}</div><div class="s">${na[1]}</div></div>
     <div class="kpi"><div class="k">운동(주당)</div><div class="v">${labelOf('P1')}</div><div class="s">하루 평균 ${steps}</div></div>
     <div class="kpi"><div class="k">외식·배달</div><div class="v">${labelOf('E1')}</div></div>
-    <div class="kpi"><div class="k">아침 식사</div><div class="v">${labelOf('B1')}</div></div>
-    <div class="kpi"><div class="k">혈압 측정</div><div class="v">${labelOf('BPM')}</div></div>`;
+    <div class="kpi"><div class="k">아침 식사</div><div class="v">${labelOf('B1')}</div></div>`;
 }
 
 function renderSubsteps() {

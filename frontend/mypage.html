@@ -68,7 +68,8 @@ function render() {
     <p class="hint">동의 철회는 회원 탈퇴와 다릅니다 — 철회해도 계정은 유지됩니다.</p>
     <div style="display:flex; gap:8px; flex-wrap:wrap">
       <button type="button" id="toggle-consent" class="ghost">${state.consent ? '건강정보 처리 동의 철회' : '건강정보 처리 동의 다시 하기'}</button>
-      <button type="button" id="download" class="ghost">내 데이터 내려받기</button>
+      <a class="ghost" href="my-data.html" style="text-align:center">내 데이터 PDF로 받기</a>
+      <button type="button" id="download" class="ghost" style="margin-top:6px">원본 데이터 내려받기 (JSON)</button>
     </div>
     ${state.err && state.mp !== 'delete' ? `<p class="err">${state.err}</p>` : ''}
     <button type="button" id="logout-btn" class="ghost" style="margin-top:6px">로그아웃</button>
@@ -107,7 +108,7 @@ function renderInfo() {
     ${row('음주(최근 1년)', (L.freq[h.drink_freq] || '-') + (h.drink_amount ? ` · 한 번에 ${L.amount[h.drink_amount]}` : ''))}
     ${row('당뇨병', h.diabetes ? '있음' : '없음')}
     ${row('고혈압 진단·치료', L.htn[h.htn_status] || '-')}
-    ${row('총콜레스테롤 / HDL', `${h.total_chol} / ${h.hdl} mg/dL`)}
+    ${row('총콜레스테롤', `${h.total_chol} mg/dL`)}
     ${row('부모 고혈압 가족력', L.parent[h.parent_htn] || '-')}
     ${row('공복혈당', h.fasting_glucose != null ? `${h.fasting_glucose} mg/dL` : '입력 안 함')}
   </div>
@@ -132,6 +133,7 @@ function wire() {
   document.querySelectorAll('[data-mp]').forEach(b => b.addEventListener('click', () => { state.mp = state.mp === b.dataset.mp ? null : b.dataset.mp; render(); }));
   document.getElementById('toggle-consent').addEventListener('click', async () => {
     const want = !state.consent;                                   // true = 다시 동의, false = 철회
+    if (!want && !(await confirmDialog('동의를 철회할까요?', '철회하면 새로운 입력과 예측이 중단돼요. 계정과 이미 저장된 정보는 그대로 남아요.', '철회하기'))) return;
     try {
       let id = state.healthPolicyId;
       if (!id) id = (await apiCall('GET', '/consent-policies/active', undefined, '')).data.find(p => p.policy_type === 'health_data').policy_id;
@@ -144,6 +146,7 @@ function wire() {
     } catch (e) { if (e.code) { state.err = e.message || '동의 상태를 바꾸지 못했어요.'; render(); return; } }   // 코드 없는 실패 = 서버에 API 없음 → 화면에서만 바꿈
     state.consent = want; render();
   });
+  addPasswordToggles(document.getElementById('screen'));      // 탈퇴 재인증 칸의 "보기" 버튼
   document.getElementById('download').addEventListener('click', async () => {
     let serverData = null;
     try { serverData = await apiCall('GET', '/users/me/data-export', undefined, ''); } catch (e) { /* 서버에 API가 없으면 아래 브라우저 값으로 */ }
@@ -156,7 +159,9 @@ function wire() {
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
     a.download = 'paeon-my-data.json'; a.click();
   });
-  document.getElementById('logout-btn').addEventListener('click', apiLogout);
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    if (await confirmDialog('로그아웃할까요?', '다시 이용하려면 로그인해야 해요.', '로그아웃')) apiLogout();
+  });
   document.getElementById('delete-btn').addEventListener('click', () => { state.mp = state.mp === 'delete' ? null : 'delete'; render(); });
   const cancelBtn = document.getElementById('cancel-delete');
   if (cancelBtn) cancelBtn.addEventListener('click', () => { state.mp = null; render(); });
@@ -164,6 +169,7 @@ function wire() {
   if (confirmBtn) confirmBtn.addEventListener('click', async () => {
     const pwd = document.getElementById('pwd').value;
     if (!pwd) { state.err = '비밀번호를 입력해 주세요.'; render(); return; }
+    if (!(await confirmDialog('정말 탈퇴할까요?', '건강정보·설문·예측·챌린지·캘린더 기록이 모두 삭제되고, 되돌릴 수 없어요.', '탈퇴하기'))) return;
     confirmBtn.disabled = true;
     try {
       await apiCall('POST', '/users/me/deletion-requests', { password: pwd }, '');

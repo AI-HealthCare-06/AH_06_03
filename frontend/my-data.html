@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 내 데이터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .doc h3{margin:0 0 4px; font-size:20px}
+  .doc .meta{font-size:12.5px; color:var(--muted); margin:0 0 16px}
+  .doc h4{margin:20px 0 8px; font-size:14.5px}
+  .doc .card{background:#fff; border:1px solid var(--sage-light); border-radius:14px; padding:2px 16px}
+  .doc .row{display:flex; justify-content:space-between; gap:16px; padding:9px 0; border-bottom:1px solid var(--sage-light); font-size:13.5px}
+  .doc .row:last-child{border-bottom:0}
+  .doc .row .lb{color:var(--muted); flex:none}
+  .doc .row .vv{font-weight:700; text-align:right}
+  .doc .none{font-size:13px; color:var(--muted); padding:10px 0}
+  .doc .foot{font-size:12px; color:var(--muted); margin-top:20px; line-height:1.6}
+  .actions{display:flex; gap:10px; margin-top:18px}
+  .actions .cta,.actions .ghost{margin:0}
+  @media print {
+    #header-slot, .no-print{display:none !important}
+    body{background:#fff}
+    .wrapper,.frame,.frame-body,.screen{padding:0 !important; margin:0 !important; box-shadow:none !important; border:0 !important; background:#fff !important; max-width:none !important}
+    .doc .card{break-inside:avoid}
+    .doc h4{break-after:avoid}
+  }
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen doc" id="doc" style="max-width:680px; margin:0 auto; width:100%"></div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script>
+const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const row = (k, v) => `<div class="row"><span class="lb">${esc(k)}</span><span class="vv">${v}</span></div>`;
+const section = (title, rows) => `<h4>${title}</h4>` + (rows.length ? `<div class="card">${rows.join('')}</div>` : '<div class="none">저장된 내용이 없어요</div>');
+
+const L = {
+  sex: { male: '남', female: '여' },
+  smoking: { never: '피운 적 없음', former: '과거엔 피웠으나 현재 피우지 않음', current: '현재 피움' },
+  ecig: { daily: '매일 사용', occasional: '가끔 사용', none: '사용 안 함' },
+  freq: { never_lifetime: '평생 마신 적 없음', none_past_year: '최근 1년간 마시지 않음', lt_monthly: '한 달에 1번 미만', monthly: '한 달에 1번 정도', '2_4_per_month': '한 달에 2–4번', '2_3_per_week': '일주일에 2–3번 정도', '4plus_per_week': '일주일에 4번 이상' },
+  amount: { '1_2': '1–2잔', '3_4': '3–4잔', '5_6': '5–6잔', '7_9': '7–9잔', '10plus': '10잔 이상' },
+  htn: { none: '진단받은 적 없음', diagnosed_untreated: '진단받았지만 약은 안 먹음', treated: '진단받았고 약을 먹는 중' },
+  parent: { yes: '있음', no: '없음', unknown: '모름' },
+  exercise: { none: '거의 안 함', lt60: '1시간 미만', '60_149': '1시간 이상 ~ 2시간 30분 미만', '150plus': '2시간 30분 이상', lt150: '2시간 30분 미만' },
+  eatout: { rare: '거의 안 함', '1_2_week': '주 1–2회', '3_4_week': '주 3–4회', '5_6_week': '주 5–6회', '1_day': '하루 1회', '2plus_day': '하루 2회 이상' },
+  breakfast: { '5_7': '주 5–7회', '3_4': '주 3–4회', '1_2': '주 1–2회', '0': '거의 안 함' },
+  sodium: { careful_low: '주의 (약간 적음)', very_moderate: '매우 적정', moderate: '적정', careful_high: '주의 (많음)', severe: '심각' },
+  bp: { normal: '정상', elevated: '주의혈압', prehypertension: '고혈압전단계', hypertension: '고혈압' },
+  risk: { normal: '정상', borderline: '경계', high: '위험' },
+};
+const B_AVG = 0.35;   // result.html과 같은 기준(학습 데이터의 경계군 비율)
+
+function profileRows(p) {
+  if (!p) return [];
+  const r = [];
+  if (p.email) r.push(row('이메일', esc(p.email)));
+  if (p.birth) r.push(row('생년월일', esc(p.birth)));
+  if (p.sex) r.push(row('성별', L.sex[p.sex] || esc(p.sex)));
+  return r;
+}
+
+function healthRows(h) {
+  if (!h) return [];
+  const smoke = h.smoking === 'current' ? (h.smoking_freq === 'sometimes' ? '가끔 피움' : '매일 피움') : (L.smoking[h.smoking] || '-');
+  return [
+    row('입력일', esc(h.recorded_at || '-')),
+    row('혈압', `${h.sbp}/${h.dbp} mmHg`),
+    row('키 / 몸무게', `${h.height_cm}cm / ${h.weight_kg}kg`),
+    row('허리둘레', `${h.waist_cm}cm`),
+    row('일반담배', smoke),
+    row('전자담배', L.ecig[h.ecig] || '입력 안 함'),
+    row('음주(최근 1년)', (L.freq[h.drink_freq] || '-') + (h.drink_amount ? ` · 한 번에 ${L.amount[h.drink_amount] || ''}` : '')),
+    row('당뇨병', h.diabetes ? '있음' : '없음'),
+    row('고혈압 진단·치료', L.htn[h.htn_status] || '-'),
+    row('총콜레스테롤', `${h.total_chol} mg/dL`),
+    row('부모 고혈압 가족력', L.parent[h.parent_htn] || '-'),
+    row('공복혈당', h.fasting_glucose != null ? `${h.fasting_glucose} mg/dL` : '입력 안 함'),
+  ];
+}
+
+function surveyRows(s) {
+  if (!s) return [];
+  const a = s.answers || {};
+  const r = [];
+  const sd = s.sodium;
+  if (sd && sd.status === 'ok') r.push(row('추정 나트륨 섭취량', `약 ${Number(sd.est_mg).toLocaleString()}mg/일 · ${L.sodium[sd.grade] || ''}`));
+  if (a.P1) r.push(row('운동(주당)', L.exercise[a.P1] || esc(a.P1)));
+  const steps = s.baseline_steps != null ? s.baseline_steps : a.P2;
+  if (steps != null) r.push(row('하루 평균 걸음 수', `${Number(steps).toLocaleString()}걸음`));
+  if (a.E1) r.push(row('외식·배달', L.eatout[a.E1] || esc(a.E1)));
+  if (a.B1) r.push(row('아침 식사', L.breakfast[a.B1] || esc(a.B1)));
+  return r;
+}
+
+function predictionRows(p) {
+  if (!p) return [];
+  const r = [];
+  if (p.bp_stage) r.push(row('입력 혈압 판정', L.bp[p.bp_stage] || esc(p.bp_stage)));
+  const a = p.model_a;
+  if (a) {
+    if (a.status === 'completed') {
+      r.push(row('10년 내 관상동맥질환 위험', L.risk[a.risk_level] || esc(a.risk_level)));
+      if (a.vascular_age != null) r.push(row('혈관 나이(추정)', `${a.vascular_age}세`));
+    } else r.push(row('10년 내 관상동맥질환 위험', '계산 대상이 아니에요'));
+  }
+  const b = p.model_b;
+  if (b && b.status === 'completed') {
+    const n = Math.round(b.probability * 100), avg = Math.round(B_AVG * 100);
+    r.push(row('나와 비슷한 사람들의 혈압', `고혈압 진단을 받지 않은 사람 중 나와 비슷한 사람 100명 중 약 ${n}명이 혈압 '주의혈압·고혈압전단계' (평균 약 ${avg}명, 국민건강영양조사 2022~2024 기준)`));
+  }
+  return r;
+}
+
+function challengeRows(c, prog) {
+  if (!c) return [];
+  const r = [row('챌린지', `12주 중 ${c.cycleNo || 1}차 (4주)`), row('시작일', esc(c.startedOn || '-'))];
+  if (c.missions && c.missions.length) r.push(row('미션', c.missions.map(m => esc(m.t)).join('<br>')));
+  if (prog && prog.days) r.push(row('모든 미션을 마친 날', `${prog.days.length}일`));
+  const bp = (prog && prog.bpLog) || [];
+  if (bp.length) r.push(row('혈압 기록', bp.map(l => `${esc(l.date || (l.w + '주차'))}: ${esc(l.sys)}${l.dia != null ? '/' + esc(l.dia) : ''} mmHg`).join('<br>')));
+  return r;
+}
+
+const now = new Date();
+const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+const profile = read('paeon-profile');
+
+document.getElementById('doc').innerHTML = `
+  <h3>내 데이터</h3>
+  <p class="meta">파이온 PAEON · ${stamp} 기준 · 이 기기에 저장된 값을 정리했어요</p>
+  ${section('기본 정보', profileRows(profile))}
+  ${section('건강정보', healthRows(read('paeon-health')))}
+  ${section('생활습관 설문', surveyRows(read('paeon-survey')))}
+  ${section('예측 결과', predictionRows(read('paeon-prediction')))}
+  ${section('챌린지', challengeRows(read('paeon-cycle'), read('paeon-progress')))}
+  <p class="foot">진단이 아닌 선별 정보입니다. AI가 예측한 정보이며, 정확한 진단은 의사에게 문의하세요.<br>이 문서의 값은 이 기기(브라우저)에 저장된 값이에요. 서버에 저장된 모든 원본 기록은 마이페이지의 "원본 데이터 내려받기(JSON)"로 받을 수 있어요.</p>
+  <div class="actions no-print">
+    <a class="ghost" href="mypage.html">돌아가기</a>
+    <button type="button" class="cta" id="print-btn">PDF로 저장</button>
+  </div>
+  <p class="hint no-print" style="text-align:center; margin-top:8px">인쇄 창에서 '대상(프린터)'을 <b>PDF로 저장</b>으로 고르면 파일로 저장돼요.</p>`;
+document.getElementById('print-btn').addEventListener('click', () => window.print());
+</script>
+</body>
+</html>

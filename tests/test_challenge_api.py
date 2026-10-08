@@ -13,8 +13,7 @@ DAY1 = date(2026, 10, 12)
 SMOKER_DRINKER = {"SMOKING": "current", "ALCOHOL_FREQ": "2_3_per_week", "ALCOHOL_AMOUNT": "5_6",
                   "SBP": 145, "DBP": 92, "HEIGHT": 172, "WEIGHT": 78, "HTN_STATUS": "none", "DIABETES": "false"}
 HIGH_NA = {"N0": ("salty", 50.0)} | {f"N{i}": ("very", 10.0) for i in range(1, 11)}
-SURVEY = HIGH_NA | {"P1": ("none", None), "E1": ("rare", None), "B1": ("0", None),
-                    "BP_MEASURE_METHOD": ("home_monitor", None)}
+SURVEY = HIGH_NA | {"P1": ("none", None), "E1": ("rare", None), "B1": ("0", None)}
 
 
 @pytest.fixture

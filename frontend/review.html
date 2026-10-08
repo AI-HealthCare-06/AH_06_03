@@ -45,7 +45,17 @@ const health = JSON.parse(localStorage.getItem('paeon-health') || 'null');
 const survey = JSON.parse(localStorage.getItem('paeon-survey') || 'null');
 
 if (!profile || !elig || !health || !survey) {
-  document.getElementById('status-callout').innerHTML = '<b>이전 단계가 비어있어요</b><br>' + (!elig && profile ? '대상 확인을 먼저 해 주세요. <a href="eligibility.html" style="font-weight:700;text-decoration:underline">대상 확인하러 가기</a>' : '회원가입부터 순서대로 진행해주세요.');
+  // 빠진 단계가 있으면 막다른 길처럼 보이지 않게 진행 상황과 다음 단계 버튼을 보여 준다
+  const sp = setupProgress();
+  const go = !profile ? { label: '로그인하러 가기', href: 'login.html' } : sp.next && sp.next.href !== 'review.html' ? { label: `${sp.next.label}부터 이어서 하기`, href: sp.next.href } : null;
+  document.querySelector('.confirm-headline').style.display = 'none';
+  document.querySelector('.lede').style.display = 'none';
+  const box = document.getElementById('status-callout');
+  box.className = '';
+  box.innerHTML = `<p class="sect" style="margin-top:0">아직 마치지 않은 단계가 있어요</p>
+    <p class="hint" style="margin:0 0 10px">네 단계를 모두 마치면 입력 내용을 확인하고 위험도를 분석할 수 있어요.</p>
+    ${sp.html}
+    ${go ? `<a class="cta" style="display:block; text-align:center; text-decoration:none; margin-top:14px" href="${go.href}">${go.label}</a>` : ''}`;
   document.getElementById('submit-btn').style.display = 'none';
 } else {
   const skipA = elig.ageBand !== 'in' || elig.chd;

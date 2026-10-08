@@ -91,7 +91,7 @@
               <div class="field"></div>
 
               <div class="field">
-                <label for="smoking">현재 일반담배(궐련)를 피우십니까?</label>
+                <label for="smoking">현재 일반담배를 피우십니까?</label>
                 <select id="smoking" required>
                   <option value="">선택</option>
                   <option value="current_daily">매일 피움</option>
@@ -167,11 +167,6 @@
                 <input id="total-chol" type="number" required>
               </div>
               <div class="field">
-                <label for="hdl">HDL 콜레스테롤 (mg/dL)</label>
-                <input id="hdl" type="number" required>
-              </div>
-
-              <div class="field">
                 <label for="parent-htn">부모 고혈압 가족력</label>
                 <select id="parent-htn" required>
                   <option value="no">없음</option>
@@ -239,8 +234,8 @@ const smokingUi = (h) => (h.smoking === 'current' ? (h.smoking_freq === 'sometim
 function showError(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
 function clearError() { errEl.style.display = 'none'; }
 
-const OCR_FIELD_MAP = { height_cm: 'height', weight_kg: 'weight', waist_cm: 'waist', sbp: 'sbp', dbp: 'dbp', total_chol: 'total-chol', hdl: 'hdl', fasting_glucose: 'glucose' };
-const OCR_FIELD_LABEL = { height_cm: '키', weight_kg: '몸무게', waist_cm: '허리둘레', sbp: '수축기 혈압', dbp: '이완기 혈압', total_chol: '총콜레스테롤', hdl: 'HDL 콜레스테롤', fasting_glucose: '공복혈당' };
+const OCR_FIELD_MAP = { height_cm: 'height', weight_kg: 'weight', waist_cm: 'waist', sbp: 'sbp', dbp: 'dbp', total_chol: 'total-chol', fasting_glucose: 'glucose' };
+const OCR_FIELD_LABEL = { height_cm: '키', weight_kg: '몸무게', waist_cm: '허리둘레', sbp: '수축기 혈압', dbp: '이완기 혈압', total_chol: '총콜레스테롤', fasting_glucose: '공복혈당' };
 const ocrInput = document.getElementById('ocr-input');
 const ocrLabelText = document.getElementById('ocr-label-text');
 const ocrResult = document.getElementById('ocr-result');
@@ -290,7 +285,6 @@ function renderSummary(health) {
     ['당뇨병 여부', optionLabel('diabetes', health.diabetes)],
     ['고혈압 진단·치료 상태', optionLabel('htn-status', health.htn_status)],
     ['총콜레스테롤', `${health.total_chol} mg/dL`],
-    ['HDL 콜레스테롤', `${health.hdl} mg/dL`],
     ['부모 고혈압 가족력', optionLabel('parent-htn', health.parent_htn)],
     ['공복혈당', health.fasting_glucose != null ? `${health.fasting_glucose} mg/dL` : '입력 안 함'],
   );
@@ -321,7 +315,6 @@ function fillForm(health) {
   document.getElementById('diabetes').value = String(health.diabetes);
   document.getElementById('htn-status').value = health.htn_status;
   document.getElementById('total-chol').value = health.total_chol;
-  document.getElementById('hdl').value = health.hdl;
   document.getElementById('parent-htn').value = health.parent_htn;
   document.getElementById('glucose').value = health.fasting_glucose ?? '';
 }
@@ -365,7 +358,6 @@ form.addEventListener('submit', async (event) => {
     diabetes: document.getElementById('diabetes').value === 'true',
     htn_status: document.getElementById('htn-status').value,
     total_chol: Number(document.getElementById('total-chol').value),
-    hdl: Number(document.getElementById('hdl').value),
     parent_htn: document.getElementById('parent-htn').value,
     fasting_glucose: document.getElementById('glucose').value ? Number(document.getElementById('glucose').value) : null,
     recorded_at: existingHealth ? existingHealth.recorded_at : localIso(new Date()),
