@@ -187,6 +187,18 @@ function getAccessToken() {
 // 설문 제출: 설문지 조회 → 답안지 시작 → 답 저장 → 내기.
 // - 서버가 설문 v2(문항 코드 N0..)를 열면 문항 코드 → 보기 코드(option_code)로 맞춰 보낸다. 보기 코드는 가이드 §1.2의 코드 문자열(N 문항은 점수 문자열)을 쓴다고 가정.
 // - 서버가 아직 v1(BREAKFAST·EATOUT·AEROBIC 필수 3문항)이면 세 문항에 모두 답했을 때만 v1 코드로 바꿔 보낸다. 건너뛴 게 있으면 서버 제출은 생략(예측은 그대로 진행).
+const SCALE5_CODES = ['never', 'slightly', 'moderate', 'much', 'very'];
+const FREQ5_CODES = ['le3_month', '1_2_week', '3_6_week', '1_day', '2_3_day'];
+const SCORE_UP = ['2', '4', '6', '8', '10'], SCORE_DOWN = ['10', '8', '6', '4', '2'];
+const N_MAP = {                                    // 문항 → { codes: 서버 보기 코드, scores: 화면 값 }
+  N0: { codes: ['bland', 'slightly_bland', 'normal', 'slightly_salty', 'salty'], scores: ['10', '20', '30', '40', '50'] },
+  N1: { codes: SCALE5_CODES, scores: SCORE_UP }, N2: { codes: SCALE5_CODES, scores: SCORE_UP }, N3: { codes: SCALE5_CODES, scores: SCORE_UP },
+  N4: { codes: SCALE5_CODES, scores: SCORE_DOWN }, N5: { codes: SCALE5_CODES, scores: SCORE_DOWN },
+  N6: { codes: FREQ5_CODES, scores: SCORE_UP }, N7: { codes: FREQ5_CODES, scores: SCORE_UP }, N8: { codes: FREQ5_CODES, scores: SCORE_UP },
+  N9: { codes: FREQ5_CODES, scores: SCORE_DOWN }, N10: { codes: FREQ5_CODES, scores: SCORE_DOWN },
+};
+const scoreToServerCode = (q, v) => { const m = N_MAP[q]; return m ? m.codes[m.scores.indexOf(String(v))] : v; };
+const serverCodeToScore = (q, c) => { const m = N_MAP[q]; return m && m.codes.includes(c) ? m.scores[m.codes.indexOf(c)] : c; };
 const EATOUT_V1 = { rare: 'lt_monthly', '1_2_week': '1_2_per_week', '3_4_week': '3_4_per_week', '5_6_week': '5_6_per_week', '1_day': '1_per_day', '2plus_day': '2plus_per_day' };
 async function apiSubmitSurvey(payload) {
   if (USE_MOCK_SURVEY) {
@@ -203,8 +215,14 @@ async function apiSubmitSurvey(payload) {
     : { BREAKFAST: a.B1, EATOUT: a.E1 ? EATOUT_V1[a.E1] : undefined, AEROBIC: a.P1 ? (a.P1 === '150plus' ? 'yes' : 'no') : undefined };
   const responses = [];
   for (const q of survey.questions) {
-    const code = want[q.question_code];
+    if (isV2 && q.question_code === 'P2') {            // 숫자 문항(걸음 수)
+      const steps = payload.baseline_steps;
+      if (steps != null && steps !== '' && !isNaN(Number(steps))) responses.push({ question_id: q.question_id, value_num: Number(steps) });
+      continue;
+    }
+    let code = want[q.question_code];
     if (code == null) continue;                       // 건너뛴 문항
+    if (isV2) code = scoreToServerCode(q.question_code, code);
     const opt = q.options.find(o => o.option_code === String(code));
     if (!opt) throw new Error('설문 보기를 찾지 못했습니다. 잠시 후 다시 시도해주세요.');
     responses.push({ question_id: q.question_id, option_id: opt.option_id });
@@ -448,7 +466,7 @@ async function restoreSurveyFromServer() {
         else answers.B1 = r.option_code;
       } else if (c === 'BP_MEASURE_METHOD') answers.BPM = r.option_code;
       else if (r.option_code == null && r.value_num != null) answers[c] = r.value_num;   // v2 숫자 문항(P2 걸음 수)
-      else answers[c] = r.option_code;                                 // v2: N0..N10, P1, E1, B1
+      else answers[c] = serverCodeToScore(c, r.option_code);            // v2: N0..N10(서버 코드→점수), P1, E1, B1
     });
     const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
     localStorage.setItem('paeon-survey', JSON.stringify(buildSurveyPayload(answers, read('paeon-health'), read('paeon-profile'))));
