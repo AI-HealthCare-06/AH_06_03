@@ -81,7 +81,7 @@ class ModelResult(BaseModel):
     model_code:Literal["MODEL_A", "MODEL_B"] # 어떤 모델인지
     model_version:str | None=None # 모델 버전
     status: Literal["completed", "skipped", "failed"] # 상태
-    skip_reason:Literal["age_out_of_range", "htn_diagnosed"] | None=None # 스킵한 이유
+    skip_reason: Literal["age_out_of_range", "htn_diagnosed", "cad_diagnosed"] | None = None
     probability:float | None=None # 점수
     risk_level:Literal["normal", "borderline", "high"] | None=None # 신호등
     percentile:float | None=None # 같은 나이/성별 중 등수
