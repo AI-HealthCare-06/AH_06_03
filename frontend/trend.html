@@ -126,20 +126,15 @@ function renderCompare() {
   }
   const xA0 = buildXA(profile, health);
   const r0 = riskOf(MODEL_A_FEATS, MODEL_A_INTERCEPT, xA0), v0 = vascularAge(xA0), b0 = band(r0);
-  const proj = projectedHealth();
-  const xA1 = { ...buildXA(profile, proj), currentSmoker: proj.smokingFrac };
-  const r1 = riskOf(MODEL_A_FEATS, MODEL_A_INTERCEPT, xA1), v1 = vascularAge(xA1), b1 = band(r1);
-  const recheck = JSON.parse(localStorage.getItem('paeon-recheck') || 'null');
   const cycleId = (JSON.parse(localStorage.getItem('paeon-cycle') || 'null') || {}).cycleId;   // 서버 사이클 ID (챌린지 시작 시 저장)
+  // 4주 재입력 전에는 시작 값만 보여 준다 (예상치는 보여 주지 않는다). 재입력 후 전·후 비교는 서버 값으로 붙인다.
   body.innerHTML = `
-    <p class="lede">바뀐 입력(혈압·흡연)만 다시 받아 같은 모델 A에 전·후 데이터를 각각 넣어 비교했습니다. 확률(%)은 표시하지 않고 범주로만 비교합니다.</p>
+    <p class="lede">바뀐 입력(혈압·흡연)만 다시 받아 같은 모델 A에 전·후 데이터를 각각 넣어 비교합니다. 확률(%)은 표시하지 않고 범주로만 비교합니다.</p>
     <div class="deltarow">
       <div class="side"><div class="lb">시작</div><div class="vv" style="color:${COLOR[b0.code]}">${b0.label}</div><div class="hint">혈관 나이 ${Math.round(v0)}세</div></div>
-      <div class="arrow">→</div>
-      <div class="side"><div class="lb">4주 후${recheck ? '' : ' (예상)'}</div><div class="vv" style="color:${COLOR[b1.code]}">${b1.label}</div><div class="hint">혈관 나이 ${Math.round(v1)}세</div></div>
     </div>
-    <figure style="margin-top:10px"><figcaption>수축기 혈압 추이</figcaption>${bpChart(progress.bpLog.length ? bpPoints(health, progress.bpLog) : bpPoints(health, [], proj.sbp))}</figure>
-    <div class="callout" style="margin-top:10px">10년 위험은 4주 사이 바뀌는 입력이 적어 크게 움직이지 않습니다. 혈압 변화를 함께 확인해 주세요.</div>
+    <div class="callout" style="margin-top:10px">4주 재입력하면 처음과 비교해 드려요.</div>
+    <figure style="margin-top:10px"><figcaption>수축기 혈압 추이</figcaption>${bpChart(bpPoints(health, progress.bpLog))}</figure>
     <div id="recheck-card" style="background:var(--cream); border:1.5px solid var(--sage-light); border-radius:18px; padding:16px 18px; margin-top:12px; display:flex; flex-direction:column; gap:10px">
       <p class="sect" style="margin:0">4주가 지났나요?</p>
       <p class="hint">혈압과 흡연 상태만 새로 입력하면 같은 모델로 처음과 비교해 드려요. 입력한 값은 서버에 저장돼요.</p>
