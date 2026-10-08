@@ -37,7 +37,7 @@
   <div class="frame">
     <div class="frame-body">
       <div class="screen">
-        <p class="lede" id="lede">미션은 고정 2개와 선택 1개, 모두 3개예요. 고정 미션은 입력하신 정보로 정해져요.</p>
+        <p class="lede" id="lede">미션은 세 가지예요. 두 가지는 건강정보에 맞춰 정해지고, 한 가지는 직접 골라요.</p>
         <div id="err" class="callout" style="display:none"></div>
         <p class="sect" id="fixed-title">고정 미션</p>
         <div id="fixed-list"></div>
@@ -99,11 +99,11 @@ async function main() {
     const last = (await apiListCycles())[0];
     if (last && ['completed', 'incomplete'].includes(last.status) && !last.reassessed) {
       document.getElementById('err').style.display = 'block';
-      document.getElementById('err').innerHTML = `<b>${last.cycle_number}차 4주가 끝났어요</b><br>지금 상태를 입력하면 처음과 비교하고, 다음 차수 미션도 바뀐 값으로 골라 드려요. <a href="reassessment.html?cycle=${encodeURIComponent(last.cycle_id)}" style="color:var(--sage-deep); font-weight:700">4주 재입력하기</a>`;
+      document.getElementById('err').innerHTML = `<b>${last.cycle_number}차 4주가 끝났어요</b><br>지금 상태를 입력하면 처음과 비교하고, 다음 4주 미션도 바뀐 값으로 골라 드려요. <a href="reassessment.html?cycle=${encodeURIComponent(last.cycle_id)}" style="color:var(--sage-deep); font-weight:700">4주 재입력하기</a>`;
     }
   } catch (e) { /* 이력이 없어도 진행 */ }
   document.getElementById('lede').textContent =
-    `${rec.total_cycles * 4}주 챌린지를 4주씩 ${rec.total_cycles}번으로 나눠 해요. 지금은 ${rec.cycle_number}차예요. 미션은 고정 2개와 선택 1개, 모두 3개예요. 고정 미션은 입력하신 정보로 정해져요.`;
+    `${rec.total_cycles * 4}주 동안 4주씩 ${rec.total_cycles}번 도전해요. 지금은 ${rec.cycle_number}차 도전이에요. 미션은 세 가지예요. 두 가지는 건강정보에 맞춰 정해지고, 한 가지는 직접 골라요.`;
   document.getElementById('start-btn').textContent = `${rec.cycle_number}차 챌린지 시작 (4주)`;
   document.getElementById('notice').textContent = rec.selectable_notice;
 
@@ -146,13 +146,18 @@ async function main() {
   if (rec.survey_needed.length) {
     document.getElementById('survey-needed').innerHTML = `<div class="callout">${rec.survey_needed.map(x => esc(x.category_name)).join(' · ')} 미션은 설문을 마치면 추천돼요. <a href="survey.html">설문하러 가기</a></div>`;
   }
-  if (rec.excluded.length) {
-    const t = document.getElementById('out-title');
-    t.style.display = 'block';
-    t.textContent = `추천하지 않은 미션 ${rec.excluded.length}개`;
-    document.getElementById('out-list').innerHTML = rec.excluded.map(x =>
-      `<div class="slot" data-k="out"><span>—</span><span><div class="st">${esc(x.name)}</div><div class="sd">${esc(x.reason)}</div></span></div>`).join('');
-  }
+  // 추천에서 빠진 미션은 이유에 따라 말투를 나눠 보여 준다: 이미 잘함 / 정보를 입력하면 추천 / 지금은 권하지 않음
+  const OUT_GROUPS = [
+    ['doing_well', '지금도 잘하고 있어요', '✓'],
+    ['need_info', '이런 미션도 있어요', '+'],
+    ['not_advised', '지금은 권하지 않아요', '!'],
+  ];
+  document.getElementById('out-list').innerHTML = OUT_GROUPS.map(([kind, title, mark]) => {
+    const items = rec.excluded.filter(x => x.kind === kind);
+    if (!items.length) return '';
+    return `<p class="sect">${title}</p>` + items.map(x =>
+      `<div class="slot" data-k="out"><span>${mark}</span><span><div class="st">${esc(x.code ? x.name : x.name.replace(/ 미션$/, ''))}</div><div class="sd">${esc(x.reason)}</div></span></div>`).join('');
+  }).join('');
 
   document.getElementById('start-btn').addEventListener('click', async () => {
     if (!picked) return;

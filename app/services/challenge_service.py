@@ -127,6 +127,7 @@ async def get_recommendation(db: AsyncSession, user_id: str) -> RecommendationRe
         excluded=[
             ExcludedItem(
                 code=e.get("code"),
+                kind=e["kind"],
                 category=e.get("category") or MISSIONS[e["code"]]["category"],
                 name=MISSIONS[e["code"]]["name"] if e.get("code") else f"{CATEGORY_NAMES[e['category']]} 미션",
                 reason=e["reason"],
