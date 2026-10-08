@@ -233,7 +233,7 @@ function render() {
     </div>`;
     if ((state === 'active' && cycle) || state === 'ready') body += panelsHtml();
     const bpPts = bpPoints(health, progress.bpLog);
-    if (bpPts.length) body += `<figure><figcaption>수축기 혈압 · <b>주 1회 측정</b></figcaption>${bpChart(bpPts)}</figure>`;
+    if (bpPts.length) body += `<figure><figcaption>수축기 혈압 · <b>시작과 4주마다 측정</b></figcaption>${bpChart(bpPts)}</figure>`;
     body += `<div class="callout"><b>이번 주 챌린지 ${Math.min(5, progress.days.length)} / 5일</b></div>`;
   } else if (state === 'pending') {
     body += sp.html;

@@ -20,6 +20,7 @@
   .deltarow .side .vv{font-size:26px; font-weight:900}
   .deltarow .arrow{font-size:22px; color:var(--faint)}
   .tworow{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .cmp .mrow{display:flex; justify-content:space-between; gap:10px; padding:10px 14px; font-size:13px; background:#fff; border:1px solid var(--sage-light); border-radius:14px; margin-bottom:6px}
   .mini{background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px; text-align:center}
 </style>
 </head>
@@ -46,18 +47,28 @@
 <script>
 function cssv(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 const COLOR = { normal: 'var(--ok)', borderline: 'var(--warn)', high: 'var(--risk)' };
-
-const profile = JSON.parse(localStorage.getItem('paeon-profile') || 'null');
-const elig = JSON.parse(localStorage.getItem('paeon-eligibility') || 'null');
-const health = JSON.parse(localStorage.getItem('paeon-health') || 'null');
-const survey = JSON.parse(localStorage.getItem('paeon-survey') || 'null');
-const cycle = JSON.parse(localStorage.getItem('paeon-cycle') || 'null');
-const progress = JSON.parse(localStorage.getItem('paeon-progress') || '{"days":[],"bpLog":[]}');
+const RISK = { normal: '정상', borderline: '경계', high: '위험' };
+const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 function shortDate(iso) { if (!iso) return ''; const [, m, d] = iso.split('-'); return `${Number(m)}/${Number(d)}`; }
-function bpPoints(health, bpLog) {
-  const pts = [{ v: health.sbp, d: health.recorded_at ? shortDate(health.recorded_at) : '시작' }];
-  bpLog.forEach(l => pts.push({ v: l.sys, d: l.date ? shortDate(l.date) : `${l.w}주차` }));
+
+// 서버의 사이클별 전후 비교(review)에서 가져온다. 혈압은 시작할 때와 4주 재입력 때만 재므로 점도 그때만 찍힌다.
+async function loadReviews() {
+  const cycles = (await apiListCycles()).slice().sort((x, y) => x.cycle_number - y.cycle_number);
+  const reviews = [];
+  for (const c of cycles) {
+    try { reviews.push((await apiCall('GET', `/challenges/cycles/${encodeURIComponent(c.cycle_id)}/review`, undefined, '변화를 불러오지 못했습니다')).data); }
+    catch (e) { /* 한 사이클을 못 불러와도 나머지는 보여 준다 */ }
+  }
+  return { cycles, reviews };
+}
+
+function bpPoints(reviews) {
+  const pts = [];
+  const first = reviews.find(r => r.before && r.before.sbp != null);
+  if (first) pts.push({ v: first.before.sbp, d: shortDate(first.before.examination_date) });
+  reviews.filter(r => r.reassessed && r.after && r.after.sbp != null)
+    .forEach(r => pts.push({ v: r.after.sbp, d: shortDate(r.after.examination_date) }));
   return pts;
 }
 
@@ -65,7 +76,7 @@ function bpChart(points) {
   const series = points.map(p => p.v);
   const W = 356, H = 144, padL = 32, padR = 16, padT = 20, padB = 34;
   const lo = Math.min(120, ...series) - 4, hi = Math.max(150, ...series) + 4;
-  const Xp = i => padL + (series.length > 1 ? i * (W - padL - padR) / (series.length - 1) : 0);
+  const Xp = i => padL + (series.length > 1 ? i * (W - padL - padR) / (series.length - 1) : (W - padL - padR) / 2);
   const Yp = v => padT + (hi - v) / (hi - lo) * (H - padT - padB);
   const s = [`<svg class="chart" viewBox="0 0 ${W} ${H}">`];
   s.push(`<line x1="${padL}" y1="${Yp(140).toFixed(1)}" x2="${W - padR}" y2="${Yp(140).toFixed(1)}" stroke="${cssv('--danger')}" stroke-width="1.5" stroke-dasharray="5 4"/>`);
@@ -80,60 +91,77 @@ function bpChart(points) {
   return s.join('');
 }
 
-const NEED_ELIG = '<div class="callout"><b>대상 확인이 필요해요</b><br>나이와 병력 확인을 한 번 해 주시면 변화를 보여 드려요.</div><a class="cta" style="display:block;text-align:center;text-decoration:none;margin-top:8px" href="eligibility.html">대상 확인하러 가기</a>';
+// 같은 모델 버전끼리만 비교한다 (comparable). 모델 B는 확률로 판정하지 않고 "나와 비슷한 사람 100명 중" 문장으로만 보여 준다.
+function modelRows(rv) {
+  return rv.models.filter(m => m.comparable).map(m => {
+    if (m.model_code === 'MODEL_A') {
+      return `<div class="mrow"><span>10년 심혈관 위험</span><span>${RISK[m.before_risk_level]} → <b>${RISK[m.after_risk_level]}</b></span></div>`;
+    }
+    const b = Math.round(m.before_probability * 100), a = Math.round(m.after_probability * 100);
+    const word = a === b ? '그대로예요' : (a < b ? '줄었어요' : '늘었어요');
+    return `<div class="mrow"><span>나와 비슷한 사람 100명 중 혈압이 조금 높은 편인 사람</span><span>약 ${b}명 → <b>약 ${a}명</b> (${word})</span></div>`;
+  }).join('');
+}
+
+const NO_DATA = '<div class="callout"><b>기록이 쌓이면 여기에 변화가 보입니다</b><br>챌린지를 시작하고 4주 뒤 재입력을 하면 혈압 변화가 그려져요.</div><a class="ghost" style="display:block;text-align:center;text-decoration:none;margin-top:8px" href="challenges.html">챌린지 시작하기</a>';
+const LOGIN_NEEDED = '<div class="callout"><b>불러오지 못했어요</b><br>잠시 뒤 다시 열어 주세요. 계속 안 되면 다시 로그인해 주세요.</div>';
+
+let DATA = null;
 
 function renderTrend() {
   const body = document.getElementById('body');
-  if (!elig) { body.innerHTML = NEED_ELIG; return; }
-  if (elig.ageBand !== 'in' || elig.chd) {
-    body.innerHTML = '<div class="callout"><b>모델 A 예측 대상이 아닙니다</b><br>예측 이력이 없어 위험 추이는 그리지 않습니다.</div>';
-    return;
-  }
-  if (!cycle || progress.days.length === 0) {
-    body.innerHTML = '<div class="callout"><b>기록이 쌓이면 여기에 변화가 보입니다</b><br>챌린지 인증이나 혈압 기록 후 다시 와 주세요.</div><a class="ghost" style="display:block;text-align:center;text-decoration:none;margin-top:8px" href="challenge-progress.html">챌린지 인증하러 가기</a>';
-    return;
-  }
-  // 예상 위험도는 보여 주지 않는다. 실제로 기록한 주간 혈압만 그린다. 전·후 비교는 4주 재입력 뒤 서버 값으로 보여 준다.
+  const pts = bpPoints(DATA.reviews);
+  if (!pts.length) { body.innerHTML = NO_DATA; return; }
   body.innerHTML = `
-    <figure><figcaption>수축기 혈압 · <b>주 1회 측정</b></figcaption>${bpChart(bpPoints(health, progress.bpLog))}</figure>
-    <div class="callout" style="margin-top:10px">4주 재입력을 하면 처음과 비교한 변화를 "4주 전 · 후 비교"에서 보여 드려요.</div>`;
+    <figure><figcaption>수축기 혈압 · <b>시작할 때와 4주 재입력 때 측정</b></figcaption>${bpChart(pts)}</figure>
+    <div class="callout" style="margin-top:10px">혈압은 4주마다 다시 재요. 재입력을 하면 처음과 비교한 변화를 "4주 전 · 후 비교"에서 보여 드려요.</div>`;
 }
 
 function renderCompare() {
   const body = document.getElementById('body');
-  if (!elig) { body.innerHTML = NEED_ELIG; return; }
-  if (elig.ageBand !== 'in' || elig.chd) {
-    body.innerHTML = '<div class="callout"><b>모델 A 예측 대상이 아닙니다</b><br>전·후 위험도 비교는 제공하지 않습니다.</div>';
+  const done = DATA.reviews.filter(r => r.reassessed);
+  const pending = DATA.reviews.filter(r => !r.reassessed && r.cycle_status !== 'active' && r.cycle_status !== 'stopped');
+  const recheck = pending.length
+    ? `<a class="cta" style="display:block; text-align:center; text-decoration:none; margin-top:10px" href="reassessment.html?cycle=${encodeURIComponent(pending[pending.length - 1].cycle_id)}">${pending[pending.length - 1].cycle_number}차 4주 재입력하기</a>`
+    : '';
+  if (!done.length) {
+    body.innerHTML = `<div class="callout"><b>4주 재입력 후에 비교해 드려요</b><br>혈압, 몸무게, 허리둘레와 예측 결과를 처음과 같은 기준으로 비교해요.</div>${recheck}`;
     return;
   }
-  const xA0 = buildXA(profile, health);
-  const r0 = riskOf(MODEL_A_FEATS, MODEL_A_INTERCEPT, xA0), v0 = vascularAge(xA0), b0 = band(r0);
-  const cycleId = (JSON.parse(localStorage.getItem('paeon-cycle') || 'null') || {}).cycleId;   // 서버 사이클 ID (챌린지 시작 시 저장)
-  // 4주 재입력 전에는 시작 값만 보여 준다 (예상치는 보여 주지 않는다). 재입력 후 전·후 비교는 서버 값으로 붙인다.
+  const rv = done[done.length - 1];
+  const b = rv.before || {}, a = rv.after || {};
+  const bp = x => x.sbp != null ? `${x.sbp}/${x.dbp}` : '—';
+  const models = modelRows(rv);
   body.innerHTML = `
-    <p class="lede">바뀐 입력(혈압·흡연)만 다시 받아 같은 모델 A에 전·후 데이터를 각각 넣어 비교합니다. 확률(%)은 표시하지 않고 범주로만 비교합니다.</p>
+    <p class="lede">${rv.cycle_number}차 4주 동안의 변화예요. 확률(%)은 표시하지 않고 범주로만 비교합니다.</p>
     <div class="deltarow">
-      <div class="side"><div class="lb">시작</div><div class="vv" style="color:${COLOR[b0.code]}">${b0.label}</div><div class="hint">혈관 나이 ${Math.round(v0)}세</div></div>
+      <div class="side"><div class="lb">처음 혈압</div><div class="vv">${esc(bp(b))}</div></div>
+      <div class="arrow">→</div>
+      <div class="side"><div class="lb">4주 후 혈압</div><div class="vv">${esc(bp(a))}</div></div>
     </div>
-    <div class="callout" style="margin-top:10px">4주 재입력하면 처음과 비교해 드려요.</div>
-    <figure style="margin-top:10px"><figcaption>수축기 혈압 추이</figcaption>${bpChart(bpPoints(health, progress.bpLog))}</figure>
-    <div id="recheck-card" style="background:var(--cream); border:1.5px solid var(--sage-light); border-radius:18px; padding:16px 18px; margin-top:12px; display:flex; flex-direction:column; gap:10px">
-      <p class="sect" style="margin:0">4주가 지났나요?</p>
-      <p class="hint">혈압과 흡연 상태만 새로 입력하면 같은 모델로 처음과 비교해 드려요. 입력한 값은 서버에 저장돼요.</p>
-      ${cycleId
-        ? `<a class="cta" style="display:block; text-align:center; text-decoration:none" href="reassessment.html?cycle=${encodeURIComponent(cycleId)}">4주 재입력하기</a>`
-        : '<p class="hint">챌린지를 시작하면 4주 뒤에 재입력할 수 있어요.</p>'}
-    </div>`;
-
+    ${models ? `<div class="cmp" style="display:block; margin-top:10px">${models}</div><p class="hint" style="margin-top:6px">선별 정보이며 진단이 아니에요.</p>` : ''}
+    <a class="ghost" style="display:block; text-align:center; text-decoration:none; margin-top:10px" href="reassessment.html?cycle=${encodeURIComponent(rv.cycle_id)}">체중·허리·습관 변화까지 보기</a>
+    ${recheck}`;
 }
+
+let current = 'trend';
+function show() { current === 'trend' ? renderTrend() : renderCompare(); }
 
 document.getElementById('tabs').addEventListener('click', (e) => {
   const btn = e.target.closest('button');
   if (!btn) return;
-  document.querySelectorAll('#tabs button').forEach(b => b.dataset.on = (b === btn) ? '1' : '0');
-  btn.dataset.t === 'trend' ? renderTrend() : renderCompare();
+  document.querySelectorAll('#tabs button').forEach(x => x.dataset.on = (x === btn) ? '1' : '0');
+  current = btn.dataset.t;
+  if (DATA) show();
 });
-renderTrend();
+
+(async () => {
+  const body = document.getElementById('body');
+  body.innerHTML = '<p class="hint">불러오는 중...</p>';
+  try { DATA = await loadReviews(); }
+  catch (e) { body.innerHTML = LOGIN_NEEDED; return; }
+  show();
+})();
 </script>
 </body>
 </html>
