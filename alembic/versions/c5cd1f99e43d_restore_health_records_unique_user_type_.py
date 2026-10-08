@@ -1,7 +1,7 @@
 """restore health_records unique (user, type, date)
 
 Revision ID: c5cd1f99e43d
-Revises: 021521eb83c3
+Revises: f1d3b7a9c2e4
 Create Date: 2026-10-08 14:08:42.472546
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'c5cd1f99e43d'
-down_revision: Union[str, Sequence[str], None] = '021521eb83c3'
+down_revision: Union[str, Sequence[str], None] = "f1d3b7a9c2e4"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
