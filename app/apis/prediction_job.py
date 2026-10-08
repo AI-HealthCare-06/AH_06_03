@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.apis.deps import get_current_user_id
 from app.core.db.databases import async_get_db
 from app.schemas.common import DataResponse
-from app.schemas.prediction import PredictionJobRequest, PredictionJobResult
+from app.schemas.prediction import PredictionJobRequest, PredictionJobResult, PredictionSummary
 from app.services import prediction_job_service
 
 router = APIRouter(tags=["prediction-job"])
@@ -33,3 +33,10 @@ async def get_latest(
     db: AsyncSession = Depends(async_get_db),
 ):
     return DataResponse(data=await prediction_job_service.get_latest(db, user_id))
+
+@router.get("/predictions", response_model=DataResponse[list[PredictionSummary]])
+async def list_history(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(async_get_db),
+):
+    return DataResponse(data=await prediction_job_service.list_history(db, user_id))

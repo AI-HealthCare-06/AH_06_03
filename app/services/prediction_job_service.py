@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import AppError
 from app.core.security import utcnow
 from app.repositories import health_repository, prediction_repository, user_repository
-from app.schemas.prediction import PredictionJobResult,Factor,ModelResult
+from app.schemas.prediction import PredictionJobResult,Factor,ModelResult, ModelSummary, PredictionJobResult, PredictionSummary
 from app.services import prediction_service
 from app.services.model_input import build_model_input
 
@@ -147,3 +147,41 @@ async def _carry_forward(db: AsyncSession, user_id: str, record) -> None:
         await health_repository.create_measurements(
             db, record.health_record_id, record.examination_date, items, utcnow()
         )
+
+def _summary(p) -> ModelSummary | None:
+    """DB 결과 한 줄 → 목록용 요약 (확률·요인은 빼고)."""
+    if p is None:
+        return None
+    return ModelSummary(
+        status=p.status,
+        model_version=p.model_version,
+        risk_level=p.risk_level,
+        vascular_age=p.vascular_age,
+        skip_reason=p.skip_reason,
+    )
+
+
+async def list_history(db: AsyncSession, user_id: str) -> list[PredictionSummary]:
+    """내 예측 이력 (최근 것부터, 최대 20개)."""
+    jobs = await prediction_repository.list_completed_jobs(db, user_id)
+    job_ids = [j.prediction_job_id for j in jobs]
+    predictions = await prediction_repository.get_predictions_for_jobs(db, job_ids)
+    records = await health_repository.get_records_by_ids(db, [j.health_record_id for j in jobs])
+    exam_dates = {r.health_record_id: r.examination_date for r in records}
+
+    # 🧺 결과를 번호표별 바구니에: {번호표: {"MODEL_A": 결과, "MODEL_B": 결과}}
+    baskets = {}
+    for p in predictions:
+        baskets.setdefault(p.prediction_job_id, {})[p.model_code] = p
+
+    return [
+        PredictionSummary(
+            prediction_job_id=j.prediction_job_id,
+            request_type=j.request_type,
+            examination_date=exam_dates[j.health_record_id],
+            completed_at=j.completed_at,
+            model_a=_summary(baskets.get(j.prediction_job_id, {}).get("MODEL_A")),
+            model_b=_summary(baskets.get(j.prediction_job_id, {}).get("MODEL_B")),
+        )
+        for j in jobs
+    ]

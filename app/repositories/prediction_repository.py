@@ -105,3 +105,24 @@ async def get_first_snapshot(db: AsyncSession, user_id: str) -> dict | None:
         .limit(1)
     )
     return result.scalar_one_or_none()
+
+async def list_completed_jobs(db: AsyncSession, user_id: str, limit: int = 20) -> list[PredictionJob]:
+    """🎫 내 완료된 번호표들, 최근 것부터."""
+    result = await db.execute(
+        select(PredictionJob)
+        .where(PredictionJob.user_id == user_id)
+        .where(PredictionJob.status == "completed")
+        .order_by(PredictionJob.completed_at.desc())
+        .limit(limit)
+    )
+    return list(result.scalars().all())
+
+
+async def get_predictions_for_jobs(db: AsyncSession, job_ids: list[str]) -> list[Prediction]:
+    """📊 여러 번호표의 모델별 결과를 한 번에."""
+    if not job_ids:
+        return []
+    result = await db.execute(
+        select(Prediction).where(Prediction.prediction_job_id.in_(job_ids))
+    )
+    return list(result.scalars().all())

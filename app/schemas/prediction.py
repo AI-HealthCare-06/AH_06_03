@@ -6,7 +6,7 @@
 """
 
 from typing import Literal
-
+from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 # 선택지 값
@@ -121,4 +121,23 @@ class PredictionJobRequest(BaseModel):
     health_record_id: str
     survey_instance_id: str | None = None
     request_type: Literal["initial", "interim", "full", "manual"] = "initial"
+
+
+class ModelSummary(BaseModel):
+    """📊 목록용 모델 결과 요약 (요인·확률 없음)."""
+    status: str
+    model_version: str | None
+    risk_level: str | None
+    vascular_age: float | None
+    skip_reason: str | None
+
+
+class PredictionSummary(BaseModel):
+    """🎫 예측 이력 한 줄."""
+    prediction_job_id: str
+    request_type: str
+    examination_date: date
+    completed_at: datetime | None
+    model_a: ModelSummary | None
+    model_b: ModelSummary | None
     

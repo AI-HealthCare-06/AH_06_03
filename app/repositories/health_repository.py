@@ -100,3 +100,10 @@ async def get_previous_measurements(
         .order_by(HealthRecord.examination_date.desc(), HealthRecord.created_at.desc())
     )
     return list(result.scalars().all())
+
+async def get_records_by_ids(db: AsyncSession, record_ids: list[str]) -> list[HealthRecord]:
+    """📦 상자 번호 목록으로 상자들을 한 번에."""
+    if not record_ids:
+        return []
+    result = await db.execute(select(HealthRecord).where(HealthRecord.health_record_id.in_(record_ids)))
+    return list(result.scalars().all())
