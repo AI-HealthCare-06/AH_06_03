@@ -19,7 +19,7 @@ from app.repositories import user_repository
 from app.schemas.auth import SignupResult, TokenResult, MeResult
 
 
-MIN_AGE =14
+MIN_AGE =19
 INVALID_LOGIN = AppError(401, "AUTH_INVALID_CREDENTIALS", "이메일 또는 비밀번호가 맞지 않습니다.")
 GUARDIAN_PURGE_DAYS = 5  # 미확인 법정대리인 정보 파기 기한 (REQ-CONSENT-003)
 
@@ -36,46 +36,23 @@ async def signup(
     guardian_relation: str | None = None,
     guardian_contact: str | None = None,
 ) -> SignupResult:
-    now = utcnow()
-    today = now.date()
+    today = utcnow().date()
     if birth_date > today:
         raise AppError(422, "AUTH_INVALID_BIRTH_DATE", "생년월일을 확인해 주세요.")
-
-    is_minor = _age_on(birth_date, today) < MIN_AGE
-    # 만 14세 미만은 법정대리인 정보가 있어야 가입할 수 있다 (REQ-CONSENT-003)
-    if is_minor and guardian_name is None:
-        raise AppError(403, "AUTH_GUARDIAN_CONSENT_REQUIRED", "만 14세 미만은 법정대리인 동의가 필요합니다.")
+    if _age_on(birth_date, today) < MIN_AGE:
+        raise AppError(403, "AUTH_ADULT_ONLY", "만 19세 이상만 가입할 수 있습니다.")
 
     email = email.lower()
-    found = await user_repository.get_user_by_email(db, email)
-    if found:
+    if await user_repository.get_user_by_email(db, email):
         raise AppError(409, "AUTH_EMAIL_DUPLICATED", "이미 가입된 이메일입니다.")
 
-    status = "pending_guardian" if is_minor else "active"
     try:
-        user = await user_repository.create_user_with_profile(
-            db, email, hash_password(password), birth_date, status=status
-        )
-        if is_minor:
-            await user_repository.create_guardian_verification(
-                db,
-                user_id=user.user_id,
-                name_enc=encrypt_text(guardian_name),
-                relation=guardian_relation,
-                contact_enc=encrypt_text(guardian_contact),
-                method="email" if "@" in guardian_contact else "sms",
-                now=now,
-                purge_due_at=now + timedelta(days=GUARDIAN_PURGE_DAYS),
-            )
+        user = await user_repository.create_user_with_profile(db, email, hash_password(password), birth_date)
         await db.commit()
     except IntegrityError:
         await db.rollback()
         raise AppError(409, "AUTH_EMAIL_DUPLICATED", "이미 가입된 이메일입니다.")
-
-    return SignupResult(
-        user_id=user.user_id,
-        guardian_verification_status="pending" if is_minor else None,
-    )
+    return SignupResult(user_id=user.user_id)
 
 async def _issue_tokens(db: AsyncSession, user_id: str) -> TokenResult:
     """팔찌와 쿠폰을 발급한다. 쿠폰 기록은 DB에 남긴다."""

@@ -94,3 +94,54 @@ async def is_record_used(db: AsyncSession, health_record_id: str) -> bool:
         .limit(1)
     )
     return result.scalar_one_or_none() is not None
+
+async def get_first_snapshot(db: AsyncSession, user_id: str) -> dict | None:
+    """📸 이 사람이 처음 예측할 때 찍어 둔 입력값 (4주 재평가 나이 고정용)."""
+    result = await db.execute(
+        select(PredictionJob.input_snapshot)
+        .where(PredictionJob.user_id == user_id)
+        .where(PredictionJob.input_snapshot.is_not(None))
+        .order_by(PredictionJob.requested_at.asc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+async def list_completed_jobs(db: AsyncSession, user_id: str, limit: int = 20) -> list[PredictionJob]:
+    """🎫 내 완료된 번호표들, 최근 것부터."""
+    result = await db.execute(
+        select(PredictionJob)
+        .where(PredictionJob.user_id == user_id)
+        .where(PredictionJob.status == "completed")
+        .order_by(PredictionJob.completed_at.desc())
+        .limit(limit)
+    )
+    return list(result.scalars().all())
+
+
+async def get_predictions_for_jobs(db: AsyncSession, job_ids: list[str]) -> list[Prediction]:
+    """📊 여러 번호표의 모델별 결과를 한 번에."""
+    if not job_ids:
+        return []
+    result = await db.execute(
+        select(Prediction).where(Prediction.prediction_job_id.in_(job_ids))
+    )
+    return list(result.scalars().all())
+
+async def get_job(db: AsyncSession, prediction_job_id: str) -> PredictionJob | None:
+    """🎫 번호표 번호로 번호표를 찾는다."""
+    return await db.get(PredictionJob, prediction_job_id)
+
+async def get_latest_job_by_types(
+    db: AsyncSession, user_id: str, request_types: list[str], before: datetime | None = None
+) -> PredictionJob | None:
+    """🎫 이 종류들 중 가장 최근 완료 번호표. before가 있으면 그 시각 이전 것만."""
+    query = (
+        select(PredictionJob)
+        .where(PredictionJob.user_id == user_id)
+        .where(PredictionJob.status == "completed")
+        .where(PredictionJob.request_type.in_(request_types))
+    )
+    if before is not None:
+        query = query.where(PredictionJob.completed_at < before)
+    result = await db.execute(query.order_by(PredictionJob.completed_at.desc()).limit(1))
+    return result.scalar_one_or_none()

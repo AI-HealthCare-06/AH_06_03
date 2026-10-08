@@ -9,8 +9,6 @@ METRIC_TO_MODEL = {
     "PARENT_HTN": "parent_htn", "ALCOHOL_FREQ": "drink_freq", "ALCOHOL_AMOUNT": "drink_amount",
 }
 
-# ✔️ 설문 번역표: 질문 이름 → 모델 이름
-SURVEY_TO_MODEL = {"BREAKFAST": "breakfast", "EATOUT": "eatout", "AEROBIC": "aerobic"}
 
 
 def age_on(birth_date: date, on: date) -> int:
@@ -18,30 +16,19 @@ def age_on(birth_date: date, on: date) -> int:
     return on.year - birth_date.year - ((on.month, on.day) < (birth_date.month, birth_date.day))
 
 
-def build_model_input(
-    sex: str, birth_date: date, examination_date: date,
-    measurements: list[dict], survey_answers: dict[str, str],
-) -> dict:
+def build_model_input(sex: str, birth_date: date, examination_date: date, measurements: list[dict]) -> dict:
     """measurements: [{"metric_code", "value_num", "value_code"}...]
-    survey_answers: {"BREAKFAST": "1_2", ...} (질문 이름 → 고른 보기의 model_value_code)"""
+    모델 입력은 W04 건강정보만 쓴다. 설문은 챌린지 판정 전용 (생활습관 구현 명세 §0)."""
     user = {
         "age": age_on(birth_date, examination_date),
         "sex": "M" if sex == "male" else "F",
     }
-
     for m in measurements:
         key = METRIC_TO_MODEL.get(m["metric_code"])
         if key is None:
-            continue  # BMI, BP_STAGE처럼 서버가 계산한 값은 모델이 직접 계산하므로 건너뜀
+            continue  # BMI, ECIG처럼 모델에 안 보내는 값은 건너뜀
         value = m["value_num"] if m["value_num"] is not None else m["value_code"]
         if key == "diabetes":
             value = value == "true"
         user[key] = value
-
-    for q_code, model_value in survey_answers.items():
-        key = SURVEY_TO_MODEL.get(q_code)
-        if key is None:
-            continue
-        user[key] = int(model_value) if key == "aerobic" else model_value
-
     return user

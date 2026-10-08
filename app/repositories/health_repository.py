@@ -53,6 +53,7 @@ async def create_measurements(
             unit=item.get("unit"),
             measured_on=measured_on,
             input_method=item.get("input_method", "manual"),
+            source_measurement_id=item.get("source_measurement_id"),
             created_at=now,
         )
         db.add(m)
@@ -83,3 +84,50 @@ async def delete_measurements(db: AsyncSession, health_record_id: str, metric_co
         .where(HealthMeasurement.health_record_id == health_record_id)
         .where(HealthMeasurement.metric_code.in_(metric_codes))
     )
+
+async def get_previous_measurements(
+    db: AsyncSession, user_id: str, exclude_record_id: str, metric_codes: list[str]
+) -> list[HealthMeasurement]:
+    """📦 내 다른 상자들에서, 이 지표들의 물건을 최근 검진부터 꺼낸다 (4주 재평가 이월용)."""
+    if not metric_codes:
+        return []
+    result = await db.execute(
+        select(HealthMeasurement)
+        .join(HealthRecord, HealthRecord.health_record_id == HealthMeasurement.health_record_id)
+        .where(HealthRecord.user_id == user_id)
+        .where(HealthRecord.health_record_id != exclude_record_id)
+        .where(HealthMeasurement.metric_code.in_(metric_codes))
+        .order_by(HealthRecord.examination_date.desc(), HealthRecord.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+async def get_records_by_ids(db: AsyncSession, record_ids: list[str]) -> list[HealthRecord]:
+    """📦 상자 번호 목록으로 상자들을 한 번에."""
+    if not record_ids:
+        return []
+    result = await db.execute(select(HealthRecord).where(HealthRecord.health_record_id.in_(record_ids)))
+    return list(result.scalars().all())
+
+async def get_records_in_range(
+    db: AsyncSession, user_id: str, input_type: str, start: date, end: date
+) -> list[HealthRecord]:
+    """📦 이 기간(start~end, 양 끝 포함)의 특정 종류 상자들, 날짜순."""
+    result = await db.execute(
+        select(HealthRecord)
+        .where(HealthRecord.user_id == user_id)
+        .where(HealthRecord.input_type == input_type)
+        .where(HealthRecord.examination_date >= start)
+        .where(HealthRecord.examination_date <= end)
+        .order_by(HealthRecord.examination_date)
+    )
+    return list(result.scalars().all())
+
+
+async def get_measurements_for_records(db: AsyncSession, record_ids: list[str]) -> list[HealthMeasurement]:
+    """📦 여러 상자의 물건을 한 번에."""
+    if not record_ids:
+        return []
+    result = await db.execute(
+        select(HealthMeasurement).where(HealthMeasurement.health_record_id.in_(record_ids))
+    )
+    return list(result.scalars().all())

@@ -6,7 +6,7 @@
 """
 
 from typing import Literal
-
+from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 # 선택지 값
@@ -121,4 +121,57 @@ class PredictionJobRequest(BaseModel):
     health_record_id: str
     survey_instance_id: str | None = None
     request_type: Literal["initial", "interim", "full", "manual"] = "initial"
+
+
+class ModelSummary(BaseModel):
+    """📊 목록용 모델 결과 요약 (요인·확률 없음)."""
+    status: str
+    model_version: str | None
+    risk_level: str | None
+    vascular_age: float | None
+    skip_reason: str | None
+
+
+class PredictionSummary(BaseModel):
+    """🎫 예측 이력 한 줄."""
+    prediction_job_id: str
+    request_type: str
+    examination_date: date
+    completed_at: datetime | None
+    model_a: ModelSummary | None
+    model_b: ModelSummary | None
+
+class MetricChange(BaseModel):
+    """측정값 하나의 처음 → 4주 변화."""
+    metric_code: str
+    before: float | None
+    after: float | None
+    change: float | None  # after - before (둘 중 하나라도 없으면 None)
+
+
+class WeeklyBP(BaseModel):
+    """그 사이 주간 혈압 기록 한 번."""
+    examination_date: date
+    sbp: float | None
+    dbp: float | None
+
+
+class ModelChange(BaseModel):
+    """모델 결과 변화. comparable=false면 화면에서 이 항목을 표시하지 않는다 (명세 §6.2-2)."""
+    comparable: bool
+    reason: str | None  # missing / skipped / model_version_changed
+    before: ModelSummary | None
+    after: ModelSummary | None
+
+
+class ReassessmentCompareResult(BaseModel):
+    """4주 재평가 전·후 비교 (W11-2: 혈압, 몸무게·허리둘레, 모델 결과)."""
+    baseline_job_id: str
+    interim_job_id: str
+    baseline_date: date
+    interim_date: date
+    measurements: list[MetricChange]
+    weekly_bp: list[WeeklyBP]
+    model_a: ModelChange
+    model_b: ModelChange
     

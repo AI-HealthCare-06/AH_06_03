@@ -1,5 +1,5 @@
 """설문 결과지·신청서 양식."""
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class OptionResult(BaseModel):
@@ -15,6 +15,9 @@ class QuestionResult(BaseModel):
     question_code: str
     question_text: str
     required: bool
+    answer_type: str                 # "single_select" 또는 "number"
+    num_min: int | None = None       # 숫자 질문만
+    num_max: int | None = None
     options: list[OptionResult]
 
 
@@ -40,11 +43,20 @@ class SurveyInstanceResult(BaseModel):
     status: str
 
 class ResponseItem(BaseModel):
-    """✔️ 답 하나."""
+    """✔️ 답 하나. 고르는 질문은 option_id, 숫자 질문은 value_num (둘 중 하나만)."""
     model_config = ConfigDict(extra="forbid")
 
     question_id: str
-    option_id: str
+    option_id: str | None = None
+    value_num: float | None = None
+
+    @model_validator(mode="after")
+    def check_one_answer(self) -> "ResponseItem":
+        has_option = self.option_id is not None
+        has_num = self.value_num is not None
+        if has_option == has_num:
+            raise ValueError("보기(option_id)와 숫자(value_num) 중 하나만 보내 주세요.")
+        return self
 
 
 class ResponsesRequest(BaseModel):
