@@ -58,30 +58,19 @@
   .inline{display:flex; gap:8px; align-items:flex-end}
   .inline .field{flex:1}
   .inline button{width:auto; padding:10px 20px}
-
-  .mrow{background:#fff; border:1.5px solid var(--sage-light); border-radius:14px; padding:9px 12px}
-  .mhead{display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600}
-  .mhead.clickable{cursor:pointer}
-  .mhead .mark{width:18px; height:18px; border-radius:999px; border:2px solid var(--sage); flex:none}
-  .mrow[data-s="completed"] .mark{background:var(--petal2); border-color:var(--petal2)}
-  .mrow[data-s="failed"] .mark{border-color:var(--peach); background:var(--peach)}
-  .mrow[data-s="skipped"] .mark{border-style:dashed}
-  .mhead .mt{flex:1}
-  .mstat{font-size:11px; font-weight:700; color:var(--muted); white-space:nowrap}
-  .mq{margin-top:8px; display:flex; flex-direction:column; gap:7px}
-  .mq .qt{font-size:12.5px; font-weight:700}
-  .mopts{display:flex; flex-wrap:wrap; gap:6px}
-  .mopt{border:1.5px solid var(--sage-light); background:#fff; border-radius:999px; padding:6px 12px; font-size:12px; font-weight:600; color:var(--ink)}
-  .mopt[data-on="1"]{border-color:var(--sage-deep); background:var(--sage-light)}
-  .mask{display:flex; gap:6px; align-items:center; font-size:12px}
-  .mask input{width:110px; font:inherit; padding:7px 10px; border-radius:10px; border:1.5px solid var(--sage-light)}
-  .mask button{width:auto; padding:7px 14px}
-  .mwarn{font-size:11.5px; color:var(--warn)}
-  .mweek{margin-top:6px; font-size:11px; color:var(--muted)}
-  .mbar{height:6px; background:var(--track); border-radius:999px; overflow:hidden; margin-top:3px}
-  .mbar i{display:block; height:100%; background:var(--petal2); border-radius:999px}
-  .cups{border-collapse:collapse; margin-top:4px; font-size:11px; color:var(--muted)}
-  .cups th,.cups td{border:1px solid var(--sage-light); padding:3px 7px; text-align:left}
+  .mission-card{background:#fff; border:1.5px solid var(--sage-light); border-radius:16px; padding:12px 14px; display:flex; flex-direction:column; gap:8px}
+  .mission-card .mt{font-size:13.5px; font-weight:700}
+  .mission-card .mq{font-size:12.5px; color:var(--muted)}
+  .mission-card .bar{height:8px; background:var(--sage-light); border-radius:999px; overflow:hidden}
+  .mission-card .bar i{display:block; height:100%; background:var(--petal2)}
+  .mission-card .meta{display:flex; justify-content:space-between; font-size:11.5px; color:var(--muted)}
+  .answers{display:flex; flex-wrap:wrap; gap:6px}
+  .answers button{width:auto; padding:7px 12px; font-size:12.5px; border-radius:999px; border:1.5px solid var(--sage-light); background:#fff; color:var(--ink)}
+  .answers button.on{border-color:var(--sage-deep); background:var(--sage-light); font-weight:700}
+  .answers input{width:120px}
+  .logged{font-size:12px; font-weight:700}
+  .logged.completed{color:var(--ok)} .logged.failed{color:var(--risk)} .logged.skipped{color:var(--muted)}
+  .warn{font-size:12px; color:var(--risk); background:var(--risk-soft); border-radius:10px; padding:6px 10px}
 </style>
 </head>
 <body>
@@ -92,279 +81,197 @@
   <div class="frame">
     <div class="frame-body">
       <div class="screen">
-        <p class="lede">오늘 한 일을 미션별로 기록하세요. 목표는 하루가 아니라 주 단위 횟수이고, 알림은 하루에 한 번 이하예요.</p>
-        <div class="countbar"><span id="cyc-label">1차</span> · 모든 미션을 마친 날 <b id="count-label">0 / 28</b>일</div>
+        <p class="lede" id="lede">오늘 미션을 기록하세요. 목표는 하루가 아니라 주 단위 횟수예요. 기록은 오늘만 고칠 수 있어요.</p>
+        <div id="err" class="callout" style="display:none"></div>
         <div id="week-strip"></div>
         <div id="day-detail"></div>
-        <div style="display:flex; gap:8px">
-          <button type="button" id="fill-all" class="ghost">전부 인증 (데모)</button>
-          <button type="button" id="fill-bp" class="ghost">혈압 4주치 기록 (데모)</button>
-          <button type="button" id="reset" class="ghost">초기화</button>
-        </div>
         <div id="bp-section"></div>
-        <div class="bplog" id="bp-log"></div>
         <a class="cta" style="display:block; text-align:center; text-decoration:none" href="dashboard.html">대시보드 보기</a>
+        <button type="button" id="stop-btn" class="ghost" style="display:none">챌린지 중단하기</button>
       </div>
     </div>
   </div>
 </div>
 
 <script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
 <script>
-// 가이드(modeling/handoff/생활습관_입력_가이드.md) §5 매일 기록 (W10).
-// 기록은 서버(챌린지 API)가 준비되면 서버에 저장한다. 그 전까지 같은 필드(status·quantity·limit_exceeded)로 브라우저에 둔다.
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
-const TOTAL_DAYS = 28;                  // 사이클 길이 (12주 = 4주 x 3 구조가 정해지면 사이클 번호와 함께 바꾼다)
-function localIso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+const STATUS_LABEL = { completed: '달성', failed: '미달성', skipped: '해당 없음' };
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 
-const cycle = read('paeon-cycle');
-const health = read('paeon-health') || {};
-const survey = read('paeon-survey') || {};
-const progress = read('paeon-progress') || { days: [], bpLog: [] };
-if (!progress.logs) progress.logs = {};          // { 날짜번호: { 미션코드: { status, quantity, limit_exceeded } } }
-if (!progress.missionLog) progress.missionLog = {};
-if (!progress.days) progress.days = [];
-if (!progress.bpLog) progress.bpLog = [];
+let cycle = null;          // 서버 사이클
+let selectedIdx = 0;       // 0~27
+let weekOffset = 0;
+let partialFor = null;     // 벽 스쿼트 "일부만" 횟수 고르는 중
 
-const startedOn = new Date((cycle ? cycle.startedOn : localIso(new Date())) + 'T00:00:00');
-const today = new Date(); today.setHours(0, 0, 0, 0);
-const todayIdx = Math.round((today - startedOn) / 86400000);
-const clampedToday = Math.min(TOTAL_DAYS - 1, Math.max(0, todayIdx));
-const dateForIdx = (i) => new Date(startedOn.getTime() + i * 86400000);
-const missions = cycle ? cycle.missions : [];
-const cycleNo = cycle ? (cycle.cycleNo || 1) : 1;
+const startDate = () => new Date(cycle.started_on + 'T00:00:00');
+const dateForIdx = (i) => new Date(startDate().getTime() + i * 86400000);
+const todayIdx = () => cycle.day_number - 1;
+function logOn(m, d) { return m.logs.find(l => l.log_date === d) || null; }
 
-let selectedIdx = clampedToday;
-let weekOffset = Math.floor(clampedToday / 7);
-let openMission = null;                         // 오늘 화면에서 질문이 펼쳐진 미션
+function showError(msg) { const el = document.getElementById('err'); el.style.display = msg ? 'block' : 'none'; el.textContent = msg || ''; }
 
-// ---- §5.2 미션별 질문과 선택지 → 저장값
-const male = health.sex !== 'female';
-const stepsTarget = survey.baseline_steps != null ? survey.baseline_steps + 2000 : null;
-const CUPS = '<table class="cups"><tr><th>술</th><th>1잔</th><th>병·캔으로 셀 때</th></tr><tr><td>소주</td><td>소주잔 1잔</td><td>1병(360ml) = 7잔</td></tr><tr><td>맥주</td><td>맥주잔 1잔</td><td>캔 355ml = 1.5잔 · 500ml = 2잔</td></tr><tr><td>와인</td><td>와인잔 1잔</td><td>1병(750ml) = 5잔</td></tr><tr><td>막걸리</td><td>막걸리 사발 1잔</td><td>1병(750ml) = 3잔</td></tr><tr><td>양주</td><td>양주잔 1잔</td><td></td></tr><tr><td>소맥</td><td colspan="2">맥주잔 1잔 = 1잔</td></tr></table>';
-const RECORD = {
-  'SMK-1': { q: '오늘 일반담배나 전자담배를 피우셨나요?', opts: [
-    { label: '아니오', status: 'completed' },
-    { label: '예', status: 'failed', ask: { text: '몇 개비 피우셨나요? (선택)', optional: true, min: 0, max: 200 } }] },
-  'ALC-1': { q: '오늘 술을 드셨나요?', extra: CUPS, opts: male ? [
-    { label: '안 마심', status: 'completed', quantity: 0 }, { label: '1잔', status: 'completed', quantity: 1 }, { label: '2잔', status: 'completed', quantity: 2 },
-    { label: '3잔 이상', status: 'failed', quantity: 3, limit: true }] : [
-    { label: '안 마심', status: 'completed', quantity: 0 }, { label: '1잔', status: 'completed', quantity: 1 },
-    { label: '2잔 이상', status: 'failed', quantity: 2, limit: true }] },
-  'NA-1': { q: '오늘 국·찌개·탕·라면의 국물을 남기셨나요?', opts: [
-    { label: '남겼어요', status: 'completed' }, { label: '국물 요리를 먹지 않았어요', status: 'completed' }, { label: '다 먹었어요', status: 'failed' }] },
-  'NA-2': { q: '오늘 음식에 소금이나 간장을 더 넣지 않으셨나요?', opts: [
-    { label: '넣지 않았어요', status: 'completed' }, { label: '넣었어요', status: 'failed' }] },
-  'ACT-1': { q: '오늘 걸음 수를 입력해 주세요', hint: stepsTarget ? `목표 ${stepsTarget.toLocaleString()}보 · 휴대폰 건강 앱에 나온 숫자를 입력해요` : '휴대폰 건강 앱에 나온 숫자를 입력해요',
-    steps: true },
-  'ACT-2': { q: '오늘 숨이 조금 찰 정도로 빠르게 걸은 시간은?', opts: [
-    { label: '안 걸었어요', status: 'failed', quantity: 0 }, { label: '30분 미만', status: 'failed', quantity: 15 }, { label: '30분 이상', status: 'completed', quantity: 30 }] },
-  'ACT-3': { q: '오늘 벽 스쿼트를 하셨나요?', opts: [
-    { label: '4번 모두 했어요', status: 'completed', quantity: 4 },
-    { label: '일부만 했어요', status: 'failed', ask: { text: '몇 번 하셨나요? (1–3)', min: 1, max: 3 } },
-    { label: '안 했어요', status: 'failed', quantity: 0 }] },
-  'OUT-1': { q: '오늘 외식·배달 때 "싱겁게" 요청하셨나요?', opts: [
-    { label: '요청했어요', status: 'completed' }, { label: '외식·배달을 하지 않았어요', status: 'skipped' }, { label: '요청하지 않았어요', status: 'failed' }] },
-  'BRK-1': { q: '오늘 아침 식사를 하셨나요?', opts: [{ label: '했어요', status: 'completed' }, { label: '안 했어요', status: 'failed' }] },
-  'WT-1': { q: '오늘 끼니마다 밥을 2/3공기 이하로 드셨나요?', opts: [{ label: '네', status: 'completed' }, { label: '아니요', status: 'failed' }] },
-};
-const GENERIC = { q: '오늘 했나요?', opts: [{ label: '했어요', status: 'completed' }, { label: '못 했어요', status: 'failed' }] };   // 예전 데이터의 미션 코드용
-const STATUS_LABEL = { completed: '완료', failed: '오늘은 못 했어요', skipped: '해당 없음' };   // 질책하는 문구를 쓰지 않는다 (REQ-CHAL-007)
-
-function save() {
-  // 다른 화면(대시보드·캘린더·추이)이 읽는 요약값을 같이 갱신한다: 오늘 완료한 미션 목록, 모든 미션을 마친 날
-  progress.missionLog = {}; progress.days = [];
-  Object.entries(progress.logs).forEach(([idx, day]) => {
-    const done = Object.keys(day).filter(id => day[id].status === 'completed');
-    progress.missionLog[idx] = done;
-    const all = missions.length > 0 && missions.every(m => day[m.id] && ['completed', 'skipped'].includes(day[m.id].status));
-    if (all && done.length) progress.days.push(Number(idx));
-  });
-  localStorage.setItem('paeon-progress', JSON.stringify(progress));
-}
-const logOf = (idx, id) => (progress.logs[idx] || {})[id] || null;
-function setLog(idx, id, rec) {
-  if (!progress.logs[idx]) progress.logs[idx] = {};
-  if (rec) progress.logs[idx][id] = rec; else delete progress.logs[idx][id];
-  save();
-}
-function weekCount(id, wStart) {
-  let n = 0;
-  for (let i = wStart; i < Math.min(TOTAL_DAYS, wStart + 7); i++) { const l = logOf(i, id); if (l && l.status === 'completed') n++; }
-  return n;
+// 주차는 시작한 요일부터 7일이라, 요일 머리글도 그 순서로 맞춘다
+function dowHeader(wStart) {
+  let h = '';
+  for (let i = wStart; i < wStart + 7; i++) {
+    const dw = dateForIdx(i).getDay();
+    h += `<span style="color:var(${dw === 0 ? '--danger' : '--muted'})">${DOW[dw]}</span>`;
+  }
+  return h;
 }
 
 function weekStripHtml() {
   const wStart = weekOffset * 7;
-  const d0 = dateForIdx(wStart), d1 = dateForIdx(Math.min(TOTAL_DAYS - 1, wStart + 6));
+  const d0 = dateForIdx(wStart), d1 = dateForIdx(wStart + 6);
   let cells = '';
   for (let i = wStart; i < wStart + 7; i++) {
-    if (i > TOTAL_DAYS - 1) { cells += `<div class="day blank"></div>`; continue; }
-    const dt = dateForIdx(i);
+    const dt = dateForIdx(i), d = iso(dt);
     const cls = ['day', 'clickable'];
-    if (i === clampedToday) cls.push('today');
+    if (i === todayIdx()) cls.push('today');
     if (i === selectedIdx) cls.push('picked');
     if (dt.getDay() === 0) cls.push('sun');
-    const hasChal = progress.days.includes(i);
-    const hasBp = progress.bpLog.some(l => l.date === localIso(dt));
-    const dots = (hasChal || hasBp) ? `<span class="dots">${hasChal ? '<span class="dot"></span>' : ''}${hasBp ? '<span class="dot-bp"></span>' : ''}</span>` : '';
+    const allDone = cycle.missions.every(m => (logOn(m, d) || {}).status === 'completed');
+    const dots = allDone ? '<span class="dots"><span class="dot"></span></span>' : '';
     cells += `<div class="${cls.join(' ')}" data-idx="${i}"><span class="num">${dt.getDate()}</span>${dots}</div>`;
   }
   return `<div class="cal-card">
     <div class="cal-head">
-      <div class="ym">${cycleNo}차 ${weekOffset + 1}주차 · ${d0.getMonth() + 1}/${d0.getDate()} ~ ${d1.getMonth() + 1}/${d1.getDate()}</div>
-      <div class="nav"><button type="button" id="wk-prev" ${weekOffset === 0 ? 'disabled' : ''}>‹</button><button type="button" id="wk-next" ${weekOffset === Math.ceil(TOTAL_DAYS / 7) - 1 ? 'disabled' : ''}>›</button></div>
+      <div class="ym">${weekOffset + 1}주차 · ${d0.getMonth() + 1}/${d0.getDate()} ~ ${d1.getMonth() + 1}/${d1.getDate()}</div>
+      <div class="nav"><button type="button" id="wk-prev" ${weekOffset === 0 ? 'disabled' : ''}>‹</button><button type="button" id="wk-next" ${weekOffset === 3 ? 'disabled' : ''}>›</button></div>
     </div>
-    <div class="dow-row"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+    <div class="dow-row">${dowHeader(wStart)}</div>
     <div class="day-grid">${cells}</div>
-    <div class="cal-legend"><span><i class="ring-sample"></i>오늘</span><span><i class="dot-sample"></i>모든 미션 완료</span><span><i class="dot-bp-sample"></i>혈압 기록</span></div>
+    <div class="cal-legend"><span><i class="ring-sample"></i>오늘</span><span><i class="dot-sample"></i>미션 모두 달성</span></div>
   </div>`;
 }
 
-function missionHtml(m) {
-  const isToday = selectedIdx === clampedToday;
-  const rec = logOf(selectedIdx, m.id);
-  const def = RECORD[m.id] || GENERIC;
-  const wStart = weekOffset * 7, target = m.weekly || 5, cnt = weekCount(m.id, wStart);
-  const pct = Math.min(100, Math.round(cnt / target * 100));
-  let q = '';
-  if (isToday && openMission === m.id) {
-    let body;
-    if (def.steps) {
-      body = `<div class="mask"><input type="number" id="ask-in" min="0" max="100000" placeholder="걸음 수" value="${rec && rec.quantity != null ? rec.quantity : ''}"><span>걸음</span><button type="button" class="ghost" data-save-steps="${m.id}">기록</button></div>`;
-    } else {
-      body = `<div class="mopts">${def.opts.map((o, i) => `<button type="button" class="mopt" data-opt="${i}" data-m="${m.id}" data-on="${rec && rec.optIndex === i ? 1 : 0}">${o.label}</button>`).join('')}</div>`;
-    }
-    const ask = (!def.steps && rec && def.opts[rec.optIndex] && def.opts[rec.optIndex].ask)
-      ? `<div class="mask"><span>${def.opts[rec.optIndex].ask.text}</span><input type="number" id="ask-in" min="${def.opts[rec.optIndex].ask.min}" max="${def.opts[rec.optIndex].ask.max}" value="${rec.quantity != null ? rec.quantity : ''}"><button type="button" class="ghost" data-save-ask="${m.id}">저장</button></div>` : '';
-    q = `<div class="mq"><div class="qt">${def.q}</div>${def.hint ? `<div class="qh">${def.hint}</div>` : ''}${body}${ask}${def.extra || ''}</div>`;
+function answerHtml(m, log) {
+  const code = m.card.code;
+  if (code === 'ACT-1') {
+    const target = (m.target_config || {}).steps_target;
+    return `<div class="answers"><input type="number" min="0" max="100000" id="steps-${code}" placeholder="걸음 수" value="${log ? log.quantity : ''}">
+      <button type="button" data-save-steps="${code}">저장</button></div>${target ? `<div class="mq">목표 ${target.toLocaleString()}보</div>` : ''}`;
   }
-  const warn = rec && rec.limit_exceeded ? '<div class="mwarn">오늘은 권장량을 넘었어요. 건강을 위해서는 술을 마시지 않는 것이 가장 좋아요.</div>' : '';
-  const stat = rec ? STATUS_LABEL[rec.status] + (rec.quantity != null && rec.status !== 'skipped' && m.id !== 'SMK-1' && !['NA-1', 'NA-2'].includes(m.id) ? ` · ${rec.quantity}` : '') : (isToday ? '탭해서 기록' : (selectedIdx < clampedToday ? '기록 없음' : ''));
-  return `<div class="mrow" data-s="${rec ? rec.status : ''}">
-    <div class="mhead${isToday ? ' clickable' : ''}" data-toggle="${m.id}"><span class="mark"></span><span class="mt">${m.t}</span><span class="mstat">${stat}</span></div>
-    ${q}${warn}
-    <div class="mweek">${weekOffset + 1}주차 ${cnt} / ${target}회 · ${pct}%<div class="mbar"><i style="width:${pct}%"></i></div></div>
+  if (code === 'ACT-3' && partialFor === code) {
+    return `<div class="answers">${[1, 2, 3].map(n => `<button type="button" data-code="${code}" data-answer="partial" data-qty="${n}">${n}번</button>`).join('')}</div>`;
+  }
+  return `<div class="answers">${m.card.answers.map(a => {
+    const on = log && log.answer === a.code;
+    const attr = (code === 'ACT-3' && a.code === 'partial') ? 'data-partial="1"' : '';
+    return `<button type="button" class="${on ? 'on' : ''}" data-code="${code}" data-answer="${esc(a.code)}" ${attr}>${esc(a.label)}</button>`;
+  }).join('')}</div>`;
+}
+
+function missionCardHtml(m, d, editable) {
+  const log = logOn(m, d);
+  const week = m.weeks[Math.min(3, Math.floor(selectedIdx / 7))];
+  const pct = Math.round(week.rate * 100);
+  return `<div class="mission-card">
+    <div class="mt">${esc(m.card.name)} <span class="lvl" data-l="${LEVEL_LABEL[m.card.difficulty]}">${LEVEL_LABEL[m.card.difficulty]}</span></div>
+    <div class="mq">${esc(m.card.question)}</div>
+    ${editable ? answerHtml(m, log) : `<div class="logged ${log ? log.status : ''}">${log ? STATUS_LABEL[log.status] : '기록 없음'}</div>`}
+    ${editable && log ? `<div class="logged ${log.status}">오늘 기록: ${STATUS_LABEL[log.status]}</div>` : ''}
+    ${log && log.warning ? `<div class="warn">${esc(log.warning)}</div>` : ''}
+    ${m.card.notice ? `<div class="mq">${esc(m.card.notice)}</div>` : ''}
+    <div class="bar"><i style="width:${pct}%"></i></div>
+    <div class="meta"><span>${week.week}주차 ${week.completed} / ${week.target}회</span><span>연속 ${m.streak}일</span></div>
   </div>`;
 }
 
 function dayDetailHtml() {
-  const dt = dateForIdx(selectedIdx);
-  const label = `${dt.getMonth() + 1}월 ${dt.getDate()}일 (${DOW[dt.getDay()]})`;
-  const isToday = selectedIdx === clampedToday;
-  let action;
-  if (isToday) action = '<p class="hint">미션을 눌러 오늘 한 일을 기록하세요. 오늘 안에는 언제든 고칠 수 있어요.</p>';
-  else if (selectedIdx < clampedToday) action = '<p class="hint">지난 날짜는 그날의 기록만 볼 수 있어요</p>';
-  else action = '<p class="hint">아직 오지 않은 날짜예요</p>';
+  const dt = dateForIdx(selectedIdx), d = iso(dt);
+  const editable = cycle.status === 'active' && selectedIdx === todayIdx();
+  let hint = '';
+  if (selectedIdx < todayIdx()) hint = '<p class="hint">지난 날짜는 그날의 기록만 볼 수 있어요</p>';
+  else if (selectedIdx > todayIdx()) hint = '<p class="hint">아직 오지 않은 날짜예요</p>';
   return `<div class="today-card">
-    <div><div class="tt">선택한 날</div><div class="dd">${label}</div></div>
-    ${missions.map(missionHtml).join('') || '<p class="hint">아직 시작한 챌린지가 없어요. <a href="challenges.html" style="color:var(--sage-deep); font-weight:700">챌린지 고르기</a></p>'}
-    ${action}
+    <div><div class="tt">${editable ? '오늘' : '선택한 날'}</div><div class="dd">${dt.getMonth() + 1}월 ${dt.getDate()}일 (${DOW[dt.getDay()]})</div></div>
+    ${selectedIdx > todayIdx() ? '' : cycle.missions.map(m => missionCardHtml(m, d, editable)).join('')}
+    ${hint}
   </div>`;
 }
 
+// 혈압은 미션이 아니라 시작·4주 재입력 때만 재요 (가이드 §5.3). 주간 혈압 기록은 없음
 function bpSectionHtml() {
-  if (survey.bp_measure_method === 'difficult') {
-    return '<p class="sect">혈압 기록</p><div class="callout">혈압을 주 1회 재기 어렵다고 답하셔서 기록 칸을 숨겼어요. 약국이나 보건소에서 잴 수 있게 되면 설문에서 바꿔 주세요.</div>';
-  }
-  const wStart = Math.floor(clampedToday / 7) * 7;
-  const weekDates = new Set();
-  for (let i = wStart; i < wStart + 7 && i < TOTAL_DAYS; i++) weekDates.add(localIso(dateForIdx(i)));
-  const loggedThisWeek = progress.bpLog.find(l => weekDates.has(l.date));
-  const body = loggedThisWeek
-    ? `<div class="callout"><b>이번 주 혈압을 기록했어요</b> — ${loggedThisWeek.sys}/${loggedThisWeek.dia} mmHg<br>다음 주에 다시 입력 칸이 나타나요</div>`
-    : `<div class="inline">
-        <div class="field"><label>수축기</label><input id="bp-sys" type="number" value="140"></div>
-        <div class="field"><label>이완기</label><input id="bp-dia" type="number" value="88"></div>
-        <button type="button" id="log-bp" class="ghost">기록</button>
-      </div>`;
-  return `<p class="sect">혈압 기록 <span class="muted">— 주 1회, 입력할 때까지 계속 떠있어요</span></p>${body}`;
+  const end = new Date(cycle.ended_on + 'T00:00:00');
+  return `<div class="callout"><b>혈압은 4주마다 재요</b><br>${end.getMonth() + 1}월 ${end.getDate()}일 사이클이 끝나면 4주 재입력에서 다시 입력해요</div>`;
 }
 
-function renderBpLog() {
-  document.getElementById('bp-log').innerHTML = progress.bpLog.map(l => {
-    const high = l.sys >= 140;
-    return `<div class="bplog-row">
-      <span class="bp-dot" style="background:${high ? 'var(--risk)' : 'var(--ok)'}"></span>
-      <span class="bp-date">${l.date || l.w + '주차'}</span>
-      <span class="bp-val">${l.sys}/${l.dia} <span class="unit">mmHg</span></span>
-      <span class="bp-badge ${high ? 'high' : 'ok'}">${high ? '140/90 기준 이상' : '140/90 기준 미만'}</span>
-    </div>`;
-  }).join('');
-}
-
-function commit(m, optIndex, qty) {
-  const def = RECORD[m] || GENERIC, o = def.opts[optIndex];
-  const rec = { status: o.status, optIndex };
-  if (qty != null) rec.quantity = qty; else if (o.quantity != null) rec.quantity = o.quantity;
-  if (o.limit) rec.limit_exceeded = true;
-  setLog(clampedToday, m, rec);
+async function record(code, answer, quantity) {
+  showError('');
+  try {
+    await apiRecordChallengeLog(code, answer, quantity);
+    partialFor = null;
+    cycle = await apiGetCurrentCycle();  // 달성률·연속 기록일을 서버 값으로 다시 그림
+    render();
+  } catch (e) { showError(friendlyError(e)); }
 }
 
 function wireEvents() {
-  document.querySelectorAll('.day[data-idx]').forEach(el => el.addEventListener('click', () => { selectedIdx = Number(el.dataset.idx); openMission = null; render(); }));
+  document.querySelectorAll('.day[data-idx]').forEach(el => el.addEventListener('click', () => { selectedIdx = Number(el.dataset.idx); render(); }));
   const prev = document.getElementById('wk-prev');
   if (prev) prev.addEventListener('click', () => { weekOffset = Math.max(0, weekOffset - 1); render(); });
   const next = document.getElementById('wk-next');
-  if (next) next.addEventListener('click', () => { weekOffset = Math.min(Math.ceil(TOTAL_DAYS / 7) - 1, weekOffset + 1); render(); });
-  document.querySelectorAll('.mhead.clickable[data-toggle]').forEach(el => el.addEventListener('click', () => {
-    openMission = openMission === el.dataset.toggle ? null : el.dataset.toggle; render();
+  if (next) next.addEventListener('click', () => { weekOffset = Math.min(3, weekOffset + 1); render(); });
+  document.querySelectorAll('.answers button[data-code]').forEach(el => el.addEventListener('click', () => {
+    if (el.dataset.partial) { partialFor = el.dataset.code; render(); return; }
+    record(el.dataset.code, el.dataset.answer, el.dataset.qty ? Number(el.dataset.qty) : undefined);
   }));
-  document.querySelectorAll('.mopt[data-opt]').forEach(el => el.addEventListener('click', () => {
-    const m = el.dataset.m, i = Number(el.dataset.opt), o = (RECORD[m] || GENERIC).opts[i];
-    if (o.ask) {                                   // 숫자를 더 받아야 하는 선택지: 먼저 상태만 저장하고 입력 칸을 보여 준다
-      setLog(clampedToday, m, { status: o.status, optIndex: i }); render();
-    } else { commit(m, i); openMission = null; render(); }
+  document.querySelectorAll('[data-save-steps]').forEach(el => el.addEventListener('click', () => {
+    const code = el.dataset.saveSteps;
+    const v = document.getElementById(`steps-${code}`).value;
+    if (v === '') { showError('걸음 수를 입력해 주세요.'); return; }
+    record(code, null, Number(v));
   }));
-  const askBtn = document.querySelector('[data-save-ask]');
-  if (askBtn) askBtn.addEventListener('click', () => {
-    const m = askBtn.dataset.saveAsk, rec = logOf(clampedToday, m), o = (RECORD[m] || GENERIC).opts[rec.optIndex];
-    const raw = document.getElementById('ask-in').value;
-    if (raw === '' && o.ask.optional) { commit(m, rec.optIndex, null); }
-    else { const v = Math.max(o.ask.min, Math.min(o.ask.max, Math.round(Number(raw)))); if (isNaN(v)) return; commit(m, rec.optIndex, v); }
-    openMission = null; render();
-  });
-  const stepsBtn = document.querySelector('[data-save-steps]');
-  if (stepsBtn) stepsBtn.addEventListener('click', () => {
-    const m = stepsBtn.dataset.saveSteps, v = Math.round(Number(document.getElementById('ask-in').value));
-    if (isNaN(v) || v < 0) return;
-    const ok = stepsTarget != null ? v >= stepsTarget : false;
-    setLog(clampedToday, m, { status: ok ? 'completed' : 'failed', quantity: v });
-    openMission = null; render();
-  });
-  const logBp = document.getElementById('log-bp');
-  if (logBp) logBp.addEventListener('click', () => {
-    progress.bpLog.push({ w: Math.floor(clampedToday / 7) + 1, date: localIso(dateForIdx(clampedToday)), sys: Number(document.getElementById('bp-sys').value), dia: Number(document.getElementById('bp-dia').value) });
-    save(); render();
-  });
 }
 
 function render() {
-  document.getElementById('cyc-label').textContent = `12주 중 ${cycleNo}차`;
-  document.getElementById('count-label').textContent = `${progress.days.length} / ${TOTAL_DAYS}`;
+  document.getElementById('lede').textContent =
+    `${cycle.total_cycles * 4}주 중 ${cycle.cycle_number}차 · ${cycle.day_number}일째. 오늘 한 일을 미션별로 기록하세요. 목표는 하루가 아니라 주 단위 횟수이고, 오늘 안에는 언제든 고칠 수 있어요.`;
   document.getElementById('week-strip').innerHTML = weekStripHtml();
   document.getElementById('day-detail').innerHTML = dayDetailHtml();
   document.getElementById('bp-section').innerHTML = bpSectionHtml();
-  renderBpLog();
   wireEvents();
 }
 
-// ---- 데모 버튼 (배포 직전에 제거)
-document.getElementById('fill-all').addEventListener('click', () => {
-  for (let i = 0; i < TOTAL_DAYS; i++) missions.forEach(m => { const def = RECORD[m.id] || GENERIC; const k = def.opts ? def.opts.findIndex(o => o.status === 'completed') : -1; progress.logs[i] = progress.logs[i] || {}; progress.logs[i][m.id] = { status: 'completed', optIndex: Math.max(0, k) }; });
-  save(); render();
-});
-document.getElementById('reset').addEventListener('click', () => { progress.logs = {}; save(); render(); });
-document.getElementById('fill-bp').addEventListener('click', () => {
-  const sys = [145, 142, 140, 138], dia = [92, 90, 88, 86];
-  progress.bpLog = sys.map((s, w) => ({ w: w + 1, date: localIso(dateForIdx(w * 7)), sys: s, dia: dia[w] }));
-  save(); render();
-});
+async function main() {
+  try { cycle = await apiGetCurrentCycle(); }
+  catch (e) { showError(friendlyError(e)); return; }
+  if (!cycle) {
+    // 진행 중인 사이클이 없음: 방금 4주가 끝났으면 안내, 아니면 선택 화면으로
+    let last = null;
+    try { last = (await apiListCycles())[0] || null; } catch (e) { /* 이력이 없어도 진행 */ }
+    if (last && (last.status === 'completed' || last.status === 'incomplete')) {
+      const msg = last.status === 'completed'
+        ? '4주 목표를 모두 달성했어요! 다음 사이클을 이어서 시작해 볼까요?'
+        : '4주가 끝났어요. 이번 기록을 바탕으로 다음 사이클을 다시 골라 볼까요?';
+      // 4주 재입력 전이면 재입력 먼저 (다음 사이클 추천이 재입력 값으로 바뀜, 가이드 §6.2)
+      const next = last.reassessed
+        ? `<a class="cta" style="display:block; text-align:center; text-decoration:none" href="challenges.html">다음 사이클 시작하기</a>
+           <a class="ghost" style="display:block; text-align:center; text-decoration:none; margin-top:8px" href="reassessment.html?cycle=${encodeURIComponent(last.cycle_id)}">4주 변화 다시 보기</a>`
+        : `<a class="cta" style="display:block; text-align:center; text-decoration:none" href="reassessment.html?cycle=${encodeURIComponent(last.cycle_id)}">4주 재입력하고 변화 보기</a>`;
+      document.getElementById('day-detail').innerHTML =
+        `<div class="callout"><b>${last.cycle_number}차 종료 · 달성률 ${Math.round(last.cycle_rate * 100)}%</b><br>${msg}</div>${next}`;
+      return;
+    }
+    location.replace('challenges.html');
+    return;
+  }
+  selectedIdx = todayIdx();
+  weekOffset = Math.floor(selectedIdx / 7);
+  render();
+  const stop = document.getElementById('stop-btn');
+  stop.style.display = 'block';
+  stop.addEventListener('click', async () => {
+    if (!confirm('진행 중인 챌린지를 중단할까요? 지금까지 기록은 남아요.')) return;
+    try { await apiStopCycle(); location.replace('challenges.html'); } catch (e) { showError(friendlyError(e)); }
+  });
+}
 
-if (Object.keys(progress.logs).length) save();   // 예전 기록(logs 없음)을 덮어쓰지 않는다
-render();
-
+main();
 </script>
 </body>
 </html>

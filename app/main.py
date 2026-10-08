@@ -13,6 +13,7 @@ from app.apis.consent import require_health_consent, router as consent_router
 
 from app.apis.prediction import router as prediction_router
 from app.apis.auth import router as auth_router
+from app.apis.challenge import router as challenge_router
 from app.core.errors import register_error_handlers
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -43,6 +44,7 @@ app.include_router(prediction_job_router, prefix="/v1", dependencies=[Depends(re
 app.include_router(calendar_router, prefix="/v1")
 app.include_router(account_router, prefix="/v1")
 app.include_router(consent_router, prefix="/v1")
+app.include_router(challenge_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.mount("/media", StaticFiles(directory=BASE_DIR / "media"), name="media")
 

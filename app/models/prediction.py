@@ -33,6 +33,8 @@ class PredictionJob(Base):
     requested_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     failure_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # 예측에 넣은 입력 그대로 (4주 재예측 때 나이를 처음 값으로 유지하는 데 씀). 마이그레이션 0e62093ddb61
+    input_snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
 
 class Prediction(Base):

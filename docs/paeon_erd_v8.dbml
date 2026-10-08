@@ -107,7 +107,7 @@ Enum health_input_type {
   initial               [note: '최초 전체 검진 입력']
   interim_reassessment  [note: '4주 사이클 종료: 혈압 + 생활습관 재설문 (REQ-HEALTH-008)']
   full_reassessment     [note: '3~6개월 전체 재검진']
-  weekly_bp             [note: '사이클 중 주간 혈압 기록']
+  weekly_bp             [note: 'v2.2부터 쓰지 않음 (혈압은 initial·interim_reassessment 때만, 가이드 §5.3). 이미 만든 enum 값이라 남겨 둠']
   manual                [note: '사용자가 임의로 추가한 검진 이력 (REQ-HEALTH-004)']
 }
 Enum health_source_type {
@@ -521,7 +521,7 @@ Table health_records {
   health_record_id uuid [pk]
   user_id uuid [not null]
   health_schema_id uuid [not null, ref: > health_input_schemas.health_schema_id]
-  cycle_id uuid [note: '사이클 중 입력(weekly_bp, interim_reassessment)일 때만']
+  cycle_id uuid [note: '사이클 중 입력(interim_reassessment)일 때만']
   input_type health_input_type [not null]
   source_type health_source_type [not null]
   examination_date date [not null]
@@ -659,7 +659,7 @@ Table survey_options {
     (question_id, option_code) [unique]
   }
   Note: '''선택지는 시드 데이터로 관리.
-혈압 측정 수단 문항(question_code 예: BP_MEASURE_METHOD) 선택지:
+혈압 측정 장소 문항(question_code BP_MEASURE_METHOD, 4주 재입력 안내 문구 분기용) 선택지:
   home_monitor(집에 혈압계가 있음) / pharmacy_health_center(약국·보건소에서 측정) / difficult(측정이 어려움)'''
 }
 

@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 4주 재입력 · 변화 비교</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .guide{font-size:12.5px; color:var(--ink); background:var(--cream); border:1px solid var(--sage-light); border-radius:14px; padding:12px 14px; line-height:1.7}
+  .guide ul{margin:6px 0 0; padding-left:18px}
+  .cmp{display:grid; grid-template-columns:1fr auto auto auto; gap:8px 12px; align-items:center; font-size:13px; background:#fff; border:1px solid var(--sage-light); border-radius:16px; padding:14px 16px}
+  .cmp .h{font-size:11.5px; color:var(--muted); font-weight:700}
+  .cmp .v{font-weight:800; text-align:right}
+  .cmp .arrow{color:var(--muted)}
+  .note{font-size:11.5px; color:var(--muted)}
+  .mrow{display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:1px solid var(--sage-light)}
+  .mrow:last-child{border-bottom:none}
+  .ok{color:var(--ok); font-weight:700} .risk{color:var(--risk); font-weight:700}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" id="screen">
+        <p class="lede" id="lede">불러오는 중...</p>
+        <div id="err" class="callout" style="display:none"></div>
+        <div id="body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+// 4주 재입력(가이드 §6.1) → 모델 A·B 재예측 → 전후 비교(W11-2)
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const RISK = { normal: '정상', borderline: '경계', high: '위험' };
+const SMOKING = { current: '현재 피움', former: '끊음', never: '피운 적 없음' };
+const DRINK = { never_lifetime: '안 마심', none_past_year: '4주간 안 마심', lt_monthly: '한 달에 1번 미만', monthly: '한 달에 1번',
+  '2_4_per_month': '한 달에 2–4번', '2_3_per_week': '일주일에 2–3번', '4plus_per_week': '일주일에 4번 이상' };
+
+function showError(msg) { const el = document.getElementById('err'); el.style.display = msg ? 'block' : 'none'; el.textContent = msg || ''; }
+const cycleId = new URLSearchParams(location.search).get('cycle');
+
+function formHtml() {
+  return `
+  <p class="sect">혈압</p>
+  <div class="guide">
+    아침이나 저녁 중 편한 시간에 재 주세요. 다음에도 같은 시간대에 재야 비교할 수 있어요.
+    <ul>
+      <li>아침에 잴 때: 일어난 지 1시간 안에, 화장실에 다녀온 뒤, 아침 식사나 약을 먹기 전에 재요</li>
+      <li>저녁에 잴 때: 잠자리에 들기 전 1시간 안에 재요</li>
+      <li>재기 30분 전부터는 커피, 운동, 흡연, 목욕, 음주를 피해 주세요</li>
+      <li>의자에 앉아 1~2분 쉰 다음, 1~2분 간격으로 두 번 재요</li>
+      <li>소매를 걷고 맨팔에 감는 게 좋아요 (얇은 옷이라면 옷 위에 감아도 괜찮아요)</li>
+    </ul>
+    <div class="note" style="margin-top:6px">집에 혈압계가 없으면 가까운 약국이나 보건소에서 재도 돼요. · 대한고혈압학회 가정혈압포럼 2022</div>
+  </div>
+  <div class="grid2">
+    <div class="field"><label for="sbp1">첫 번째 수축기</label><input id="sbp1" type="number" min="60" max="260"></div>
+    <div class="field"><label for="dbp1">첫 번째 이완기</label><input id="dbp1" type="number" min="30" max="160"></div>
+    <div class="field"><label for="sbp2">두 번째 수축기 (선택)</label><input id="sbp2" type="number" min="60" max="260"></div>
+    <div class="field"><label for="dbp2">두 번째 이완기 (선택)</label><input id="dbp2" type="number" min="30" max="160"></div>
+  </div>
+  <p class="sect">몸</p>
+  <div class="grid2">
+    <div class="field"><label for="weight">몸무게 (kg)</label><input id="weight" type="number" step="0.1" min="30" max="200"></div>
+    <div class="field"><label for="waist">허리둘레 (cm, 선택)</label><input id="waist" type="number" step="0.1" min="50" max="150"></div>
+  </div>
+  <p class="sect">흡연 · 음주</p>
+  <div class="field"><label for="smoking">현재 일반담배(궐련)를 피우십니까?</label>
+    <select id="smoking"><option value="">선택</option><option value="current">매일 피움</option><option value="current">가끔 피움</option>
+      <option value="former">과거엔 피웠으나, 현재 피우지 않음</option><option value="never">피운 적 없음</option></select></div>
+  <div class="field"><label for="dfreq">최근 4주 동안 술을 얼마나 자주 마십니까?</label>
+    <select id="dfreq"><option value="">선택</option><option value="never_lifetime">평생 술을 마셔 본 적 없음</option>
+      <option value="none_past_year">최근 4주간 전혀 마시지 않았다</option><option value="lt_monthly">한 달에 1번 미만</option>
+      <option value="monthly">한 달에 1번 정도</option><option value="2_4_per_month">한 달에 2–4번</option>
+      <option value="2_3_per_week">일주일에 2–3번 정도</option><option value="4plus_per_week">일주일에 4번 이상</option></select></div>
+  <div class="field" id="damount-box" style="display:none"><label for="damount">최근 4주 동안 한 번에 술을 얼마나 마십니까?</label>
+    <select id="damount"><option value="">선택</option><option value="1_2">1–2잔</option><option value="3_4">3–4잔</option>
+      <option value="5_6">5–6잔</option><option value="7_9">7–9잔</option><option value="10plus">10잔 이상</option></select>
+    <div class="note">소주·양주 구분 없이 각각의 술잔으로 세어 주세요.</div></div>
+  <p class="hint">키·콜레스테롤·당뇨·고혈압 진단·가족력은 처음 입력한 값을 그대로 써요.</p>
+  <button type="button" id="submit" class="cta">저장하고 변화 보기</button>`;
+}
+
+function avg(a, b) { return b ? Math.round((a + b) / 2 * 10) / 10 : a; }
+
+function collect() {
+  const n = (id) => { const v = document.getElementById(id).value; return v === '' ? null : Number(v); };
+  const s = (id) => document.getElementById(id).value || null;
+  const sbp1 = n('sbp1'), dbp1 = n('dbp1'), weight = n('weight'), smoking = s('smoking'), dfreq = s('dfreq');
+  if (!sbp1 || !dbp1) throw new Error('첫 번째 혈압을 입력해 주세요.');
+  if (!weight) throw new Error('몸무게를 입력해 주세요.');
+  if (!smoking || !dfreq) throw new Error('흡연과 음주 문항을 골라 주세요.');
+  const drinks = !['never_lifetime', 'none_past_year'].includes(dfreq);
+  if (drinks && !s('damount')) throw new Error('한 번 음주량을 골라 주세요.');
+  const m = [
+    { metric_code: 'SBP', value_num: avg(sbp1, n('sbp2')) }, { metric_code: 'DBP', value_num: avg(dbp1, n('dbp2')) },
+    { metric_code: 'WEIGHT', value_num: weight }, { metric_code: 'SMOKING', value_code: smoking },
+    { metric_code: 'ALCOHOL_FREQ', value_code: dfreq },
+  ];
+  if (n('waist')) m.push({ metric_code: 'WAIST', value_num: n('waist') });
+  if (drinks) m.push({ metric_code: 'ALCOHOL_AMOUNT', value_code: s('damount') });
+  return m;
+}
+
+function row(label, b, a, unit) {
+  const f = (v) => v === null || v === undefined ? '—' : `${v}${unit || ''}`;
+  return `<span>${label}</span><span class="v">${f(b)}</span><span class="arrow">→</span><span class="v">${f(a)}</span>`;
+}
+
+function reviewHtml(rv) {
+  const b = rv.before || {}, a = rv.after || {};
+  const bp = (x) => x.sbp ? `${x.sbp}/${x.dbp}` : null;
+  const range = rv.normal_weight_range ? `키 기준 정상 체중 ${rv.normal_weight_range[0]}–${rv.normal_weight_range[1]}kg · 허리둘레 기준 ${rv.waist_limit}cm 미만` : '';
+  // 모델 A는 위험 범주로, 모델 B는 판정 없이 "닮은 정도"의 방향만 보여준다 (데이터_특성 §2.1: B 확률로 판정 금지)
+  const models = rv.models.filter(m => m.comparable).map(m => {
+    if (m.model_code === 'MODEL_A') {
+      return `<div class="mrow"><span>10년 심혈관 위험</span><span>${RISK[m.before_risk_level]} → <b>${RISK[m.after_risk_level]}</b></span></div>`;
+    }
+    const d = m.after_probability - m.before_probability;
+    const word = Math.abs(d) < 0.01 ? '거의 같아요' : (d < 0 ? '줄었어요' : '늘었어요');
+    return `<div class="mrow"><span>혈압 외 특징이 경계군인 사람들과 닮은 정도</span><span><b>${word}</b></span></div>`;
+  }).join('');
+  return `
+  <p class="sect">혈압 · 몸 변화</p>
+  <div class="cmp">
+    <span class="h"></span><span class="h">처음</span><span></span><span class="h">4주 후</span>
+    ${row('혈압 (mmHg)', bp(b), bp(a))}
+    ${row('몸무게', b.weight_kg, a.weight_kg, 'kg')}
+    ${row('허리둘레', b.waist_cm, a.waist_cm, 'cm')}
+  </div>
+  <p class="note">${esc(rv.bp_note)} ${esc(range)}</p>
+  <p class="sect">미션 달성률</p>
+  <div class="cmp" style="display:block">${rv.missions.map(m =>
+    `<div class="mrow"><span>${esc(m.name)}</span><span class="${m.status === 'completed' ? 'ok' : ''}">${Math.round(m.cycle_rate * 100)}%${m.status === 'completed' ? ' · 완료' : ''}</span></div>`).join('')}</div>
+  <p class="sect">습관 변화</p>
+  <div class="cmp" style="display:block">
+    <div class="mrow"><span>흡연</span><span>${SMOKING[b.smoking] || '—'} → <b>${SMOKING[a.smoking] || '—'}</b></span></div>
+    <div class="mrow"><span>음주</span><span>${DRINK[b.drink_freq] || '—'} → <b>${DRINK[a.drink_freq] || '—'}</b></span></div>
+  </div>
+  ${models ? `<p class="sect">예측 결과 변화</p><div class="cmp" style="display:block">${models}</div>
+    <p class="note">선별 정보이며 진단이 아니에요.</p>` : ''}
+  ${rv.cycle_number < rv.total_cycles
+    ? `<a class="cta" style="display:block; text-align:center; text-decoration:none" href="challenges.html">${rv.cycle_number + 1}차 챌린지 시작하기</a>`
+    : `<div class="callout"><b>12주 챌린지를 모두 마쳤어요!</b></div>`}`;
+}
+
+async function main() {
+  if (!cycleId) { showError('어떤 챌린지의 재입력인지 알 수 없어요. 챌린지 화면에서 다시 들어와 주세요.'); return; }
+  let rv;
+  try { rv = (await apiCall('GET', `/challenges/cycles/${encodeURIComponent(cycleId)}/review`, undefined, '변화를 불러오지 못했습니다')).data; }
+  catch (e) { showError(friendlyError(e)); return; }
+
+  const lede = document.getElementById('lede');
+  const body = document.getElementById('body');
+  if (rv.reassessed) {
+    lede.textContent = `${rv.cycle_number}차 4주 변화예요.`;
+    body.innerHTML = reviewHtml(rv);
+    return;
+  }
+  if (rv.cycle_status === 'active') {
+    lede.textContent = '4주가 끝나면 재입력할 수 있어요.';
+    return;
+  }
+  lede.textContent = `${rv.cycle_number}차 4주가 끝났어요. 지금 상태를 입력하면 처음과 비교해 드려요.`;
+  body.innerHTML = formHtml();
+  const dfreq = document.getElementById('dfreq');
+  dfreq.addEventListener('change', () => {
+    document.getElementById('damount-box').style.display = ['', 'never_lifetime', 'none_past_year'].includes(dfreq.value) ? 'none' : 'flex';
+  });
+  document.getElementById('submit').addEventListener('click', async () => {
+    showError('');
+    let measurements;
+    try { measurements = collect(); } catch (e) { showError(e.message); return; }
+    const btn = document.getElementById('submit');
+    btn.disabled = true; btn.textContent = '저장하는 중...';
+    try {
+      const res = (await apiCall('POST', `/challenges/cycles/${encodeURIComponent(cycleId)}/reassessment`, { measurements }, '저장하지 못했습니다')).data;
+      lede.textContent = `${res.cycle_number}차 4주 변화예요.`;
+      body.innerHTML = reviewHtml(res);
+      window.scrollTo(0, 0);
+    } catch (e) {
+      showError(friendlyError(e));
+      btn.disabled = false; btn.textContent = '저장하고 변화 보기';
+    }
+  });
+}
+
+main();
+</script>
+</body>
+</html>
