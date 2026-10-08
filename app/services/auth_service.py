@@ -94,12 +94,20 @@ async def get_me(db: AsyncSession, user_id: str) -> MeResult:
         birth_date=profile.birth_date,
     )
 
-async def update_me(db: AsyncSession, user_id: str, sex: str) -> MeResult:
-    """내 프로필 고치기. 지금은 성별만."""
+async def update_me(db: AsyncSession, user_id: str, sex: str | None, birth_date: date | None = None) -> MeResult:
+    """내 프로필 고치기: 성별·생년월일 (보낸 것만)."""
     profile = await user_repository.get_profile(db, user_id)
     if profile is None:
         raise AppError(401, "AUTH_UNAUTHORIZED", "다시 로그인해 주세요.")
-    profile.sex = sex
+    if sex is not None:
+        profile.sex = sex
+    if birth_date is not None:
+        today = utcnow().date()
+        if birth_date > today:
+            raise AppError(422, "AUTH_INVALID_BIRTH_DATE", "생년월일을 확인해 주세요.")
+        if _age_on(birth_date, today) < MIN_AGE:
+            raise AppError(403, "AUTH_ADULT_ONLY", "만 19세 이상만 이용할 수 있습니다.")
+        profile.birth_date = birth_date
     await db.commit()
     return await get_me(db, user_id)
 
