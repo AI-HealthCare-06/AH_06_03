@@ -389,6 +389,33 @@ async function apiPredictionJob() {
   }, '예측 요청에 실패했습니다');
 }
 
+// 대상 확인 답(나이대·관상동맥질환·응급 여부) 서버 저장 / 복원 (PUT·GET /users/me/eligibility).
+// 서버에 API가 없거나 실패해도 화면은 계속 진행하고, 브라우저에 보관한 값을 쓴다.
+async function apiSaveEligibility(elig) {
+  const emergency = !!elig.emer && elig.emer !== 'no';          // 응급 증상 "예"·"잘 모르겠습니다" (증상 원문은 보내지 않는다)
+  try {
+    await apiCall('PUT', '/users/me/eligibility', {
+      age_eligible: elig.ageBand !== 'under19',
+      diagnosed_cad: !!elig.chd,
+      emergency_flag: emergency,
+      emergency_acknowledged: emergency,                           // 화면이 안내 확인("그래도 진행") 뒤에만 저장을 부른다
+    }, '');
+    return true;
+  } catch (e) { return false; }
+}
+// 서버 값 → 화면이 쓰는 모양. 나이대는 서버에 저장하지 않고 생년월일로 다시 계산한다 (모델 A 32~70세, 모델 B 19세 이상).
+async function restoreEligibilityFromServer() {
+  try {
+    const e = (await apiCall('GET', '/users/me/eligibility', undefined, '')).data;
+    let profile = null;
+    try { profile = JSON.parse(localStorage.getItem('paeon-profile') || 'null'); } catch (err) { /* 없으면 아래 기본값 */ }
+    const age = profile && profile.birth ? ageOfBirth(profile.birth) : null;
+    const ageBand = age == null ? (e.age_eligible ? 'in' : 'bOnly') : age < 19 ? 'under19' : (age >= 32 && age <= 70) ? 'in' : 'bOnly';
+    localStorage.setItem('paeon-eligibility', JSON.stringify({ ageBand, chd: e.diagnosed_cad, emer: e.emergency_flag ? 'yes' : 'no' }));
+    return true;
+  } catch (e) { return false; }
+}
+
 // 내 정보 조회 (이메일·성별·생년월일)
 async function apiGetMe() {
   return (await apiCall('GET', '/users/me', undefined, '내 정보를 불러오지 못했습니다')).data;
@@ -524,6 +551,7 @@ async function apiSyncAfterLogin() {
   // 서버에 건강정보·설문 조회 API가 있으면 서버 값으로 복원 (없으면 위에서 되돌린 브라우저 보관본을 그대로 씀)
   try {
     const sex = (read('paeon-profile') || {}).sex;
+    if (!localStorage.getItem('paeon-eligibility')) await restoreEligibilityFromServer();
     await restoreHealthFromServer(sex);
     if (!localStorage.getItem('paeon-survey')) await restoreSurveyFromServer();   // 설문은 걸음 수처럼 서버에 없는 값이 있어 브라우저 값을 우선
   } catch (e) { /* 복원 실패해도 로그인은 진행 */ }

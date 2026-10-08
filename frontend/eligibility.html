@@ -75,6 +75,7 @@
 </div>
 
 <script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
 <script>
 let emerAck = false;
 
@@ -113,8 +114,10 @@ document.getElementById('next-btn').addEventListener('click', () => {
   if (!chd) { errEl.textContent = '관상동맥질환 진단 여부를 선택해주세요'; errEl.style.display = 'block'; return; }
   if (emer !== 'no' && !emerAck) { errEl.textContent = '응급 안내를 확인하고 "그래도 진행"을 눌러주세요'; errEl.style.display = 'block'; return; }
 
-  localStorage.setItem('paeon-eligibility', JSON.stringify({ ageBand, chd: chd === 'yes', emer }));
-  window.location.href = 'health-info.html';
+  const elig = { ageBand, chd: chd === 'yes', emer };
+  localStorage.setItem('paeon-eligibility', JSON.stringify(elig));
+  document.getElementById('next-btn').disabled = true;
+  apiSaveEligibility(elig).finally(() => { window.location.href = 'health-info.html'; });   // 서버 저장은 실패해도 진행
 });
 </script>
 </body>
