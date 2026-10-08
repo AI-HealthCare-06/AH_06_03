@@ -173,6 +173,9 @@ async def _current_active(db: AsyncSession, user_id: str) -> ChallengeCycle | No
 async def start_cycle(db: AsyncSession, user_id: str, selected_code: str) -> CycleResult:
     if await _current_active(db, user_id) is not None:
         raise AppError(409, "CHALLENGE_CYCLE_ACTIVE", "진행 중인 챌린지가 있습니다.")
+    # 프로그램은 4주 × PROGRAM_CYCLES번 (12주). 화면을 거치지 않은 요청도 여기서 막는다
+    if await _next_cycle_number(db, user_id) > PROGRAM_CYCLES:
+        raise AppError(409, "CHALLENGE_PROGRAM_COMPLETE", f"{PROGRAM_CYCLES * 4}주 챌린지를 모두 마쳤습니다.")
 
     facts, record, instance, c, rec = await _build_recommendation(db, user_id)
     if selected_code not in rec.candidates:
