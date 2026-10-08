@@ -9,7 +9,7 @@ from app.apis.deps import get_current_user_id
 from app.core.db.databases import async_get_db
 from app.core.errors import AppError
 from app.core.security import utcnow
-from app.models.eligibility import UserEligibility
+from app.repositories import eligibility_repository
 from app.schemas.common import DataResponse
 
 router = APIRouter(tags=["eligibility"])
@@ -25,7 +25,7 @@ class EligibilityBody(BaseModel):
 
 @router.get("/users/me/eligibility", response_model=DataResponse[EligibilityBody])
 async def get_eligibility(user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)):
-    row = await db.get(UserEligibility, user_id)
+    row = await eligibility_repository.get_by_user(db, user_id)
     if row is None:
         raise AppError(404, "ELIGIBILITY_NOT_FOUND", "대상 확인 기록이 없습니다.")
     return DataResponse(data=EligibilityBody(age_band=row.age_band, chd=row.chd, emergency=row.emergency))
@@ -36,11 +36,6 @@ async def save_eligibility(
     req: EligibilityBody, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)
 ):
     """대상 확인 답을 저장한다 (다시 확인하면 덮어쓴다)."""
-    row = await db.get(UserEligibility, user_id)
-    if row is None:
-        row = UserEligibility(user_id=user_id, age_band=req.age_band, chd=req.chd, emergency=req.emergency, updated_at=utcnow())
-        db.add(row)
-    else:
-        row.age_band, row.chd, row.emergency, row.updated_at = req.age_band, req.chd, req.emergency, utcnow()
+    await eligibility_repository.upsert(db, user_id, req.age_band, req.chd, req.emergency, utcnow())
     await db.commit()
     return DataResponse(data=req)
