@@ -12,6 +12,10 @@
   .opt{border:1.5px solid var(--sage-light); background:#fff; color:var(--ink); border-radius:16px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer}
   .opt[data-on="1"]{border-color:var(--sage-deep); background:var(--sage-light)}
   .optrow{display:flex; flex-wrap:wrap; gap:8px}
+  .sum-card{background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:4px 16px}
+  .sumrow{display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--sage-light); font-size:13px}
+  .sumrow:last-child{border-bottom:0}
+  .sumrow .lb{color:var(--muted)} .sumrow .vv{font-weight:700; text-align:right}
   .warnbox{border:1.5px solid var(--danger); background:#FBEAE5; border-radius:18px; padding:14px 18px; font-size:13px}
   .warnbox b{color:var(--risk)}
 </style>
@@ -59,6 +63,7 @@ function render() {
       <button type="button" class="opt" data-mp="chal" data-on="${state.mp === 'chal' ? '1' : '0'}">🌱 챌린지 기록</button>
     </div>
     ${state.mp === 'rec' ? renderInfo() : ''}
+    ${state.mp === 'chal' ? renderChal() : ''}
     ${!state.consent ? '<div class="callout"><b>건강정보 처리 동의를 철회했습니다</b><br>새 건강정보 입력과 예측이 멈춥니다. 계정은 유지됩니다.</div>' : ''}
     <p class="hint">동의 철회는 회원 탈퇴와 다릅니다 — 철회해도 계정은 유지됩니다.</p>
     <div style="display:flex; gap:8px; flex-wrap:wrap">
@@ -67,6 +72,7 @@ function render() {
     </div>
     <button type="button" id="logout-btn" class="ghost" style="margin-top:6px">로그아웃</button>
     <button type="button" id="delete-btn" class="ghost" style="margin-top:6px">회원 탈퇴</button>
+    ${state.mp === 'delete-notice' ? '<div class="warnbox"><b>회원 탈퇴는 아직 준비 중이에요</b><br>지금은 계정과 건강정보가 삭제되지 않아요. 삭제를 원하시면 서비스 담당자에게 알려 주세요.</div>' : ''}
     ${state.mp === 'delete' ? `<div class="warnbox"><b>회원 탈퇴 — 재인증이 필요합니다</b><br>삭제: 건강정보·설문·예측·챌린지 기록
       <div class="field" style="margin-top:8px"><label>비밀번호 다시 입력</label><input id="pwd" type="password"></div>
       <div style="display:flex;gap:8px;margin-top:10px"><button type="button" id="cancel-delete" class="ghost" style="width:auto;padding:8px 18px">취소</button>
@@ -75,9 +81,48 @@ function render() {
   wire();
 }
 
+const L = {
+  smoking: { never: '피운 적 없음', former: '과거엔 피웠으나 현재 피우지 않음', current: '현재 피움' },
+  ecig: { daily: '매일 사용', occasional: '가끔 사용', none: '사용 안 함' },
+  freq: { never_lifetime: '평생 마신 적 없음', none_past_year: '최근 1년간 마시지 않음', lt_monthly: '한 달에 1번 미만', monthly: '한 달에 1번 정도', '2_4_per_month': '한 달에 2–4번', '2_3_per_week': '일주일에 2–3번 정도', '4plus_per_week': '일주일에 4번 이상' },
+  amount: { '1_2': '1–2잔', '3_4': '3–4잔', '5_6': '5–6잔', '7_9': '7–9잔', '10plus': '10잔 이상' },
+  htn: { none: '진단받은 적 없음', diagnosed_untreated: '진단받았지만 약은 안 먹음', treated: '진단받았고 약을 먹는 중' },
+  parent: { yes: '있음', no: '없음', unknown: '모름' },
+};
+const localRead = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+
 function renderInfo() {
-  const health = JSON.parse(localStorage.getItem('paeon-health') || 'null');
-  return `<div class="callout"><b>검진 기록</b><br>수축기 ${health ? health.sbp : '-'} · 총콜레스테롤 ${health ? health.total_chol : '-'}</div>`;
+  const h = localRead('paeon-health');
+  if (!h) return '<div class="callout"><b>아직 입력한 건강정보가 없어요</b><br><a href="health-info.html" style="color:var(--sage-deep); font-weight:700">건강정보 입력하기</a></div>';
+  const row = (k, v) => `<div class="sumrow"><span class="lb">${k}</span><span class="vv">${v}</span></div>`;
+  const smoke = h.smoking === 'current' ? (h.smoking_freq === 'sometimes' ? '가끔 피움' : '매일 피움') : (L.smoking[h.smoking] || '-');
+  return `<div class="sum-card">
+    ${row('검진일', h.recorded_at || '-')}
+    ${row('혈압', `${h.sbp}/${h.dbp} mmHg`)}
+    ${row('키 / 몸무게', `${h.height_cm}cm / ${h.weight_kg}kg`)}
+    ${row('허리둘레', `${h.waist_cm}cm`)}
+    ${row('일반담배', smoke)}
+    ${row('전자담배', L.ecig[h.ecig] || '입력 안 함')}
+    ${row('음주(최근 1년)', (L.freq[h.drink_freq] || '-') + (h.drink_amount ? ` · 한 번에 ${L.amount[h.drink_amount]}` : ''))}
+    ${row('당뇨병', h.diabetes ? '있음' : '없음')}
+    ${row('고혈압 진단·치료', L.htn[h.htn_status] || '-')}
+    ${row('총콜레스테롤 / HDL', `${h.total_chol} / ${h.hdl} mg/dL`)}
+    ${row('부모 고혈압 가족력', L.parent[h.parent_htn] || '-')}
+    ${row('공복혈당', h.fasting_glucose != null ? `${h.fasting_glucose} mg/dL` : '입력 안 함')}
+  </div>
+  <a class="ghost" href="health-info.html" style="text-align:center">건강정보 수정하기</a>`;
+}
+
+function renderChal() {
+  const c = localRead('paeon-cycle'), p = localRead('paeon-progress') || { logs: {} }, hist = localRead('paeon-cycle-history') || [];
+  if (!c) return '<div class="callout"><b>아직 시작한 챌린지가 없어요</b><br><a href="challenges.html" style="color:var(--sage-deep); font-weight:700">챌린지 고르기</a></div>';
+  const no = c.cycleNo || 1;
+  const days = Math.max(0, Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(c.startedOn + 'T00:00:00')) / 86400000));
+  const done = (id) => Object.values(p.logs || {}).filter(d => d[id] && d[id].status === 'completed').length;
+  const rows = c.missions.map(m => `<div class="sumrow"><span class="lb">${m.t}</span><span class="vv">${done(m.id)}회 완료</span></div>`).join('');
+  return `<div class="callout"><b>12주 중 ${no}차</b> · ${c.startedOn} 시작 · ${Math.min(days + 1, 28)}일째<br>${(p.days || []).length}일 동안 모든 미션을 마쳤어요${hist.length ? ` · 지난 차수 ${hist.length}개` : ''}</div>
+    <div class="sum-card">${rows}</div>
+    <a class="ghost" href="challenge-progress.html" style="text-align:center">오늘 기록하러 가기</a>`;
 }
 
 function wire() {
@@ -100,7 +145,7 @@ function wire() {
   const cancelBtn = document.getElementById('cancel-delete');
   if (cancelBtn) cancelBtn.addEventListener('click', () => { state.mp = null; render(); });
   const confirmBtn = document.getElementById('confirm-delete');
-  if (confirmBtn) confirmBtn.addEventListener('click', () => { state.gone = true; render(); });
+  if (confirmBtn) confirmBtn.addEventListener('click', () => { state.mp = 'delete-notice'; render(); });
 }
 render();
 apiGetMe().then(m => { me = m; render(); }).catch(() => {});
