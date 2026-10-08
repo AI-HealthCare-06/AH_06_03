@@ -22,8 +22,9 @@ class HealthInputSchema(Base):
 class HealthRecord(Base):
     """검진·재평가·주간 혈압 기록 한 번 (상자)."""
     __tablename__ = "health_records"
-    # 중복 금지 규칙
-    __table_args__ = (UniqueConstraint("user_id", "input_type", "examination_date"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "input_type", "examination_date", name="uq_health_records_user_type_date"),
+    )
 
     health_record_id: Mapped[str] = mapped_column(CHAR(36), primary_key=True, default=new_id)
     user_id: Mapped[str] = mapped_column(
