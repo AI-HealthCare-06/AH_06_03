@@ -9,6 +9,7 @@ from app.apis.prediction_job import router as prediction_job_router
 from app.apis.account import router as account_router
 from app.apis.calendar import router as calendar_router
 from app.apis.consent import require_health_consent, router as consent_router
+from app.apis.eligibility import router as eligibility_router
 
 
 from app.apis.prediction import router as prediction_router
@@ -44,6 +45,7 @@ app.include_router(prediction_job_router, prefix="/v1", dependencies=[Depends(re
 app.include_router(calendar_router, prefix="/v1")
 app.include_router(account_router, prefix="/v1")
 app.include_router(consent_router, prefix="/v1")
+app.include_router(eligibility_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.include_router(challenge_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.mount("/media", StaticFiles(directory=BASE_DIR / "media"), name="media")
