@@ -6,6 +6,7 @@ const USE_MOCK_PREDICT = false;
 const USE_MOCK_AUTH = false;
 const USE_MOCK_HEALTH = false;
 const USE_MOCK_SURVEY = false;
+const SEND_ECIG = false; // 혜림님이 ECIG 지표를 열면 true
 
 function friendlyError(e) { return e instanceof TypeError ? '서버 연결에 실패했어요. 잠시 후 다시 시도해주세요.' : e.message; }
 
@@ -116,6 +117,7 @@ async function apiSubmitHealthRecord(payload) {
     cat('ALCOHOL_FREQ', payload.drink_freq),
   ];
   if (payload.drink_amount) measurements.push(cat('ALCOHOL_AMOUNT', payload.drink_amount));
+  if (SEND_ECIG && payload.ecig) measurements.push(cat('ECIG', payload.ecig)); // 서버가 ECIG 지표를 받기 전에는 422(HEALTH_METRIC_UNKNOWN)
   if (payload.fasting_glucose != null) measurements.push(num('FASTING_GLUCOSE', payload.fasting_glucose));
 
   const date = payload.recorded_at.slice(0, 10);
@@ -182,24 +184,35 @@ function getAccessToken() {
   try { return localStorage.getItem('paeon-access-token') || ''; } catch (e) { return ''; }
 }
 
-// 설문 제출 4단계: 설문지 받기 → 답안지 만들기 → 답 적기 → 내기. 화면이 계산한 코드(breakfast·eatout·aerobic)를 보기 코드로 바꿔 보낸다.
+// 설문 제출: 설문지 조회 → 답안지 시작 → 답 저장 → 내기.
+// - 서버가 설문 v2(문항 코드 N0..)를 열면 문항 코드 → 보기 코드(option_code)로 맞춰 보낸다. 보기 코드는 가이드 §1.2의 코드 문자열(N 문항은 점수 문자열)을 쓴다고 가정.
+// - 서버가 아직 v1(BREAKFAST·EATOUT·AEROBIC 필수 3문항)이면 세 문항에 모두 답했을 때만 v1 코드로 바꿔 보낸다. 건너뛴 게 있으면 서버 제출은 생략(예측은 그대로 진행).
+const EATOUT_V1 = { rare: 'lt_monthly', '1_2_week': '1_2_per_week', '3_4_week': '3_4_per_week', '5_6_week': '5_6_per_week', '1_day': '1_per_day', '2plus_day': '2plus_per_day' };
 async function apiSubmitSurvey(payload) {
   if (USE_MOCK_SURVEY) {
     console.log('[MOCK] apiSubmitSurvey', payload);
     await sleep(400);
     return { data: { survey_instance_id: 'mock-survey-1' } };
   }
-  const answers = {
-    BREAKFAST: payload.breakfast,
-    EATOUT: payload.eatout,
-    AEROBIC: payload.aerobic ? 'yes' : 'no',
-  };
   const survey = (await apiCall('GET', '/surveys/initial_lifestyle/active', undefined, '설문을 불러오지 못했습니다')).data;
-  const responses = survey.questions.map(q => {
-    const opt = q.options.find(o => o.option_code === answers[q.question_code]);
+  const isV2 = survey.questions.some(q => q.question_code === 'N0');
+  const a = payload.answers || {};
+  const want = isV2
+    ? { N0: a.N0, N1: a.N1, N2: a.N2, N3: a.N3, N4: a.N4, N5: a.N5, N6: a.N6, N7: a.N7, N8: a.N8, N9: a.N9, N10: a.N10,
+        P1: a.P1, E1: a.E1, B1: a.B1, BP_MEASURE_METHOD: a.BPM }
+    : { BREAKFAST: a.B1, EATOUT: a.E1 ? EATOUT_V1[a.E1] : undefined, AEROBIC: a.P1 ? (a.P1 === '150plus' ? 'yes' : 'no') : undefined };
+  const responses = [];
+  for (const q of survey.questions) {
+    const code = want[q.question_code];
+    if (code == null) continue;                       // 건너뛴 문항
+    const opt = q.options.find(o => o.option_code === String(code));
     if (!opt) throw new Error('설문 보기를 찾지 못했습니다. 잠시 후 다시 시도해주세요.');
-    return { question_id: q.question_id, option_id: opt.option_id };
-  });
+    responses.push({ question_id: q.question_id, option_id: opt.option_id });
+  }
+  if (!isV2 && responses.length < survey.questions.filter(q => q.required).length) {
+    return { data: { skipped: true } };               // v1은 필수 3문항이라 건너뛴 게 있으면 제출할 수 없음
+  }
+  if (!responses.length) return { data: { skipped: true } };
   const recordId = (() => { try { return localStorage.getItem('paeon-health-record-id'); } catch (e) { return null; } })();
   const inst = (await apiCall('POST', '/survey-instances',
     { survey_version_id: survey.survey_version_id, health_record_id: recordId }, '설문을 시작하지 못했습니다')).data;
@@ -359,13 +372,129 @@ async function apiGetLatestPrediction() {
   }
 }
 
+// ---- 설문 값 계산 (설문 화면과 서버 복원이 같이 쓴다). 가이드 §2.1 나트륨 지수.
+function ageOfBirth(birth) {
+  const b = new Date(birth), n = new Date();
+  let age = n.getFullYear() - b.getFullYear();
+  if (n.getMonth() < b.getMonth() || (n.getMonth() === b.getMonth() && n.getDate() < b.getDate())) age--;
+  return age;
+}
+const SODIUM_CODES = ['N0', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10'];
+function sodiumCalc(answers, health, profile) {
+  if (SODIUM_CODES.some(c => answers[c] == null)) return { status: 'incomplete' };
+  if (!health || !profile || !profile.birth) return { status: 'no_input' };
+  const age = ageOfBirth(profile.birth);
+  if (age >= 70 || health.htn_status !== 'none' || health.diabetes) return { status: 'not_applicable' };
+  const sex = health.sex === 'male' ? 1 : 2;
+  const band = age <= 29 ? 1 : age <= 39 ? 2 : age <= 49 ? 3 : age <= 59 ? 4 : 5;
+  const bmi = health.weight_kg / Math.pow(health.height_cm / 100, 2);
+  const sum = SODIUM_CODES.slice(1).reduce((s, c) => s + Number(answers[c]), 0);
+  const est = -191.9 - 705.2 * sex + 189.6 * band + 130.6 * bmi + 24.2 * Number(answers.N0) + 18.5 * sum;
+  const index = Math.round(est / 20 * 10) / 10;
+  const grade = index < 75 ? 'careful_low' : index <= 100 ? 'very_moderate' : index <= 150 ? 'moderate' : index <= 250 ? 'careful_high' : 'severe';
+  return { status: 'ok', est_mg: Math.round(est), index, grade };
+}
+const EATOUT_TO_V1 = { rare: 'lt_monthly', '1_2_week': '1_2_per_week', '3_4_week': '3_4_per_week', '5_6_week': '5_6_per_week', '1_day': '1_per_day', '2plus_day': '2plus_per_day' };
+function buildSurveyPayload(answers, health, profile, steps) {
+  const sodium = sodiumCalc(answers, health, profile);
+  const high = sodium.status === 'not_applicable' || (sodium.status === 'ok' && ['careful_high', 'severe'].includes(sodium.grade));
+  return {
+    answers: { ...answers },
+    sodium,
+    baseline_steps: steps != null ? steps : (answers.P2 != null ? answers.P2 : null),
+    activity_code: answers.P1, eatout_code: answers.E1, breakfast_code: answers.B1, bp_measure_method: answers.BPM,
+    // challenges.html가 가이드 §3 규칙으로 바뀌기 전까지 기존 화면이 읽는 값
+    sodium_score: (sodium.status === 'ok' || sodium.status === 'not_applicable') ? (high ? 7 : 2) : undefined,
+    aerobic: answers.P1 ? (answers.P1 === '150plus' ? 1 : 0) : undefined,
+    eatout: answers.E1 ? EATOUT_TO_V1[answers.E1] : undefined,
+    breakfast: answers.B1,
+  };
+}
+
+// ---- 서버에서 복원: 건강기록 목록·상세, 설문 최근 답안지 (백엔드: GET /health/records, /health/records/{id}, /survey-instances/latest).
+// 서버에 이 API가 없거나 실패하면 조용히 넘어가고, 브라우저에 보관해 둔 값을 그대로 쓴다.
+const METRIC_TO_FIELD = { SBP: 'sbp', DBP: 'dbp', HEIGHT: 'height_cm', WEIGHT: 'weight_kg', WAIST: 'waist_cm', TOTAL_CHOL: 'total_chol', HDL: 'hdl',
+  FASTING_GLUCOSE: 'fasting_glucose', SMOKING: 'smoking', HTN_STATUS: 'htn_status', PARENT_HTN: 'parent_htn', ALCOHOL_FREQ: 'drink_freq', ALCOHOL_AMOUNT: 'drink_amount' };
+async function restoreHealthFromServer(sex) {
+  try {
+    const list = (await apiCall('GET', '/health/records', undefined, '')).data;
+    const rec0 = list.find(r => r.input_type !== 'weekly_bp');          // 주간 혈압 기록은 건강정보 본문이 아니다
+    if (!rec0) return false;
+    const rec = (await apiCall('GET', `/health/records/${rec0.health_record_id}`, undefined, '')).data;
+    const h = (() => { try { return JSON.parse(localStorage.getItem('paeon-health') || 'null') || {}; } catch (e) { return {}; } })();
+    rec.measurements.forEach(m => {
+      if (m.metric_code === 'DIABETES') h.diabetes = m.value_code === 'true';
+      else if (METRIC_TO_FIELD[m.metric_code]) h[METRIC_TO_FIELD[m.metric_code]] = m.value_num != null ? m.value_num : m.value_code;
+    });
+    if (!h.drink_amount && ['never_lifetime', 'none_past_year'].includes(h.drink_freq)) h.drink_amount = null;
+    if (sex) h.sex = sex;
+    h.recorded_at = rec.examination_date;
+    localStorage.setItem('paeon-health', JSON.stringify(h));
+    localStorage.setItem('paeon-health-record-id', rec.health_record_id);
+    return true;
+  } catch (e) { return false; }
+}
+const V1_TO_ANSWER = { BREAKFAST: 'B1', EATOUT: 'E1', AEROBIC: 'P1' };
+const EATOUT_FROM_V1 = { lt_monthly: 'rare', '1_3_per_month': 'rare', '1_2_per_week': '1_2_week', '3_4_per_week': '3_4_week', '5_6_per_week': '5_6_week', '1_per_day': '1_day', '2plus_per_day': '2plus_day' };
+async function restoreSurveyFromServer() {
+  try {
+    const inst = (await apiCall('GET', '/survey-instances/latest', undefined, '')).data;
+    const answers = {};
+    inst.responses.forEach(r => {
+      const c = r.question_code;
+      if (V1_TO_ANSWER[c]) {                                           // 예전 설문(v1) 3문항
+        if (c === 'EATOUT') answers.E1 = EATOUT_FROM_V1[r.option_code];
+        else if (c === 'AEROBIC') answers.P1 = r.option_code === 'yes' ? '150plus' : 'lt150';
+        else answers.B1 = r.option_code;
+      } else if (c === 'BP_MEASURE_METHOD') answers.BPM = r.option_code;
+      else if (r.option_code == null && r.value_num != null) answers[c] = r.value_num;   // v2 숫자 문항(P2 걸음 수)
+      else answers[c] = r.option_code;                                 // v2: N0..N10, P1, E1, B1
+    });
+    const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+    localStorage.setItem('paeon-survey', JSON.stringify(buildSurveyPayload(answers, read('paeon-health'), read('paeon-profile'))));
+    localStorage.setItem('paeon-survey-instance-id', inst.survey_instance_id);
+    return true;
+  } catch (e) { return false; }
+}
+
+// ---- 임시: 서버에 건강정보·챌린지·일기를 읽어 오는 API가 생기기 전까지, 로그아웃할 때 계정별로 보관했다가 같은 계정이 다시 로그인하면 되돌린다.
+// 서버 API가 준비되면 이 보관은 없애고 서버에서 읽어 온다.
+const LOCAL_DATA_KEYS = ['paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-cycle', 'paeon-cycle-history', 'paeon-progress', 'paeon-recheck',
+  'paeon-calendar', 'paeon-health-record-id', 'paeon-survey-instance-id', 'paeon-prediction', 'paeon-profile'];
+function stashLocalData(uid) {
+  if (!uid) return;
+  try {
+    const box = {};
+    LOCAL_DATA_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v != null) box[k] = v; });
+    localStorage.setItem('paeon-store:' + uid, JSON.stringify(box));
+    LOCAL_DATA_KEYS.forEach(k => localStorage.removeItem(k));
+  } catch (e) {}
+}
+function restoreLocalData(uid) {
+  try {
+    const box = JSON.parse(localStorage.getItem('paeon-store:' + uid) || 'null');
+    if (!box) return;
+    Object.entries(box).forEach(([k, v]) => { if (localStorage.getItem(k) == null) localStorage.setItem(k, v); });  // 지금 쓰던 값이 있으면 그걸 우선
+  } catch (e) {}
+}
+
 // 로그인 직후: 서버에 있는 내 정보·최근 예측을 이 브라우저에 채운다 (다른 기기에서 로그인해도 이어서 보이게). 실패해도 로그인은 그대로 진행.
 async function apiSyncAfterLogin() {
   const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
   try {
     const me = await apiGetMe();
+    const prevUid = localStorage.getItem('paeon-user-id');
+    if (prevUid && prevUid !== me.user_id) stashLocalData(prevUid);   // 다른 계정의 데이터가 남아 있으면 그 계정 몫으로 보관
+    restoreLocalData(me.user_id);                                      // 이 계정이 보관해 둔 기록을 되돌림
+    localStorage.setItem('paeon-user-id', me.user_id);
     localStorage.setItem('paeon-profile', JSON.stringify({ ...(read('paeon-profile') || {}), email: me.email, birth: me.birth_date, sex: me.sex }));
   } catch (e) { /* 내 정보는 없어도 진행 */ }
+  // 서버에 건강정보·설문 조회 API가 있으면 서버 값으로 복원 (없으면 위에서 되돌린 브라우저 보관본을 그대로 씀)
+  try {
+    const sex = (read('paeon-profile') || {}).sex;
+    await restoreHealthFromServer(sex);
+    if (!localStorage.getItem('paeon-survey')) await restoreSurveyFromServer();   // 설문은 걸음 수처럼 서버에 없는 값이 있어 브라우저 값을 우선
+  } catch (e) { /* 복원 실패해도 로그인은 진행 */ }
   try {
     const latest = await apiGetLatestPrediction();
     if (latest) {
@@ -380,13 +509,14 @@ async function apiSyncAfterLogin() {
   } catch (e) { /* 결과는 없어도 진행 */ }
 }
 
-// 로그아웃: 서버 쿠폰을 폐기하고 이 브라우저의 로그인·저장 데이터를 지운다.
+// 로그아웃: 서버 쿠폰을 폐기하고, 이 계정의 기록은 계정별로 보관해 둔 뒤 로그인 화면으로 간다.
 async function apiLogout() {
+  let uid = localStorage.getItem('paeon-user-id');
+  if (!uid) { try { uid = (await apiGetMe()).user_id; } catch (e) {} }
+  stashLocalData(uid);                                 // 서버 호출이 실패해도 기록은 먼저 보관
   const refresh_token = localStorage.getItem('paeon-refresh-token') || '';
   try { await apiCall('POST', '/auth/logout', { refresh_token }, '로그아웃에 실패했습니다'); } catch (e) { /* 서버 실패여도 이 기기에서는 로그아웃 */ }
-  ['paeon-access-token', 'paeon-refresh-token', 'paeon-health-record-id', 'paeon-survey-instance-id',
-   'paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-progress']
-    .forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+  ['paeon-access-token', 'paeon-refresh-token', 'paeon-user-id'].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
   location.href = 'login.html';
 }
 

@@ -134,7 +134,7 @@ form.addEventListener('submit', async (event) => {
   submitBtn.textContent = '가입하는 중...';
   try {
     await apiSignup(email, pw, birth);
-    ['paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-progress'].forEach(k => localStorage.removeItem(k));
+    ['paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-cycle-history', 'paeon-progress'].forEach(k => localStorage.removeItem(k));
     localStorage.setItem('paeon-profile', JSON.stringify({ email, birth }));
     try {
       const loginRes = await apiLogin(email, pw);
