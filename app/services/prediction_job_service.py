@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
 from app.core.security import utcnow
-from app.repositories import health_repository, prediction_repository, survey_repository, user_repository
+from app.repositories import health_repository, prediction_repository, user_repository
 from app.schemas.prediction import PredictionJobResult,Factor,ModelResult
 from app.services import prediction_service
 from app.services.model_input import build_model_input
@@ -22,27 +22,19 @@ async def create_job(
     if profile is None or profile.sex is None:
         raise AppError(422, "PREDICTION_SEX_REQUIRED", "성별을 먼저 입력해 주세요.")
 
-    # 3. 설문 답안지 고르기
-    if survey_instance_id is not None:
-        instance = await survey_repository.get_instance(db, survey_instance_id)
-        if instance is None or instance.user_id != user_id:
-            raise AppError(404, "SURVEY_INSTANCE_NOT_FOUND", "설문 답안지를 찾을 수 없습니다.")
-        if instance.status != "submitted":
-            raise AppError(409, "SURVEY_NOT_SUBMITTED", "제출한 설문만 예측에 쓸 수 있습니다.")
-    else:
-        instance = await survey_repository.get_latest_submitted(db, user_id)
 
     # 4. 꺼내기 + 번역하기
+        # 4. 꺼내기 + 번역하기 (건강정보만)
     measurements = await health_repository.get_measurements(db, record.health_record_id)
     items = [{"metric_code": m.metric_code, "value_num": m.value_num, "value_code": m.value_code} for m in measurements]
-    answers = await survey_repository.get_answers_for_model(db, instance.survey_instance_id) if instance else {}
-    user_input = build_model_input(profile.sex, profile.birth_date, record.examination_date, items, answers)
+    user_input = build_model_input(profile.sex, profile.birth_date, record.examination_date, items)
 
     # 5. 번호표 만들기
     now = utcnow()
     job = await prediction_repository.create_job(
-        db, user_id, record.health_record_id, instance.survey_instance_id if instance else None, request_type, now
+        db, user_id, record.health_record_id, None, request_type, now
     )
+    job.input_snapshot = user_input
 
     # 6. 모델 A·B 실행
     result = prediction_service.predict_dict(user_input)
