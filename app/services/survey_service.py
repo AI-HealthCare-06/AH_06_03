@@ -32,6 +32,9 @@ async def get_active_survey(db: AsyncSession, survey_type: str) -> SurveyResult:
                 question_code=q.question_code,
                 question_text=q.question_text,
                 required=q.required,
+                answer_type=q.answer_type,
+                num_min=q.num_min,
+                num_max=q.num_max,
                 options=baskets.get(q.question_id, []),
             )
             for q in questions
@@ -75,18 +78,31 @@ async def save_responses(
     if instance.status != "started":
         raise AppError(409, "SURVEY_ALREADY_SUBMITTED", "이미 제출한 설문입니다.")
 
-    # 3. 질문·보기가 맞게 짝지어졌나? (허락 목록 만들기)
+    # 3. 질문 종류에 맞게 답했나?
     questions = await survey_repository.get_questions(db, instance.survey_version_id)
     options = await survey_repository.get_options(db, [q.question_id for q in questions])
+    q_map = {q.question_id: q for q in questions}
     allowed = {q.question_id: set() for q in questions}
     for o in options:
         allowed[o.question_id].add(o.option_id)
 
     for item in items:
-        if item["question_id"] not in allowed:
+        q = q_map.get(item["question_id"])
+        if q is None:
             raise AppError(422, "SURVEY_QUESTION_INVALID", "이 설문에 없는 질문입니다.")
-        if item["option_id"] not in allowed[item["question_id"]]:
-            raise AppError(422, "SURVEY_OPTION_INVALID", "이 질문에 없는 보기입니다.")
+
+        if q.answer_type == "number":
+            v = item.get("value_num")
+            if v is None:
+                raise AppError(422, "SURVEY_ANSWER_TYPE_MISMATCH", f"{q.question_code}: 숫자로 답해 주세요.")
+            if not (q.num_min <= v <= q.num_max):
+                raise AppError(422, "SURVEY_NUMBER_OUT_OF_RANGE",
+                               f"{q.question_code}: {q.num_min}~{q.num_max} 사이로 입력해 주세요.")
+        else:
+            if item.get("option_id") is None:
+                raise AppError(422, "SURVEY_ANSWER_TYPE_MISMATCH", f"{q.question_code}: 보기 중에서 골라 주세요.")
+            if item["option_id"] not in allowed[q.question_id]:
+                raise AppError(422, "SURVEY_OPTION_INVALID", "이 질문에 없는 보기입니다.")
 
     question_ids = [item["question_id"] for item in items]
     if len(set(question_ids)) != len(question_ids):

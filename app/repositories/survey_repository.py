@@ -81,7 +81,8 @@ async def add_responses(
         db.add(SurveyResponse(
             survey_instance_id=survey_instance_id,
             question_id=item["question_id"],
-            option_id=item["option_id"],
+            option_id=item.get("option_id"),
+            value_num=item.get("value_num"),
             created_at=now,
         ))
 
