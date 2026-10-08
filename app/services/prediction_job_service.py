@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
 from app.core.security import utcnow
-from app.repositories import health_repository, prediction_repository, user_repository
+from app.repositories import eligibility_repository, health_repository, prediction_repository, user_repository
 from app.schemas.prediction import (
     Factor, MetricChange, ModelChange, ModelResult, ModelSummary,
     PredictionJobResult, PredictionSummary, ReassessmentCompareResult, WeeklyBP,
@@ -52,6 +52,24 @@ async def create_job(
 
     # 6. 모델 A·B 실행
     result = prediction_service.predict_dict(user_input)
+
+    # 6-1. 관상동맥질환 진단자는 모델 A 제외 (REQ-ELIG-002). 대상 확인 기록이 없는 예전 가입자는 그대로.
+    assessment = await eligibility_repository.get_latest(db, user_id)
+    if assessment is not None and assessment.diagnosed_cad:
+        result.model_a = ModelResult(
+            model_code="MODEL_A",
+            model_version=result.model_a.model_version,
+            status="skipped",
+            skip_reason="cad_diagnosed",
+            probability=None,
+            risk_level=None,
+            percentile=None,
+            vascular_age=None,
+            factors=[],
+            top_risk_factor=None,
+            top_modifiable_factor=None,
+            missing_features=[],
+        )
 
     # 7. 결과 저장하기 (모델마다 한 줄씩)
     for model_result in (result.model_a, result.model_b):
