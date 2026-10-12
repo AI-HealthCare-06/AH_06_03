@@ -58,10 +58,11 @@ function render() {
     </div>
     <p class="sect">내 정보</p>
     ${me ? `<div class="callout"><b>${me.email}</b><br>생년월일 ${me.birth_date} · 성별 ${SEX_LABEL[me.sex] || '미입력'}
-      ${state.editProfile ? `<div class="field" style="margin-top:10px"><label>성별</label><select id="p-sex"><option value="male" ${me.sex === 'male' ? 'selected' : ''}>남</option><option value="female" ${me.sex === 'female' ? 'selected' : ''}>여</option></select></div>
+      ${state.editProfile ? `<div class="field" style="margin-top:10px"><label>생년월일</label><input id="p-birth" type="date" value="${me.birth_date || ''}" max="${new Date().toISOString().slice(0, 10)}"></div>
+      <div class="field" style="margin-top:8px"><label>성별</label><select id="p-sex"><option value="male" ${me.sex === 'male' ? 'selected' : ''}>남</option><option value="female" ${me.sex === 'female' ? 'selected' : ''}>여</option></select></div>
       ${state.perr ? `<p class="err" style="margin-top:6px">${state.perr}</p>` : ''}
       <div style="display:flex; gap:8px; margin-top:10px"><button type="button" id="p-save" class="ghost">저장</button><button type="button" id="p-cancel" class="ghost">취소</button></div>`
-      : `<button type="button" id="p-edit" class="ghost" style="margin-top:8px">성별 수정</button>`}</div>` : ''}
+      : `<button type="button" id="p-edit" class="ghost" style="margin-top:8px">생년월일·성별 수정</button>`}</div>` : ''}
     <div class="tworow">
       <button type="button" class="opt" data-mp="rec" data-on="${state.mp === 'rec' ? '1' : '0'}">🩺 검진 기록</button>
       <button type="button" class="opt" data-mp="chal" data-on="${state.mp === 'chal' ? '1' : '0'}">🌱 챌린지 기록</button>
@@ -136,8 +137,9 @@ function wire() {
   on('p-edit', () => { state.editProfile = true; state.perr = ''; render(); });
   on('p-cancel', () => { state.editProfile = false; state.perr = ''; render(); });
   on('p-save', async () => {
-    const sex = document.getElementById('p-sex').value;
-    try { me = (await apiCall('PATCH', '/users/me', { sex }, '내 정보를 고치지 못했습니다')).data; state.editProfile = false; state.perr = ''; }
+    const birth = document.getElementById('p-birth').value, sex = document.getElementById('p-sex').value;
+    if (!birth) { state.perr = '생년월일을 입력해 주세요.'; render(); return; }
+    try { me = (await apiCall('PATCH', '/users/me', { birth_date: birth, sex }, '내 정보를 고치지 못했습니다')).data; state.editProfile = false; state.perr = ''; }
     catch (e) { state.perr = friendlyError(e); }
     render();
   });
