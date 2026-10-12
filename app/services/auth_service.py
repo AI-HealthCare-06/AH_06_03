@@ -7,13 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.errors import AppError
 from app.core.security import (
+    DUMMY_PASSWORD_HASH,
     create_access_token,
-    encrypt_text,
-    hash_password,
+    hash_password_async,
     hash_token,
     new_refresh_token,
     utcnow,
-    verify_password,
+    verify_password_async,
 )
 from app.repositories import user_repository
 from app.services import consent_service
@@ -48,7 +48,9 @@ async def signup(
         raise AppError(409, "AUTH_EMAIL_DUPLICATED", "이미 가입된 이메일입니다.")
 
     try:
-        user = await user_repository.create_user_with_profile(db, email, hash_password(password), birth_date)
+        user = await user_repository.create_user_with_profile(
+            db, email, await hash_password_async(password), birth_date
+        )
         await consent_service.record_signup_consents(db, user.user_id)   # 가입 화면의 필수 동의 체크 기록
         await db.commit()
     except IntegrityError:
@@ -77,9 +79,12 @@ async def _issue_tokens(db: AsyncSession, user_id: str) -> TokenResult:
 
 async def login(db: AsyncSession, email: str, password: str) -> TokenResult:
     user = await user_repository.get_user_by_email(db, email.lower())
-    if user is None or user.status == "deleted" or not verify_password(password, user.password_hash):
+    if user is None:
+        await verify_password_async(password, DUMMY_PASSWORD_HASH)  # 없는 이메일도 같은 시간 걸리게
         raise INVALID_LOGIN
-    # 비밀번호까지 맞은 본인에게만 이유를 알려준다
+    ok = await verify_password_async(password, user.password_hash)
+    if user.status == "deleted" or not ok:
+        raise INVALID_LOGIN
     if user.status == "pending_guardian":
         raise AppError(403, "AUTH_GUARDIAN_PENDING", "법정대리인 동의가 확인된 뒤 이용할 수 있습니다.")
     return await _issue_tokens(db, user.user_id)
@@ -132,3 +137,5 @@ async def logout(db: AsyncSession, user_id: str, refresh_token: str) -> None:
     if session is not None and session.user_id == user_id and session.revoked_at is None:
         session.revoked_at = utcnow()
         await db.commit()
+
+

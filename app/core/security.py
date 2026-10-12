@@ -2,6 +2,7 @@
 import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
+import asyncio
 
 import bcrypt
 import jwt
@@ -66,3 +67,15 @@ def encrypt_text(plain: str) -> str:
 def decrypt_text(locked: str) -> str:
     """잠긴 글자를 연다. 보호자에게 연락할 때만 쓴다."""
     return _fernet().decrypt(locked.encode("utf-8")).decode("utf-8")
+
+async def hash_password_async(password: str) -> str:
+    """bcrypt 계산을 옆 스레드에서 해서, 그동안 서버가 다른 요청을 받게 한다."""
+    return await asyncio.to_thread(hash_password, password)
+
+
+async def verify_password_async(password: str, password_hash: str) -> bool:
+    return await asyncio.to_thread(verify_password, password, password_hash)
+
+
+# 없는 이메일로 로그인할 때도 같은 시간을 쓰게 하는 가짜 해시 (서버가 켜질 때 한 번만 만듦)
+DUMMY_PASSWORD_HASH = hash_password("dummy-password-for-timing")
