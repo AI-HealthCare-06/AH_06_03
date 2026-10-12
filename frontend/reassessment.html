@@ -18,6 +18,18 @@
   .mrow{display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:1px solid var(--sage-light)}
   .mrow:last-child{border-bottom:none}
   .ok{color:var(--ok); font-weight:700} .risk{color:var(--risk); font-weight:700}
+  .bcmp{padding:6px 4px 2px; text-align:center}
+  .bcmp .bt{font-size:13.5px; line-height:1.6; color:var(--ink); font-weight:700; margin:0 0 10px}
+  .bcmp .chip{display:inline-block; margin-top:10px; padding:8px 22px; border-radius:22px; background:var(--cream); border:1.5px solid var(--sage); color:#6a4a4a; font-size:16px; line-height:1.4; font-weight:900}
+  .bcmp .bnote{font-size:11.5px; line-height:1.7; color:var(--faint); margin:12px 0 0}
+  .bcmp .bar{position:relative; height:10px; border-radius:6px; background:linear-gradient(90deg,#E8F0E8,#F5EBEB 60%,#E8C9C9); margin:34px 6px 6px}
+  .bcmp .bar i{position:absolute; top:-4px; width:0; height:18px}
+  .bcmp .bar i em{position:absolute; left:50%; transform:translateX(-50%); font-style:normal; font-size:11.5px; white-space:nowrap; color:var(--muted)}
+  .bcmp .bar .avg{border-left:2px dashed var(--faint)}
+  .bcmp .bar .mk::before{content:''; position:absolute; left:-9px; top:-1px; width:18px; height:18px; border-radius:50%; box-sizing:border-box}
+  .bcmp .bar .old::before{background:#fff; border:2px solid var(--faint)} .bcmp .bar .old em{bottom:26px}
+  .bcmp .bar .new::before{background:var(--accent); border:2px solid #fff; box-shadow:0 0 0 1.5px var(--accent)} .bcmp .bar .new em{top:26px; color:var(--accent); font-weight:900; font-size:12.5px}
+  .bcmp .ends{display:flex; justify-content:space-between; font-size:11px; color:var(--faint); margin:34px 4px 0}
 </style>
 </head>
 <body>
@@ -117,6 +129,7 @@ function row(label, b, a, unit) {
   return `<span>${label}</span><span class="v">${f(b)}</span><span class="arrow">→</span><span class="v">${f(a)}</span>`;
 }
 
+const B_AVG_PCT = 35;   // 고혈압 진단을 받지 않은 사람 전체 평균 (result.html 의 B_AVG 와 같은 값)
 function reviewHtml(rv) {
   const b = rv.before || {}, a = rv.after || {};
   const bp = (x) => x.sbp ? `${x.sbp}/${x.dbp}` : null;
@@ -127,8 +140,16 @@ function reviewHtml(rv) {
       return `<div class="mrow"><span>10년 심혈관 위험</span><span>${RISK[m.before_risk_level]} → <b>${RISK[m.after_risk_level]}</b></span></div>`;
     }
     const b = Math.round(m.before_probability * 100), a = Math.round(m.after_probability * 100);
-    const word = a === b ? '그대로예요' : (a < b ? '줄었어요' : '늘었어요');
-    return `<div class="mrow"><span>나와 비슷한 사람 100명 중 혈압이 조금 높은 편인 사람</span><span>약 ${b}명 → <b>약 ${a}명</b> (${word})</span></div>`;
+    // 숫자가 낮아지면 "혈압이 높은 쪽에서 멀어졌어요", 높아지면 "가까워졌어요"로 방향만 말한다 (좋다/나쁘다 판정은 하지 않는다)
+    const dir = a === b ? '거의 같은 자리예요' : (a < b ? '혈압이 높은 쪽에서<br>조금 멀어졌어요' : '혈압이 높은 쪽으로<br>조금 가까워졌어요');
+    return `<div class="bcmp">
+      <p class="bt">나와 비슷한 사람들 기준으로 본 내 위치</p>
+      <div class="bar"><i class="avg" style="left:${B_AVG_PCT}%"></i><i class="mk old" style="left:${b}%"><em>처음 ${b}%</em></i><i class="mk new" style="left:${a}%"><em>4주 후 ${a}%</em></i></div>
+      <div class="ends"><span>혈압 낮은 쪽</span><span>높은 쪽</span></div>
+      <p class="bnote" style="margin:6px 0 0">점선은 같은 조건의 평균(${B_AVG_PCT}%)이에요.</p>
+      <div class="chip">${dir}</div>
+      <p class="bnote">나이·성별·체형·생활습관이 비슷한 사람들 기준이에요.<br>참고용 통계이며, 정확한 진단은 의사와 상담해 주세요.</p>
+    </div>`;
   }).join('');
   return `
   <p class="sect">혈압 · 몸 변화</p>
@@ -137,8 +158,8 @@ function reviewHtml(rv) {
     ${row('혈압 (mmHg)', bp(b), bp(a))}
     ${row('몸무게', b.weight_kg, a.weight_kg, 'kg')}
     ${row('허리둘레', b.waist_cm, a.waist_cm, 'cm')}
+    <p class="note" style="grid-column:1/-1; margin:6px 0 0; padding-top:8px; border-top:1px solid var(--sage-light)">${esc(rv.bp_note)} ${esc(range)}</p>
   </div>
-  <p class="note">${esc(rv.bp_note)} ${esc(range)}</p>
   <p class="sect">미션 달성률</p>
   <div class="cmp" style="display:block">${rv.missions.map(m =>
     `<div class="mrow"><span>${esc(m.name)}</span><span class="${m.status === 'completed' ? 'ok' : ''}">${Math.round(m.cycle_rate * 100)}%${m.status === 'completed' ? ' · 완료' : ''}</span></div>`).join('')}</div>
@@ -147,10 +168,11 @@ function reviewHtml(rv) {
     <div class="mrow"><span>흡연</span><span>${SMOKING[b.smoking] || '—'} → <b>${SMOKING[a.smoking] || '—'}</b></span></div>
     <div class="mrow"><span>음주</span><span>${DRINK[b.drink_freq] || '—'} → <b>${DRINK[a.drink_freq] || '—'}</b></span></div>
   </div>
-  ${models ? `<p class="sect">예측 결과 변화</p><div class="cmp" style="display:block">${models}</div>
-    <p class="note">아직 고혈압 진단을 받지 않은 사람 기준이에요 · 국민건강영양조사 2022~2024 · 선별 정보이며 진단이 아니에요.</p>` : ''}
+  ${models ? `<p class="sect">예측 결과 변화</p><div class="cmp" style="display:block">${models}
+      <div class="note" style="text-align:center; margin-top:6px"><button type="button" style="font:inherit; font-size:11px; color:var(--muted); background:#fff; border:1px solid var(--sage-light); border-radius:999px; padding:1px 10px; cursor:pointer" onclick="this.nextElementSibling.hidden = !this.nextElementSibling.hidden">출처 보기</button><div hidden style="margin-top:6px">고혈압 진단을 받지 않은 사람 기준 · 국민건강영양조사 2022~2024</div></div>
+    </div>` : ''}
   ${rv.cycle_number < rv.total_cycles
-    ? `<a class="cta" style="display:block; text-align:center; text-decoration:none" href="challenges.html">${rv.cycle_number + 1}차 챌린지 시작하기</a>`
+    ? `<a class="cta" style="display:block; text-align:center; text-decoration:none; margin-top:18px" href="challenges.html">${rv.cycle_number + 1}차 챌린지 시작하기</a>`
     : `<div class="callout"><b>12주 챌린지를 모두 마쳤어요!</b></div>`}`;
 }
 
