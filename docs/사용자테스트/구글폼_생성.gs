@@ -70,8 +70,8 @@ function createPaeonSurvey() {
     .setChoiceValues([
       '건강 관리에 관심이 없어요',
       '웹 서비스 사용이 불편해요',
-      '분석 결과를 믿기 어려워요',
-      '챌린지로 생활습관이 개선될지 자신이 없어요'
+      '분석 결과를 신뢰하기 어려워요',
+      '챌린지로 생활습관이 개선될지 모르겠어요'
     ])
     .showOtherOption(true)
     .setRequired(true);
@@ -79,16 +79,22 @@ function createPaeonSurvey() {
 
   // 섹션 5. 개선과 가격
   var pageNext = form.addPageBreakItem().setTitle('개선과 가격');
-  form.addMultipleChoiceItem()
+  form.addCheckboxItem()
     .setTitle('9. 만약 계속 사용한다면 가장 큰 이유는?')
     .setChoiceValues([
       '현재 건강 정보 확인 (고혈압 위험 정도·혈관 나이 추정)',
       '챌린지 미션 달성과 보상 획득',
-      '챌린지 전후 건강 상태 변화 확인',
-      '장기적인 생활습관 기록과 변화 추적',
+      '챌린지 전/후 건강 상태 변화 확인',
+      '장기적인 생활습관 기록 및 보관',
       '해당 없음'
     ])
-    .showOtherOption(true);
+    .showOtherOption(true)
+    .setValidation(
+      FormApp.createCheckboxValidation()
+      .requireSelectAtMost(2)
+      .setHelpText('최대 2개까지 고를 수 있어요.')
+      .build()
+  );
   form.addCheckboxItem()
     .setTitle('10. 더 좋은 서비스를 위해 가장 필요한 것은? (최대 2개 선택)')
     .setChoiceValues(['더 다양한 챌린지', '보상 (포인트, 쿠폰 등)', '나의 건강 상태와 위험도에 대한 더 자세한 설명', '나에게 챌린지가 추천된 이유에 대한 설명','건강 상태와 생활습관 변화의 비교·확인', '더 간편하고 직관적인 사용 방식'])
