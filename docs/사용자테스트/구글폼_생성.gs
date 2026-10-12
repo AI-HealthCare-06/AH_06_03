@@ -96,13 +96,14 @@ function createPaeonSurvey() {
       .build()
   );
   form.addCheckboxItem()
-    .setTitle('10. 더 좋은 서비스를 위해 가장 필요한 것은? (최대 2개 선택)')
+    .setTitle('10. 더 좋은 서비스를 위해 가장 필요한 것은? (2개 선택)')
     .setChoiceValues(['더 다양한 챌린지', '보상 (포인트, 쿠폰 등)', '나의 건강 상태와 위험도에 대한 더 자세한 설명', '나에게 챌린지가 추천된 이유에 대한 설명','건강 상태와 생활습관 변화의 비교·확인', '더 간편하고 직관적인 사용 방식'])
     .showOtherOption(true)
+    .setRequired(true)
     .setValidation(
       FormApp.createCheckboxValidation()
-      .requireSelectAtMost(2)
-      .setHelpText('최대 2개까지 고를 수 있어요.')
+      .requireSelectExactly(2)
+      .setHelpText('2개를 골라주세요.')
       .build()
   );
   form.addMultipleChoiceItem()
