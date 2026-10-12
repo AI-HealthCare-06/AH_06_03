@@ -17,6 +17,8 @@
   .steps{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
   .step{display:flex; flex-direction:column; gap:8px; background:#fff; border:1.5px solid var(--sage-light); border-radius:18px; padding:14px 14px 16px}
   .step-no{width:24px; height:24px; border-radius:999px; background:var(--sage-deep); color:#fff; font-size:12.5px; font-weight:700; display:inline-flex; align-items:center; justify-content:center}
+  .intro{margin:14px 0 4px; border-radius:18px; overflow:hidden; border:1.5px solid var(--sage-light); background:#f3e9e6; line-height:0}
+  .intro video{width:100%; height:auto; display:block; aspect-ratio:8/5}
   .step b{font-size:13.5px}
   .step p{font-size:12px; color:var(--muted); margin-top:4px; line-height:1.55}
   @media (max-width:760px){ .steps{grid-template-columns:1fr} .step{flex-direction:row; align-items:flex-start} }
@@ -34,6 +36,13 @@
           <h2>파이온 PAEON</h2>
           <p class="headline">검진 결과지의 "주의", 그래서 뭘 해야 하나요?</p>
           <p class="lede">입력 → 위험 예측 → 12주 챌린지(4주마다 점검)까지</p>
+        </div>
+
+        <div class="intro">
+          <video autoplay muted loop playsinline preload="metadata" poster="assets/intro/poster.jpg" aria-label="파이온 사용 모습: 건강정보 입력, 설문, 위험 예측, 챌린지, 캘린더" id="intro-video">
+            <source src="assets/intro/intro.mp4" type="video/mp4">
+            <source src="assets/intro/intro.webm" type="video/webm">
+          </video>
         </div>
 
         <div class="home-actions">
@@ -70,6 +79,14 @@
 </div>
 
 <script src="assets/common.js"></script>
+<script>
+// 움직임 줄이기를 켠 사람과 데이터 절약 모드에서는 영상을 자동으로 재생하지 않는다 (첫 화면 이미지만 보임)
+(() => {
+  const v = document.getElementById('intro-video'); if (!v) return;
+  const saveData = navigator.connection && navigator.connection.saveData;
+  if (saveData || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { v.removeAttribute('autoplay'); v.pause(); v.controls = true; }
+})();
+</script>
 <script>
 // 이미 로그인한 사람은 "로그인" 대신 대시보드로 바로 이어서 가기
 try {
