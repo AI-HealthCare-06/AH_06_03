@@ -18,7 +18,11 @@
   .step{display:flex; flex-direction:column; gap:8px; background:#fff; border:1.5px solid var(--sage-light); border-radius:18px; padding:14px 14px 16px}
   .step-no{width:24px; height:24px; border-radius:999px; background:var(--sage-deep); color:#fff; font-size:12.5px; font-weight:700; display:inline-flex; align-items:center; justify-content:center}
   .intro{margin:14px 0 4px; border-radius:18px; overflow:hidden; border:1.5px solid var(--sage-light); background:#f3e9e6; line-height:0}
+  .intro{position:relative; cursor:pointer}
   .intro video{width:100%; height:auto; display:block; aspect-ratio:8/5}
+  .intro .play{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(56,64,56,.18); opacity:0; transition:opacity .2s; pointer-events:none}
+  .intro .play span{width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,.92); color:var(--sage-deep); font-size:26px; display:flex; align-items:center; justify-content:center; padding-left:4px; box-shadow:0 6px 18px rgba(0,0,0,.2)}
+  .intro.paused .play{opacity:1}
   .step b{font-size:13.5px}
   .step p{font-size:12px; color:var(--muted); margin-top:4px; line-height:1.55}
   @media (max-width:760px){ .steps{grid-template-columns:1fr} .step{flex-direction:row; align-items:flex-start} }
@@ -38,11 +42,12 @@
           <p class="lede">입력 → 위험 예측 → 12주 챌린지(4주마다 점검)까지</p>
         </div>
 
-        <div class="intro">
+        <div class="intro" id="intro" role="button" tabindex="0" aria-label="소개 영상 재생·일시정지">
           <video autoplay muted loop playsinline preload="metadata" poster="assets/intro/poster.jpg" aria-label="파이온 사용 모습: 건강정보 입력, 설문, 위험 예측, 챌린지, 캘린더" id="intro-video">
             <source src="assets/intro/intro.mp4" type="video/mp4">
             <source src="assets/intro/intro.webm" type="video/webm">
           </video>
+          <div class="play" aria-hidden="true"><span>▶</span></div>
         </div>
 
         <div class="home-actions">
@@ -84,7 +89,14 @@
 (() => {
   const v = document.getElementById('intro-video'); if (!v) return;
   const saveData = navigator.connection && navigator.connection.saveData;
-  if (saveData || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { v.removeAttribute('autoplay'); v.pause(); v.controls = true; }
+  if (saveData || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { v.removeAttribute('autoplay'); v.pause(); }
+  // 영상을 누르면 멈추고, 다시 누르면 재생한다
+  const box = document.getElementById('intro');
+  const sync = () => box.classList.toggle('paused', v.paused);
+  const toggle = () => { v.paused ? v.play().catch(() => {}) : v.pause(); };
+  box.addEventListener('click', toggle);
+  box.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); } });
+  v.addEventListener('play', sync); v.addEventListener('pause', sync); sync();
 })();
 </script>
 <script>
