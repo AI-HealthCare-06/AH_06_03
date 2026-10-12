@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db.databases import Base
 from app.core.errors import AppError
-from app.core.security import hash_password, new_refresh_token, utcnow, verify_password
+from app.core.security import hash_password_async, new_refresh_token, utcnow, verify_password_async
 from app.models.deletion import AccountDeletionRequest
 from app.models.health import HealthMeasurement, HealthRecord
 from app.repositories import user_repository
@@ -34,7 +34,7 @@ async def request_deletion(db: AsyncSession, user_id: str, password: str) -> Del
     user = await user_repository.get_user_by_id(db, user_id)
     if user is None or user.status == "deleted":
         raise AppError(401, "AUTH_UNAUTHORIZED", "다시 로그인해 주세요.")
-    if not verify_password(password, user.password_hash):
+    if not await verify_password_async(password, user.password_hash):
         raise AppError(401, "AUTH_INVALID_CREDENTIALS", "비밀번호가 맞지 않습니다.")
     now = utcnow()
     req = AccountDeletionRequest(user_id=user_id, reauthenticated_at=now, requested_at=now, status="processing")
@@ -52,7 +52,7 @@ async def request_deletion(db: AsyncSession, user_id: str, password: str) -> Del
         if count:
             summary[table.name] = count
     user.email = f"deleted+{user_id}@invalid"
-    user.password_hash = hash_password(new_refresh_token())   # 아무도 모르는 값으로 바꿔 로그인 불가
+    user.password_hash = await hash_password_async(new_refresh_token())   # 아무도 모르는 값으로 바꿔 로그인 불가
     user.status = "deleted"
     user.deleted_at = now
     req.status, req.completed_at, req.result_summary = "completed", utcnow(), summary
