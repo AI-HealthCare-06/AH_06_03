@@ -30,6 +30,12 @@ METRICS = {
     "ALCOHOL_AMOUNT":  ("code", {"1_2", "3_4", "5_6", "7_9", "10plus"}),
 }
 
+NUM_RANGES = {  # 비현실적인 값 막기 (예: 화면에서 빈칸이 0으로 넘어오는 경우)
+    "TOTAL_CHOL": (50, 600),
+    "FASTING_GLUCOSE": (30, 600),
+}
+
+
 NON_DRINKER = {"never_lifetime", "none_past_year"}  # 이 값이면 음주량(ALCOHOL_AMOUNT)을 묻지 않음 (명세 §1.1 H4)
 
 async def create_record(db: AsyncSession, user_id: str, input_type: str, examination_date: date) -> HealthRecordResult:
@@ -78,8 +84,12 @@ def _check_item(item: dict) -> dict:
     if kind == "num":
         if item.get("value_num") is None:
             raise AppError(422, "HEALTH_VALUE_INVALID", f"{code}: 숫자 값으로 보내 주세요.")
+        if code in NUM_RANGES:
+            lo, hi = NUM_RANGES[code]
+            if not (lo <= item["value_num"] <= hi):
+                raise AppError(422, "HEALTH_VALUE_OUT_OF_RANGE", f"{code}: {lo}~{hi} 사이로 입력해 주세요.")
         return {**item, "unit": rule}
-
+    
     if item.get("value_code") not in rule:
         raise AppError(422, "HEALTH_VALUE_INVALID", f"{code}: 허용되지 않는 값입니다.")
     return {**item, "unit": None}
