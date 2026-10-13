@@ -42,6 +42,7 @@ class PredictRequest(BaseModel):
     sbp: float=Field(ge=60, le=260, description="수축기혈압(mmHg)")
     dbp: float=Field(ge=30, le=160, description="이완기혈압(mmHg)")
     total_chol: float | None = Field(default=None, ge=50, le=600, description="총콜레스테롤(mg/dL), 모르면 생략")
+    smoking : Smoking
     diabetes: bool
     htn_status: HtnStatus
     parent_htn: ParentHtn
