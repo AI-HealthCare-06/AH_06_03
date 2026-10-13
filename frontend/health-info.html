@@ -43,10 +43,10 @@
           <form id="health-form" class="screen">
             <div class="card plain" id="ocr-card">
               <p class="sect" style="margin-top:0">검진 결과지 사진으로 빠르게 입력</p>
-              <p class="hint">사진 한 장이면 아래 칸이 자동으로 채워져요. 인식된 값은 꼭 확인해주세요.</p>
-              <label class="ghost" style="display:block; text-align:center; cursor:pointer">
-                <span id="ocr-label-text">📷 사진 업로드</span>
-                <input type="file" accept="image/*" id="ocr-input" style="display:none">
+              <p class="hint">이번 체험 버전에서는 사진 자동 입력을 제공하지 않아요. 아래에서 직접 입력해 주세요.</p>
+              <label class="ghost" style="display:block; text-align:center; cursor:not-allowed; opacity:.5">
+                <span id="ocr-label-text">📷 준비 중이에요</span>
+                <input type="file" accept="image/*" id="ocr-input" style="display:none" disabled>
               </label>
               <div id="ocr-result"></div>
             </div>
@@ -185,13 +185,13 @@
               </div>
             </div>
 
-            <p class="tip">허리둘레·한 번 음주량은 PRD v1.9 신규 항목(모델 B 입력). 한 번 음주량은 음주 빈도가 "최근 1년간 전혀 마시지 않음" 이하면 묻지 않습니다.</p>
+            <p class="tip">허리둘레·한 번 음주량은 나와 비슷한 사람들과 비교할 때 쓰는 항목이에요. 한 번 음주량은 음주 빈도가 "최근 1년간 전혀 마시지 않음" 이하면 묻지 않습니다.</p>
 
             <p id="form-err" class="err" style="display:none"></p>
 
             <div class="privacy">
               <span>🔒</span>
-              <span>입력하신 건강정보는 위험도 예측과 챌린지 추천에만 씁니다. 다른 용도로 쓰거나 제3자에게 제공하지 않습니다.</span>
+              <span>입력하신 건강정보는 위험 신호 분석과 챌린지 추천에만 씁니다. 다른 용도로 쓰거나 제3자에게 제공하지 않습니다.</span>
             </div>
 
             <button type="submit" id="submit-btn" class="cta">생활습관 설문으로</button>
@@ -260,7 +260,7 @@ ocrInput.addEventListener('change', async () => {
   } catch (e) {
     ocrResult.innerHTML = `<div class="callout" style="border-color:var(--danger)"><b>⚠️ 인식할 수 없는 서식입니다</b><br>글자가 흐리거나 잘린 것 같아요. 아래에서 직접 입력해주세요</div>`;
   } finally {
-    ocrLabelText.textContent = '📷 사진 업로드';
+    ocrLabelText.textContent = '📷 준비 중이에요';
     ocrInput.value = '';
   }
 });

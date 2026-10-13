@@ -61,9 +61,8 @@ const L = {
   breakfast: { '5_7': '주 5–7회', '3_4': '주 3–4회', '1_2': '주 1–2회', '0': '거의 안 함' },
   sodium: { careful_low: '주의 (약간 적음)', very_moderate: '매우 적정', moderate: '적정', careful_high: '주의 (많음)', severe: '심각' },
   bp: { normal: '정상', elevated: '주의혈압', prehypertension: '고혈압전단계', hypertension: '고혈압' },
-  risk: { normal: '정상', borderline: '경계', high: '위험' },
+  risk: { normal: '양호', borderline: '주의', high: '높음' },
 };
-const B_AVG = 0.35;   // result.html과 같은 기준(학습 데이터의 경계군 비율)
 
 function profileRows(p) {
   if (!p) return [];
@@ -114,14 +113,13 @@ function predictionRows(p) {
   const a = p.model_a;
   if (a) {
     if (a.status === 'completed') {
-      r.push(row('10년 내 관상동맥질환 위험', L.risk[a.risk_level] || esc(a.risk_level)));
+      r.push(row('10년 내 심장 혈관 건강 신호', L.risk[a.risk_level] || esc(a.risk_level)));
       if (a.vascular_age != null) r.push(row('혈관 나이(추정)', `${a.vascular_age}세`));
-    } else r.push(row('10년 내 관상동맥질환 위험', '계산 대상이 아니에요'));
+    } else r.push(row('10년 내 심장 혈관 건강 신호', '계산 대상이 아니에요'));
   }
   const b = p.model_b;
   if (b && b.status === 'completed') {
-    const n = Math.round(b.probability * 100), avg = Math.round(B_AVG * 100);
-    r.push(row('나와 비슷한 사람들의 혈압', `고혈압 진단을 받지 않은 사람 중 나와 비슷한 사람 100명 중 약 ${n}명이 혈압 '주의혈압·고혈압전단계' (평균 약 ${avg}명, 국민건강영양조사 2022~2024 기준)`));
+    if (SIM_NOW[b.similarity_level]) r.push(row('나와 비슷한 사람들과 비교', `지금 내 몸 상태는 ${SIM_NOW[b.similarity_level]}`));
   }
   return r;
 }
@@ -146,9 +144,9 @@ document.getElementById('doc').innerHTML = `
   ${section('기본 정보', profileRows(profile))}
   ${section('건강정보', healthRows(read('paeon-health')))}
   ${section('생활습관 설문', surveyRows(read('paeon-survey')))}
-  ${section('예측 결과', predictionRows(read('paeon-prediction')))}
+  ${section('분석 결과', predictionRows(read('paeon-prediction')))}
   ${section('챌린지', challengeRows(read('paeon-cycle'), read('paeon-progress')))}
-  <p class="foot">진단이 아닌 선별 정보입니다. AI가 예측한 정보이며, 정확한 진단은 의사에게 문의하세요.<br>이 문서의 값은 이 기기(브라우저)에 저장된 값이에요. 서버에 저장된 모든 원본 기록은 마이페이지의 "원본 데이터 내려받기(JSON)"로 받을 수 있어요.</p>
+  <p class="foot">진단이 아닌 선별 정보입니다. AI가 분석한 참고 정보이며, 정확한 진단은 의사에게 문의하세요.<br>이 문서의 값은 이 기기(브라우저)에 저장된 값이에요. 서버에 저장된 모든 원본 기록은 마이페이지의 "원본 데이터 내려받기(JSON)"로 받을 수 있어요.</p>
   <div class="actions no-print">
     <a class="ghost" href="mypage.html">돌아가기</a>
     <button type="button" class="cta" id="print-btn">PDF로 저장</button>

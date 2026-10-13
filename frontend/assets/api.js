@@ -286,7 +286,7 @@ function riskOf(feats, intercept, x) {
   return sigmoid(intercept + sum);
 }
 function band(r) {
-  return r < 0.10 ? { code: 'normal', label: '정상' } : r <= 0.20 ? { code: 'borderline', label: '경계' } : { code: 'high', label: '위험' };
+  return r < 0.10 ? { code: 'normal', label: '양호' } : r <= 0.20 ? { code: 'borderline', label: '주의' } : { code: 'high', label: '높음' };
 }
 const MODEL_A_AGE_COEF = 0.066053;
 function vascularAge(x) {
@@ -380,7 +380,7 @@ async function apiPredictionJob() {
     health_record_id,
     ...(survey_instance_id ? { survey_instance_id } : {}),
     request_type: 'initial',
-  }, '예측 요청에 실패했습니다');
+  }, '분석 요청에 실패했습니다');
 }
 
 // 대상 확인 답(나이대·관상동맥질환·응급 여부) 서버 저장 / 복원 (PUT·GET /users/me/eligibility).
@@ -418,7 +418,7 @@ async function apiGetMe() {
 // 가장 최근 예측 결과. 아직 예측한 적이 없으면(404 PREDICTION_NOT_FOUND) null.
 async function apiGetLatestPrediction() {
   try {
-    return (await apiCall('GET', '/predictions/latest', undefined, '예측 결과를 불러오지 못했습니다')).data;
+    return (await apiCall('GET', '/predictions/latest', undefined, '분석 결과를 불러오지 못했습니다')).data;
   } catch (e) {
     if (e.code === 'PREDICTION_NOT_FOUND') return null;
     throw e;
@@ -687,7 +687,7 @@ async function apiPredictV1Temp(profile, health, survey) {
     body: JSON.stringify(buildPredictV1Payload(profile, health, survey)),
   });
   const body = await res.json();
-  if (!res.ok) throw new Error(body.error?.message || '예측 요청에 실패했습니다');
+  if (!res.ok) throw new Error(body.error?.message || '분석 요청에 실패했습니다');
   return body;
 }
 
