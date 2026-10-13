@@ -131,9 +131,12 @@ function simChangeText(before, after) {
 
 // 혈압 상담 권고 배너: 160/100 이상, 또는 140/90 이상(고혈압 진단 없음)이면 같은 배너. X로 닫아도 진행은 막지 않고, 다음 방문 때 다시 보인다.
 function adviceBannerHtml(pred, health) {
-  if (!health || !pred) return '';
-  const very = health.sbp >= 160 || health.dbp >= 100;
-  const high = health.sbp >= 140 || health.dbp >= 90;
-  if (!(very || (high && pred.htn_status === 'none'))) return '';
-  return `<div class="callout" id="advice-banner" style="border-color:var(--risk); position:relative; padding-right:34px"><button type="button" aria-label="닫기" onclick="document.getElementById('advice-banner').remove()" style="position:absolute; top:8px; right:10px; border:0; background:none; font-size:18px; line-height:1; color:var(--muted); cursor:pointer">×</button><b>입력하신 혈압이 ${very ? '많이 ' : ''}높아요 (${health.sbp}/${health.dbp} mmHg)</b><br>챌린지는 계속 하실 수 있어요. 가까운 의료기관에서 상담을 받아 보세요. <a href="guide.html" style="color:var(--sage-deep); font-weight:700">검사 · 상담 안내 보기</a></div>`;
+  if (!pred) return '';
+  const very = health && (health.sbp >= 160 || health.dbp >= 100);
+  const high = health && (health.sbp >= 140 || health.dbp >= 90);
+  const bpAdvice = very || (high && pred.htn_status === 'none');
+  const aHigh = pred.model_a && pred.model_a.status === 'completed' && pred.model_a.risk_level === 'high';
+  if (!bpAdvice && !aHigh) return '';
+  const title = bpAdvice ? `입력하신 혈압이 ${very ? '많이 ' : ''}높아요 (${health.sbp}/${health.dbp} mmHg)` : '10년 내 심장 혈관 건강 신호가 높게 나왔어요';
+  return `<div class="callout" id="advice-banner" style="border-color:var(--risk); position:relative; padding-right:34px"><button type="button" aria-label="닫기" onclick="document.getElementById('advice-banner').remove()" style="position:absolute; top:8px; right:10px; border:0; background:none; font-size:18px; line-height:1; color:var(--muted); cursor:pointer">×</button><b>${title}</b><br>챌린지는 계속 하실 수 있어요. 가까운 의료기관에서 상담을 받아 보세요. <a href="guide.html" style="color:var(--sage-deep); font-weight:700">검사 · 상담 안내 보기</a></div>`;
 }
