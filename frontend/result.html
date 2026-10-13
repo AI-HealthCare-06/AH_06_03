@@ -48,6 +48,13 @@ const B_SKIP_MSG = { age_out_of_range: '19세 미만이어서 분석할 수 없�
 const visible = (factors) => (factors || []).filter(f => f.direction_matches_expectation !== false);
 // 바꿀 수 없는 요인(나이·성별 등)은 막대에서 빼고 한 줄로만 알린다.
 const shown = (factors) => visible(factors).filter(f => f.modifiable);
+// 입력하지 않아 평균값으로 채운 값은 요인에서 뺀다 (사용자가 넣은 값이 아니라서 영향으로 보여 주면 안 된다)
+const withoutMissing = (res) => {
+  const miss = res.missing_features || [];
+  if (!miss.length) return res;
+  const top = res.top_modifiable_factor;
+  return { ...res, factors: (res.factors || []).filter(f => !miss.includes(f.code)), top_modifiable_factor: top && miss.includes(top.code) ? null : top };
+};
 const fixedNote = (factors) => visible(factors).some(f => !f.modifiable) ? '<div class="topline" style="color:var(--muted); margin:8px 0 0">나이·성별처럼 바꿀 수 없는 요인은 뺐어요</div>' : '';
 
 // 개선 가능한 1위 요인 → 그 요인을 관리할 수 있는 챌린지 안내 (명세 §7 요인 → 챌린지 연결표, 가이드 §7). 결과 설명용이고 챌린지 추천에는 쓰지 않는다.
@@ -101,7 +108,7 @@ if (!pred) {
   if (pred.model_a.status !== 'completed') {
     aHtml = ageSkipA ? '' : `<div class="callout"><b>${A_SKIP_MSG[pred.model_a.skip_reason] || '이번엔 분석할 수 없습니다'}</b></div>`;
   } else {
-    const a = pred.model_a, fa = shown(a.factors);
+    const a = withoutMissing(pred.model_a), fa = shown(a.factors);
     aHtml = `<p class="sect">10년 내 심장 혈관 건강 신호</p>
       <div class="riskrow" style="border-color:${COLOR[a.risk_level]}">
         <span class="chip" style="color:${COLOR[a.risk_level]}">${RISK_LABEL[a.risk_level]}</span>
@@ -120,7 +127,7 @@ if (!pred) {
   if (pred.model_b.status !== 'completed') {
     bHtml = `<div class="callout"><b>${B_SKIP_MSG[pred.model_b.skip_reason] || '이번엔 분석할 수 없습니다'}</b></div>`;
   } else {
-    const b = pred.model_b, fb = shown(b.factors);
+    const b = withoutMissing(pred.model_b), fb = shown(b.factors);
     const now = SIM_NOW[b.similarity_level];
     bHtml = `<p class="sect">나와 비슷한 사람들과 비교했어요</p>
       ${now ? `<div class="riskrow" style="border-color:var(--accent); padding:16px 20px"><span style="flex:1; font-size:15.5px; line-height:1.6; font-weight:500; word-break:keep-all; text-wrap:balance">지금 내 몸 상태는 ${now}</span></div>` : ''}
