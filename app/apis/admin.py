@@ -12,11 +12,11 @@ from app.core.db.databases import async_get_db
 from app.core.errors import AppError
 from app.repositories import user_repository
 from app.schemas.admin import (
-    AdminCategory, AdminMission, ChallengeStats, AdminUserDetail, AdminUserList, CategoryPatch, MissionPatch,
+    AdminCategory, AdminMission, AdminUserDetail, AdminUserList, AuditLogItem, CategoryPatch, ChallengeStats, MissionPatch,
     PurgeRequest, PurgeResult,
 )
 from app.schemas.common import DataResponse
-from app.services import admin_service, admin_users_service
+from app.services import admin_service, admin_users_service, audit_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -33,7 +33,10 @@ async def require_admin(
 
 @router.get("/challenges", response_model=DataResponse[list[AdminCategory]])
 async def list_challenges(admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
-    return DataResponse(data=await admin_service.list_catalog(db))
+    data = await admin_service.list_catalog(db)
+    await audit_service.record(db, admin, "catalog_view", dedupe_seconds=audit_service.VIEW_DEDUPE_SECONDS)
+    await db.commit()
+    return DataResponse(data=data)
 
 
 @router.patch("/challenge-categories/{category_id}", response_model=DataResponse[AdminCategory])
@@ -71,4 +74,18 @@ async def purge(req: PurgeRequest, admin: str = Depends(require_admin), db: Asyn
 
 @router.get("/stats/challenges", response_model=DataResponse[ChallengeStats])
 async def challenge_stats(admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
-    return DataResponse(data=await admin_service.challenge_stats(db))
+    data = await admin_service.challenge_stats(db)
+    await audit_service.record(db, admin, "stats_view", dedupe_seconds=audit_service.VIEW_DEDUPE_SECONDS)
+    await db.commit()
+    return DataResponse(data=data)
+
+
+@router.get("/audit-logs", response_model=DataResponse[list[AuditLogItem]])
+async def audit_logs(
+    limit: int = Query(100, ge=1, le=500), admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)
+):
+    """관리자 행위 기록 (최신순). 이 화면을 본 것도 기록에 남는다."""
+    data = await audit_service.list_logs(db, limit)
+    await audit_service.record(db, admin, "audit_view", dedupe_seconds=audit_service.VIEW_DEDUPE_SECONDS)
+    await db.commit()
+    return DataResponse(data=data)

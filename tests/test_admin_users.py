@@ -114,3 +114,16 @@ async def test_관리자_API는_3초_안에_응답한다(client, db_session):
         start = time.perf_counter()
         r = await call
         assert r.status_code == 200 and time.perf_counter() - start < 3
+
+
+async def test_가입자_조회와_삭제가_행위_기록에_남는다(client, db_session):
+    _, h = await make(db_session, ADMIN)
+    await make(db_session, "log1@audit.kr")
+    await client.get("/v1/admin/users", headers=h)
+    prev = await client.post("/v1/admin/purge", json={"patterns": ["%@audit.kr"]}, headers=h)
+    await client.post("/v1/admin/purge", json={"patterns": ["%@audit.kr"], "apply": True, "confirm_count": prev.json()["data"]["count"]}, headers=h)
+    logs = (await client.get("/v1/admin/audit-logs", headers=h)).json()["data"]
+    actions = {row["action"] for row in logs}
+    assert {"users_view", "purge_preview", "purge_apply"} <= actions
+    assert all(row["actor_email"] == ADMIN for row in logs)
+    assert "audit.kr" not in str(logs)      # 기록에는 사용자 이메일이 들어가지 않는다

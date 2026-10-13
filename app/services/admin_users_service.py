@@ -20,7 +20,7 @@ from app.models.user import User
 from app.schemas.admin import (
     AdminConsentItem, AdminUserDetail, AdminUserList, AdminUserRow, PurgeResult, PurgeTarget,
 )
-from app.services import account_service
+from app.services import account_service, audit_service
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +43,7 @@ def _iso(dt: datetime | None) -> str | None:
     return dt.strftime("%Y-%m-%d %H:%M") if dt else None
 
 
-def log_access(admin: str, action: str, target: str | None = None, detail: dict | None = None) -> None:
-    logger.info("관리자 %s: %s %s %s", admin, action, target or "", detail or "")
+VIEW = audit_service.VIEW_DEDUPE_SECONDS   # 같은 화면을 새로고침해도 기록이 쌓이지 않게 한동안 한 번만
 
 
 async def _stages(db: AsyncSession, user_ids: list[str]) -> dict[str, set[str]]:
@@ -97,7 +96,8 @@ async def list_users(
         rows = [r for r in rows if r.stage == stage]
     if consent in ("agreed", "withdrawn", "none"):
         rows = [r for r in rows if r.health_consent == consent]
-    log_access(admin, "users_list", None, {"q": q, "stage": stage, "consent": consent, "status": status, "count": len(rows)})
+    await audit_service.record(db, admin, "users_view", dedupe_seconds=VIEW)
+    await db.commit()
     return AdminUserList(total=len(rows), items=rows[offset:offset + limit])
 
 
@@ -114,7 +114,8 @@ async def user_detail(db: AsyncSession, admin: str, user_id: str) -> AdminUserDe
     )).all()
     cycles = (await db.execute(select(func.count()).select_from(ChallengeCycle).where(ChallengeCycle.user_id == user_id))).scalar_one()
     base = _row(user, stages, consent)
-    log_access(admin, "user_detail", user.user_id[-8:])
+    await audit_service.record(db, admin, "user_detail_view", target=user.user_id[-8:])
+    await db.commit()
     return AdminUserDetail(
         **base.model_dump(), stages_done=[s for s in STAGES if s in stages], cycles=int(cycles),
         consents=[
@@ -140,7 +141,8 @@ async def purge(db: AsyncSession, admin: str, patterns: list[str], apply: bool, 
     users = [u for u in found if u.email.lower() not in settings.admin_email_set]
     targets = [PurgeTarget(email_masked=mask_email(u.email), status=u.status) for u in users]
     if not apply:
-        log_access(admin, "purge_preview", None, {"patterns": patterns, "count": len(users)})
+        await audit_service.record(db, admin, "purge_preview", detail=f"패턴 {len(patterns)}개, 대상 {len(users)}명")
+        await db.commit()
         return PurgeResult(count=len(users), targets=targets, applied=False)
     if confirm_count != len(users):
         raise AppError(409, "ADMIN_PURGE_CONFIRM", f"미리보기와 인원수가 달라요(지금 {len(users)}명). 다시 미리보기를 해 주세요.")
@@ -156,5 +158,6 @@ async def purge(db: AsyncSession, admin: str, patterns: list[str], apply: bool, 
             await db.rollback()
             failed += 1
             logger.exception("일괄 삭제 실패: %s", user_id[-8:])
-    log_access(admin, "purge_apply", None, {"patterns": patterns, "count": len(ids), "done": done, "failed": failed})
+    await audit_service.record(db, admin, "purge_apply", detail=f"대상 {len(ids)}명, 완료 {done}명, 실패 {failed}명")
+    await db.commit()
     return PurgeResult(count=len(ids), targets=targets, applied=True, done=done, failed=failed)
