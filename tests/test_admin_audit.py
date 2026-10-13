@@ -119,3 +119,10 @@ async def test_records_survive_admin_withdrawal(client, db_session):
 
 async def test_audit_table_has_no_user_id_column():
     assert "user_id" not in AdminAuditLog.__table__.c      # 탈퇴 삭제·내 데이터 내려받기 대상에서 빠지는 이유
+
+
+async def test_dedupe_lookup_has_composite_index():
+    """열람 중복 확인(actor_email + action 으로 최근 시각을 찾음)용 묶음 색인이 있다."""
+    cols = {ix.name: [c.name for c in ix.columns] for ix in AdminAuditLog.__table__.indexes}
+    assert cols["ix_admin_audit_logs_actor_action_created"] == ["actor_email", "action", "created_at"]
+    assert any(c == ["created_at"] for c in cols.values())      # 최신순 목록용 색인도 그대로
