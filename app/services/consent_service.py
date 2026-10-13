@@ -1,13 +1,15 @@
 """동의 매니저: 현재 유효한 정책 조회, 동의·철회 기록, 건강정보 동의 철회 여부 확인."""
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
 from app.core.security import utcnow
 from app.models.consent import ConsentPolicy, UserConsent
+
+from app.services import account_service
 
 SIGNUP_POLICY_TYPES = ("terms_of_service", "privacy", "health_data")  # 가입 화면의 필수 동의 체크박스
 
@@ -31,6 +33,8 @@ class ConsentResult(BaseModel):
     status: str
     consented_at: datetime
     withdrawn_at: datetime | None
+    deleted_counts: dict[str, int] = Field(default_factory=dict)   # 표별 삭제 건수 (건강정보 철회 때만)
+    deleted_total: int = 0
 
 
 async def _active_policies(db: AsyncSession) -> list[ConsentPolicy]:
@@ -84,9 +88,12 @@ async def _current(db: AsyncSession, user_id: str, policy_id: str) -> UserConsen
     )).scalar_one_or_none()
 
 
-def _result(policy: ConsentPolicy, c: UserConsent) -> ConsentResult:
+def _result(policy, c, deleted: dict[str, int] | None = None) -> ConsentResult:
+    deleted = deleted or {}
     return ConsentResult(policy_id=policy.policy_id, policy_type=policy.policy_type, version=policy.version,
-                         status=c.status, consented_at=c.consented_at, withdrawn_at=c.withdrawn_at)
+                         status=c.status, consented_at=c.consented_at, withdrawn_at=c.withdrawn_at,
+                         deleted_counts=deleted,
+                        deleted_total=sum(deleted.values()),)
 
 
 async def agree(db: AsyncSession, user_id: str, policy_id: str) -> ConsentResult:
@@ -101,15 +108,20 @@ async def agree(db: AsyncSession, user_id: str, policy_id: str) -> ConsentResult
 
 
 async def withdraw(db: AsyncSession, user_id: str, policy_id: str) -> ConsentResult:
-    """동의 철회 (회원 탈퇴가 아님: 계정은 유지). 동의한 적이 없으면 404."""
+    """동의 철회 (회원 탈퇴가 아님: 계정은 유지). 동의한 적이 없으면 404.
+    건강정보 동의를 철회하면 건강 관련 데이터를 같은 트랜잭션에서 바로 삭제한다 (탈퇴와 같은 삭제 함수 사용)."""
     policy = await _get_policy(db, policy_id)
     cur = await _current(db, user_id, policy_id)
     if cur is None:
         raise AppError(404, "CONSENT_NOT_FOUND", "동의 기록이 없습니다.")
+    deleted: dict[str, int] = {}
     if cur.status == "agreed":
         cur.status, cur.withdrawn_at = "withdrawn", utcnow()
-        await db.commit()
-    return _result(policy, cur)
+        if policy.policy_type == "health_data":
+            deleted = await account_service.delete_health_data(db, user_id)
+            cur.deletion_summary = deleted
+        await db.commit()   # 철회 + 삭제를 한 번에. 삭제 중 오류가 나면 철회도 같이 취소된다
+    return _result(policy, cur, deleted)
 
 
 async def health_consent_withdrawn(db: AsyncSession, user_id: str) -> bool:

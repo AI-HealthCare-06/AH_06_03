@@ -1,7 +1,7 @@
 """동의 정책(약관 본문·버전)과 회원별 동의·철회 기록 (ERD v8 consent_policies, user_consents)."""
 from datetime import datetime
 
-from sqlalchemy import CHAR, DateTime, Enum, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import CHAR, DateTime, Enum, ForeignKey, String, Text, UniqueConstraint,JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db.databases import Base
@@ -36,3 +36,4 @@ class UserConsent(Base):
     status: Mapped[str] = mapped_column(Enum("agreed", "withdrawn", name="consent_status"), nullable=False, default="agreed")
     consented_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     withdrawn_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    deletion_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
