@@ -1,7 +1,7 @@
 """add deletion_summary to user_consents
 
 Revision ID: 980618918c12
-Revises: a8c3e5f7b219
+Revises: b7e2d4f6a891
 Create Date: 2026-10-13 11:25:17.420693
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '980618918c12'
-down_revision: Union[str, Sequence[str], None] = 'a8c3e5f7b219'
+down_revision: Union[str, Sequence[str], None] = 'b7e2d4f6a891'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
