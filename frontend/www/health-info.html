@@ -163,8 +163,9 @@
               </div>
 
               <div class="field">
-                <label for="total-chol">총콜레스테롤 (mg/dL)</label>
-                <input id="total-chol" type="number" required>
+                <label for="total-chol">총콜레스테롤 (mg/dL) · 선택</label>
+                <input id="total-chol" type="number">
+                <p class="hint" style="margin:4px 0 0">모르면 비워 두세요. 평균값으로 분석하고, 결과에 정확도 한계를 알려 드려요.</p>
               </div>
               <div class="field">
                 <label for="parent-htn">부모 고혈압 가족력</label>
@@ -284,7 +285,7 @@ function renderSummary(health) {
   rows.push(
     ['당뇨병 여부', optionLabel('diabetes', health.diabetes)],
     ['고혈압 진단·치료 상태', optionLabel('htn-status', health.htn_status)],
-    ['총콜레스테롤', `${health.total_chol} mg/dL`],
+    ['총콜레스테롤', health.total_chol != null ? `${health.total_chol} mg/dL` : '입력 안 함'],
     ['부모 고혈압 가족력', optionLabel('parent-htn', health.parent_htn)],
     ['공복혈당', health.fasting_glucose != null ? `${health.fasting_glucose} mg/dL` : '입력 안 함'],
   );
@@ -314,7 +315,7 @@ function fillForm(health) {
   if (health.drink_amount) document.getElementById('drink-amount').value = health.drink_amount;
   document.getElementById('diabetes').value = String(health.diabetes);
   document.getElementById('htn-status').value = health.htn_status;
-  document.getElementById('total-chol').value = health.total_chol;
+  document.getElementById('total-chol').value = health.total_chol ?? '';
   document.getElementById('parent-htn').value = health.parent_htn;
   document.getElementById('glucose').value = health.fasting_glucose ?? '';
 }
@@ -357,7 +358,7 @@ form.addEventListener('submit', async (event) => {
     drink_amount: drinkAmountField.style.display === 'none' ? null : document.getElementById('drink-amount').value,
     diabetes: document.getElementById('diabetes').value === 'true',
     htn_status: document.getElementById('htn-status').value,
-    total_chol: Number(document.getElementById('total-chol').value),
+    total_chol: document.getElementById('total-chol').value ? Number(document.getElementById('total-chol').value) : null,
     parent_htn: document.getElementById('parent-htn').value,
     fasting_glucose: document.getElementById('glucose').value ? Number(document.getElementById('glucose').value) : null,
     recorded_at: existingHealth ? existingHealth.recorded_at : localIso(new Date()),

@@ -69,7 +69,7 @@ if (!profile || !elig || !health || !survey) {
     <div class="kpi"><div class="k">BMI</div><div class="v">${bmi}</div></div>
     <div class="kpi"><div class="k">혈압</div><div class="v">${health.sbp}/${health.dbp}</div></div>
     <div class="kpi"><div class="k">허리둘레</div><div class="v">${health.waist_cm}cm</div></div>
-    <div class="kpi"><div class="k">총콜레스테롤</div><div class="v">${health.total_chol}</div></div>`;
+    <div class="kpi"><div class="k">총콜레스테롤</div><div class="v">${health.total_chol != null ? health.total_chol : '입력 안 함'}</div></div>`;
 }
 
 document.getElementById('submit-btn').addEventListener('click', async () => {

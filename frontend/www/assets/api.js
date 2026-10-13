@@ -119,13 +119,13 @@ async function apiSubmitHealthRecord(payload) {
   const measurements = [
     num('SBP', payload.sbp), num('DBP', payload.dbp),
     num('HEIGHT', payload.height_cm), num('WEIGHT', payload.weight_kg), num('WAIST', payload.waist_cm),
-    num('TOTAL_CHOL', payload.total_chol),
     cat('SMOKING', payload.smoking), cat('DIABETES', payload.diabetes),
     cat('HTN_STATUS', payload.htn_status), cat('PARENT_HTN', payload.parent_htn),
     cat('ALCOHOL_FREQ', payload.drink_freq),
   ];
   if (payload.drink_amount) measurements.push(cat('ALCOHOL_AMOUNT', payload.drink_amount));
   if (SEND_ECIG && payload.ecig) measurements.push(cat('ECIG', payload.ecig)); // 서버가 ECIG 지표를 받기 전에는 422(HEALTH_METRIC_UNKNOWN)
+  if (payload.total_chol != null) measurements.push(num('TOTAL_CHOL', payload.total_chol));   // 선택 입력: 모르면 보내지 않는다
   if (payload.fasting_glucose != null) measurements.push(num('FASTING_GLUCOSE', payload.fasting_glucose));
 
   const date = payload.recorded_at.slice(0, 10);
