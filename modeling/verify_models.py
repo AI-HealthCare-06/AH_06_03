@@ -89,6 +89,27 @@ def check_a():
     return {"n": int(mask.sum()), "max_abs_diff": float(diff.max()), "n_diff_gt_1e-4": int((diff > 1e-4).sum())}
 
 
+def check_similarity():
+    """모델 B similarity_level: ① 경계값 ② 학습 데이터 분포·실제 경계군 비율이 JSON의 근거와 같은지."""
+    cuts = SPEC_B["similarity_cuts"]
+    lo, hi, eps = cuts["similar_max"], cuts["slightly_different_max"], 1e-9
+    probe = {0.0: "similar", lo: "similar", lo + eps: "slightly_different", hi: "slightly_different",
+             hi + eps: "different", 1.0: "different"}
+    boundary_ok = all(pm.similarity_level_b(n, SPEC_B) == want for n, want in probe.items())
+    raw = pd.read_parquet(DATA_DIR / "KNHANES_2022_2024_selected.parquet")
+    d = raw[(raw["age"] >= 19) & raw["HE_HP"].isin([1, 2, 3])]
+    p = sigmoid_linear(SPEC_B, from_knhanes(d))
+    y = d["HE_HP"].isin([2, 3]).to_numpy()
+    lvl = np.array([pm.similarity_level_b(v, SPEC_B) for v in p])
+    share = {k: round(float((lvl == k).mean()), 3) for k in ("similar", "slightly_different", "different")}
+    rate = {k: round(float(y[lvl == k].mean()), 3) for k in share}
+    normal = ~y
+    return {"model_version": SPEC_B["version"], "cuts": [lo, hi], "boundary_ok": bool(boundary_ok),
+            "n": int(len(p)), "share_of_all": share, "borderline_rate_by_level": rate,
+            "normal_median_N": round(float(np.median(p[normal])), 3),
+            "normal_q75_N": round(float(np.percentile(p[normal], 75)), 3)}
+
+
 # 모델 B v0.2.0: 운동·아침·외식은 입력에서 제외 (handoff/생활습관_입력_가이드.md 부록 A)
 CASES = [
     ("T1_45세남성_흡연_데모예시", {"age": 45, "sex": "M", "height_cm": 172, "weight_kg": 78, "waist_cm": 88, "sbp": 145, "dbp": 92,
@@ -113,7 +134,7 @@ CASES = [
 
 
 def main():
-    out = {"consistency_model_a": check_a(), "consistency_model_b": check_b()}
+    out = {"consistency_model_a": check_a(), "consistency_model_b": check_b(), "similarity_level_b": check_similarity()}
     # 반복 일관성 100건 × 10회
     rng = np.random.default_rng(0)
     base = [c[1] for c in CASES]
@@ -131,7 +152,7 @@ def main():
         a, b = c["expected_model_a"], c["expected_model_b"]
         print(c["case_id"], "| A:", a["status"], a.get("probability"), a.get("risk_level"),
               (a.get("top_modifiable_factor") or {}).get("label"),
-              "| B:", b["status"], b.get("skip_reason"), b.get("probability"),
+              "| B:", b["status"], b.get("skip_reason"), b.get("probability"), b.get("similarity_level"),
               (b.get("top_risk_factor") or {}).get("label"), (b.get("top_modifiable_factor") or {}).get("label"),
               "missing", b.get("missing_features"))
 

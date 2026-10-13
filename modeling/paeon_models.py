@@ -162,6 +162,20 @@ def vascular_age(spec: dict, x: dict) -> float:
     return round(min(max(x["age"] + extra / va["age_coef"], lo), hi), 1)
 
 
+def similarity_level_b(n: float, spec: dict) -> str | None:
+    """모델 B 점수 N → 혈압이 정상인 사람들과 닮은 정도 3단계 (화면용, N 자체는 노출하지 않음).
+    기준값은 모델 JSON의 similarity_cuts (모델 버전에 묶임, 모델이 바뀌면 다시 계산).
+    N <= similar_max → similar / N <= slightly_different_max → slightly_different / 그 위 → different"""
+    cuts = spec.get("similarity_cuts")
+    if not cuts:
+        return None
+    if n <= cuts["similar_max"]:
+        return "similar"
+    if n <= cuts["slightly_different_max"]:
+        return "slightly_different"
+    return "different"
+
+
 def predict_model_b(inp: dict, spec: dict | None = None) -> dict:
     spec = spec or _load(SPEC_B)
     if inp.get("age") is None or inp["age"] < spec["age_min"]:
@@ -171,5 +185,6 @@ def predict_model_b(inp: dict, spec: dict | None = None) -> dict:
     out = _score(spec, features_b(inp))
     out["risk_level"] = None   # 모델 B는 판정하지 않음 (판정 = 입력 혈압 규칙)
     out["percentile"] = None
+    out["similarity_level"] = similarity_level_b(out["probability"], spec)
     return {"model_code": spec["model_code"], "model_version": spec["version"], "status": "completed",
             "skip_reason": None, **out}
