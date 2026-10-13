@@ -33,7 +33,7 @@
           <button type="submit" id="submit-btn" class="cta" style="margin-top:14px">로그인</button>
         </form>
 
-        <p class="hint" style="text-align:center; margin-top:10px">계정이 없으신가요? <a href="signup.html">회원가입</a></p>
+        <p class="hint" style="text-align:center; margin-top:10px">계정이 없으신가요? <a href="signup.html" style="color:var(--muted); font-weight:700; text-decoration:underline">회원가입</a></p>
       </div>
     </div>
   </div>
@@ -62,9 +62,11 @@ form.addEventListener('submit', async (event) => {
     if (!localStorage.getItem('paeon-profile')) {
       localStorage.setItem('paeon-profile', JSON.stringify({ email }));
     }
-    window.location.href = 'dashboard.html';
+    await apiSyncAfterLogin();
+    // 처음 가입한 사람은 대상 확인부터 시작한다 (이미 한 사람은 서버에서 복원돼 바로 대시보드로)
+    window.location.href = localStorage.getItem('paeon-eligibility') ? 'dashboard.html' : 'eligibility.html';
   } catch (e) {
-    errEl.textContent = e.message;
+    errEl.textContent = friendlyError(e);
     errEl.style.display = 'block';
     submitBtn.disabled = false;
     submitBtn.textContent = '로그인';

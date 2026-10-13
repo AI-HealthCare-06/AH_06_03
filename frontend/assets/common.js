@@ -148,3 +148,10 @@ function adviceBannerHtml(pred, health) {
   return `<div class="callout" id="advice-banner" style="border-color:var(--risk); position:relative; padding-right:34px"><button type="button" aria-label="닫기" onclick="document.getElementById('advice-banner').remove()" style="position:absolute; top:8px; right:10px; border:0; background:none; font-size:18px; line-height:1; color:var(--muted); cursor:pointer">×</button><b>${title}</b><br>가까운 의료기관에서 상담을 받아 보세요. <a href="guide.html" style="color:var(--sage-deep); font-weight:700">검사 · 상담 안내 보기</a>
     <label style="display:flex; gap:8px; align-items:flex-start; margin-top:10px; font-size:12.5px; line-height:1.5; cursor:pointer"><input type="checkbox" ${adviceAcked() ? 'checked' : ''} onchange="setAdviceAck(this.checked)" style="margin-top:3px"><span>${ADVICE_ACK_TEXT}</span></label></div>`;
 }
+
+// 모델 A 버전이 바뀌어 전·후를 비교할 수 없을 때(comparable=false, 둘 다 분석 완료) 비교 줄 대신 안내한다. 오류가 아니다.
+function modelANoticeHtml(models) {
+  const a = (models || []).find(m => m.model_code === 'MODEL_A');
+  return a && !a.comparable && a.before_status === 'completed' && a.after_status === 'completed'
+    ? '<p class="hint" style="margin:0 0 8px">모델이 업데이트되어 이번에는 비교하지 않아요. 다음 4주부터 비교해요.</p>' : '';
+}

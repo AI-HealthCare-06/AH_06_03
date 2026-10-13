@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PAEON — 예측 결과</title>
+<title>PAEON — 분석 결과</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
 <style>
   .riskrow{display:flex; align-items:center; gap:10px; background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px 18px}
   .chip{font-size:11.5px; font-weight:700; border-radius:999px; padding:3px 11px; border:1.5px solid currentColor; white-space:nowrap}
-  .riskrow .pct{font-size:30px; font-weight:900; margin-left:auto}
+  .riskrow .pct{font-size:30px; font-weight:900; margin-left:auto; flex:none; padding-left:6px}
   .agebox{background:var(--cream); border:1px solid var(--sage-light); border-radius:18px; padding:16px; text-align:center}
   .agebox .big{font-size:34px; font-weight:900; line-height:1.1}
   figure{margin:0; background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px 18px}
@@ -19,6 +19,9 @@
   .bb{background:var(--track); border-radius:8px; height:9px; overflow:hidden}
   .bb i{display:block; height:100%; border-radius:8px}
   .bv{text-align:right; font-weight:700; font-size:12px}
+  .topline{font-size:12.5px; margin-bottom:8px}
+  .linkhint{margin-top:10px; font-size:12px; color:var(--muted); background:var(--cream); border:1px solid var(--sage-light); border-radius:12px; padding:8px 12px}
+  .linkhint a{color:var(--sage-deep); font-weight:700}
 </style>
 </head>
 <body>
@@ -37,69 +40,103 @@
 <script>
 const COLOR = { normal: 'var(--ok)', borderline: 'var(--warn)', high: 'var(--risk)', hypertension: 'var(--risk)', prehypertension: 'var(--warn)', elevated: 'var(--warn)' };
 const BP_LABEL = { normal: '정상', elevated: '주의혈압', prehypertension: '고혈압전단계', hypertension: '고혈압' };
-const A_SKIP_MSG = { age_out_of_range: '만 32~70세가 아니어서 예측할 수 없습니다', cad_diagnosed: '관상동맥질환 진단 이력이 있어 예측할 수 없습니다' };
-const B_SKIP_MSG = { age_out_of_range: '19세 미만이어서 예측할 수 없습니다', htn_diagnosed: '고혈압으로 진단·치료 중이라 예측할 수 없습니다' };
+const RISK_LABEL = { normal: '양호', borderline: '주의', high: '높음' };
+const A_SKIP_MSG = { age_out_of_range: '만 32~70세가 아니어서 분석할 수 없습니다', cad_diagnosed: '심장 혈관 질환 진단 이력이 있어 분석할 수 없습니다' };
+const B_SKIP_MSG = { age_out_of_range: '19세 미만이어서 분석할 수 없습니다', htn_diagnosed: '고혈압으로 진단·치료 중이라 분석할 수 없습니다' };
+
+// 명세 §3: 학습 방향이 상식과 반대인 요인(direction_matches_expectation = false)은 요인 목록에 표시하지 않는다.
+const visible = (factors) => (factors || []).filter(f => f.direction_matches_expectation !== false);
+// 바꿀 수 없는 요인(나이·성별 등)은 막대에서 빼고 한 줄로만 알린다.
+const shown = (factors) => visible(factors).filter(f => f.modifiable);
+const fixedNote = (factors) => visible(factors).some(f => !f.modifiable) ? '<div class="topline" style="color:var(--muted); margin:8px 0 0">나이·성별처럼 바꿀 수 없는 요인은 뺐어요</div>' : '';
+
+// 개선 가능한 1위 요인 → 그 요인을 관리할 수 있는 챌린지 안내 (명세 §7 요인 → 챌린지 연결표, 가이드 §7). 결과 설명용이고 챌린지 추천에는 쓰지 않는다.
+const LINK = {
+  MODEL_A: { currentSmoker: '금연 미션', sysBP: '나트륨 줄이기·신체 활동 미션', BMI: '신체 활동·체중 관리 미션' },
+  MODEL_B: { bmi: '신체 활동·체중 관리 미션', waist: '신체 활동·체중 관리 미션', drink_freq: '절주 미션', drink_amount: '절주 미션' },
+};
+function linkHint(model, res) {
+  const f = res.top_modifiable_factor;
+  const to = f && f.direction_matches_expectation !== false && LINK[model][f.code];
+  return to ? `<div class="linkhint">'<b>${f.label}</b>' 요인은 ${to}으로 관리할 수 있어요 · <a href="challenges.html">챌린지 보기</a></div>` : '';
+}
+function topLine(res) {
+  const t = res.top_modifiable_factor;
+  return t && t.direction_matches_expectation !== false
+    ? `<div class="topline">바꿀 수 있는 요인 중 가장 영향이 큰 것: <b>${t.label}</b></div>`
+    : '<div class="topline">바꿀 수 있는 요인 중 위험 신호를 높인 것이 없어요</div>';
+}
 
 function bars(factors) {
-  const mx = Math.max(0.2, ...factors.map(f => Math.abs(f.c)));
+  const mx = Math.max(0.2, ...factors.map(f => Math.abs(f.contribution)));
   return factors.map(f => {
-    const col = !f.modifiable ? 'var(--sage)' : (f.c >= 0 ? 'var(--sage-deep)' : 'var(--sage)');
-    const width = Math.abs(f.c) / mx * 100;
-    const val = (f.c >= 0 ? '+' : '−') + Math.abs(f.c * 100).toFixed(1);
-    return `<span>${f.label}${f.dirOK === false ? ' ⚠️' : ''}</span>
+    const col = f.contribution >= 0 ? 'var(--sage-deep)' : 'var(--sage)';
+    const width = Math.abs(f.contribution) / mx * 100;
+    const val = (f.contribution >= 0 ? '+' : '−') + Math.abs(f.contribution * 100).toFixed(1);
+    return `<span>${f.label}</span>
       <span class="bb"><i style="width:${width}%;background:${col}"></i></span>
       <span class="bv">${val}</span>`;
   }).join('');
 }
 
-const pred = JSON.parse(localStorage.getItem('paeon-prediction') || 'null');
+function readLocal(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } }
+const pred = readLocal('paeon-prediction');
+const health = readLocal('paeon-health');
 const screen = document.getElementById('screen');
 
 if (!pred) {
-  screen.innerHTML = '<div class="callout"><b>예측 결과가 없어요</b><br>입력 검토 화면에서 "위험도 분석하기"를 먼저 눌러주세요.</div>';
+  screen.innerHTML = '<div class="callout"><b>분석 결과가 없어요</b><br>입력 검토 화면에서 "위험 신호 분석하기"를 먼저 눌러주세요.</div>';
 } else {
-  let html = `<div class="riskrow" style="border-color:${COLOR[pred.bp_stage]}">
+  let html = adviceBannerHtml(pred, health);   // 혈압 140/90·160/100 이상이면 결과보다 먼저 의료기관 상담 안내
+
+  html += pred.bp_stage ? `<div class="riskrow" style="border-color:${COLOR[pred.bp_stage]}">
     <span class="chip" style="color:${COLOR[pred.bp_stage]}">${BP_LABEL[pred.bp_stage]}</span>
     <span style="font-size:12px;color:var(--muted)">입력 혈압 판정</span>
-  </div>`;
+  </div>` : '';
 
-  if (!pred.model_a) {
-    html += `<div class="callout"><b>${A_SKIP_MSG[pred.model_a_skip_reason] || '이번엔 예측할 수 없습니다'}</b></div>`;
+  // 모델 A는 만 32~70세만 계산한다. 나이 때문에 못 하면 모델 B를 먼저 보여 주고 아래에 작게 알린다.
+  const ageSkipA = pred.model_a.status !== 'completed' && pred.model_a.skip_reason === 'age_out_of_range';
+  let aHtml = '', bHtml = '';
+
+  if (pred.model_a.status !== 'completed') {
+    aHtml = ageSkipA ? '' : `<div class="callout"><b>${A_SKIP_MSG[pred.model_a.skip_reason] || '이번엔 분석할 수 없습니다'}</b></div>`;
   } else {
-    const a = pred.model_a;
-    html += `<p class="sect">10년 내 관상동맥질환 위험</p>
+    const a = pred.model_a, fa = shown(a.factors);
+    aHtml = `<p class="sect">10년 내 심장 혈관 건강 신호</p>
       <div class="riskrow" style="border-color:${COLOR[a.risk_level]}">
-        <span class="chip" style="color:${COLOR[a.risk_level]}">${a.risk_label}</span>
+        <span class="chip" style="color:${COLOR[a.risk_level]}">${RISK_LABEL[a.risk_level]}</span>
         <span style="font-size:12px;color:var(--muted)">같은 조건의 사람들과 비교한 범주입니다</span>
       </div>
-      <div class="agebox"><div class="big">${a.vascular_age}세</div><div class="sub">혈관 나이 · 추정치</div></div>
-      <figure><figcaption>위험을 올린 요인 · <b>진한 막대는 바꿀 수 있는 요인</b></figcaption>
-        <div class="bars">${bars(a.factors)}</div>
+      ${a.vascular_age != null ? `<div class="agebox"><div class="big">${a.vascular_age}세</div><div class="sub">혈관 나이(추정) · 첫 번째 모델 버전이라 실제 나이와 차이가 클 수 있어요</div></div>` : ''}
+      <figure><figcaption>위험 신호를 올린 요인 · <b>바꿀 수 있는 요인</b></figcaption>
+        ${topLine(a)}
+        ${fa.length ? `<div class="bars">${bars(fa)}</div>` : ''}
+        ${fixedNote(a.factors)}
+        ${linkHint('MODEL_A', a)}
       </figure>`;
   }
 
-  if (!pred.model_b) {
-    html += `<div class="callout"><b>모델 B: ${B_SKIP_MSG[pred.model_b_skip_reason] || '이번엔 예측할 수 없습니다'}</b></div>`;
+  if (pred.model_b.status !== 'completed') {
+    bHtml = `<div class="callout"><b>${B_SKIP_MSG[pred.model_b.skip_reason] || '이번엔 분석할 수 없습니다'}</b></div>`;
   } else {
-    const b = pred.model_b;
-    const reversed = b.factors.some(f => f.dirOK === false);
-    html += `<p class="sect">혈압 외 특징이 경계군과 닮은 정도</p>
-      <div class="riskrow" style="border-color:var(--accent)">
-        <span class="chip" style="color:var(--accent)">유사율</span>
-        <span style="font-size:12px;color:var(--muted)">앞으로 고혈압이 된다는 예측이 아닙니다</span>
-        <span class="pct" style="color:var(--accent)">${Math.round(b.probability * 100)}%</span>
-      </div>
-      <figure><figcaption>관련 요인 · <b>진한 막대는 바꿀 수 있는 요인</b></figcaption>
-        <div class="bars">${bars(b.factors)}</div>
+    const b = pred.model_b, fb = shown(b.factors);
+    const now = SIM_NOW[b.similarity_level];
+    bHtml = `<p class="sect">나와 비슷한 사람들과 비교했어요</p>
+      ${now ? `<div class="riskrow" style="border-color:var(--accent); padding:16px 20px"><span style="flex:1; font-size:15.5px; line-height:1.6; font-weight:500; word-break:keep-all; text-wrap:balance">지금 내 몸 상태는 ${now}</span></div>` : ''}
+      <p class="hint" style="margin:6px 2px 10px">나이와 성별이 같은 사람들과 비교했어요. 허리둘레, 몸무게, 술은 내가 바꿀 수 있는 부분이에요. 4주 뒤에 다시 비교해 봐요.</p>
+      <figure><figcaption>관련 요인 · <b>바꿀 수 있는 요인</b></figcaption>
+        ${fb.length ? `<div class="bars">${bars(fb)}</div>` : '<div class="topline">표시할 요인이 없어요</div>'}
+        ${fixedNote(b.factors)}
+        ${linkHint('MODEL_B', b)}
       </figure>`;
-    if (reversed) {
-      html += `<div class="callout"><b>⚠️ 일부 요인은 상식과 반대 방향으로 나타났습니다</b><br>모델이 학습한 결과를 그대로 보여드리는 것이며, 이 방향으로 바꾸라는 권고가 아닙니다. 챌린지 추천에도 반영되지 않습니다.</div>`;
-    }
   }
 
-  const needsGuide = pred.bp_stage === 'hypertension' && pred.htn_status === 'none';
-  html += `<p class="tip">진단이 아닌 선별 정보입니다. 두 모델의 확률은 서로 다른 질문의 답이라 합치거나 평균 내지 않습니다.</p>
-    <a class="cta" style="display:block; text-align:center; text-decoration:none" href="${needsGuide ? 'guide.html' : 'challenges.html'}">${needsGuide ? '검사 · 상담 안내 보기' : '맞춤 챌린지 보기'}</a>`;
+  html += ageSkipA
+    ? bHtml + '<div class="callout" style="margin-top:12px; text-align:center; font-size:15px; line-height:1.6">10년 내 심장 혈관 건강 신호는 <b>만 32~70세</b>에게만 분석해요</div>'
+    : aHtml + bHtml;
+
+  html += `<p class="tip">진단이 아닌 선별 정보입니다. AI가 분석한 참고 정보이며, 정확한 진단은 의사에게 문의하세요.</p>
+    <a class="cta" style="display:block; text-align:center; text-decoration:none" href="challenges.html">맞춤 챌린지 보기</a>`;
 
   screen.innerHTML = html;
 }

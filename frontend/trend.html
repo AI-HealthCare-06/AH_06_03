@@ -97,7 +97,7 @@ function bpChart(points) {
 
 // 같은 모델 버전끼리만 비교한다 (comparable). 모델 B는 확률로 판정하지 않고 "나와 비슷한 사람 100명 중" 문장으로만 보여 준다.
 function modelRows(rv) {
-  return rv.models.filter(m => m.comparable).map(m => {
+  return modelANoticeHtml(rv.models) + rv.models.filter(m => m.comparable).map(m => {
     if (m.model_code === 'MODEL_A') {
       return `<div class="mrow"><span>10년 내 심장 혈관 건강 신호</span><span>${RISK[m.before_risk_level]} → <b>${RISK[m.after_risk_level]}</b></span></div>`;
     }
