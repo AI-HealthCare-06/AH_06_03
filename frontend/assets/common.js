@@ -32,8 +32,19 @@ function renderHeader(){
   slot.innerHTML = `
     <div class="picker">
       <a class="brand" href="index.html">${PAEON_LOGO_SVG} PAEON</a>
+      ${loggedIn() && !['login.html', 'signup.html'].includes(location.pathname.split('/').pop()) ? '<button type="button" id="hdr-logout" class="hdr-logout">로그아웃</button>' : ''}
     </div>`;
+  const out = document.getElementById('hdr-logout');
+  if (out) out.addEventListener('click', async () => {
+    if (!(await confirmDialog('로그아웃할까요?', '다시 이용하려면 로그인해야 해요.', '로그아웃'))) return;
+    if (typeof apiLogout !== 'function') {   // api.js가 없는 화면(홈·대시보드 등)에서는 필요할 때 불러온다
+      await new Promise((ok) => { const sc = document.createElement('script'); sc.src = 'assets/api.js'; sc.onload = ok; sc.onerror = ok; document.head.appendChild(sc); });
+    }
+    if (typeof apiLogout === 'function') apiLogout();
+    else { ['paeon-access-token', 'paeon-refresh-token', 'paeon-user-id'].forEach(k => localStorage.removeItem(k)); location.href = 'login.html'; }
+  });
 }
+function loggedIn(){ try { return !!localStorage.getItem('paeon-access-token'); } catch (e) { return false; } }
 
 const NAV_ITEMS = [
   { icon: '🏠', label: '홈', href: 'dashboard.html', pages: ['dashboard.html'] },

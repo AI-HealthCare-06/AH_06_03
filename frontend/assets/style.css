@@ -25,6 +25,7 @@ button{font:inherit; cursor:pointer}
 
 .picker{position:sticky; top:0; z-index:50; background:rgba(245,235,235,.95); backdrop-filter:blur(6px);
   border-bottom:1px solid var(--sage); padding:12px 20px; display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+.picker .hdr-logout{margin-left:auto; border:1.5px solid var(--sage); background:#fff; color:var(--ink); border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer}
 .picker .brand{font-weight:900; font-size:18px; margin-right:10px; color:var(--sage-deep); display:flex; align-items:center; gap:4px; text-decoration:none}
 
 .wrapper{max-width:900px; margin:34px auto 0; padding:0 20px}

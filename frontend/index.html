@@ -100,12 +100,11 @@
 })();
 </script>
 <script>
-// 이미 로그인한 사람은 "로그인" 대신 대시보드로 바로 이어서 가기
+// 이미 로그인한 사람은 가입·로그인 카드 대신 "이어서 하기" 하나만 보여 준다
 try {
   if (localStorage.getItem('paeon-access-token')) {
-    const a = document.getElementById('home-login');
-    a.href = 'dashboard.html';
-    a.textContent = '이어서 하기 · 내 대시보드로';
+    const box = document.querySelector('.home-actions');
+    box.innerHTML = '<a class="cta" href="dashboard.html">이어서 하기 · 내 대시보드로</a>';
   }
 } catch (e) {}
 </script>
