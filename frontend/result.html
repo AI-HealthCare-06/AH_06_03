@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PAEON — 예측 결과</title>
+<title>PAEON — 분석 결과</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
@@ -40,17 +40,15 @@
 <script>
 const COLOR = { normal: 'var(--ok)', borderline: 'var(--warn)', high: 'var(--risk)', hypertension: 'var(--risk)', prehypertension: 'var(--warn)', elevated: 'var(--warn)' };
 const BP_LABEL = { normal: '정상', elevated: '주의혈압', prehypertension: '고혈압전단계', hypertension: '고혈압' };
-const RISK_LABEL = { normal: '정상', borderline: '경계', high: '위험' };
-const A_SKIP_MSG = { age_out_of_range: '만 32~70세가 아니어서 예측할 수 없습니다', cad_diagnosed: '관상동맥질환 진단 이력이 있어 예측할 수 없습니다' };
-const B_SKIP_MSG = { age_out_of_range: '19세 미만이어서 예측할 수 없습니다', htn_diagnosed: '고혈압으로 진단·치료 중이라 예측할 수 없습니다' };
+const RISK_LABEL = { normal: '양호', borderline: '주의', high: '높음' };
+const A_SKIP_MSG = { age_out_of_range: '만 32~70세가 아니어서 분석할 수 없습니다', cad_diagnosed: '심장 혈관 질환 진단 이력이 있어 분석할 수 없습니다' };
+const B_SKIP_MSG = { age_out_of_range: '19세 미만이어서 분석할 수 없습니다', htn_diagnosed: '고혈압으로 진단·치료 중이라 분석할 수 없습니다' };
 
 // 명세 §3: 학습 방향이 상식과 반대인 요인(direction_matches_expectation = false)은 요인 목록에 표시하지 않는다.
 const visible = (factors) => (factors || []).filter(f => f.direction_matches_expectation !== false);
 // 바꿀 수 없는 요인(나이·성별 등)은 막대에서 빼고 한 줄로만 알린다.
 const shown = (factors) => visible(factors).filter(f => f.modifiable);
 const fixedNote = (factors) => visible(factors).some(f => !f.modifiable) ? '<div class="topline" style="color:var(--muted); margin:8px 0 0">나이·성별처럼 바꿀 수 없는 요인은 뺐어요</div>' : '';
-// 모델 B 설명 문구의 기준: 학습 데이터에서 경계군 비율(약 35%, modeling/model_b/artifacts/metrics_model_b.json의 positive_rate_train 0.3478)
-const B_AVG = 0.35;
 
 // 개선 가능한 1위 요인 → 그 요인을 관리할 수 있는 챌린지 안내 (명세 §7 요인 → 챌린지 연결표, 가이드 §7). 결과 설명용이고 챌린지 추천에는 쓰지 않는다.
 const LINK = {
@@ -66,7 +64,7 @@ function topLine(res) {
   const t = res.top_modifiable_factor;
   return t && t.direction_matches_expectation !== false
     ? `<div class="topline">바꿀 수 있는 요인 중 가장 영향이 큰 것: <b>${t.label}</b></div>`
-    : '<div class="topline">바꿀 수 있는 요인 중 위험을 높인 것이 없어요</div>';
+    : '<div class="topline">바꿀 수 있는 요인 중 위험 신호를 높인 것이 없어요</div>';
 }
 
 function bars(factors) {
@@ -87,11 +85,9 @@ const health = readLocal('paeon-health');
 const screen = document.getElementById('screen');
 
 if (!pred) {
-  screen.innerHTML = '<div class="callout"><b>예측 결과가 없어요</b><br>입력 검토 화면에서 "위험도 분석하기"를 먼저 눌러주세요.</div>';
+  screen.innerHTML = '<div class="callout"><b>분석 결과가 없어요</b><br>입력 검토 화면에서 "위험 신호 분석하기"를 먼저 눌러주세요.</div>';
 } else {
-  // 혈압 160/100 이상이면 결과보다 먼저 의료기관 상담 안내 (가이드 §3.4, REQ-PRED-005와 같은 위치)
-  const bp160 = health && (health.sbp >= 160 || health.dbp >= 100);
-  let html = bp160 ? `<div class="callout" style="border-color:var(--risk)"><b>입력하신 혈압이 많이 높아요 (${health.sbp}/${health.dbp} mmHg)</b><br>챌린지를 시작하기 전에 가까운 의료기관에서 상담을 받아 보세요. <a href="guide.html" style="color:var(--sage-deep); font-weight:700">검사 · 상담 안내 보기</a></div>` : '';
+  let html = adviceBannerHtml(pred, health);   // 혈압 140/90·160/100 이상이면 결과보다 먼저 의료기관 상담 안내
 
   html += pred.bp_stage ? `<div class="riskrow" style="border-color:${COLOR[pred.bp_stage]}">
     <span class="chip" style="color:${COLOR[pred.bp_stage]}">${BP_LABEL[pred.bp_stage]}</span>
@@ -103,16 +99,16 @@ if (!pred) {
   let aHtml = '', bHtml = '';
 
   if (pred.model_a.status !== 'completed') {
-    aHtml = ageSkipA ? '' : `<div class="callout"><b>${A_SKIP_MSG[pred.model_a.skip_reason] || '이번엔 예측할 수 없습니다'}</b></div>`;
+    aHtml = ageSkipA ? '' : `<div class="callout"><b>${A_SKIP_MSG[pred.model_a.skip_reason] || '이번엔 분석할 수 없습니다'}</b></div>`;
   } else {
     const a = pred.model_a, fa = shown(a.factors);
-    aHtml = `<p class="sect">10년 내 관상동맥질환 위험</p>
+    aHtml = `<p class="sect">10년 내 심장 혈관 건강 신호</p>
       <div class="riskrow" style="border-color:${COLOR[a.risk_level]}">
         <span class="chip" style="color:${COLOR[a.risk_level]}">${RISK_LABEL[a.risk_level]}</span>
         <span style="font-size:12px;color:var(--muted)">같은 조건의 사람들과 비교한 범주입니다</span>
       </div>
       ${a.vascular_age != null ? `<div class="agebox"><div class="big">${a.vascular_age}세</div><div class="sub">혈관 나이(추정) · 첫 번째 모델 버전이라 실제 나이와 차이가 클 수 있어요</div></div>` : ''}
-      <figure><figcaption>위험을 올린 요인 · <b>바꿀 수 있는 요인</b></figcaption>
+      <figure><figcaption>위험 신호를 올린 요인 · <b>바꿀 수 있는 요인</b></figcaption>
         ${topLine(a)}
         ${fa.length ? `<div class="bars">${bars(fa)}</div>` : ''}
         ${fixedNote(a.factors)}
@@ -121,19 +117,13 @@ if (!pred) {
   }
 
   if (pred.model_b.status !== 'completed') {
-    bHtml = `<div class="callout"><b>모델 B: ${B_SKIP_MSG[pred.model_b.skip_reason] || '이번엔 예측할 수 없습니다'}</b></div>`;
+    bHtml = `<div class="callout"><b>${B_SKIP_MSG[pred.model_b.skip_reason] || '이번엔 분석할 수 없습니다'}</b></div>`;
   } else {
     const b = pred.model_b, fb = shown(b.factors);
-    const n = Math.round(b.probability * 100), avg = Math.round(B_AVG * 100);
-    const many = n >= avg;
-    bHtml = `<p class="sect">나와 비슷한 사람들은 어떨까요?</p>
-      <div class="riskrow" style="border-color:var(--accent); padding:16px 20px">
-        <span style="flex:1; font-size:15.5px; line-height:1.6; font-weight:500; word-break:keep-all; text-wrap:balance">나와 비슷한 사람 <b style="color:var(--accent)">100명 중 ${n}명</b>은 혈압이 정상보다 조금 높아요.</span>
-      </div>
-      <p class="hint" style="margin:6px 2px 0">나이·성별·체형·생활습관이 나와 비슷한 사람들 기준이에요.</p>
-      <div class="topline" style="margin-top:10px">같은 조건의 평균은 100명 중 ${avg}명이에요. 나와 비슷한 사람들은 평균보다 <b>${many ? '높은' : '낮은'} 편</b>이에요.</div>
-      <p class="hint" style="margin:0 0 10px">내 혈압을 잰 값이 아니라, 나와 비슷한 사람들의 비율이에요. 내 혈압 판정은 위 '입력 혈압 판정'을 따라요.
-        <button type="button" style="font:inherit; font-size:11px; color:var(--muted); background:#fff; border:1px solid var(--sage-light); border-radius:999px; padding:0 8px; margin-left:4px; cursor:pointer" onclick="this.nextElementSibling.hidden = !this.nextElementSibling.hidden">출처</button><span hidden> · '조금 높음'은 주의 혈압·고혈압 전 단계예요 · 고혈압 진단을 받지 않은 사람 기준 · 국민건강영양조사 2022~2024</span></p>
+    const now = SIM_NOW[b.similarity_level];
+    bHtml = `<p class="sect">나와 비슷한 사람들과 비교했어요</p>
+      ${now ? `<div class="riskrow" style="border-color:var(--accent); padding:16px 20px"><span style="flex:1; font-size:15.5px; line-height:1.6; font-weight:500; word-break:keep-all; text-wrap:balance">지금 내 몸 상태는 ${now}</span></div>` : ''}
+      <p class="hint" style="margin:6px 2px 10px">나와 성별이 같은 사람들과 비교했어요. 허리둘레, 몸무게, 술은 내가 바꿀 수 있는 부분이에요. 4주 뒤에 다시 비교해 봐요.</p>
       <figure><figcaption>관련 요인 · <b>바꿀 수 있는 요인</b></figcaption>
         ${fb.length ? `<div class="bars">${bars(fb)}</div>` : '<div class="topline">표시할 요인이 없어요</div>'}
         ${fixedNote(b.factors)}
@@ -142,12 +132,11 @@ if (!pred) {
   }
 
   html += ageSkipA
-    ? bHtml + '<div class="callout" style="margin-top:12px; text-align:center; font-size:15px; line-height:1.6">10년 내 심혈관 위험은 <b>만 32~70세</b>에게만 계산해요</div>'
+    ? bHtml + '<div class="callout" style="margin-top:12px; text-align:center; font-size:15px; line-height:1.6">10년 내 심장 혈관 건강 신호는 <b>만 32~70세</b>에게만 분석해요</div>'
     : aHtml + bHtml;
 
-  const needsGuide = pred.bp_stage === 'hypertension' && pred.htn_status === 'none';
-  html += `<p class="tip">진단이 아닌 선별 정보입니다. AI가 예측한 정보이며, 정확한 진단은 의사에게 문의하세요.</p>
-    <a class="cta" style="display:block; text-align:center; text-decoration:none" href="${needsGuide ? 'guide.html' : 'challenges.html'}">${needsGuide ? '검사 · 상담 안내 보기' : '맞춤 챌린지 보기'}</a>`;
+  html += `<p class="tip">진단이 아닌 선별 정보입니다. AI가 분석한 참고 정보이며, 정확한 진단은 의사에게 문의하세요.</p>
+    <a class="cta" style="display:block; text-align:center; text-decoration:none" href="challenges.html">맞춤 챌린지 보기</a>`;
 
   screen.innerHTML = html;
 }

@@ -69,7 +69,7 @@ function setupProgress() {
     { label: '대상 확인', done: has('paeon-eligibility'), href: 'eligibility.html' },
     { label: '건강정보 입력', done: has('paeon-health'), href: 'health-info.html' },
     { label: '생활습관 설문', done: has('paeon-survey'), href: 'survey.html' },
-    { label: '위험도 분석', done: has('paeon-prediction'), href: 'review.html' },
+    { label: '위험 신호 분석', done: has('paeon-prediction'), href: 'review.html' },
   ];
   const next = steps.find(s => !s.done) || null;
   const html = `<ol class="setup-steps">${steps.map((s, i) =>
@@ -119,3 +119,21 @@ function addPasswordToggles(root = document) {
 }
 
 document.addEventListener('DOMContentLoaded', () => { renderHeader(); renderNav(); addPasswordToggles(); });
+
+// 모델 B: 서버가 주는 similarity_level(similar / slightly_different / different)을 말로만 보여 준다. 화면에서 기준값을 계산하지 않는다.
+// 값이 아직 없으면(서버 미지원) 판정 문장은 빼고 설명만 보인다.
+const SIM_NOW = { similar: '혈압이 정상인 사람들과 비슷한 편이에요', slightly_different: '혈압이 정상인 사람들과 조금 달라요', different: '혈압이 정상인 사람들과 많이 달라요' };
+const SIM_RANK = { similar: 0, slightly_different: 1, different: 2 };
+function simChangeText(before, after) {
+  if (!(before in SIM_RANK) || !(after in SIM_RANK)) return '';
+  return SIM_RANK[after] < SIM_RANK[before] ? '4주 전보다 더 비슷해졌어요' : SIM_RANK[after] === SIM_RANK[before] ? '비슷한 자리예요' : '조금 달라졌어요';
+}
+
+// 혈압 상담 권고 배너: 160/100 이상, 또는 140/90 이상(고혈압 진단 없음)이면 같은 배너. X로 닫아도 진행은 막지 않고, 다음 방문 때 다시 보인다.
+function adviceBannerHtml(pred, health) {
+  if (!health || !pred) return '';
+  const very = health.sbp >= 160 || health.dbp >= 100;
+  const high = health.sbp >= 140 || health.dbp >= 90;
+  if (!(very || (high && pred.htn_status === 'none'))) return '';
+  return `<div class="callout" id="advice-banner" style="border-color:var(--risk); position:relative; padding-right:34px"><button type="button" aria-label="닫기" onclick="document.getElementById('advice-banner').remove()" style="position:absolute; top:8px; right:10px; border:0; background:none; font-size:18px; line-height:1; color:var(--muted); cursor:pointer">×</button><b>입력하신 혈압이 ${very ? '많이 ' : ''}높아요 (${health.sbp}/${health.dbp} mmHg)</b><br>챌린지는 계속 하실 수 있어요. 가까운 의료기관에서 상담을 받아 보세요. <a href="guide.html" style="color:var(--sage-deep); font-weight:700">검사 · 상담 안내 보기</a></div>`;
+}
