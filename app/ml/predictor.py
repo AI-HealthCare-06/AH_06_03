@@ -29,3 +29,10 @@ def run_model_a(user:dict) -> dict:
 def run_model_b(user:dict) -> dict:
     """모델 B를 실행하고 결과를 반환한다"""
     return paeon_models.predict_model_b(user, spec=SPEC_B)
+
+def similarity_level_b(score: float | None, model_version: str | None) -> str | None:
+    """저장된 모델 B 점수 → 3단계 (similar / slightly_different / different).
+    기준값은 모델 버전에 묶여 있어서, 지금 모델과 버전이 같을 때만 계산한다 (다르면 None)."""
+    if score is None or model_version != SPEC_B.get("version"):
+        return None
+    return paeon_models.similarity_level_b(score, SPEC_B)
