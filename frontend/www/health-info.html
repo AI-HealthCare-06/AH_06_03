@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 건강정보 입력</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .sum-card{background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:6px 18px}
+  .sumrow{display:flex; justify-content:space-between; gap:10px; padding:9px 0; font-size:13.5px; border-bottom:1px solid var(--track)}
+  .sumrow:last-child{border-bottom:none}
+  .sumrow .lb{color:var(--muted)}
+  .sumrow .vv{font-weight:700; text-align:right}
+  .modal-backdrop{position:fixed; inset:0; background:rgba(56,64,56,.45); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100}
+  .modal-card{background:#fff; border-radius:20px; padding:24px 22px; max-width:340px; width:100%; text-align:center; box-shadow:0 12px 30px rgba(56,64,56,.2)}
+  .modal-card b{font-size:15px}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+          <div id="summary-view" class="screen" style="display:none">
+            <p class="sect">입력한 건강정보</p>
+            <div class="sum-card" id="summary-rows"></div>
+            <button type="button" id="edit-btn" class="ghost">정보 수정하기</button>
+            <a class="cta" id="summary-cta" style="display:block; text-align:center; text-decoration:none"></a>
+          </div>
+
+          <form id="health-form" class="screen">
+            <p class="sect">기본 정보</p>
+            <div class="grid2">
+              <div class="field">
+                <label for="sex">성별</label>
+                <select id="sex" required>
+                  <option value="">선택</option>
+                  <option value="male">남</option>
+                  <option value="female">여</option>
+                </select>
+              </div>
+              <div class="field"></div>
+              <div class="field">
+                <label for="height">키 (cm)</label>
+                <input id="height" type="number" step="0.1" required>
+              </div>
+              <div class="field">
+                <label for="weight">몸무게 (kg)</label>
+                <input id="weight" type="number" step="0.1" required>
+              </div>
+            </div>
+
+            <p class="sect">필수 항목</p>
+            <div class="grid2">
+              <div class="field">
+                <label for="sbp">수축기 혈압 (mmHg)</label>
+                <input id="sbp" type="number" required>
+              </div>
+              <div class="field">
+                <label for="dbp">이완기 혈압 (mmHg)</label>
+                <input id="dbp" type="number" required>
+              </div>
+
+              <div class="field">
+                <label for="waist">허리둘레 (cm)</label>
+                <input id="waist" type="number" step="0.1" required>
+              </div>
+              <div class="field"></div>
+
+              <div class="field">
+                <label for="smoking">흡연 상태</label>
+                <select id="smoking" required>
+                  <option value="">선택</option>
+                  <option value="never">피운 적 없음</option>
+                  <option value="former">과거엔 피웠으나 지금은 안 피움</option>
+                  <option value="current">현재 피움 (매일 또는 가끔)</option>
+                </select>
+              </div>
+              <div class="field"></div>
+
+              <div class="field">
+                <label for="drink-freq">음주 빈도</label>
+                <select id="drink-freq" required>
+                  <option value="">선택</option>
+                  <option value="never_lifetime">평생 술을 마셔 본 적 없음</option>
+                  <option value="none_past_year">최근 1년간 전혀 마시지 않음</option>
+                  <option value="lt_monthly">한 달에 1번 미만</option>
+                  <option value="monthly">한 달에 1번 정도</option>
+                  <option value="2_4_per_month">한 달에 2–4번</option>
+                  <option value="2_3_per_week">일주일에 2–3번</option>
+                  <option value="4plus_per_week">일주일에 4번 이상</option>
+                </select>
+              </div>
+              <div class="field" id="drink-amount-field" style="display:none">
+                <label for="drink-amount">한 번 음주량</label>
+                <select id="drink-amount">
+                  <option value="1_2">1–2잔</option>
+                  <option value="3_4">3–4잔</option>
+                  <option value="5_6">5–6잔</option>
+                  <option value="7_9">7–9잔</option>
+                  <option value="10plus">10잔 이상</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="diabetes">당뇨병 여부</label>
+                <select id="diabetes" required>
+                  <option value="false">없음</option>
+                  <option value="true">있음</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="htn-status">고혈압 진단·치료 상태</label>
+                <select id="htn-status" required>
+                  <option value="none">진단받은 적 없음</option>
+                  <option value="diagnosed_untreated">진단받았지만 약은 안 먹음</option>
+                  <option value="treated">진단받았고 약을 먹는 중</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="total-chol">총콜레스테롤 (mg/dL)</label>
+                <input id="total-chol" type="number" required>
+              </div>
+              <div class="field">
+                <label for="hdl">HDL 콜레스테롤 (mg/dL)</label>
+                <input id="hdl" type="number" required>
+              </div>
+
+              <div class="field">
+                <label for="parent-htn">부모 고혈압 가족력</label>
+                <select id="parent-htn" required>
+                  <option value="no">없음</option>
+                  <option value="yes">있음</option>
+                  <option value="unknown">모름</option>
+                </select>
+              </div>
+              <div class="field"></div>
+            </div>
+
+            <p class="sect">선택 항목</p>
+            <div class="grid2">
+              <div class="field">
+                <label for="glucose">공복혈당 (mg/dL)</label>
+                <input id="glucose" type="number">
+              </div>
+            </div>
+
+            <p class="tip">허리둘레·한 번 음주량은 PRD v1.9 신규 항목(모델 B 입력). 한 번 음주량은 음주 빈도가 "최근 1년간 전혀 마시지 않음" 이하면 묻지 않습니다.</p>
+
+            <p id="form-err" class="err" style="display:none"></p>
+
+            <div class="privacy">
+              <span>🔒</span>
+              <span>입력하신 건강정보는 위험도 예측과 챌린지 추천에만 씁니다. 다른 용도로 쓰거나 제3자에게 제공하지 않습니다.</span>
+            </div>
+
+            <button type="submit" id="submit-btn" class="cta">생활습관 설문으로</button>
+          </form>
+    </div>
+  </div>
+</div>
+
+<div id="success-modal" class="modal-backdrop" style="display:none">
+  <div class="modal-card">
+    <div style="font-size:32px">✅</div>
+    <b>건강정보를 저장했어요!</b>
+    <a class="cta" style="display:block; text-align:center; text-decoration:none; margin-top:14px" href="survey.html">생활습관 설문으로</a>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+function localIso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+
+const form = document.getElementById('health-form');
+const summaryView = document.getElementById('summary-view');
+const drinkFreqSelect = document.getElementById('drink-freq');
+const drinkAmountField = document.getElementById('drink-amount-field');
+const errEl = document.getElementById('form-err');
+const submitBtn = document.getElementById('submit-btn');
+
+const NON_DRINKER_FREQS = ['', 'never_lifetime', 'none_past_year'];
+drinkFreqSelect.addEventListener('change', () => {
+  const isDrinker = !NON_DRINKER_FREQS.includes(drinkFreqSelect.value);
+  drinkAmountField.style.display = isDrinker ? 'flex' : 'none';
+  document.getElementById('drink-amount').required = isDrinker;
+});
+
+function showError(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+function clearError() { errEl.style.display = 'none'; }
+
+function optionLabel(selectId, value) {
+  const opt = Array.from(document.getElementById(selectId).options).find(o => o.value === String(value));
+  return opt ? opt.textContent : value;
+}
+
+function renderSummary(health) {
+  const rows = [
+    ['성별', optionLabel('sex', health.sex)],
+    ['키 / 몸무게', `${health.height_cm}cm / ${health.weight_kg}kg`],
+    ['혈압', `${health.sbp}/${health.dbp} mmHg`],
+    ['허리둘레', `${health.waist_cm}cm`],
+    ['흡연 상태', optionLabel('smoking', health.smoking)],
+    ['음주 빈도', optionLabel('drink-freq', health.drink_freq)],
+  ];
+  if (health.drink_amount) rows.push(['한 번 음주량', optionLabel('drink-amount', health.drink_amount)]);
+  rows.push(
+    ['당뇨병 여부', optionLabel('diabetes', health.diabetes)],
+    ['고혈압 진단·치료 상태', optionLabel('htn-status', health.htn_status)],
+    ['총콜레스테롤', `${health.total_chol} mg/dL`],
+    ['HDL 콜레스테롤', `${health.hdl} mg/dL`],
+    ['부모 고혈압 가족력', optionLabel('parent-htn', health.parent_htn)],
+    ['공복혈당', health.fasting_glucose != null ? `${health.fasting_glucose} mg/dL` : '입력 안 함'],
+  );
+  document.getElementById('summary-rows').innerHTML = rows.map(([lb, vv]) => `<div class="sumrow"><span class="lb">${lb}</span><span class="vv">${vv}</span></div>`).join('');
+
+  const cta = document.getElementById('summary-cta');
+  if (localStorage.getItem('paeon-survey')) {
+    cta.textContent = '홈으로';
+    cta.href = 'dashboard.html';
+  } else {
+    cta.textContent = '생활습관 설문으로';
+    cta.href = 'survey.html';
+  }
+}
+
+function fillForm(health) {
+  document.getElementById('sex').value = health.sex;
+  document.getElementById('height').value = health.height_cm;
+  document.getElementById('weight').value = health.weight_kg;
+  document.getElementById('sbp').value = health.sbp;
+  document.getElementById('dbp').value = health.dbp;
+  document.getElementById('waist').value = health.waist_cm;
+  document.getElementById('smoking').value = health.smoking;
+  drinkFreqSelect.value = health.drink_freq;
+  drinkFreqSelect.dispatchEvent(new Event('change'));
+  if (health.drink_amount) document.getElementById('drink-amount').value = health.drink_amount;
+  document.getElementById('diabetes').value = String(health.diabetes);
+  document.getElementById('htn-status').value = health.htn_status;
+  document.getElementById('total-chol').value = health.total_chol;
+  document.getElementById('hdl').value = health.hdl;
+  document.getElementById('parent-htn').value = health.parent_htn;
+  document.getElementById('glucose').value = health.fasting_glucose ?? '';
+}
+
+function showSummary() {
+  const health = JSON.parse(localStorage.getItem('paeon-health') || 'null');
+  if (!health) return showForm();
+  renderSummary(health);
+  summaryView.style.display = 'flex';
+  form.style.display = 'none';
+}
+function showForm() {
+  summaryView.style.display = 'none';
+  form.style.display = 'flex';
+}
+
+document.getElementById('edit-btn').addEventListener('click', () => {
+  fillForm(JSON.parse(localStorage.getItem('paeon-health')));
+  showForm();
+});
+
+const existingHealth = JSON.parse(localStorage.getItem('paeon-health') || 'null');
+if (existingHealth) showSummary();
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  clearError();
+
+  const payload = {
+    sex: document.getElementById('sex').value,
+    height_cm: Number(document.getElementById('height').value),
+    weight_kg: Number(document.getElementById('weight').value),
+    waist_cm: Number(document.getElementById('waist').value),
+    sbp: Number(document.getElementById('sbp').value),
+    dbp: Number(document.getElementById('dbp').value),
+    smoking: document.getElementById('smoking').value,
+    drink_freq: drinkFreqSelect.value,
+    drink_amount: drinkAmountField.style.display === 'none' ? null : document.getElementById('drink-amount').value,
+    diabetes: document.getElementById('diabetes').value === 'true',
+    htn_status: document.getElementById('htn-status').value,
+    total_chol: Number(document.getElementById('total-chol').value),
+    hdl: Number(document.getElementById('hdl').value),
+    parent_htn: document.getElementById('parent-htn').value,
+    fasting_glucose: document.getElementById('glucose').value ? Number(document.getElementById('glucose').value) : null,
+    recorded_at: existingHealth ? existingHealth.recorded_at : localIso(new Date()),
+  };
+
+  if (!payload.sex) return showError('성별을 선택해주세요');
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = '저장하는 중...';
+  try {
+    await apiSubmitHealthRecord(payload);
+    localStorage.setItem('paeon-health', JSON.stringify(payload));
+    if (existingHealth) {
+      showSummary();
+    } else {
+      document.getElementById('success-modal').style.display = 'flex';
+    }
+  } catch (e) {
+    showError(e.message);
+    submitBtn.disabled = false;
+    submitBtn.textContent = '생활습관 설문으로';
+  }
+});
+</script>
+</body>
+</html>

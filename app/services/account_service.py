@@ -30,12 +30,10 @@ def _result(r: AccountDeletionRequest) -> DeletionResult:
                           completed_at=r.completed_at, result_summary=r.result_summary)
 
 
-async def request_deletion(db: AsyncSession, user_id: str, password: str) -> DeletionResult:
-    user = await user_repository.get_user_by_id(db, user_id)
-    if user is None or user.status == "deleted":
-        raise AppError(401, "AUTH_UNAUTHORIZED", "다시 로그인해 주세요.")
-    if not await verify_password_async(password, user.password_hash):
-        raise AppError(401, "AUTH_INVALID_CREDENTIALS", "비밀번호가 맞지 않습니다.")
+async def delete_account_data(db: AsyncSession, user) -> AccountDeletionRequest:
+    """탈퇴 데이터 정리 (비밀번호 확인 없음). commit은 부르는 쪽에서 한다.
+    탈퇴 API와 테스트 계정 정리 스크립트가 같이 쓴다."""
+    user_id = user.user_id
     now = utcnow()
     req = AccountDeletionRequest(user_id=user_id, reauthenticated_at=now, requested_at=now, status="processing")
     db.add(req)
@@ -56,6 +54,16 @@ async def request_deletion(db: AsyncSession, user_id: str, password: str) -> Del
     user.status = "deleted"
     user.deleted_at = now
     req.status, req.completed_at, req.result_summary = "completed", utcnow(), summary
+    return req
+
+
+async def request_deletion(db: AsyncSession, user_id: str, password: str) -> DeletionResult:
+    user = await user_repository.get_user_by_id(db, user_id)
+    if user is None or user.status == "deleted":
+        raise AppError(401, "AUTH_UNAUTHORIZED", "다시 로그인해 주세요.")
+    if not await verify_password_async(password, user.password_hash):
+        raise AppError(401, "AUTH_INVALID_CREDENTIALS", "비밀번호가 맞지 않습니다.")
+    req = await delete_account_data(db, user)
     await db.commit()
     return _result(req)
 

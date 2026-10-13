@@ -37,12 +37,12 @@
 <script>
 let me = null;
 const SEX_LABEL = { male: '남', female: '여' };
-const state = { rating: null, saved: false, consent: true, mp: null, gone: false, pwd: '', err: '' };
+const state = { editProfile: false, perr: '', rating: null, saved: false, consent: true, mp: null, gone: false, pwd: '', err: '' };
 
 function render() {
   const screen = document.getElementById('screen');
   if (state.gone) {
-    screen.innerHTML = `<div class="callout"><b>탈퇴가 완료되었습니다</b><br>건강정보·설문·예측·캘린더 기록을 삭제했고, 계정은 익명 처리했어요.</div>
+    screen.innerHTML = `<div class="callout"><b>탈퇴가 완료되었습니다</b><br>건강정보·설문·분석·캘린더 기록을 삭제했고, 계정은 익명 처리했어요.</div>
       <a class="cta" style="display:block;text-align:center;text-decoration:none;margin-top:10px" href="index.html">처음으로</a>`;
     return;
   }
@@ -57,14 +57,19 @@ function render() {
       <button type="button" id="save-fb" class="ghost" style="margin-top:8px">${state.saved ? '저장했습니다 ✓' : '평가 저장'}</button>
     </div>
     <p class="sect">내 정보</p>
-    ${me ? `<div class="callout"><b>${me.email}</b><br>생년월일 ${me.birth_date} · 성별 ${SEX_LABEL[me.sex] || '미입력'}</div>` : ''}
+    ${me ? `<div class="callout"><b>${me.email}</b><br>생년월일 ${me.birth_date} · 성별 ${SEX_LABEL[me.sex] || '미입력'}
+      ${state.editProfile ? `<div class="field" style="margin-top:10px"><label>생년월일</label><input id="p-birth" type="date" value="${me.birth_date || ''}" max="${new Date().toISOString().slice(0, 10)}"></div>
+      <div class="field" style="margin-top:8px"><label>성별</label><select id="p-sex"><option value="male" ${me.sex === 'male' ? 'selected' : ''}>남</option><option value="female" ${me.sex === 'female' ? 'selected' : ''}>여</option></select></div>
+      ${state.perr ? `<p class="err" style="margin-top:6px">${state.perr}</p>` : ''}
+      <div style="display:flex; gap:8px; margin-top:10px"><button type="button" id="p-save" class="ghost">저장</button><button type="button" id="p-cancel" class="ghost">취소</button></div>`
+      : `<button type="button" id="p-edit" class="ghost" style="margin-top:8px">생년월일·성별 수정</button>`}</div>` : ''}
     <div class="tworow">
       <button type="button" class="opt" data-mp="rec" data-on="${state.mp === 'rec' ? '1' : '0'}">🩺 검진 기록</button>
       <button type="button" class="opt" data-mp="chal" data-on="${state.mp === 'chal' ? '1' : '0'}">🌱 챌린지 기록</button>
     </div>
     ${state.mp === 'rec' ? renderInfo() : ''}
     ${state.mp === 'chal' ? renderChal() : ''}
-    ${!state.consent ? '<div class="callout"><b>건강정보 처리 동의를 철회했습니다</b><br>새 건강정보 입력과 예측이 멈춥니다. 계정은 유지됩니다.</div>' : ''}
+    ${!state.consent ? '<div class="callout"><b>건강정보 처리 동의를 철회했습니다</b><br>새 건강정보 입력과 분석이 멈춥니다. 계정은 유지됩니다.</div>' : ''}
     <p class="hint">동의 철회는 회원 탈퇴와 다릅니다 — 철회해도 계정은 유지됩니다.</p>
     <div style="display:flex; gap:8px; flex-wrap:wrap">
       <button type="button" id="toggle-consent" class="ghost">${state.consent ? '건강정보 처리 동의 철회' : '건강정보 처리 동의 다시 하기'}</button>
@@ -75,7 +80,7 @@ function render() {
     <button type="button" id="logout-btn" class="ghost" style="margin-top:6px">로그아웃</button>
     <button type="button" id="delete-btn" class="ghost" style="margin-top:6px">회원 탈퇴</button>
     ${state.mp === 'delete-notice' ? '<div class="warnbox"><b>회원 탈퇴는 아직 준비 중이에요</b><br>지금은 계정과 건강정보가 삭제되지 않아요. 삭제를 원하시면 서비스 담당자에게 알려 주세요.</div>' : ''}
-    ${state.mp === 'delete' ? `<div class="warnbox"><b>회원 탈퇴 — 재인증이 필요합니다</b><br>삭제: 건강정보·설문·예측·챌린지 기록
+    ${state.mp === 'delete' ? `<div class="warnbox"><b>회원 탈퇴 — 재인증이 필요합니다</b><br>삭제: 건강정보·설문·분석·챌린지 기록
       <div class="field" style="margin-top:8px"><label>비밀번호 다시 입력</label><input id="pwd" type="password"></div>${state.err ? `<p class="err" style="margin-top:6px">${state.err}</p>` : ''}
       <div style="display:flex;gap:8px;margin-top:10px"><button type="button" id="cancel-delete" class="ghost" style="width:auto;padding:8px 18px">취소</button>
       <button type="button" id="confirm-delete" class="cta" style="width:auto;padding:8px 18px">탈퇴하기</button></div></div>` : ''}
@@ -128,12 +133,22 @@ function renderChal() {
 }
 
 function wire() {
+  const on = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
+  on('p-edit', () => { state.editProfile = true; state.perr = ''; render(); });
+  on('p-cancel', () => { state.editProfile = false; state.perr = ''; render(); });
+  on('p-save', async () => {
+    const birth = document.getElementById('p-birth').value, sex = document.getElementById('p-sex').value;
+    if (!birth) { state.perr = '생년월일을 입력해 주세요.'; render(); return; }
+    try { me = (await apiCall('PATCH', '/users/me', { birth_date: birth, sex }, '내 정보를 고치지 못했습니다')).data; state.editProfile = false; state.perr = ''; }
+    catch (e) { state.perr = friendlyError(e); }
+    render();
+  });
   document.querySelectorAll('[data-r]').forEach(b => b.addEventListener('click', () => { state.rating = b.dataset.r; state.saved = false; render(); }));
   document.getElementById('save-fb').addEventListener('click', () => { if (state.rating) { state.saved = true; render(); } });
   document.querySelectorAll('[data-mp]').forEach(b => b.addEventListener('click', () => { state.mp = state.mp === b.dataset.mp ? null : b.dataset.mp; render(); }));
   document.getElementById('toggle-consent').addEventListener('click', async () => {
     const want = !state.consent;                                   // true = 다시 동의, false = 철회
-    if (!want && !(await confirmDialog('동의를 철회할까요?', '철회하면 새로운 입력과 예측이 중단돼요. 계정과 이미 저장된 정보는 그대로 남아요.', '철회하기'))) return;
+    if (!want && !(await confirmDialog('동의를 철회할까요?', '철회하면 새로운 입력과 분석이 중단돼요. 계정과 이미 저장된 정보는 그대로 남아요.', '철회하기'))) return;
     try {
       let id = state.healthPolicyId;
       if (!id) id = (await apiCall('GET', '/consent-policies/active', undefined, '')).data.find(p => p.policy_type === 'health_data').policy_id;
@@ -169,7 +184,7 @@ function wire() {
   if (confirmBtn) confirmBtn.addEventListener('click', async () => {
     const pwd = document.getElementById('pwd').value;
     if (!pwd) { state.err = '비밀번호를 입력해 주세요.'; render(); return; }
-    if (!(await confirmDialog('정말 탈퇴할까요?', '건강정보·설문·예측·챌린지·캘린더 기록이 모두 삭제되고, 되돌릴 수 없어요.', '탈퇴하기'))) return;
+    if (!(await confirmDialog('정말 탈퇴할까요?', '건강정보·설문·분석·챌린지·캘린더 기록이 모두 삭제되고, 되돌릴 수 없어요.', '탈퇴하기'))) return;
     confirmBtn.disabled = true;
     try {
       await apiCall('POST', '/users/me/deletion-requests', { password: pwd }, '');

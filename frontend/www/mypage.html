@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 마이페이지</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .tworow{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .opt{border:1.5px solid var(--sage-light); background:#fff; color:var(--ink); border-radius:16px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer}
+  .opt[data-on="1"]{border-color:var(--sage-deep); background:var(--sage-light)}
+  .optrow{display:flex; flex-wrap:wrap; gap:8px}
+  .warnbox{border:1.5px solid var(--danger); background:#FBEAE5; border-radius:18px; padding:14px 18px; font-size:13px}
+  .warnbox b{color:var(--risk)}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" id="screen"></div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script>
+const state = { rating: null, saved: false, consent: true, mp: null, gone: false, pwd: '' };
+
+function render() {
+  const screen = document.getElementById('screen');
+  if (state.gone) {
+    screen.innerHTML = `<div class="callout"><b>탈퇴 처리 요청을 접수했습니다</b><br>건강정보·설문·예측·챌린지 기록은 삭제하고, 법령상 보관이 필요한 항목은 익명화해 보관합니다.</div>
+      <a class="cta" style="display:block;text-align:center;text-decoration:none;margin-top:10px" href="index.html">처음으로</a>`;
+    return;
+  }
+  screen.innerHTML = `
+    <div class="callout">
+      <b>이 결과가 도움이 되었나요?</b>
+      <div class="optrow" style="margin-top:8px">
+        <button type="button" class="opt" data-r="up" data-on="${state.rating === 'up' ? '1' : '0'}">😀 도움됨</button>
+        <button type="button" class="opt" data-r="mid" data-on="${state.rating === 'mid' ? '1' : '0'}">😐 보통</button>
+        <button type="button" class="opt" data-r="down" data-on="${state.rating === 'down' ? '1' : '0'}">🙁 아님</button>
+      </div>
+      <button type="button" id="save-fb" class="ghost" style="margin-top:8px">${state.saved ? '저장했습니다 ✓' : '평가 저장'}</button>
+    </div>
+    <p class="sect">내 정보</p>
+    <div class="tworow">
+      <button type="button" class="opt" data-mp="rec" data-on="${state.mp === 'rec' ? '1' : '0'}">🩺 검진 기록</button>
+      <button type="button" class="opt" data-mp="chal" data-on="${state.mp === 'chal' ? '1' : '0'}">🌱 챌린지 기록</button>
+    </div>
+    ${state.mp === 'rec' ? renderInfo() : ''}
+    ${!state.consent ? '<div class="callout"><b>건강정보 처리 동의를 철회했습니다</b><br>새 건강정보 입력과 예측이 멈춥니다. 계정은 유지됩니다.</div>' : ''}
+    <p class="hint">동의 철회는 회원 탈퇴와 다릅니다 — 철회해도 계정은 유지됩니다.</p>
+    <div style="display:flex; gap:8px; flex-wrap:wrap">
+      <button type="button" id="toggle-consent" class="ghost">${state.consent ? '건강정보 처리 동의 철회' : '건강정보 처리 동의 다시 하기'}</button>
+      <button type="button" id="download" class="ghost">내 데이터 내려받기</button>
+    </div>
+    <button type="button" id="delete-btn" class="ghost" style="margin-top:6px">회원 탈퇴</button>
+    ${state.mp === 'delete' ? `<div class="warnbox"><b>회원 탈퇴 — 재인증이 필요합니다</b><br>삭제: 건강정보·설문·예측·챌린지 기록
+      <div class="field" style="margin-top:8px"><label>비밀번호 다시 입력</label><input id="pwd" type="password"></div>
+      <div style="display:flex;gap:8px;margin-top:10px"><button type="button" id="cancel-delete" class="ghost" style="width:auto;padding:8px 18px">취소</button>
+      <button type="button" id="confirm-delete" class="cta" style="width:auto;padding:8px 18px">탈퇴하기</button></div></div>` : ''}
+  `;
+  wire();
+}
+
+function renderInfo() {
+  const health = JSON.parse(localStorage.getItem('paeon-health') || 'null');
+  return `<div class="callout"><b>검진 기록</b><br>수축기 ${health ? health.sbp : '-'} · 총콜레스테롤 ${health ? health.total_chol : '-'}</div>`;
+}
+
+function wire() {
+  document.querySelectorAll('[data-r]').forEach(b => b.addEventListener('click', () => { state.rating = b.dataset.r; state.saved = false; render(); }));
+  document.getElementById('save-fb').addEventListener('click', () => { if (state.rating) { state.saved = true; render(); } });
+  document.querySelectorAll('[data-mp]').forEach(b => b.addEventListener('click', () => { state.mp = state.mp === b.dataset.mp ? null : b.dataset.mp; render(); }));
+  document.getElementById('toggle-consent').addEventListener('click', () => { state.consent = !state.consent; render(); });
+  document.getElementById('download').addEventListener('click', () => {
+    const data = {
+      profile: JSON.parse(localStorage.getItem('paeon-profile') || 'null'),
+      health: JSON.parse(localStorage.getItem('paeon-health') || 'null'),
+      prediction: JSON.parse(localStorage.getItem('paeon-prediction') || 'null'),
+    };
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+    a.download = 'paeon-my-data.json'; a.click();
+  });
+  document.getElementById('delete-btn').addEventListener('click', () => { state.mp = state.mp === 'delete' ? null : 'delete'; render(); });
+  const cancelBtn = document.getElementById('cancel-delete');
+  if (cancelBtn) cancelBtn.addEventListener('click', () => { state.mp = null; render(); });
+  const confirmBtn = document.getElementById('confirm-delete');
+  if (confirmBtn) confirmBtn.addEventListener('click', () => { state.gone = true; render(); });
+}
+render();
+</script>
+</body>
+</html>

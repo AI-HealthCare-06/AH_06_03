@@ -87,11 +87,12 @@ async def _load_facts(db: AsyncSession, user_id: str):
     return facts, record, instance
 
 
-async def _active_codes(db: AsyncSession) -> tuple[set[str], dict]:
-    """관리자가 노출 중인 미션 코드, 미션별 (Challenge, Level)."""
+async def _active_codes(db: AsyncSession) -> tuple[set[str], dict, dict[str, int]]:
+    """관리자가 노출 중인 미션 코드, 미션별 (Challenge, Level), 미션별 카테고리 순서."""
     rows = await challenge_repository.get_catalog(db)
     active = {ch.challenge_code for ch, cat, _ in rows if ch.active and cat.active}
-    return active, {ch.challenge_code: (ch, lv) for ch, _, lv in rows}
+    order = {ch.challenge_code: cat.display_order for ch, cat, _ in rows}
+    return active, {ch.challenge_code: (ch, lv) for ch, _, lv in rows}, order
 
 
 async def _next_cycle_number(db: AsyncSession, user_id: str) -> int:
@@ -104,8 +105,9 @@ async def _build_recommendation(db: AsyncSession, user_id: str):
     c = rules.classify(facts)
     completed = await challenge_repository.get_completed_codes(db, user_id)
     rec = rules.recommend(c, facts.answers, completed)
-    active, _ = await _active_codes(db)
-    rec.candidates = [code for code in rec.candidates if code in active]
+    active, _, order = await _active_codes(db)
+    # 노출 중인 것만, 관리자가 정한 카테고리 순서로 (같은 카테고리 안의 순서는 규칙 그대로)
+    rec.candidates = sorted((code for code in rec.candidates if code in active), key=lambda code: order.get(code, 999))
     return facts, record, instance, c, rec
 
 
@@ -181,7 +183,7 @@ async def start_cycle(db: AsyncSession, user_id: str, selected_code: str) -> Cyc
     if selected_code not in rec.candidates:
         raise AppError(422, "CHALLENGE_SELECTION_INVALID", "선택할 수 없는 미션입니다.")
 
-    _, catalog = await _active_codes(db)
+    _, catalog, _ = await _active_codes(db)
     chosen = [(s["code"], s["selection_type"]) for s in rec.fixed if s["code"]] + [(selected_code, "selected")]
 
     now, today = utcnow(), today_kst()

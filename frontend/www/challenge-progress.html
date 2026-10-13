@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 챌린지 인증</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .countbar{font-size:12.5px; color:var(--muted)}
+
+  .cal-card{background:#fff; border:1px solid var(--sage-light); border-radius:20px; padding:16px 18px}
+  .cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:8px}
+  .cal-head .ym{font-family:'Gowun Dodum','Noto Sans KR',sans-serif; font-size:15px; font-weight:700}
+  .cal-head .nav{display:flex; gap:4px}
+  .cal-head .nav button{width:26px; height:26px; border-radius:999px; border:1px solid var(--sage-light); background:#fff; color:var(--muted); font-size:12px}
+  .cal-head .nav button:disabled{opacity:.35}
+  .dow-row{display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:11px; color:var(--muted); font-weight:700; margin-bottom:4px}
+  .dow-row span:first-child{color:var(--danger)}
+  .day-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px 0}
+  .day{position:relative; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; font-size:12.5px; color:var(--ink)}
+  .day.blank{visibility:hidden}
+  .day .num{position:relative; z-index:1}
+  .day.clickable{cursor:pointer}
+  .day.today .num{color:#fff; font-weight:900}
+  .day.today::before{content:''; position:absolute; width:26px; height:26px; border-radius:999px; background:var(--petal2)}
+  .day.picked:not(.today)::before{content:''; position:absolute; width:26px; height:26px; border-radius:999px; border:2px solid var(--sage-deep)}
+  .day .dots{position:absolute; bottom:4px; left:50%; transform:translateX(-50%); display:flex; gap:3px}
+  .day .dot{width:4px; height:4px; border-radius:999px; background:var(--peach)}
+  .day .dot-bp{width:4px; height:4px; border-radius:999px; background:var(--sage-deep)}
+  .day.sun .num{color:var(--danger)}
+  .cal-legend{display:flex; gap:14px; margin-top:10px; font-size:11px; color:var(--muted); flex-wrap:wrap}
+  .cal-legend span{display:inline-flex; align-items:center; gap:5px}
+  .dot-sample{width:5px; height:5px; border-radius:999px; background:var(--peach); display:inline-block}
+  .dot-bp-sample{width:5px; height:5px; border-radius:999px; background:var(--sage-deep); display:inline-block}
+  .ring-sample{width:12px; height:12px; border-radius:999px; background:var(--petal2); display:inline-block}
+
+  .today-card{background:var(--cream); border:1px solid var(--sage-light); border-radius:20px; padding:16px 18px; display:flex; flex-direction:column; gap:10px}
+  .today-card .tt{font-size:12px; color:var(--muted); font-weight:700}
+  .today-card .dd{font-family:'Gowun Dodum','Noto Sans KR',sans-serif; font-size:20px; font-weight:700}
+  .mission{display:flex; align-items:center; gap:8px; background:#fff; border:1.5px solid var(--sage-light); border-radius:14px; padding:9px 12px; font-size:12.5px; font-weight:600}
+  .mission.clickable{cursor:pointer}
+  .mission .mark{width:18px; height:18px; border-radius:999px; border:2px solid var(--sage); flex:none}
+  .mission.done .mark{background:var(--petal2); border-color:var(--petal2)}
+  .mission.done{color:var(--muted); text-decoration:line-through}
+
+  .bplog{display:grid; grid-template-columns:auto 1fr auto; gap:4px 12px; font-size:12.5px; align-items:center}
+  .inline{display:flex; gap:8px; align-items:flex-end}
+  .inline .field{flex:1}
+  .inline button{width:auto; padding:10px 20px}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen">
+        <p class="lede">선택한 날짜의 미션을 확인하고 인증하세요. 목표는 하루가 아니라 주 단위 횟수이고, 알림은 아침에 한 번만 갑니다.</p>
+        <div class="countbar">인증 <b id="count-label">0 / 28</b>일 · 누른 만큼만 변화에 반영됩니다</div>
+        <div id="week-strip"></div>
+        <div id="day-detail"></div>
+        <div style="display:flex; gap:8px">
+          <button type="button" id="fill-all" class="ghost">전부 인증 (데모)</button>
+          <button type="button" id="fill-bp" class="ghost">혈압 4주치 기록 (데모)</button>
+          <button type="button" id="reset" class="ghost">초기화</button>
+        </div>
+        <div id="bp-section"></div>
+        <div class="bplog" id="bp-log"></div>
+        <a class="cta" style="display:block; text-align:center; text-decoration:none" href="dashboard.html">대시보드 보기</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script>
+const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+function localIso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+
+const cycle = JSON.parse(localStorage.getItem('paeon-cycle') || 'null');
+const progress = JSON.parse(localStorage.getItem('paeon-progress') || '{"days":[],"bpLog":[]}');
+if (!progress.missionLog) progress.missionLog = {};
+
+function save() { localStorage.setItem('paeon-progress', JSON.stringify(progress)); }
+
+const startedOn = new Date((cycle ? cycle.startedOn : localIso(new Date())) + 'T00:00:00');
+const today = new Date(); today.setHours(0, 0, 0, 0);
+const todayIdx = Math.round((today - startedOn) / 86400000);
+const clampedToday = Math.min(27, Math.max(0, todayIdx));
+function dateForIdx(i) { return new Date(startedOn.getTime() + i * 86400000); }
+
+let selectedIdx = clampedToday;
+let weekOffset = Math.floor(clampedToday / 7);
+
+function weekStripHtml() {
+  const wStart = weekOffset * 7;
+  const d0 = dateForIdx(wStart), d1 = dateForIdx(Math.min(27, wStart + 6));
+  let cells = '';
+  for (let i = wStart; i < wStart + 7; i++) {
+    if (i > 27) { cells += `<div class="day blank"></div>`; continue; }
+    const dt = dateForIdx(i);
+    const cls = ['day', 'clickable'];
+    if (i === clampedToday) cls.push('today');
+    if (i === selectedIdx) cls.push('picked');
+    if (dt.getDay() === 0) cls.push('sun');
+    const hasChal = progress.days.includes(i);
+    const hasBp = progress.bpLog.some(l => l.date === localIso(dt));
+    const dots = (hasChal || hasBp) ? `<span class="dots">${hasChal ? '<span class="dot"></span>' : ''}${hasBp ? '<span class="dot-bp"></span>' : ''}</span>` : '';
+    cells += `<div class="${cls.join(' ')}" data-idx="${i}"><span class="num">${dt.getDate()}</span>${dots}</div>`;
+  }
+  return `<div class="cal-card">
+    <div class="cal-head">
+      <div class="ym">${weekOffset + 1}주차 · ${d0.getMonth() + 1}/${d0.getDate()} ~ ${d1.getMonth() + 1}/${d1.getDate()}</div>
+      <div class="nav"><button type="button" id="wk-prev" ${weekOffset === 0 ? 'disabled' : ''}>‹</button><button type="button" id="wk-next" ${weekOffset === 3 ? 'disabled' : ''}>›</button></div>
+    </div>
+    <div class="dow-row"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+    <div class="day-grid">${cells}</div>
+    <div class="cal-legend"><span><i class="ring-sample"></i>오늘</span><span><i class="dot-sample"></i>챌린지 완료</span><span><i class="dot-bp-sample"></i>혈압 측정</span></div>
+  </div>`;
+}
+
+function doneSetFor(idx) {
+  if (progress.missionLog[idx]) return new Set(progress.missionLog[idx]);
+  if (progress.days.includes(idx)) return new Set((cycle ? cycle.missions : []).map(m => m.id));
+  return new Set();
+}
+
+function dayDetailHtml() {
+  const dt = dateForIdx(selectedIdx);
+  const label = `${dt.getMonth() + 1}월 ${dt.getDate()}일 (${DOW[dt.getDay()]})`;
+  const isToday = selectedIdx === clampedToday;
+  const missions = cycle ? cycle.missions : [];
+  const doneSet = doneSetFor(selectedIdx);
+  const allDone = missions.length > 0 && missions.every(m => doneSet.has(m.id));
+  const missionsHtml = missions.map(m => `<div class="mission${doneSet.has(m.id) ? ' done' : ''}${isToday ? ' clickable' : ''}" data-mission="${m.id}"><span class="mark"></span>${m.t}</div>`).join('');
+  let action;
+  if (isToday) {
+    action = `<p class="hint">${allDone ? '오늘 챌린지를 완료했어요' : '미션을 하나씩 눌러 인증하세요 — 잘못 눌렀으면 다시 눌러 취소할 수 있어요'}</p>`;
+  } else if (selectedIdx < clampedToday) {
+    action = `<p class="hint">지난 날짜는 그날의 기록만 볼 수 있어요</p>`;
+  } else {
+    action = `<p class="hint">아직 오지 않은 날짜예요</p>`;
+  }
+  return `<div class="today-card">
+    <div><div class="tt">선택한 날</div><div class="dd">${label}</div></div>
+    ${missionsHtml}
+    ${action}
+  </div>`;
+}
+
+function bpSectionHtml() {
+  const wStart = Math.floor(clampedToday / 7) * 7;
+  const weekDates = new Set();
+  for (let i = wStart; i < wStart + 7 && i <= 27; i++) weekDates.add(localIso(dateForIdx(i)));
+  const loggedThisWeek = progress.bpLog.find(l => weekDates.has(l.date));
+  const body = loggedThisWeek
+    ? `<div class="callout"><b>이번 주 혈압을 기록했어요</b> — ${loggedThisWeek.sys}/${loggedThisWeek.dia} mmHg<br>다음 주에 다시 입력 칸이 나타나요</div>`
+    : `<div class="inline">
+        <div class="field"><label>수축기</label><input id="bp-sys" type="number" value="140"></div>
+        <div class="field"><label>이완기</label><input id="bp-dia" type="number" value="88"></div>
+        <button type="button" id="log-bp" class="ghost">기록</button>
+      </div>`;
+  return `<p class="sect">혈압 기록 <span class="muted">— 주 1회, 입력할 때까지 계속 떠있어요</span></p>${body}`;
+}
+
+function renderBpLog() {
+  document.getElementById('bp-log').innerHTML = progress.bpLog.map(l =>
+    `<span class="num">${l.date || l.w + '주차'}</span><span class="num">${l.sys}/${l.dia} mmHg</span><span class="hint">${l.sys >= 140 ? '고혈압 기준 이상' : ''}</span>`
+  ).join('');
+}
+
+function wireEvents() {
+  document.querySelectorAll('.day[data-idx]').forEach(el => el.addEventListener('click', () => { selectedIdx = Number(el.dataset.idx); render(); }));
+  const prev = document.getElementById('wk-prev');
+  if (prev) prev.addEventListener('click', () => { weekOffset = Math.max(0, weekOffset - 1); render(); });
+  const next = document.getElementById('wk-next');
+  if (next) next.addEventListener('click', () => { weekOffset = Math.min(3, weekOffset + 1); render(); });
+  document.querySelectorAll('.mission.clickable[data-mission]').forEach(el => el.addEventListener('click', () => {
+    const mid = el.dataset.mission;
+    if (!progress.missionLog[clampedToday]) progress.missionLog[clampedToday] = Array.from(doneSetFor(clampedToday));
+    const arr = progress.missionLog[clampedToday];
+    const pos = arr.indexOf(mid);
+    if (pos >= 0) arr.splice(pos, 1); else arr.push(mid);
+    const missions = cycle ? cycle.missions : [];
+    const nowAllDone = missions.length > 0 && missions.every(m => arr.includes(m.id));
+    const di = progress.days.indexOf(clampedToday);
+    if (nowAllDone && di < 0) progress.days.push(clampedToday);
+    else if (!nowAllDone && di >= 0) progress.days.splice(di, 1);
+    save(); render();
+  }));
+  const logBp = document.getElementById('log-bp');
+  if (logBp) logBp.addEventListener('click', () => {
+    progress.bpLog.push({ w: Math.floor(clampedToday / 7) + 1, date: localIso(dateForIdx(clampedToday)), sys: Number(document.getElementById('bp-sys').value), dia: Number(document.getElementById('bp-dia').value) });
+    save(); render();
+  });
+}
+
+function render() {
+  document.getElementById('count-label').textContent = `${progress.days.length} / 28`;
+  document.getElementById('week-strip').innerHTML = weekStripHtml();
+  document.getElementById('day-detail').innerHTML = dayDetailHtml();
+  document.getElementById('bp-section').innerHTML = bpSectionHtml();
+  renderBpLog();
+  wireEvents();
+}
+
+document.getElementById('fill-all').addEventListener('click', () => {
+  progress.days = Array.from({ length: 28 }, (_, i) => i);
+  save(); render();
+});
+document.getElementById('reset').addEventListener('click', () => {
+  progress.days = []; save(); render();
+});
+document.getElementById('fill-bp').addEventListener('click', () => {
+  const sys = [145, 142, 140, 138], dia = [92, 90, 88, 86];
+  progress.bpLog = sys.map((s, w) => ({ w: w + 1, date: localIso(dateForIdx(w * 7)), sys: s, dia: dia[w] }));
+  save(); render();
+});
+
+render();
+</script>
+</body>
+</html>

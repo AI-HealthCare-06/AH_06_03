@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 이용 적합성 · 응급 확인</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .q{display:flex; flex-direction:column; gap:7px; margin-top:12px}
+  .qt{font-size:13.5px; font-weight:700}
+  .optrow{display:flex; flex-wrap:wrap; gap:8px}
+  .opt{border:1.5px solid var(--sage-light); background:#fff; color:var(--ink); border-radius:16px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer}
+  .opt input{position:absolute; opacity:0; pointer-events:none}
+  .opt[data-on="1"]{border-color:var(--sage-deep); background:var(--sage-light)}
+  .warnbox{border:1.5px solid var(--danger); background:#FBEAE5; border-radius:18px; padding:14px 18px; font-size:13px}
+  .warnbox b{color:var(--risk)}
+  .warnbox .acts{display:flex; gap:8px; margin-top:10px; align-items:center; flex-wrap:wrap}
+  .call119{display:inline-block; margin-top:8px; background:var(--danger); color:#fff; border-radius:999px; padding:8px 18px; font-weight:700; font-size:13px; text-decoration:none}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen">
+        <p class="lede">입력을 받기 전에 대상자인지, 응급 상황이 아닌지 먼저 확인합니다.</p>
+
+        <div class="q">
+          <div class="qt">만 나이가 어떻게 되나요? (모델 A는 32~70세, 모델 B는 19세 이상만 예측합니다)</div>
+          <div class="optrow" id="age-band-row">
+            <label class="opt"><input type="radio" name="age-band" value="in">32~70세</label>
+            <label class="opt"><input type="radio" name="age-band" value="bOnly">19~31세 또는 71세 이상</label>
+            <label class="opt"><input type="radio" name="age-band" value="under19">19세 미만</label>
+          </div>
+        </div>
+
+        <div class="q">
+          <div class="qt">의사에게 협심증·심근경색 등 관상동맥질환을 진단받은 적이 있나요?</div>
+          <div class="optrow" id="chd-row">
+            <label class="opt"><input type="radio" name="chd" value="no">아니오</label>
+            <label class="opt"><input type="radio" name="chd" value="yes">예</label>
+          </div>
+        </div>
+
+        <div class="q">
+          <div class="qt">지금 가슴 통증·심한 두통·한쪽 마비·말이 어눌해짐이 있나요?</div>
+          <div class="optrow" id="emer-row">
+            <label class="opt"><input type="radio" name="emer" value="no">아니오</label>
+            <label class="opt"><input type="radio" name="emer" value="yes">예</label>
+            <label class="opt"><input type="radio" name="emer" value="unsure">잘 모르겠습니다</label>
+          </div>
+        </div>
+
+        <div id="emer-warning" class="warnbox" style="display:none">
+          <b>응급 증상일 수 있습니다</b><br>지금 바로 119에 연락하세요. 이 서비스는 응급 판단을 하지 않습니다.
+          <div><a class="call119" href="tel:119">📞 119 전화</a></div>
+          <div class="acts">
+            <span>그래도 진행하시겠습니까?</span>
+            <button type="button" id="emer-back" class="ghost" style="width:auto; padding:8px 18px">돌아가기</button>
+            <button type="button" id="emer-continue" class="ghost" style="width:auto; padding:8px 18px">그래도 진행</button>
+          </div>
+        </div>
+
+        <p id="form-err" class="err" style="display:none"></p>
+
+        <button type="button" id="next-btn" class="cta">건강정보 입력으로</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script>
+let emerAck = false;
+
+function val(name) {
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? el.value : null;
+}
+
+document.addEventListener('change', (e) => {
+  if (e.target.type !== 'radio') return;
+  const row = e.target.closest('.optrow');
+  row.querySelectorAll('.opt').forEach(o => o.dataset.on = o.querySelector('input').checked ? '1' : '0');
+  if (e.target.name === 'emer') {
+    emerAck = false;
+    document.getElementById('emer-warning').style.display = (e.target.value !== 'no') ? 'block' : 'none';
+  }
+});
+
+document.getElementById('emer-back').addEventListener('click', () => {
+  document.querySelector('input[name="emer"][value="no"]').click();
+});
+document.getElementById('emer-continue').addEventListener('click', () => {
+  emerAck = true;
+  document.getElementById('emer-warning').style.display = 'none';
+});
+
+document.getElementById('next-btn').addEventListener('click', () => {
+  const errEl = document.getElementById('form-err');
+  errEl.style.display = 'none';
+
+  const ageBand = val('age-band');
+  const chd = val('chd');
+  const emer = val('emer') || 'no';
+
+  if (!ageBand) { errEl.textContent = '나이 범위를 선택해주세요'; errEl.style.display = 'block'; return; }
+  if (!chd) { errEl.textContent = '관상동맥질환 진단 여부를 선택해주세요'; errEl.style.display = 'block'; return; }
+  if (emer !== 'no' && !emerAck) { errEl.textContent = '응급 안내를 확인하고 "그래도 진행"을 눌러주세요'; errEl.style.display = 'block'; return; }
+
+  localStorage.setItem('paeon-eligibility', JSON.stringify({ ageBand, chd: chd === 'yes', emer }));
+  window.location.href = 'health-info.html';
+});
+</script>
+</body>
+</html>

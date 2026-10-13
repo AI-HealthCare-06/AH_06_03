@@ -161,6 +161,12 @@ async function main() {
 
   document.getElementById('start-btn').addEventListener('click', async () => {
     if (!picked) return;
+    // 상담 권고 대상이면 확인하고 넘어간다는 동의를 받는다 (진행을 막지는 않는다)
+    const adv = adviceTitle(JSON.parse(localStorage.getItem('paeon-prediction') || 'null'), JSON.parse(localStorage.getItem('paeon-health') || 'null'));
+    if (adv && !adviceAcked()) {
+      if (!(await confirmDialog('상담 권고를 확인하셨나요?', `${adv}. ${ADVICE_ACK_TEXT}`, '확인했고 동의해요'))) return;
+      setAdviceAck(true);
+    }
     const btn = document.getElementById('start-btn');
     btn.disabled = true; btn.textContent = '시작하는 중...';
     try {
