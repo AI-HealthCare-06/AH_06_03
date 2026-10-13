@@ -23,6 +23,7 @@ from app.services.challenge_catalog import (
     SELECTABLE_NOTICE,
 )
 from app.services.model_input import age_on
+from app.ml.predictor import similarity_level_b
 
 ALC_WARNING = "오늘은 권장량을 넘었어요. 건강을 위해서는 술을 마시지 않는 것이 가장 좋아요."
 
@@ -443,6 +444,10 @@ async def get_review(db: AsyncSession, user_id: str, cycle_id: str) -> ReviewRes
             after_probability=a.score if a else None,
             model_version=(a or b).model_version if (a or b) else None,
             comparable=comparable,
+            before_similarity_level=similarity_level_b(b.score, b.model_version)
+            if b and code == "MODEL_B" and b.status == "completed" else None,
+            after_similarity_level=similarity_level_b(a.score, a.model_version)
+            if a and code == "MODEL_B" and a.status == "completed" else None,
         ))
 
     return ReviewResult(

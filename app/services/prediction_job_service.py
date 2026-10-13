@@ -10,6 +10,7 @@ from app.schemas.prediction import (
 )
 from app.services import prediction_service
 from app.services.model_input import build_model_input
+from app.ml.predictor import similarity_level_b
 
 # 4주 재평가에서 다시 받지 않고 직전 값을 쓰는 지표 (ERD v8 health_measurements Note, 명세 §6.1)
 CARRY_FORWARD = ["HEIGHT", "TOTAL_CHOL", "HDL", "FASTING_GLUCOSE", "DIABETES", "HTN_STATUS", "PARENT_HTN"]
@@ -111,6 +112,8 @@ def _to_model_result(p, factors: list) -> ModelResult:
         probability=p.score,
         risk_level=p.risk_level,
         vascular_age=p.vascular_age,
+        similarity_level=similarity_level_b(p.score, p.model_version)
+        if p.model_code == "MODEL_B" and p.status == "completed" else None,
         factors=fs,
         top_risk_factor=risk_up[0] if risk_up else None,
         top_modifiable_factor=next((f for f in risk_up if f.modifiable), None),
@@ -190,6 +193,8 @@ def _summary(p) -> ModelSummary | None:
         model_version=p.model_version,
         risk_level=p.risk_level,
         vascular_age=p.vascular_age,
+        similarity_level=similarity_level_b(p.score, p.model_version)
+        if p.model_code == "MODEL_B" and p.status == "completed" else None,
         skip_reason=p.skip_reason,
     )
 

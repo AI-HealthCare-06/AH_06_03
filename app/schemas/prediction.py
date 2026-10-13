@@ -86,6 +86,7 @@ class ModelResult(BaseModel):
     risk_level:Literal["normal", "borderline", "high"] | None=None # 신호등
     percentile:float | None=None # 같은 나이/성별 중 등수
     vascular_age: float | None = None # 혈관 나이
+    similarity_level: Literal["similar", "slightly_different", "different"] | None = None  # 모델 B만. 화면은 이것만 보여 줌
     factors:list[Factor]=[] # 요인들
     top_risk_factor: Factor | None=None # 1등 위험 요인
     top_modifiable_factor: Factor | None=None # 1등으로 바꿀 수 있는 요인
@@ -130,6 +131,7 @@ class ModelSummary(BaseModel):
     risk_level: str | None
     vascular_age: float | None
     skip_reason: str | None
+    similarity_level: str | None = None
 
 
 class PredictionSummary(BaseModel):
