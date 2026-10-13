@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 회원가입</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .modal-backdrop{position:fixed; inset:0; background:rgba(56,64,56,.45); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100}
+  .modal-card{background:#fff; border-radius:20px; padding:24px 22px; max-width:340px; width:100%; text-align:center; box-shadow:0 12px 30px rgba(56,64,56,.2)}
+  .modal-card b{font-size:15px}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" style="max-width:420px; margin:0 auto; width:100%">
+        <h3 style="text-align:center">파이온 PAEON</h3>
+
+        <form id="signup-form">
+          <div class="field">
+            <label for="birth">생년월일</label>
+            <input id="birth" type="date" required>
+          </div>
+          <div class="field" style="margin-top:10px">
+            <label for="email">이메일</label>
+            <input id="email" type="email" placeholder="you@email.com" required>
+          </div>
+          <div class="field" style="margin-top:10px">
+            <label for="pw">비밀번호</label>
+            <input id="pw" type="password" minlength="8" required>
+          </div>
+          <div class="field" style="margin-top:10px">
+            <label for="pw2">비밀번호 확인</label>
+            <input id="pw2" type="password" minlength="8" required>
+          </div>
+
+          <p id="form-err" class="err" style="margin-top:8px; display:none"></p>
+
+          <div class="callout" style="margin-top:14px">
+            <label style="display:flex; gap:8px; align-items:flex-start; font-size:12.5px">
+              <input id="agree-terms" class="agree" type="checkbox" required style="margin-top:2px">
+              <span>[필수] 서비스 이용약관 동의 <a href="#" class="view-terms" data-types="terms_of_service" style="margin-left:6px; text-decoration:underline; color:var(--muted)">내용 보기</a></span>
+            </label>
+            <div style="height:6px"></div>
+            <label style="display:flex; gap:8px; align-items:flex-start; font-size:12.5px">
+              <input id="agree-privacy" class="agree" type="checkbox" required style="margin-top:2px">
+              <span>[필수] 개인정보 수집·이용 동의 <a href="#" class="view-terms" data-types="privacy" style="margin-left:6px; text-decoration:underline; color:var(--muted)">내용 보기</a></span>
+            </label>
+            <div style="height:6px"></div>
+            <label style="display:flex; gap:8px; align-items:flex-start; font-size:12.5px">
+              <input id="agree-health" class="agree" type="checkbox" required style="margin-top:2px">
+              <span>[필수] 건강정보(민감정보) 수집·이용 동의 <a href="#" class="view-terms" data-types="health_data" style="margin-left:6px; text-decoration:underline; color:var(--muted)">내용 보기</a></span>
+            </label>
+            <div style="height:6px"></div>
+            <label style="display:flex; gap:8px; align-items:flex-start; font-size:12.5px">
+              <input id="agree-age" class="agree" type="checkbox" required style="margin-top:2px">
+              <span>[필수] 만 19세 이상입니다.</span>
+            </label>
+            <p class="hint" style="margin-top:8px"><a href="privacy.html" target="_blank" style="text-decoration:underline; color:var(--muted)">개인정보 처리방침 전체 보기</a></p>
+          </div>
+
+          <div id="age-box" class="callout" style="margin-top:10px; display:none">
+            <b>만 19세 미만은 가입할 수 없어요 · </b>이 서비스는 만 19세 이상만 이용할 수 있습니다.
+          </div>
+
+          <p class="hint" style="margin-top:10px">이름·전화번호는 받지 않습니다. 성별은 건강정보 입력에서 받습니다.</p>
+
+          <button type="submit" id="submit-btn" class="cta" style="margin-top:14px">가입하기</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="terms-modal" class="modal-backdrop" style="display:none">
+  <div class="modal-card" style="max-width:520px; max-height:80vh; overflow:auto; text-align:left">
+    <div id="terms-body" style="font-size:13px; line-height:1.6"></div>
+    <button type="button" id="terms-close" class="cta" style="margin-top:14px">닫기</button>
+  </div>
+</div>
+
+<div id="success-modal" class="modal-backdrop" style="display:none">
+  <div class="modal-card">
+    <div style="font-size:32px">✅</div>
+    <b>회원가입 완료</b>
+    <a class="cta" style="display:block; text-align:center; text-decoration:none; margin-top:14px" href="index.html">확인</a>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script src="assets/policies.js"></script>
+<script>
+// 약관 내용 보기: 서버의 현재 유효한 정책(GET /consent-policies/active)을 보여 주고, 못 받으면 내장 문구(policies.js)를 보여 준다.
+const TERMS_TITLE = { terms_of_service: '이용약관', privacy: '개인정보 수집·이용', health_data: '건강정보(민감정보) 수집·이용' };
+const esc = (t) => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+document.querySelectorAll('.view-terms').forEach(a => a.addEventListener('click', async (e) => {
+  e.preventDefault(); e.stopPropagation();
+  const body = document.getElementById('terms-body');
+  body.innerHTML = '<p>불러오는 중...</p>';
+  document.getElementById('terms-modal').style.display = 'flex';
+  try {
+    const policies = await loadActivePolicies();
+    const want = a.dataset.types.split(',');
+    body.innerHTML = want.map(t => policies.find(p => p.policy_type === t)).filter(Boolean).map(p => `
+      <h3 style="margin:0 0 6px">${TERMS_TITLE[p.policy_type]}</h3>
+      <p><b>목적</b><br>${esc(p.purpose_text)}</p>
+      <p><b>수집 항목</b><br>${esc(p.collection_items)}</p>
+      <p><b>보유·이용 기간</b><br>${esc(p.retention_policy)}</p>
+      <p><b>동의 거부·철회 방법</b><br>${esc(p.withdrawal_method)}</p>
+      <p><b>제3자 제공</b><br>${esc(p.third_party_notice)}</p>`).join('<hr style="margin:12px 0">') || '<p>내용을 찾지 못했어요.</p>';
+  } catch (err) { body.innerHTML = '<p>내용을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>'; }
+}));
+document.getElementById('terms-close').addEventListener('click', () => { document.getElementById('terms-modal').style.display = 'none'; });
+
+function ageOf(birthDateStr) {
+  const birth = new Date(birthDateStr);
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const beforeBirthdayThisYear = now < new Date(now.getFullYear(), birth.getMonth(), birth.getDate());
+  if (beforeBirthdayThisYear) age--;
+  return age;
+}
+
+const form = document.getElementById('signup-form');
+const birthInput = document.getElementById('birth');
+const ageBox = document.getElementById('age-box');
+const MIN_AGE = 19;   // 서버(auth_service.MIN_AGE)·이용약관과 같은 기준
+const errEl = document.getElementById('form-err');
+const submitBtn = document.getElementById('submit-btn');
+
+birthInput.addEventListener('change', () => {
+  ageBox.style.display = birthInput.value && ageOf(birthInput.value) < MIN_AGE ? 'block' : 'none';
+});
+
+function showError(msg) {
+  errEl.textContent = msg;
+  errEl.style.display = 'block';
+}
+function clearError() {
+  errEl.style.display = 'none';
+}
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  clearError();
+
+  const email = document.getElementById('email').value;
+  const pw = document.getElementById('pw').value;
+  const pw2 = document.getElementById('pw2').value;
+  const birth = birthInput.value;
+
+  if (ageOf(birth) < MIN_AGE) return showError('만 19세 이상만 가입할 수 있어요');
+  if (pw.length < 8) return showError('비밀번호는 8자 이상이어야 합니다');
+  if (pw !== pw2) return showError('비밀번호 확인이 일치하지 않습니다');
+  if (![...document.querySelectorAll('.agree')].every(c => c.checked)) {
+    return showError('필수 동의 항목을 체크해주세요');
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = '가입하는 중...';
+  try {
+    await apiSignup(email, pw, birth);
+    ['paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-cycle-history', 'paeon-progress'].forEach(k => localStorage.removeItem(k));
+    localStorage.setItem('paeon-profile', JSON.stringify({ email, birth }));
+    // 가입 후 자동 로그인하지 않고 홈에서 다시 로그인하게 한다
+    ['paeon-access-token', 'paeon-refresh-token'].forEach(k => localStorage.removeItem(k));
+    document.getElementById('success-modal').style.display = 'flex';
+  } catch (e) {
+    showError(friendlyError(e));
+    submitBtn.disabled = false;
+    submitBtn.textContent = '가입하기';
+  }
+});
+</script>
+</body>
+</html>

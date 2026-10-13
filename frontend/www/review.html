@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 입력 검토</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
+  .kpi{background:#fff; border:1px solid var(--sage-light); border-radius:14px; padding:10px 8px; text-align:center}
+  .kpi .k{font-size:11.5px; color:var(--muted)}
+  .kpi .v{font-size:18px; font-weight:900; margin-top:2px}
+  .confirm-headline{font-size:18px; font-weight:900; color:var(--accent); margin:2px 0 4px}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen">
+        <p class="sect">입력 내용 검토</p>
+        <p class="confirm-headline">아래 내용이 정확한지 확인해주세요</p>
+        <p class="lede">분석에 실제로 쓰이는 값만 보여드려요 — 잘못된 값이 있으면 사이드바의 "건강정보"에서 수정할 수 있어요.</p>
+        <div id="status-callout" class="callout"></div>
+        <div class="kpis" id="kpis"></div>
+
+        <p id="form-err" class="err" style="display:none"></p>
+        <button type="button" id="submit-btn" class="cta">이대로 위험 신호 분석하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+const profile = JSON.parse(localStorage.getItem('paeon-profile') || 'null');
+const elig = JSON.parse(localStorage.getItem('paeon-eligibility') || 'null');
+const health = JSON.parse(localStorage.getItem('paeon-health') || 'null');
+const survey = JSON.parse(localStorage.getItem('paeon-survey') || 'null');
+
+if (!profile || !elig || !health || !survey) {
+  // 빠진 단계가 있으면 막다른 길처럼 보이지 않게 진행 상황과 다음 단계 버튼을 보여 준다
+  const sp = setupProgress();
+  const go = !profile ? { label: '로그인하러 가기', href: 'login.html' } : sp.next && sp.next.href !== 'review.html' ? { label: `${sp.next.label}부터 이어서 하기`, href: sp.next.href } : null;
+  document.querySelector('.confirm-headline').style.display = 'none';
+  document.querySelector('.lede').style.display = 'none';
+  const box = document.getElementById('status-callout');
+  box.className = '';
+  box.innerHTML = `<p class="sect" style="margin-top:0">아직 마치지 않은 단계가 있어요</p>
+    <p class="hint" style="margin:0 0 10px">네 단계를 모두 마치면 입력 내용을 확인하고 위험 신호를 분석할 수 있어요.</p>
+    ${sp.html}
+    ${go ? `<a class="cta" style="display:block; text-align:center; text-decoration:none; margin-top:14px" href="${go.href}">${go.label}</a>` : ''}`;
+  document.getElementById('submit-btn').style.display = 'none';
+} else {
+  const skipA = elig.ageBand !== 'in' || elig.chd;
+  const skipB = elig.ageBand === 'under19' || health.htn_status !== 'none';
+  document.getElementById('status-callout').innerHTML = (skipA && skipB)
+    ? '<b>두 모델 모두 분석 대상이 아닙니다</b><br>분석은 건너뛰고 바로 챌린지로 안내합니다.'
+    : '<b>위험 신호 분석 가능</b>';
+
+  const bmi = (health.weight_kg / Math.pow(health.height_cm / 100, 2)).toFixed(1);
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><div class="k">BMI</div><div class="v">${bmi}</div></div>
+    <div class="kpi"><div class="k">혈압</div><div class="v">${health.sbp}/${health.dbp}</div></div>
+    <div class="kpi"><div class="k">허리둘레</div><div class="v">${health.waist_cm}cm</div></div>
+    <div class="kpi"><div class="k">총콜레스테롤</div><div class="v">${health.total_chol}</div></div>`;
+}
+
+document.getElementById('submit-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('submit-btn');
+  const errEl = document.getElementById('form-err');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = '분석하는 중...';
+  try {
+    const result = await apiRequestPrediction(profile, elig, health, survey);
+    localStorage.setItem('paeon-prediction', JSON.stringify(result.data));
+    window.location.href = 'result.html';
+  } catch (e) {
+    errEl.textContent = friendlyError(e);
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '위험 신호 분석하기';
+  }
+});
+</script>
+</body>
+</html>

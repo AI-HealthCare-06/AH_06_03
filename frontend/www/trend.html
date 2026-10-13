@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 추이 · 4주 비교</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .state{display:flex; gap:6px; flex-wrap:wrap}
+  .state button{border:1px solid var(--sage); background:#fff; border-radius:999px; padding:5px 12px; font-size:12px; color:var(--muted)}
+  .state button[data-on="1"]{background:var(--sage-deep); border-color:var(--sage-deep); color:#fff; font-weight:700}
+  figure{margin:0; background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px 18px}
+  figcaption{font-size:12.5px; color:var(--muted); margin-bottom:8px}
+  .chart{width:100%; height:auto; display:block}
+  .deltarow{display:grid; grid-template-columns:1fr auto 1fr; gap:10px; align-items:center; background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:16px}
+  .deltarow .side{text-align:center}
+  .deltarow .side .lb{font-size:11.5px; color:var(--muted)}
+  .deltarow .side .vv{font-size:26px; font-weight:900}
+  .deltarow .arrow{font-size:22px; color:var(--faint)}
+  .tworow{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .cmp .mrow{display:flex; justify-content:space-between; gap:10px; padding:10px 14px; font-size:13px; background:#fff; border:1px solid var(--sage-light); border-radius:14px; margin-bottom:6px}
+  .mini{background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px; text-align:center}
+  .bcmp{padding:16px 14px 14px; text-align:center; background:#fff; border:1px solid var(--sage-light); border-radius:14px}
+  .bcmp .bt{font-size:13.5px; line-height:1.6; color:var(--ink); font-weight:700; margin:0 0 10px}
+  .bcmp .chip{display:inline-block; margin-top:10px; padding:8px 22px; border-radius:22px; background:var(--cream); border:1.5px solid var(--sage); color:#6a4a4a; font-size:16px; line-height:1.4; font-weight:900}
+  .bcmp .bnote{font-size:11.5px; line-height:1.7; color:var(--faint); margin:12px 0 0}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen">
+        <div class="state" id="tabs">
+          <button type="button" data-t="trend" data-on="1">추이 · 변화 추적</button>
+          <button type="button" data-t="compare" data-on="0">4주 전 · 후 비교</button>
+        </div>
+        <div id="body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+function cssv(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+const COLOR = { normal: 'var(--ok)', borderline: 'var(--warn)', high: 'var(--risk)' };
+const RISK = { normal: '양호', borderline: '주의', high: '높음' };
+const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function shortDate(iso) { if (!iso) return ''; const [, m, d] = iso.split('-'); return `${Number(m)}/${Number(d)}`; }
+
+// 서버의 사이클별 전후 비교(review)에서 가져온다. 혈압은 시작할 때와 4주 재입력 때만 재므로 점도 그때만 찍힌다.
+async function loadReviews() {
+  const cycles = (await apiListCycles()).slice().sort((x, y) => x.cycle_number - y.cycle_number);
+  const reviews = [];
+  for (const c of cycles) {
+    try { reviews.push((await apiCall('GET', `/challenges/cycles/${encodeURIComponent(c.cycle_id)}/review`, undefined, '변화를 불러오지 못했습니다')).data); }
+    catch (e) { /* 한 사이클을 못 불러와도 나머지는 보여 준다 */ }
+  }
+  return { cycles, reviews };
+}
+
+function bpPoints(reviews) {
+  const pts = [];
+  const first = reviews.find(r => r.before && r.before.sbp != null);
+  if (first) pts.push({ v: first.before.sbp, d: shortDate(first.before.examination_date) });
+  reviews.filter(r => r.reassessed && r.after && r.after.sbp != null)
+    .forEach(r => pts.push({ v: r.after.sbp, d: shortDate(r.after.examination_date) }));
+  return pts;
+}
+
+function bpChart(points) {
+  const series = points.map(p => p.v);
+  const W = 356, H = 144, padL = 32, padR = 16, padT = 20, padB = 34;
+  const lo = Math.min(120, ...series) - 4, hi = Math.max(150, ...series) + 4;
+  const Xp = i => padL + (series.length > 1 ? i * (W - padL - padR) / (series.length - 1) : (W - padL - padR) / 2);
+  const Yp = v => padT + (hi - v) / (hi - lo) * (H - padT - padB);
+  const s = [`<svg class="chart" viewBox="0 0 ${W} ${H}">`];
+  s.push(`<line x1="${padL}" y1="${Yp(140).toFixed(1)}" x2="${W - padR}" y2="${Yp(140).toFixed(1)}" stroke="${cssv('--danger')}" stroke-width="1.5" stroke-dasharray="5 4"/>`);
+  s.push(`<polyline fill="none" stroke="${cssv('--accent')}" stroke-width="2.5" points="${points.map((p, i) => Xp(i).toFixed(1) + ',' + Yp(p.v).toFixed(1)).join(' ')}"/>`);
+  points.forEach((p, i) => {
+    const x = Xp(i).toFixed(1), y = Yp(p.v);
+    s.push(`<circle cx="${x}" cy="${y.toFixed(1)}" r="4" fill="#fff" stroke="${cssv('--accent')}" stroke-width="2"/>`);
+    s.push(`<text x="${x}" y="${(y - 9).toFixed(1)}" font-size="10.5" font-weight="700" text-anchor="middle" fill="${cssv('--ink')}">${p.v}</text>`);
+    s.push(`<text x="${x}" y="${H - 8}" font-size="9.5" text-anchor="middle" fill="${cssv('--muted')}">${p.d}</text>`);
+  });
+  s.push('</svg>');
+  return s.join('');
+}
+
+// 같은 모델 버전끼리만 비교한다 (comparable). 모델 B는 확률로 판정하지 않고 "나와 비슷한 사람 100명 중" 문장으로만 보여 준다.
+function modelRows(rv) {
+  return modelANoticeHtml(rv.models) + rv.models.filter(m => m.comparable).map(m => {
+    if (m.model_code === 'MODEL_A') {
+      return `<div class="mrow"><span>10년 내 심장 혈관 건강 신호</span><span>${RISK[m.before_risk_level]} → <b>${RISK[m.after_risk_level]}</b></span></div>`;
+    }
+    // 서버가 주는 3단계(similar / slightly_different / different)를 말로만 비교한다. 숫자·막대는 쓰지 않는다.
+    const chg = simChangeText(m.before_similarity_level, m.after_similarity_level);
+    return `<div class="bcmp">
+      <p class="bt">나와 비슷한 사람들과 비교했어요</p>
+      ${chg ? `<div class="chip">${chg}</div>` : ''}
+      <p class="bnote" style="word-break:keep-all; text-wrap:balance">나이와 성별이 같은 사람들과 비교했어요. 허리둘레, 몸무게, 술은 내가 바꿀 수 있는 부분이에요. 4주 뒤에 다시 비교해 봐요.</p>
+    </div>`;
+  }).join('');
+}
+
+const NO_DATA = '<div class="callout"><b>기록이 쌓이면 여기에 변화가 보입니다</b><br>챌린지를 시작하고 4주 뒤 재입력을 하면 혈압 변화가 그려져요.</div><a class="ghost" style="display:block;text-align:center;text-decoration:none;margin-top:8px" href="challenges.html">챌린지 시작하기</a>';
+const LOGIN_NEEDED = '<div class="callout"><b>불러오지 못했어요</b><br>잠시 뒤 다시 열어 주세요. 계속 안 되면 다시 로그인해 주세요.</div>';
+
+let DATA = null;
+
+function renderTrend() {
+  const body = document.getElementById('body');
+  const pts = bpPoints(DATA.reviews);
+  if (!pts.length) { body.innerHTML = NO_DATA; return; }
+  body.innerHTML = `
+    <figure><figcaption>수축기 혈압 · <b>시작할 때와 4주 재입력 때 측정</b></figcaption>${bpChart(pts)}</figure>
+    <div class="callout" style="margin-top:10px">혈압은 4주마다 다시 재요. 재입력을 하면 처음과 비교한 변화를 "4주 전 · 후 비교"에서 보여 드려요.</div>`;
+}
+
+function renderCompare() {
+  const body = document.getElementById('body');
+  const done = DATA.reviews.filter(r => r.reassessed);
+  const pending = DATA.reviews.filter(r => !r.reassessed && r.cycle_status !== 'active' && r.cycle_status !== 'stopped');
+  const recheck = pending.length
+    ? `<a class="cta" style="display:block; text-align:center; text-decoration:none; margin-top:10px" href="reassessment.html?cycle=${encodeURIComponent(pending[pending.length - 1].cycle_id)}">${pending[pending.length - 1].cycle_number}차 4주 재입력하기</a>`
+    : '';
+  if (!done.length) {
+    body.innerHTML = `<div class="callout"><b>4주 재입력 후에 비교해 드려요</b><br>혈압, 몸무게, 허리둘레와 분석 결과를 처음과 같은 기준으로 비교해요.</div>${recheck}`;
+    return;
+  }
+  const rv = done[done.length - 1];
+  const b = rv.before || {}, a = rv.after || {};
+  const bp = x => x.sbp != null ? `${x.sbp}/${x.dbp}` : '—';
+  const models = modelRows(rv);
+  body.innerHTML = `
+    <p class="lede">${rv.cycle_number}차 4주 동안의 변화예요.</p>
+    <div class="deltarow">
+      <div class="side"><div class="lb">처음 혈압</div><div class="vv">${esc(bp(b))}</div></div>
+      <div class="arrow">→</div>
+      <div class="side"><div class="lb">4주 후 혈압</div><div class="vv">${esc(bp(a))}</div></div>
+    </div>
+    ${models ? `<div class="cmp" style="display:block; margin-top:10px">${models}</div>` : ''}
+    <a class="ghost" style="display:block; text-align:center; text-decoration:none; margin-top:10px" href="reassessment.html?cycle=${encodeURIComponent(rv.cycle_id)}">체중·허리·습관 변화까지 보기</a>
+    ${recheck}`;
+}
+
+let current = 'trend';
+function show() { current === 'trend' ? renderTrend() : renderCompare(); }
+
+document.getElementById('tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  document.querySelectorAll('#tabs button').forEach(x => x.dataset.on = (x === btn) ? '1' : '0');
+  current = btn.dataset.t;
+  if (DATA) show();
+});
+
+(async () => {
+  const body = document.getElementById('body');
+  body.innerHTML = '<p class="hint">불러오는 중...</p>';
+  try { DATA = await loadReviews(); }
+  catch (e) { body.innerHTML = LOGIN_NEEDED; return; }
+  show();
+})();
+</script>
+</body>
+</html>

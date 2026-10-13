@@ -49,7 +49,7 @@ if (!pending) {
 
     <div class="card plain" style="font-size:12.5px">
       <b>수집·이용 목적</b>
-      <p class="muted" style="margin:4px 0 0">아이디(이메일)·생년월일과, 이후 입력하는 건강정보(혈압·신장·체중 등)를 위험도 예측과 챌린지 추천에만 사용합니다. 이름·전화번호는 수집하지 않습니다.</p>
+      <p class="muted" style="margin:4px 0 0">아이디(이메일)·생년월일과, 이후 입력하는 건강정보(혈압·신장·체중 등)를 위험 신호 분석과 챌린지 추천에만 사용합니다. 이름·전화번호는 수집하지 않습니다.</p>
     </div>
 
     <form id="guardian-form">
@@ -62,7 +62,7 @@ if (!pending) {
         <select id="g-relation" required>
           <option value="">선택</option>
           <option value="parent">부·모</option>
-          <option value="legal_guardian">그 외 법정대리인</option>
+          <option value="guardian">그 외 법정대리인</option>
         </select>
       </div>
       <div class="field" style="margin-top:10px">
@@ -100,24 +100,20 @@ if (!pending) {
 
     submitBtn.disabled = true;
     submitBtn.textContent = '처리하는 중...';
-    const guardian = {
-      name: document.getElementById('g-name').value,
-      relation: document.getElementById('g-relation').value,
-      contact: document.getElementById('g-contact').value,
-    };
     try {
-      const signupRes = await apiSignup(pending.email, pending.pw, pending.birth, { guardian });
-      ['paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-cycle-history', 'paeon-progress'].forEach(k => localStorage.removeItem(k));
+      await apiSignup(pending.email, pending.pw, pending.birth);
+      ['paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-progress'].forEach(k => localStorage.removeItem(k));
       localStorage.setItem('paeon-profile', JSON.stringify({ email: pending.email, birth: pending.birth }));
       localStorage.setItem('paeon-guardian-consent', JSON.stringify({
-        ...guardian,
+        name: document.getElementById('g-name').value,
+        relation: document.getElementById('g-relation').value,
+        contact: document.getElementById('g-contact').value,
         consented_at: new Date().toISOString(),
-        verification_status: signupRes.data.guardian_verification_status || null,
       }));
       localStorage.removeItem('paeon-pending-signup');
       document.getElementById('success-modal').style.display = 'flex';
     } catch (e) {
-      errEl.textContent = friendlyError(e);
+      errEl.textContent = e.message;
       errEl.style.display = 'block';
       submitBtn.disabled = false;
       submitBtn.textContent = '동의하고 가입 완료';

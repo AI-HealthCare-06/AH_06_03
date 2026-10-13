@@ -45,18 +45,29 @@
 
           <div class="callout" style="margin-top:14px">
             <label style="display:flex; gap:8px; align-items:flex-start; font-size:12.5px">
-              <input id="agree1" type="checkbox" required style="margin-top:2px">
-              <span>[필수] 이용약관 · 개인정보 수집 동의 <a href="#" class="view-terms" data-types="terms_of_service,privacy" style="margin-left:6px; text-decoration:underline; color:var(--muted)">내용 보기</a></span>
+              <input id="agree-terms" class="agree" type="checkbox" required style="margin-top:2px">
+              <span>[필수] 서비스 이용약관 동의 <a href="#" class="view-terms" data-types="terms_of_service" style="margin-left:6px; text-decoration:underline; color:var(--muted)">내용 보기</a></span>
             </label>
             <div style="height:6px"></div>
             <label style="display:flex; gap:8px; align-items:flex-start; font-size:12.5px">
-              <input id="agree2" type="checkbox" required style="margin-top:2px">
-              <span>[필수] 건강정보 수집 항목 · 목적 · 보유기간 · 철회 방법 확인 <a href="#" class="view-terms" data-types="health_data" style="margin-left:6px; text-decoration:underline; color:var(--muted)">내용 보기</a></span>
+              <input id="agree-privacy" class="agree" type="checkbox" required style="margin-top:2px">
+              <span>[필수] 개인정보 수집·이용 동의 <a href="#" class="view-terms" data-types="privacy" style="margin-left:6px; text-decoration:underline; color:var(--muted)">내용 보기</a></span>
             </label>
+            <div style="height:6px"></div>
+            <label style="display:flex; gap:8px; align-items:flex-start; font-size:12.5px">
+              <input id="agree-health" class="agree" type="checkbox" required style="margin-top:2px">
+              <span>[필수] 건강정보(민감정보) 수집·이용 동의 <a href="#" class="view-terms" data-types="health_data" style="margin-left:6px; text-decoration:underline; color:var(--muted)">내용 보기</a></span>
+            </label>
+            <div style="height:6px"></div>
+            <label style="display:flex; gap:8px; align-items:flex-start; font-size:12.5px">
+              <input id="agree-age" class="agree" type="checkbox" required style="margin-top:2px">
+              <span>[필수] 만 19세 이상입니다.</span>
+            </label>
+            <p class="hint" style="margin-top:8px"><a href="privacy.html" target="_blank" style="text-decoration:underline; color:var(--muted)">개인정보 처리방침 전체 보기</a></p>
           </div>
 
-          <div id="guardian-box" class="callout" style="margin-top:10px; display:none">
-            <b>만 14세 미만입니다 · </b>가입하기를 누르면 법정대리인 동의 페이지로 이동합니다. 법정대리인이 직접 확인하고 동의해야 가입이 완료됩니다.
+          <div id="age-box" class="callout" style="margin-top:10px; display:none">
+            <b>만 19세 미만은 가입할 수 없어요 · </b>이 서비스는 만 19세 이상만 이용할 수 있습니다.
           </div>
 
           <p class="hint" style="margin-top:10px">이름·전화번호는 받지 않습니다. 성별은 건강정보 입력에서 받습니다.</p>
@@ -78,15 +89,16 @@
 <div id="success-modal" class="modal-backdrop" style="display:none">
   <div class="modal-card">
     <div style="font-size:32px">✅</div>
-    <b>가입 완료!</b>
-    <a class="cta" style="display:block; text-align:center; text-decoration:none; margin-top:14px" href="eligibility.html">다음으로</a>
+    <b>회원가입 완료</b>
+    <a class="cta" style="display:block; text-align:center; text-decoration:none; margin-top:14px" href="index.html">확인</a>
   </div>
 </div>
 
 <script src="assets/common.js"></script>
 <script src="assets/api.js"></script>
+<script src="assets/policies.js"></script>
 <script>
-// 약관 내용 보기: 서버의 현재 유효한 정책(GET /consent-policies/active)을 그대로 보여 준다.
+// 약관 내용 보기: 서버의 현재 유효한 정책(GET /consent-policies/active)을 보여 주고, 못 받으면 내장 문구(policies.js)를 보여 준다.
 const TERMS_TITLE = { terms_of_service: '이용약관', privacy: '개인정보 수집·이용', health_data: '건강정보(민감정보) 수집·이용' };
 const esc = (t) => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 document.querySelectorAll('.view-terms').forEach(a => a.addEventListener('click', async (e) => {
@@ -95,11 +107,10 @@ document.querySelectorAll('.view-terms').forEach(a => a.addEventListener('click'
   body.innerHTML = '<p>불러오는 중...</p>';
   document.getElementById('terms-modal').style.display = 'flex';
   try {
-    const res = await fetch(`${API_BASE}/consent-policies/active`);
-    const policies = (await res.json()).data;
+    const policies = await loadActivePolicies();
     const want = a.dataset.types.split(',');
     body.innerHTML = want.map(t => policies.find(p => p.policy_type === t)).filter(Boolean).map(p => `
-      <h3 style="margin:0 0 6px">${TERMS_TITLE[p.policy_type]} <span style="font-size:11px; color:var(--muted)">${esc(p.version)}</span></h3>
+      <h3 style="margin:0 0 6px">${TERMS_TITLE[p.policy_type]}</h3>
       <p><b>목적</b><br>${esc(p.purpose_text)}</p>
       <p><b>수집 항목</b><br>${esc(p.collection_items)}</p>
       <p><b>보유·이용 기간</b><br>${esc(p.retention_policy)}</p>
@@ -120,14 +131,13 @@ function ageOf(birthDateStr) {
 
 const form = document.getElementById('signup-form');
 const birthInput = document.getElementById('birth');
-const guardianBox = document.getElementById('guardian-box');
+const ageBox = document.getElementById('age-box');
+const MIN_AGE = 19;   // 서버(auth_service.MIN_AGE)·이용약관과 같은 기준
 const errEl = document.getElementById('form-err');
 const submitBtn = document.getElementById('submit-btn');
 
 birthInput.addEventListener('change', () => {
-  if (!birthInput.value) { guardianBox.style.display = 'none'; return; }
-  const age = ageOf(birthInput.value);
-  guardianBox.style.display = age < 14 ? 'block' : 'none';
+  ageBox.style.display = birthInput.value && ageOf(birthInput.value) < MIN_AGE ? 'block' : 'none';
 });
 
 function showError(msg) {
@@ -146,18 +156,12 @@ form.addEventListener('submit', async (event) => {
   const pw = document.getElementById('pw').value;
   const pw2 = document.getElementById('pw2').value;
   const birth = birthInput.value;
-  const isMinor = birth && ageOf(birth) < 14;
 
+  if (ageOf(birth) < MIN_AGE) return showError('만 19세 이상만 가입할 수 있어요');
   if (pw.length < 8) return showError('비밀번호는 8자 이상이어야 합니다');
   if (pw !== pw2) return showError('비밀번호 확인이 일치하지 않습니다');
-  if (!document.getElementById('agree1').checked || !document.getElementById('agree2').checked) {
+  if (![...document.querySelectorAll('.agree')].every(c => c.checked)) {
     return showError('필수 동의 항목을 체크해주세요');
-  }
-
-  if (isMinor) {
-    localStorage.setItem('paeon-pending-signup', JSON.stringify({ email, pw, birth }));
-    window.location.href = 'guardian-consent.html';
-    return;
   }
 
   submitBtn.disabled = true;
@@ -166,11 +170,8 @@ form.addEventListener('submit', async (event) => {
     await apiSignup(email, pw, birth);
     ['paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-cycle-history', 'paeon-progress'].forEach(k => localStorage.removeItem(k));
     localStorage.setItem('paeon-profile', JSON.stringify({ email, birth }));
-    try {
-      const loginRes = await apiLogin(email, pw);
-      localStorage.setItem('paeon-access-token', loginRes.data.access_token);
-      localStorage.setItem('paeon-refresh-token', loginRes.data.refresh_token);
-    } catch (e) { /* 가입은 됐으니 로그인은 나중에 직접 해도 됨 */ }
+    // 가입 후 자동 로그인하지 않고 홈에서 다시 로그인하게 한다
+    ['paeon-access-token', 'paeon-refresh-token'].forEach(k => localStorage.removeItem(k));
     document.getElementById('success-modal').style.display = 'flex';
   } catch (e) {
     showError(friendlyError(e));

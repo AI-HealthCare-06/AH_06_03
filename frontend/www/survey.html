@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 생활습관 설문</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .substeps{display:flex; gap:6px; flex-wrap:wrap}
+  .substeps span{font-size:12px; border:1px solid var(--sage-light); border-radius:999px; padding:4px 12px; color:var(--muted); background:var(--cream); font-weight:700}
+  .substeps span[data-on="1"]{background:var(--sage-deep); border-color:var(--sage-deep); color:#fff}
+  .substeps span[data-done="1"]{color:var(--ink)}
+  .trk{background:var(--track); border-radius:999px; height:10px; overflow:hidden}
+  .trk i{display:block; height:100%; background:var(--sage-deep); border-radius:999px}
+  .q{display:flex; flex-direction:column; gap:7px; margin-top:12px; padding-bottom:12px; border-bottom:1px dashed var(--sage-light)}
+  .q:last-of-type{border-bottom:0}
+  .qhead{display:flex; justify-content:space-between; align-items:flex-start; gap:10px}
+  .qt{font-size:13.5px; font-weight:700; white-space:pre-line}
+  .qh{font-size:11.5px; color:var(--muted); white-space:pre-line}
+  .skip{flex:none; border:0; background:transparent; color:var(--faint); font-size:11.5px; text-decoration:underline; padding:2px 4px}
+  .skip[data-on="1"]{color:var(--risk); font-weight:700; text-decoration:none}
+  .q[data-skipped="1"] .optrow,.q[data-skipped="1"] .stepsin{opacity:.4}
+  .optrow{display:flex; flex-wrap:wrap; gap:8px}
+  .opt{border:1.5px solid var(--sage-light); background:#fff; color:var(--ink); border-radius:16px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer}
+  .opt input{position:absolute; opacity:0; pointer-events:none}
+  .opt[data-on="1"]{border-color:var(--sage-deep); background:var(--sage-light)}
+  .step{display:none}
+  .step[data-active="1"]{display:flex; flex-direction:column; gap:6px}
+  .stepsin{display:flex; align-items:center; gap:8px}
+  .stepsin input[type=number]{width:150px; font:inherit; padding:9px 12px; border-radius:12px; border:1.5px solid var(--sage-light)}
+  .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px}
+  .kpi{background:#fff; border:1px solid var(--sage-light); border-radius:14px; padding:10px 10px; text-align:center}
+  .kpi .k{font-size:11.5px; color:var(--muted)}
+  .kpi .v{font-size:16px; font-weight:900; margin-top:2px}
+  .kpi .s{font-size:11px; color:var(--muted); margin-top:2px}
+  .modal-backdrop{position:fixed; inset:0; background:rgba(56,64,56,.45); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100}
+  .modal-card{background:#fff; border-radius:20px; padding:24px 22px; max-width:340px; width:100%; text-align:center; box-shadow:0 12px 30px rgba(56,64,56,.2)}
+  .modal-card b{font-size:15px}
+</style>
+</head>
+<body>
+<div id="header-slot"></div>
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen">
+        <div class="callout"><b>챌린지 추천에 쓰는 설문이에요. 위험 신호 계산에는 쓰지 않아요.</b><br>모르거나 답하기 싫은 문항은 "건너뛰기"를 누르세요. 건너뛴 문항이 있어도 위험 신호 분석은 그대로 진행돼요.</div>
+        <div class="substeps" id="substeps"></div>
+        <div class="trk"><i id="progress-bar" style="width:0%"></i></div>
+        <div id="steps"></div>
+        <p id="step-note" class="hint" style="display:none"></p>
+        <p id="form-err" class="err" style="display:none"></p>
+        <div style="display:flex; gap:8px">
+          <button type="button" id="prev-btn" class="ghost">이전</button>
+          <button type="button" id="next-btn" class="cta">다음</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="success-modal" class="modal-backdrop" style="display:none">
+  <div class="modal-card">
+    <div style="font-size:32px">✅</div>
+    <b>설문 제출 완료!</b>
+    <p class="muted" style="margin-top:6px">답변으로 챌린지 추천에 쓸 값을 정리했어요.</p>
+    <a class="cta" style="display:block; text-align:center; text-decoration:none; margin-top:14px" href="review.html">입력 검토로</a>
+  </div>
+</div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+// 가이드(modeling/handoff/생활습관_입력_가이드.md) §1.2 설문 v2. 문구·선택지·점수는 가이드 그대로.
+const SUB = ['나트륨', '신체 활동', '외식·배달', '아침 식사', '완료'];
+const SCALE5 = ['전혀 그렇지 않다', '약간 그렇다', '보통이다', '많이 그렇다', '매우 그렇다'];
+const FREQ5 = ['월 3회 이하', '주 1–2회', '주 3–6회', '하루 1회', '하루 2–3회'];
+const UP = [2, 4, 6, 8, 10], DOWN = [10, 8, 6, 4, 2];
+const scored = (labels, scores) => labels.map((l, i) => [l, String(scores[i])]);
+
+const QUESTIONS = [
+  { step: 0, code: 'N0', text: '평소 음식을 어떻게 드시나요?', opts: [['싱겁게', '10'], ['약간 싱겁게', '20'], ['보통', '30'], ['약간 짜게', '40'], ['짜게', '50']] },
+  { step: 0, code: 'N1', text: '국수·라면의 국물을 다 마신다', opts: scored(SCALE5, UP) },
+  { step: 0, code: 'N2', text: '음식에 소금이나 간장을 습관적으로 더 넣는다', opts: scored(SCALE5, UP) },
+  { step: 0, code: 'N3', text: '회·전·튀김에 간장이나 고추장을 많이 찍어 먹는다', opts: scored(SCALE5, UP) },
+  { step: 0, code: 'N4', text: '가공식품을 살 때 나트륨 함량을 확인한다', opts: scored(SCALE5, DOWN) },
+  { step: 0, code: 'N5', text: '외식할 때 싱겁게 해달라고 요청한다', opts: scored(SCALE5, DOWN) },
+  { step: 0, code: 'N6', text: '국이나 찌개를 얼마나 자주 드시나요?', opts: scored(FREQ5, UP) },
+  { step: 0, code: 'N7', text: '김치를 얼마나 자주 드시나요?', opts: scored(FREQ5, UP) },
+  { step: 0, code: 'N8', text: '자반(소금에 절인 생선)을 반찬으로 얼마나 자주 드시나요?', opts: scored(FREQ5, UP) },
+  { step: 0, code: 'N9', text: '견과류를 간식으로 얼마나 자주 드시나요?', opts: scored(FREQ5, DOWN) },
+  { step: 0, code: 'N10', text: '과일을 얼마나 자주 드시나요?', opts: scored(FREQ5, DOWN) },
+  { step: 1, code: 'P1', text: '평소 일주일 동안 숨이 조금 찰 정도의 운동을 모두 합쳐 얼마나 하시나요?',
+    hint: '(빠르게 걷기, 자전거, 수영, 등산, 헬스 등. 출퇴근·장보기 때 10분 이상 계속 걷는 것도 포함)\n(달리기처럼 숨이 많이 차는 운동은 시간을 2배로 쳐서 합쳐 주세요)',
+    opts: [['거의 안 함', 'none'], ['1시간 미만', 'lt60'], ['1시간 이상 ~ 2시간 30분 미만', '60_149'], ['2시간 30분 이상', '150plus']] },
+  { step: 1, code: 'P2', type: 'steps', text: "휴대폰 건강 앱(아이폰 '건강', 갤럭시 '삼성 헬스')에 나온 최근 7일 하루 평균 걸음 수를 입력해 주세요." },
+  { step: 2, code: 'E1', text: '평소 일주일에 집에서 만든 음식이 아닌 식사(식당·배달·포장·구내식당 등)를 몇 번 하시나요?',
+    opts: [['거의 안 함', 'rare'], ['주 1–2회', '1_2_week'], ['주 3–4회', '3_4_week'], ['주 5–6회', '5_6_week'], ['하루 1회', '1_day'], ['하루 2회 이상', '2plus_day']] },
+  { step: 3, code: 'B1', text: '평소 일주일에 아침 식사를 몇 번 하시나요?', hint: '(밥·빵·시리얼·떡 등 식사로 먹은 것. 커피·음료만 마신 경우는 제외)',
+    opts: [['주 5–7회', '5_7'], ['주 3–4회', '3_4'], ['주 1–2회', '1_2'], ['거의 안 함', '0']] },
+];
+const N_CODES = ['N0', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10'];
+const answers = {};   // 문항 코드 → 고른 값 (건너뛰면 키 없음)
+const skipped = new Set();
+let step = 0;
+
+function qHtml(q) {
+  const head = `<div class="qhead"><div><div class="qt">${q.text}</div>${q.hint ? `<div class="qh">${q.hint}</div>` : ''}</div>
+    <button type="button" class="skip" data-skip="${q.code}" data-on="0">건너뛰기</button></div>`;
+  if (q.type === 'steps') {
+    return `<div class="q" data-q="${q.code}">${head}
+      <div class="stepsin"><input type="number" id="steps-input" min="0" max="50000" placeholder="예: 6000"> 걸음 <span class="qh">(0–50,000)</span></div>
+      <label class="qh"><input type="checkbox" id="steps-unknown"> 모르겠어요 / 앱을 쓰지 않아요</label></div>`;
+  }
+  const opts = q.opts.map(([label, val]) => `<label class="opt" data-on="0"><input type="radio" name="${q.code}" value="${val}">${label}</label>`).join('');
+  return `<div class="q" data-q="${q.code}">${head}<div class="optrow">${opts}</div></div>`;
+}
+
+function buildSteps() {
+  document.getElementById('steps').innerHTML = SUB.map((_, i) => {
+    if (i === SUB.length - 1) return `<div class="step" data-step="${i}"><div class="callout"><b>설문이 끝났습니다</b><br>답변으로 챌린지 추천에 쓸 값을 정리했어요.</div><div class="kpis" id="final-kpis"></div></div>`;
+    const note = i === 0 ? '<p class="qh">11문항을 모두 답해야 추정 나트륨 섭취량이 계산돼요. 건너뛰면 나트륨 챌린지는 추천에서 빠져요.</p>' : '';
+    return `<div class="step" data-step="${i}">${note}${QUESTIONS.filter(q => q.step === i).map(qHtml).join('')}</div>`;
+  }).join('');
+}
+
+function markSkipped(code, on) {
+  const box = document.querySelector(`.q[data-q="${code}"]`);
+  box.dataset.skipped = on ? '1' : '0';
+  const btn = box.querySelector('.skip');
+  btn.dataset.on = on ? '1' : '0';
+  btn.textContent = on ? '건너뜀 ✓ (취소)' : '건너뛰기';
+  if (on) skipped.add(code); else skipped.delete(code);
+}
+
+document.addEventListener('change', (e) => {
+  const t = e.target;
+  if (t.type === 'radio') {
+    answers[t.name] = t.value;
+    t.closest('.optrow').querySelectorAll('.opt').forEach(o => o.dataset.on = o.querySelector('input').checked ? '1' : '0');
+    markSkipped(t.name, false);
+  }
+  if (t.id === 'steps-input') {
+    const v = t.value === '' ? null : Math.max(0, Math.min(50000, Math.round(Number(t.value))));
+    if (v == null) delete answers.P2; else answers.P2 = v;
+    if (v != null) { document.getElementById('steps-unknown').checked = false; markSkipped('P2', false); }
+  }
+  if (t.id === 'steps-unknown') {
+    if (t.checked) { answers.P2 = null; document.getElementById('steps-input').value = ''; markSkipped('P2', false); }
+    else delete answers.P2;
+  }
+});
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.skip');
+  if (!btn) return;
+  const code = btn.dataset.skip;
+  const on = !skipped.has(code);
+  markSkipped(code, on);
+  if (on) {
+    delete answers[code];
+    document.querySelectorAll(`input[name="${code}"]`).forEach(r => { r.checked = false; r.closest('.opt').dataset.on = '0'; });
+    if (code === 'P2') { document.getElementById('steps-input').value = ''; document.getElementById('steps-unknown').checked = false; }
+  }
+});
+
+// ---- 계산값 (가이드 §2.1). 서버가 계산하게 되면 서버 값을 쓰고 이 함수는 미리보기로만 남긴다.
+function readLocal(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } }
+const GRADE_LABEL = { careful_low: '주의 (약간 적음)', very_moderate: '매우 적정', moderate: '적정', careful_high: '주의 (많음)', severe: '심각' };
+const sodiumResult = () => sodiumCalc(answers, readLocal('paeon-health'), readLocal('paeon-profile'));
+const labelOf = (code) => { const q = QUESTIONS.find(x => x.code === code); const o = answers[code] != null && q.opts.find(([, v]) => v === answers[code]); return o ? o[0] : '건너뜀'; };
+
+const buildPayload = () => buildSurveyPayload(answers, readLocal('paeon-health'), readLocal('paeon-profile'));
+
+function renderFinal() {
+  const s = sodiumResult();
+  let na;
+  if (s.status === 'ok') na = [`약 ${s.est_mg.toLocaleString()}mg/일`, `${GRADE_LABEL[s.grade]} · 설문 기반 추정치`];
+  else if (s.status === 'not_applicable') na = ['계산 대상 아님', '혈압·혈당 관리를 위해 나트륨 줄이기를 권해요'];
+  else if (s.status === 'no_input') na = ['계산 안 됨', '건강정보를 먼저 입력하면 계산돼요'];
+  else na = ['계산 안 됨', '11문항을 모두 답하면 계산돼요'];
+  const steps = answers.P2 != null ? `${Number(answers.P2).toLocaleString()}걸음/일` : '입력 안 함';
+  document.getElementById('final-kpis').innerHTML = `
+    <div class="kpi"><div class="k">추정 나트륨 섭취량</div><div class="v">${na[0]}</div><div class="s">${na[1]}</div></div>
+    <div class="kpi"><div class="k">운동(주당)</div><div class="v">${labelOf('P1')}</div><div class="s">하루 평균 ${steps}</div></div>
+    <div class="kpi"><div class="k">외식·배달</div><div class="v">${labelOf('E1')}</div></div>
+    <div class="kpi"><div class="k">아침 식사</div><div class="v">${labelOf('B1')}</div></div>`;
+}
+
+function renderSubsteps() {
+  document.getElementById('substeps').innerHTML = SUB.map((n, i) => `<span data-on="${i === step ? 1 : 0}" data-done="${i < step ? 1 : 0}">${n}</span>`).join('');
+  document.getElementById('progress-bar').style.width = Math.round(step / (SUB.length - 1) * 100) + '%';
+}
+function renderStep() {
+  document.querySelectorAll('.step').forEach(el => el.dataset.active = Number(el.dataset.step) === step ? '1' : '0');
+  if (step === SUB.length - 1) renderFinal();
+  document.getElementById('prev-btn').style.visibility = step === 0 ? 'hidden' : 'visible';
+  document.getElementById('next-btn').textContent = step < SUB.length - 1 ? '다음' : '입력 검토로';
+  renderSubsteps();
+}
+document.getElementById('prev-btn').addEventListener('click', () => { if (step > 0) { step--; renderStep(); } });
+document.getElementById('next-btn').addEventListener('click', async () => {
+  if (step < SUB.length - 1) { step++; renderStep(); return; }
+  const errEl = document.getElementById('form-err');
+  errEl.style.display = 'none';
+  const btn = document.getElementById('next-btn');
+  btn.disabled = true; btn.textContent = '제출하는 중...';
+  const payload = buildPayload();
+  try {
+    await apiSubmitSurvey(payload);
+    localStorage.setItem('paeon-survey', JSON.stringify(payload));
+    document.getElementById('success-modal').style.display = 'flex';
+  } catch (e) {
+    errEl.textContent = friendlyError(e); errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = '입력 검토로';
+  }
+});
+buildSteps();
+renderStep();
+</script>
+</body>
+</html>

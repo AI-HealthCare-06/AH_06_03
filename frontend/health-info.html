@@ -43,10 +43,10 @@
           <form id="health-form" class="screen">
             <div class="card plain" id="ocr-card">
               <p class="sect" style="margin-top:0">검진 결과지 사진으로 빠르게 입력</p>
-              <p class="hint">사진 한 장이면 아래 칸이 자동으로 채워져요. 인식된 값은 꼭 확인해주세요.</p>
-              <label class="ghost" style="display:block; text-align:center; cursor:pointer">
-                <span id="ocr-label-text">📷 사진 업로드</span>
-                <input type="file" accept="image/*" id="ocr-input" style="display:none">
+              <p class="hint">이번 체험 버전에서는 사진 자동 입력을 제공하지 않아요. 아래에서 직접 입력해 주세요.</p>
+              <label class="ghost" style="display:block; text-align:center; cursor:not-allowed; opacity:.5">
+                <span id="ocr-label-text">📷 준비 중이에요</span>
+                <input type="file" accept="image/*" id="ocr-input" style="display:none" disabled>
               </label>
               <div id="ocr-result"></div>
             </div>
@@ -91,7 +91,7 @@
               <div class="field"></div>
 
               <div class="field">
-                <label for="smoking">현재 일반담배(궐련)를 피우십니까?</label>
+                <label for="smoking">현재 일반담배를 피우십니까?</label>
                 <select id="smoking" required>
                   <option value="">선택</option>
                   <option value="current_daily">매일 피움</option>
@@ -167,11 +167,6 @@
                 <input id="total-chol" type="number" required>
               </div>
               <div class="field">
-                <label for="hdl">HDL 콜레스테롤 (mg/dL)</label>
-                <input id="hdl" type="number" required>
-              </div>
-
-              <div class="field">
                 <label for="parent-htn">부모 고혈압 가족력</label>
                 <select id="parent-htn" required>
                   <option value="no">없음</option>
@@ -190,13 +185,13 @@
               </div>
             </div>
 
-            <p class="tip">허리둘레·한 번 음주량은 PRD v1.9 신규 항목(모델 B 입력). 한 번 음주량은 음주 빈도가 "최근 1년간 전혀 마시지 않음" 이하면 묻지 않습니다.</p>
+            <p class="tip">허리둘레·한 번 음주량은 나와 비슷한 사람들과 비교할 때 쓰는 항목이에요. 한 번 음주량은 음주 빈도가 "최근 1년간 전혀 마시지 않음" 이하면 묻지 않습니다.</p>
 
             <p id="form-err" class="err" style="display:none"></p>
 
             <div class="privacy">
               <span>🔒</span>
-              <span>입력하신 건강정보는 위험도 예측과 챌린지 추천에만 씁니다. 다른 용도로 쓰거나 제3자에게 제공하지 않습니다.</span>
+              <span>입력하신 건강정보는 위험 신호 분석과 챌린지 추천에만 씁니다. 다른 용도로 쓰거나 제3자에게 제공하지 않습니다.</span>
             </div>
 
             <button type="submit" id="submit-btn" class="cta">생활습관 설문으로</button>
@@ -239,8 +234,8 @@ const smokingUi = (h) => (h.smoking === 'current' ? (h.smoking_freq === 'sometim
 function showError(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
 function clearError() { errEl.style.display = 'none'; }
 
-const OCR_FIELD_MAP = { height_cm: 'height', weight_kg: 'weight', waist_cm: 'waist', sbp: 'sbp', dbp: 'dbp', total_chol: 'total-chol', hdl: 'hdl', fasting_glucose: 'glucose' };
-const OCR_FIELD_LABEL = { height_cm: '키', weight_kg: '몸무게', waist_cm: '허리둘레', sbp: '수축기 혈압', dbp: '이완기 혈압', total_chol: '총콜레스테롤', hdl: 'HDL 콜레스테롤', fasting_glucose: '공복혈당' };
+const OCR_FIELD_MAP = { height_cm: 'height', weight_kg: 'weight', waist_cm: 'waist', sbp: 'sbp', dbp: 'dbp', total_chol: 'total-chol', fasting_glucose: 'glucose' };
+const OCR_FIELD_LABEL = { height_cm: '키', weight_kg: '몸무게', waist_cm: '허리둘레', sbp: '수축기 혈압', dbp: '이완기 혈압', total_chol: '총콜레스테롤', fasting_glucose: '공복혈당' };
 const ocrInput = document.getElementById('ocr-input');
 const ocrLabelText = document.getElementById('ocr-label-text');
 const ocrResult = document.getElementById('ocr-result');
@@ -265,7 +260,7 @@ ocrInput.addEventListener('change', async () => {
   } catch (e) {
     ocrResult.innerHTML = `<div class="callout" style="border-color:var(--danger)"><b>⚠️ 인식할 수 없는 서식입니다</b><br>글자가 흐리거나 잘린 것 같아요. 아래에서 직접 입력해주세요</div>`;
   } finally {
-    ocrLabelText.textContent = '📷 사진 업로드';
+    ocrLabelText.textContent = '📷 준비 중이에요';
     ocrInput.value = '';
   }
 });
@@ -290,7 +285,6 @@ function renderSummary(health) {
     ['당뇨병 여부', optionLabel('diabetes', health.diabetes)],
     ['고혈압 진단·치료 상태', optionLabel('htn-status', health.htn_status)],
     ['총콜레스테롤', `${health.total_chol} mg/dL`],
-    ['HDL 콜레스테롤', `${health.hdl} mg/dL`],
     ['부모 고혈압 가족력', optionLabel('parent-htn', health.parent_htn)],
     ['공복혈당', health.fasting_glucose != null ? `${health.fasting_glucose} mg/dL` : '입력 안 함'],
   );
@@ -321,7 +315,6 @@ function fillForm(health) {
   document.getElementById('diabetes').value = String(health.diabetes);
   document.getElementById('htn-status').value = health.htn_status;
   document.getElementById('total-chol').value = health.total_chol;
-  document.getElementById('hdl').value = health.hdl;
   document.getElementById('parent-htn').value = health.parent_htn;
   document.getElementById('glucose').value = health.fasting_glucose ?? '';
 }
@@ -365,7 +358,6 @@ form.addEventListener('submit', async (event) => {
     diabetes: document.getElementById('diabetes').value === 'true',
     htn_status: document.getElementById('htn-status').value,
     total_chol: Number(document.getElementById('total-chol').value),
-    hdl: Number(document.getElementById('hdl').value),
     parent_htn: document.getElementById('parent-htn').value,
     fasting_glucose: document.getElementById('glucose').value ? Number(document.getElementById('glucose').value) : null,
     recorded_at: existingHealth ? existingHealth.recorded_at : localIso(new Date()),

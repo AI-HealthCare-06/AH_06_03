@@ -10,19 +10,13 @@ const SEND_ECIG = false; // 혜림님이 ECIG 지표를 열면 true
 
 function friendlyError(e) { return e instanceof TypeError ? '서버 연결에 실패했어요. 잠시 후 다시 시도해주세요.' : e.message; }
 
-// opts.guardian = { name, relation, contact } — 만 14세 미만만. relation은 "parent" | "legal_guardian".
 async function apiSignup(email, password, birthDate, opts = {}) {
   if (USE_MOCK_AUTH || opts.forceMock) {
-    console.log('[MOCK] apiSignup', { email, birthDate, guardian: opts.guardian, forceMock: !!opts.forceMock });
+    console.log('[MOCK] apiSignup', { email, birthDate, forceMock: !!opts.forceMock });
     await sleep(400);
-    return { data: { user_id: 'mock-user-1', guardian_verification_status: opts.guardian ? 'pending' : null } };
+    return { data: { user_id: 'mock-user-1' } };
   }
   const payload = { email, password, birth_date: birthDate };
-  if (opts.guardian) {
-    payload.guardian_name = opts.guardian.name;
-    payload.guardian_relation = opts.guardian.relation;
-    payload.guardian_contact = opts.guardian.contact;
-  }
   const res = await fetch(`${API_BASE}/auth/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -125,7 +119,7 @@ async function apiSubmitHealthRecord(payload) {
   const measurements = [
     num('SBP', payload.sbp), num('DBP', payload.dbp),
     num('HEIGHT', payload.height_cm), num('WEIGHT', payload.weight_kg), num('WAIST', payload.waist_cm),
-    num('TOTAL_CHOL', payload.total_chol), num('HDL', payload.hdl),
+    num('TOTAL_CHOL', payload.total_chol),
     cat('SMOKING', payload.smoking), cat('DIABETES', payload.diabetes),
     cat('HTN_STATUS', payload.htn_status), cat('PARENT_HTN', payload.parent_htn),
     cat('ALCOHOL_FREQ', payload.drink_freq),
@@ -177,7 +171,7 @@ async function apiOcrHealthRecord(file) {
     await sleep(1200);
     return {
       data: {
-        fields: { height_cm: 172, weight_kg: 78, waist_cm: 88, sbp: 138, dbp: 86, total_chol: 210, hdl: 44 },
+        fields: { height_cm: 172, weight_kg: 78, waist_cm: 88, sbp: 138, dbp: 86, total_chol: 210 },
         missing: ['fasting_glucose'],
       },
     };
@@ -225,7 +219,7 @@ async function apiSubmitSurvey(payload) {
   const a = payload.answers || {};
   const want = isV2
     ? { N0: a.N0, N1: a.N1, N2: a.N2, N3: a.N3, N4: a.N4, N5: a.N5, N6: a.N6, N7: a.N7, N8: a.N8, N9: a.N9, N10: a.N10,
-        P1: a.P1, E1: a.E1, B1: a.B1, BP_MEASURE_METHOD: a.BPM }
+        P1: a.P1, E1: a.E1, B1: a.B1 }
     : { BREAKFAST: a.B1, EATOUT: a.E1 ? EATOUT_V1[a.E1] : undefined, AEROBIC: a.P1 ? (a.P1 === '150plus' ? 'yes' : 'no') : undefined };
   const responses = [];
   for (const q of survey.questions) {
@@ -292,7 +286,7 @@ function riskOf(feats, intercept, x) {
   return sigmoid(intercept + sum);
 }
 function band(r) {
-  return r < 0.10 ? { code: 'normal', label: '정상' } : r <= 0.20 ? { code: 'borderline', label: '경계' } : { code: 'high', label: '위험' };
+  return r < 0.10 ? { code: 'normal', label: '양호' } : r <= 0.20 ? { code: 'borderline', label: '주의' } : { code: 'high', label: '높음' };
 }
 const MODEL_A_AGE_COEF = 0.066053;
 function vascularAge(x) {
@@ -386,7 +380,7 @@ async function apiPredictionJob() {
     health_record_id,
     ...(survey_instance_id ? { survey_instance_id } : {}),
     request_type: 'initial',
-  }, '예측 요청에 실패했습니다');
+  }, '분석 요청에 실패했습니다');
 }
 
 // 대상 확인 답(나이대·관상동맥질환·응급 여부) 서버 저장 / 복원 (PUT·GET /users/me/eligibility).
@@ -424,7 +418,7 @@ async function apiGetMe() {
 // 가장 최근 예측 결과. 아직 예측한 적이 없으면(404 PREDICTION_NOT_FOUND) null.
 async function apiGetLatestPrediction() {
   try {
-    return (await apiCall('GET', '/predictions/latest', undefined, '예측 결과를 불러오지 못했습니다')).data;
+    return (await apiCall('GET', '/predictions/latest', undefined, '분석 결과를 불러오지 못했습니다')).data;
   } catch (e) {
     if (e.code === 'PREDICTION_NOT_FOUND') return null;
     throw e;
@@ -461,7 +455,7 @@ function buildSurveyPayload(answers, health, profile, steps) {
     answers: { ...answers },
     sodium,
     baseline_steps: steps != null ? steps : (answers.P2 != null ? answers.P2 : null),
-    activity_code: answers.P1, eatout_code: answers.E1, breakfast_code: answers.B1, bp_measure_method: answers.BPM,
+    activity_code: answers.P1, eatout_code: answers.E1, breakfast_code: answers.B1,
     // challenges.html가 가이드 §3 규칙으로 바뀌기 전까지 기존 화면이 읽는 값
     sodium_score: (sodium.status === 'ok' || sodium.status === 'not_applicable') ? (high ? 7 : 2) : undefined,
     aerobic: answers.P1 ? (answers.P1 === '150plus' ? 1 : 0) : undefined,
@@ -505,7 +499,7 @@ async function restoreSurveyFromServer() {
         if (c === 'EATOUT') answers.E1 = EATOUT_FROM_V1[r.option_code];
         else if (c === 'AEROBIC') answers.P1 = r.option_code === 'yes' ? '150plus' : 'lt150';
         else answers.B1 = r.option_code;
-      } else if (c === 'BP_MEASURE_METHOD') answers.BPM = r.option_code;
+      } else if (c === 'BP_MEASURE_METHOD') { /* 문항을 없앴다: 예전에 저장된 답은 쓰지 않는다 */ }
       else if (r.option_code == null && r.value_num != null) answers[c] = r.value_num;   // v2 숫자 문항(P2 걸음 수)
       else answers[c] = serverCodeToScore(c, r.option_code);            // v2: N0..N10(서버 코드→점수), P1, E1, B1
     });
@@ -572,7 +566,6 @@ async function apiSyncAfterLogin() {
 
 // ===== 챌린지 (서버 저장, 가이드 §3·§5) =====
 const LEVEL_LABEL = { low: '하', medium: '중', high: '상' };
-
 // 추천: 고정 2칸 + 선택 후보 + 제외 사유 + 설문 미응답 카테고리
 async function apiGetChallengeRecommendations() {
   return (await apiCall('GET', '/challenges/recommendations', undefined, '챌린지 추천을 불러오지 못했습니다')).data;
@@ -694,7 +687,7 @@ async function apiPredictV1Temp(profile, health, survey) {
     body: JSON.stringify(buildPredictV1Payload(profile, health, survey)),
   });
   const body = await res.json();
-  if (!res.ok) throw new Error(body.error?.message || '예측 요청에 실패했습니다');
+  if (!res.ok) throw new Error(body.error?.message || '분석 요청에 실패했습니다');
   return body;
 }
 

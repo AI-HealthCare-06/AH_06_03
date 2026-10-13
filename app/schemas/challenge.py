@@ -39,6 +39,7 @@ class ExcludedItem(BaseModel):
     code: str | None = None
     category: str
     name: str
+    kind: str  # doing_well(이미 잘함) / need_info(정보를 입력하면 추천) / not_advised(지금은 권하지 않음)
     reason: str
 
 
