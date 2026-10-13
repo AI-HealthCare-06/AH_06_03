@@ -95,3 +95,22 @@ async def test_너무_넓은_패턴과_관리자_보호(client, db_session):
     assert (await client.post("/v1/admin/purge", json={"patterns": ["%"]}, headers=h)).status_code == 422
     r = await client.post("/v1/admin/purge", json={"patterns": ["admin@%"]}, headers=h)
     assert r.json()["data"]["count"] == 0   # 관리자 계정은 대상에서 빠진다
+
+
+async def test_관리자_API는_3초_안에_응답한다(client, db_session):
+    """NFR-ADM-001: 가입자가 많아도(300명) 목록·상세·삭제 미리보기가 3초 이내."""
+    import time
+    _, h = await make(db_session, ADMIN)
+    async with db_session() as s:
+        s.add_all([User(email=f"bulk{i}@perf.kr", password_hash="x", status="active") for i in range(300)])
+        await s.commit()
+    uid = (await client.get("/v1/admin/users", params={"limit": 1}, headers=h)).json()["data"]["items"][0]["user_id"]
+    calls = [
+        client.get("/v1/admin/users", params={"limit": 50, "stage": "signup"}, headers=h),
+        client.get(f"/v1/admin/users/{uid}", headers=h),
+        client.post("/v1/admin/purge", json={"patterns": ["%@perf.kr"]}, headers=h),
+    ]
+    for call in calls:
+        start = time.perf_counter()
+        r = await call
+        assert r.status_code == 200 and time.perf_counter() - start < 3
