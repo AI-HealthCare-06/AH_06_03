@@ -10,11 +10,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
 from app.models.challenge import Challenge, ChallengeCategory, ChallengeCycle, ChallengeLog, CycleChallenge
+from app.services import audit_service
 from app.schemas.admin import AdminCategory, AdminMission, ChallengeStats, CycleStat, MissionStat
 
 logger = logging.getLogger(__name__)
 
 SWITCHABLE_ROLE = "selectable"
+
+
+def _onoff(value: bool) -> str:
+    return "켬" if value else "끔"
 
 
 def _mission(ch: Challenge) -> AdminMission:
@@ -68,6 +73,7 @@ async def update_category(
     if cat is None:
         raise AppError(404, "ADMIN_CATEGORY_NOT_FOUND", "카테고리를 찾을 수 없습니다.")
     missions = await _missions_of(db, category_id)
+    old_active, old_order, changes = bool(cat.active), cat.display_order, []
     if active is not None and active != bool(cat.active):
         if not any(m.mission_role == SWITCHABLE_ROLE for m in missions):
             raise AppError(422, "ADMIN_NOT_SWITCHABLE", "고정 미션만 있는 카테고리는 노출을 바꿀 수 없습니다.")
@@ -79,8 +85,14 @@ async def update_category(
         await db.rollback()
         raise AppError(409, "ADMIN_LAST_SELECTABLE", "선택할 수 있는 미션이 하나도 남지 않아 바꿀 수 없습니다.")
     result = _category(cat, missions)
+    if result.active != old_active:
+        changes.append(f"노출 {_onoff(old_active)}→{_onoff(result.active)}")
+    if result.display_order != old_order:
+        changes.append(f"순서 {old_order}→{result.display_order}")
+    if changes:
+        await audit_service.record(db, admin_email, "category_update", cat.category_code, ", ".join(changes))
     await db.commit()
-    logger.info("관리자 %s: 카테고리 %s 노출=%s 순서=%s", admin_email, cat.category_code, result.active, result.display_order)
+    logger.info("관리자 변경: 카테고리 %s 노출=%s 순서=%s", cat.category_code, result.active, result.display_order)  # 누가 했는지는 admin_audit_logs에 남는다
     return result
 
 
@@ -90,14 +102,18 @@ async def update_mission(db: AsyncSession, challenge_id: str, active: bool, admi
         raise AppError(404, "ADMIN_MISSION_NOT_FOUND", "미션을 찾을 수 없습니다.")
     if ch.mission_role != SWITCHABLE_ROLE and active != bool(ch.active):
         raise AppError(422, "ADMIN_NOT_SWITCHABLE", "고정·대체 미션은 추천 규칙이 정해서 노출을 바꿀 수 없습니다.")
+    old_active = bool(ch.active)
     ch.active = active
     await db.flush()
     if await _selectable_active_count(db) == 0:
         await db.rollback()
         raise AppError(409, "ADMIN_LAST_SELECTABLE", "선택할 수 있는 미션이 하나도 남지 않아 바꿀 수 없습니다.")
     result = _mission(ch)
+    if result.active != old_active:
+        await audit_service.record(db, admin_email, "mission_update", ch.challenge_code,
+                                   f"노출 {_onoff(old_active)}→{_onoff(result.active)}")
     await db.commit()
-    logger.info("관리자 %s: 미션 %s 노출=%s", admin_email, ch.challenge_code, result.active)
+    logger.info("관리자 변경: 미션 %s 노출=%s", ch.challenge_code, result.active)
     return result
 
 

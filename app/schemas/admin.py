@@ -1,4 +1,6 @@
 """관리자 최소 기능 입출력 양식: 챌린지 카테고리·미션의 노출과 카테고리 순서."""
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
@@ -74,3 +76,12 @@ class CycleStat(BaseModel):
 class ChallengeStats(BaseModel):
     missions: list[MissionStat]
     cycles: CycleStat
+
+
+class AuditLogItem(BaseModel):
+    """관리자 행위 기록 한 줄. 시각은 UTC."""
+    created_at: datetime
+    actor_email: str
+    action: str
+    target: str | None
+    detail: str | None
