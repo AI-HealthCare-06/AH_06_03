@@ -11,3 +11,4 @@ from app.models.challenge import (  # noqa: F401
     Challenge, ChallengeCategory, ChallengeCycle, ChallengeLevel, ChallengeLog, CycleChallenge, UserClassification,
 )
 from app.models.eligibility import EligibilityAssessment  # noqa: F401
+from app.models.admin_audit import AdminAuditLog  # noqa: F401
