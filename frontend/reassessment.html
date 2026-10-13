@@ -22,14 +22,6 @@
   .bcmp .bt{font-size:13.5px; line-height:1.6; color:var(--ink); font-weight:700; margin:0 0 10px}
   .bcmp .chip{display:inline-block; margin-top:10px; padding:8px 22px; border-radius:22px; background:var(--cream); border:1.5px solid var(--sage); color:#6a4a4a; font-size:16px; line-height:1.4; font-weight:900}
   .bcmp .bnote{font-size:11.5px; line-height:1.7; color:var(--faint); margin:12px 0 0}
-  .bcmp .bar{position:relative; height:10px; border-radius:6px; background:linear-gradient(90deg,#E8F0E8,#F5EBEB 60%,#E8C9C9); margin:34px 6px 6px}
-  .bcmp .bar i{position:absolute; top:-4px; width:0; height:18px}
-  .bcmp .bar i em{position:absolute; left:50%; transform:translateX(-50%); font-style:normal; font-size:11.5px; white-space:nowrap; color:var(--muted)}
-  .bcmp .bar .avg{border-left:2px dashed var(--faint)}
-  .bcmp .bar .mk::before{content:''; position:absolute; left:-9px; top:-1px; width:18px; height:18px; border-radius:50%; box-sizing:border-box}
-  .bcmp .bar .old::before{background:#fff; border:2px solid var(--faint)} .bcmp .bar .old em{bottom:26px}
-  .bcmp .bar .new::before{background:var(--accent); border:2px solid #fff; box-shadow:0 0 0 1.5px var(--accent)} .bcmp .bar .new em{top:26px; color:var(--accent); font-weight:900; font-size:12.5px}
-  .bcmp .ends{display:flex; justify-content:space-between; font-size:11px; color:var(--faint); margin:34px 4px 0}
 </style>
 </head>
 <body>
@@ -53,7 +45,7 @@
 <script>
 // 4주 재입력(가이드 §6.1) → 모델 A·B 재예측 → 전후 비교(W11-2)
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const RISK = { normal: '정상', borderline: '경계', high: '위험' };
+const RISK = { normal: '양호', borderline: '주의', high: '높음' };
 const SMOKING = { current: '현재 피움', former: '끊음', never: '피운 적 없음' };
 const DRINK = { never_lifetime: '안 마심', none_past_year: '4주간 안 마심', lt_monthly: '한 달에 1번 미만', monthly: '한 달에 1번',
   '2_4_per_month': '한 달에 2–4번', '2_3_per_week': '일주일에 2–3번', '4plus_per_week': '일주일에 4번 이상' };
@@ -129,7 +121,6 @@ function row(label, b, a, unit) {
   return `<span>${label}</span><span class="v">${f(b)}</span><span class="arrow">→</span><span class="v">${f(a)}</span>`;
 }
 
-const B_AVG_PCT = 35;   // 고혈압 진단을 받지 않은 사람 전체 평균 (result.html 의 B_AVG 와 같은 값)
 function reviewHtml(rv) {
   const b = rv.before || {}, a = rv.after || {};
   const bp = (x) => x.sbp ? `${x.sbp}/${x.dbp}` : null;
@@ -137,18 +128,14 @@ function reviewHtml(rv) {
   // 모델 A는 위험 범주로, 모델 B는 판정 없이 "닮은 정도"의 방향만 보여준다 (데이터_특성 §2.1: B 확률로 판정 금지)
   const models = rv.models.filter(m => m.comparable).map(m => {
     if (m.model_code === 'MODEL_A') {
-      return `<div class="mrow"><span>10년 심혈관 위험</span><span>${RISK[m.before_risk_level]} → <b>${RISK[m.after_risk_level]}</b></span></div>`;
+      return `<div class="mrow"><span>10년 내 심장 혈관 건강 신호</span><span>${RISK[m.before_risk_level]} → <b>${RISK[m.after_risk_level]}</b></span></div>`;
     }
-    const b = Math.round(m.before_probability * 100), a = Math.round(m.after_probability * 100);
-    // 숫자가 낮아지면 "혈압이 높은 쪽에서 멀어졌어요", 높아지면 "가까워졌어요"로 방향만 말한다 (좋다/나쁘다 판정은 하지 않는다)
-    const dir = a === b ? '거의 같은 자리예요' : (a < b ? '혈압이 높은 쪽에서<br>조금 멀어졌어요' : '혈압이 높은 쪽으로<br>조금 가까워졌어요');
+    // 서버가 주는 3단계(similar / slightly_different / different)를 말로만 비교한다. 숫자·막대는 쓰지 않는다.
+    const chg = simChangeText(m.before_similarity_level, m.after_similarity_level);
     return `<div class="bcmp">
-      <p class="bt">나와 비슷한 사람들 기준으로 본 내 위치</p>
-      <div class="bar"><i class="avg" style="left:${B_AVG_PCT}%"></i><i class="mk old" style="left:${b}%"><em>처음 ${b}%</em></i><i class="mk new" style="left:${a}%"><em>4주 후 ${a}%</em></i></div>
-      <div class="ends"><span>혈압 낮은 쪽</span><span>높은 쪽</span></div>
-      <p class="bnote" style="margin:6px 0 0">점선은 같은 조건의 평균(${B_AVG_PCT}%)이에요.</p>
-      <div class="chip">${dir}</div>
-      <p class="bnote">나이·성별·체형·생활습관이 비슷한 사람들 기준이에요.<br>참고용 통계이며, 정확한 진단은 의사와 상담해 주세요.</p>
+      <p class="bt">나와 비슷한 사람들과 비교했어요</p>
+      ${chg ? `<div class="chip">${chg}</div>` : ''}
+      <p class="bnote" style="word-break:keep-all; text-wrap:balance">나이와 성별이 같은 사람들과 비교했어요. 허리둘레, 몸무게, 술은 내가 바꿀 수 있는 부분이에요. 4주 뒤에 다시 비교해 봐요.</p>
     </div>`;
   }).join('');
   return `
@@ -168,8 +155,7 @@ function reviewHtml(rv) {
     <div class="mrow"><span>흡연</span><span>${SMOKING[b.smoking] || '—'} → <b>${SMOKING[a.smoking] || '—'}</b></span></div>
     <div class="mrow"><span>음주</span><span>${DRINK[b.drink_freq] || '—'} → <b>${DRINK[a.drink_freq] || '—'}</b></span></div>
   </div>
-  ${models ? `<p class="sect">예측 결과 변화</p><div class="cmp" style="display:block">${models}
-      <div class="note" style="text-align:center; margin-top:6px"><button type="button" style="font:inherit; font-size:11px; color:var(--muted); background:#fff; border:1px solid var(--sage-light); border-radius:999px; padding:1px 10px; cursor:pointer" onclick="this.nextElementSibling.hidden = !this.nextElementSibling.hidden">출처 보기</button><div hidden style="margin-top:6px">고혈압 진단을 받지 않은 사람 기준 · 국민건강영양조사 2022~2024</div></div>
+  ${models ? `<p class="sect">분석 결과 변화</p><div class="cmp" style="display:block">${models}
     </div>` : ''}
   ${rv.cycle_number < rv.total_cycles
     ? `<a class="cta" style="display:block; text-align:center; text-decoration:none; margin-top:18px" href="challenges.html">${rv.cycle_number + 1}차 챌린지 시작하기</a>`
