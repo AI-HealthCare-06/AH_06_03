@@ -13,13 +13,27 @@ logger = logging.getLogger(__name__)
 
 FAILED_MESSAGE = "예측 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
 
+def _drop_imputed_factors(r: dict) -> dict:
+    """입력하지 않아 대푯값으로 채운 항목은 요인 설명에서 뺀다 (확률은 그대로)."""
+    missing = set(r.get("missing_features") or [])
+    if not missing or not r.get("factors"):
+        return r
+    factors = [f for f in r["factors"] if f["code"] not in missing]
+    for i, f in enumerate(factors, 1):
+        f["display_rank"] = i
+    pos = [f for f in factors if f["contribution"] > 0]
+    r["factors"] = factors
+    r["top_risk_factor"] = pos[0] if pos else None
+    r["top_modifiable_factor"] = next((f for f in pos if f["modifiable"]), None)
+    return r
+
 # 모델 하나를 안전하게 실행하는 함수
 def _run_safely(model_code: str, run, user: dict) -> ModelResult:
     """모델을 실행하고 결과를 ModelResult로 감싸서 반환한다.
     모델이 오류를 내면 ModelResult.status=failed로 반환한다.
     """
     try:
-        return ModelResult(**run(user))
+        return ModelResult(**_drop_imputed_factors(run(user)))
     except Exception:
         logger.exception("%s 예측 실패", model_code)
         return ModelResult(model_code=model_code, status="failed", error=FAILED_MESSAGE)
