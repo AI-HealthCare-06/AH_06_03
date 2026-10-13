@@ -30,31 +30,44 @@ def _result(r: AccountDeletionRequest) -> DeletionResult:
                           completed_at=r.completed_at, result_summary=r.result_summary)
 
 
-async def delete_account_data(db: AsyncSession, user) -> AccountDeletionRequest:
-    """탈퇴 데이터 정리 (비밀번호 확인 없음). commit은 부르는 쪽에서 한다.
-    탈퇴 API와 테스트 계정 정리 스크립트가 같이 쓴다."""
-    user_id = user.user_id
-    now = utcnow()
-    req = AccountDeletionRequest(user_id=user_id, reauthenticated_at=now, requested_at=now, status="processing")
-    db.add(req)
-    await db.flush()
+# 건강정보 동의 철회 때 남기는 표: 계정·프로필·로그인 세션·동의 기록 (+ 탈퇴 때도 남기는 표)
+HEALTH_KEEP_TABLES = KEEP_TABLES | {"users", "user_profiles", "user_sessions", "user_consents"}
+
+
+async def _delete_user_rows(db: AsyncSession, user_id: str, keep: set[str]) -> dict[str, int]:
+    """user_id 칸이 있는 표를 자식부터 지운다 (keep에 있는 표는 남김). 탈퇴·동의 철회가 같이 쓴다."""
     # 이월(carried_forward) 측정값이 서로를 가리키므로, 지우기 전에 연결을 끊어 둔다
     await db.execute(update(HealthMeasurement).where(HealthMeasurement.health_record_id.in_(
         select(HealthRecord.health_record_id).where(HealthRecord.user_id == user_id))).values(source_measurement_id=None))
-    # user_id 칸이 있는 표를 자식부터 지운다. user_id가 없는 자식(측정값·답·요인)은 FK CASCADE로 같이 지워진다.
+    # user_id가 없는 자식(측정값·답·요인·로그)은 FK CASCADE로 같이 지워진다.
     summary: dict[str, int] = {}
     for table in reversed(Base.metadata.sorted_tables):
-        if table.name in KEEP_TABLES or "user_id" not in table.c:
+        if table.name in keep or "user_id" not in table.c:
             continue
         count = (await db.execute(delete(table).where(table.c.user_id == user_id))).rowcount
         if count:
             summary[table.name] = count
-    user.email = f"deleted+{user_id}@invalid"
+    return summary
+
+
+async def delete_account_data(db: AsyncSession, user) -> AccountDeletionRequest:
+    """탈퇴: 데이터 정리 + 계정 익명화. commit은 부르는 쪽에서."""
+    now = utcnow()
+    req = AccountDeletionRequest(user_id=user.user_id, reauthenticated_at=now, requested_at=now, status="processing")
+    db.add(req)
+    await db.flush()
+    summary = await _delete_user_rows(db, user.user_id, KEEP_TABLES)
+    user.email = f"deleted+{user.user_id}@invalid"
     user.password_hash = await hash_password_async(new_refresh_token())   # 아무도 모르는 값으로 바꿔 로그인 불가
     user.status = "deleted"
     user.deleted_at = now
     req.status, req.completed_at, req.result_summary = "completed", utcnow(), summary
     return req
+
+
+async def delete_health_data(db: AsyncSession, user_id: str) -> dict[str, int]:
+    """건강정보 동의 철회: 계정·동의·세션은 남기고 건강 관련 데이터만 지운다. commit은 부르는 쪽에서."""
+    return await _delete_user_rows(db, user_id, HEALTH_KEEP_TABLES)
 
 
 async def request_deletion(db: AsyncSession, user_id: str, password: str) -> DeletionResult:
