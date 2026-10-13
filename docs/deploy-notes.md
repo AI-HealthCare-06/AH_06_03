@@ -172,6 +172,23 @@ sudo docker compose ps   # 전부 Up(fastapi, mysql은 healthy)인지 확인
 - 서버에서 설문, 예측, 챌린지, 캘린더까지 채운 계정으로 시험해 모두 0건이 되는 것을 확인함. 아직 시험하지 않은 표: `health_todos`, `guardian_consent_verifications`.
 - **백업(서버 7개, 맥북 사본)과 스냅샷에는 탈퇴 전 데이터가 남음.** 탈퇴 시 백업에서도 지워야 하는지는 정책으로 정할 것(§14).
 
+### 관리자 행위 기록 (`admin_audit_logs`)
+
+- 관리자 화면의 변경(미션·카테고리의 노출과 순서)과 열람(목록·통계·기록)을 시각과 함께 남기는 표. 마이그레이션 `c5a1d7e3b902`(PR #74)로 만들어졌고, 서버에서 적용과 색인 3종을 확인함(2026-10-13).
+- 칸: `actor_email`(관리자 이메일), `action`, `target`, `detail`, `created_at`(UTC). **`user_id` 칸을 일부러 두지 않음**: 회원 탈퇴가 `user_id` 칸이 있는 표를 지우고 내 데이터 내려받기가 그 표들을 담기 때문에, 관리자가 탈퇴해도 기록이 남아야 함. 사용자 개인정보는 담지 않음.
+- 열람 기록은 같은 관리자·같은 동작이면 10분 안에 한 번만 남김. 거절된 변경이나 값이 같은 변경은 남기지 않음.
+- 동작별 개수 보기(읽기만 하고 이메일은 안 나옴). **SQL의 별칭에 한글을 쓰지 말 것**: 서버에서 한글이 깨져 문법 오류가 남.
+
+```bash
+grep '^DB_ROOT_PASSWORD=' .env | cut -d= -f2- | sudo docker compose exec -T mysql sh -c 'IFS= read -r p; export MYSQL_PWD="$p"; mysql -uroot paeon -e "SELECT action, COUNT(*) AS n FROM admin_audit_logs GROUP BY action ORDER BY action;"'
+```
+
+- **체험이 끝난 뒤에만** 비우기(지금 쓰면 변경 기록이 사라짐). 처리방침에 적을 보관 기간은 체험 종료 후 일주일 안(문구는 이슬님 담당):
+
+```bash
+grep '^DB_ROOT_PASSWORD=' .env | cut -d= -f2- | sudo docker compose exec -T mysql sh -c 'IFS= read -r p; export MYSQL_PWD="$p"; mysql -uroot paeon -e "DELETE FROM admin_audit_logs; SELECT COUNT(*) AS n FROM admin_audit_logs;"'
+```
+
 ### 테스트 계정 일괄 삭제 (혜림님 작성, `app/scripts/purge_test_accounts.py`)
 
 - 서버에서 컨테이너 안으로 실행: `sudo docker compose exec -T fastapi python -m app.scripts.purge_test_accounts --pattern "%@example.com"`
@@ -246,6 +263,28 @@ sudo docker rm -fv restore-test
 ### 앱은 살아 있는데 DB가 안 될 때 (`/healthcheck`는 200)
 - 원인: `/healthcheck`는 DB를 확인하지 않고 항상 `ok`를 돌려줌. docker의 healthy 판정도 이것만 봄.
 - 대응: 점검 스크립트에 DB를 읽는 공개 API(`/v1/consent-policies/active`, 로그인 불필요)가 200인지 보는 항목을 추가함(§10). 수동 확인은 `curl -s -o /dev/null -w '%{http_code}\n' https://54-116-113-17.sslip.io/v1/consent-policies/active`.
+
+### 배포의 `alembic upgrade head`가 `Multiple head revisions are present`로 실패
+
+- 원인: 마이그레이션이 든 PR이 둘 이상인데 같은 번호 뒤에 붙어서 마이그레이션 머리가 둘이 됨. 2026-10-13에 혜림님 동의 v4 PR과 관리자 행위 기록 PR이 같은 번호 뒤에 있어서 머지 전에 발견하고 머지 순서를 정함.
+- 예방: 마이그레이션이 든 PR이 동시에 있으면 머지 순서를 정하고, 뒤 PR의 `down_revision`을 앞 PR의 마지막 번호로 맞춘 뒤 머지함. 저장소 폴더에서 머리가 하나인지 세어 봄:
+
+```bash
+python3 - << 'EOF'
+import glob, re
+revs, downs = {}, set()
+for f in glob.glob('alembic/versions/*.py'):
+    t = open(f, encoding='utf-8').read()
+    r = re.search(r"^revision(?:: str)?\s*=\s*['\"]([0-9a-f]+)['\"]", t, re.M)
+    d = re.search(r"^down_revision(?:[^=]*)=\s*['\"]([0-9a-f]+)['\"]", t, re.M)
+    revs[r.group(1)] = f
+    if d: downs.add(d.group(1))
+print([r for r in revs if r not in downs], "<- 하나여야 함")
+EOF
+```
+
+- 이미 머지돼서 깨졌다면: `alembic merge -m "merge heads" 번호1 번호2`로 두 머리를 합치는 마이그레이션을 만들어 새 PR로 올림(작은 환경에서 합친 뒤 머리가 하나가 되고 `upgrade head`가 도는 것을 확인함). Revert는 하지 말 것(§6).
+- 확인 팁: 파이썬은 같은 크기로 바꾼 파일을 같은 초 안에 다시 읽으면 옛 캐시를 쓸 수 있으니, 번호를 고친 뒤 머리를 셀 때는 `__pycache__`를 지우고 셀 것.
 
 ### 디스크가 이유 없이 늘어남 → 안 쓰는 볼륨 (2026-10-13 발견)
 - 원인: 복원 시험용 임시 MySQL을 `docker rm -f`로만 지우면 컨테이너는 사라져도 **데이터 볼륨(익명 볼륨)이 남음**. 복원한 DB 사본(지인 입력값 포함)이 약 210MB씩 쌓여 4개(약 840MB)가 남아 있었음. 이후 절차를 `docker rm -fv`로 고침.
@@ -340,7 +379,7 @@ df -h /                        # 정리 후 남은 용량 확인
 
 - GitHub Secrets: `EC2_HOST`(=54.116.113.17), `EC2_SSH_KEY`(서버 접속 키), `DISCORD_WEBHOOK`(배포 알림용).
 - 서버 변경은 가능하면 PR로 합의하고 한 PR로 묶어 머지 횟수를 줄이기.
-- **관리자 화면**(`https://54-116-113-17.sslip.io/admin.html`, 메뉴에 링크 없이 주소로만): 챌린지 미션의 노출(켬/끔)과 카테고리 순서를 바꿈. 서버 `.env`의 `ADMIN_EMAILS`(쉼표로 구분한 이메일, 비면 아무도 못 씀)에 있는 계정이 평소 로그인으로 들어와서 씀. 목록을 바꾼 뒤에는 `sudo docker compose up -d --force-recreate fastapi`가 필요함(약 5초 끊김). **이메일 인증이 없어서 먼저 가입된 계정만 목록에 넣을 것**(가입 전 이메일을 넣으면 다른 사람이 먼저 가입해 관리자가 될 수 있음). 바꾼 내용은 서버 로그에 남음. 고정 미션(금연·절주)은 규칙이 정해서 스위치가 없음.
+- **관리자 화면**(`https://54-116-113-17.sslip.io/admin.html`, 메뉴에 링크 없이 주소로만): 챌린지 미션의 노출(켬/끔)과 카테고리 순서를 바꾸고, 챌린지 통계(미션별 선택 수·달성률·포기율, 4주 완료율)와 관리자 행위 기록(최근 50건)을 봄. 서버 `.env`의 `ADMIN_EMAILS`(쉼표로 구분한 이메일, 비면 아무도 못 씀)에 있는 계정이 평소 로그인으로 들어와서 씀. 목록을 바꾼 뒤에는 `sudo docker compose up -d --force-recreate fastapi`가 필요함(약 5초 끊김). **이메일 인증이 없어서 먼저 가입된 계정만 목록에 넣을 것**(가입 전 이메일을 넣으면 다른 사람이 먼저 가입해 관리자가 될 수 있음). 바꾼 내용은 서버 로그에 남음. 고정 미션(금연·절주)은 규칙이 정해서 스위치가 없음. 변경과 열람은 `admin_audit_logs`에 남음(§7).
 - 서버에서 도는 도구는 `~/paeon-monitor/`에 있음 (저장소에는 없음): `check.sh`(점검), `backup.sh`(백업), `rollback.sh`(롤백), `user_rows.sh`(한 사용자의 표별 행 수), `set_admins.sh`(관리자 목록 정하기: 가입돼 있고 활성인 계정만 넣고, 기본은 미리보기).
 - AWS 비용은 크레딧으로 나가며 하루 약 1달러(10/12 기준 거친 값). 프로젝트가 끝나면 서버를 중지하거나 삭제할 것(중지해도 디스크와 고정 IP 요금은 남음).
 
@@ -348,7 +387,8 @@ df -h /                        # 정리 후 남은 용량 확인
 
 - 서버 전체 다운을 알려주는 외부 점검(예: GitHub Actions 주기 점검) 추가.
 - **main 보호 규칙은 팀 결정으로 켜지 않음**(2026-10-13). main에 직접 push하면 리뷰 없이 바로 서버에 배포될 수 있고 강제 push도 막혀 있지 않음 → PR과 리뷰 관행을 유지하고, 사고가 나면 §6 롤백으로 대응. 쓰기 권한자 4명이 모두 admin이라, 필요하면 일부를 write로 내리는 것도 팀과 상의.
-- 지인 체험이 끝난 뒤의 **삭제 순서**(날짜는 팀이 정함): (1) 혜림님 스크립트로 테스트 계정 삭제(미리보기 확인 뒤 `--apply`) → (2) 삭제 **뒤** 상태로 새 백업(`backup.sh`) → (3) 삭제 전에 만든 서버 백업 파일을 모두 지움 → (4) AWS 디스크 스냅샷 삭제 → (5) 맥북의 암호화 사본 삭제 → (6) 행 수와 남은 백업 목록 확인. 서버 백업을 지우는 스크립트는 아직 없음.
+- 지인 체험이 끝난 뒤의 **삭제 순서**(날짜는 팀이 정함): (1) 혜림님 스크립트로 테스트 계정 삭제(미리보기 확인 뒤 `--apply`) → (2) 관리자 행위 기록(`admin_audit_logs`) 비우기(§7) → (3) 삭제 **뒤** 상태로 새 백업(`backup.sh`) → (4) 삭제 전에 만든 서버 백업 파일을 모두 지움 → (5) AWS 디스크 스냅샷 삭제 → (6) 맥북의 암호화 사본 삭제 → (7) 행 수와 남은 백업 목록 확인. 서버 백업을 지우는 스크립트는 아직 없음.
+- 처리방침(`privacy.html`, `www` 복사본 포함)에 관리자 기록 보관 기간 한 줄 추가(이슬님 담당, 혜림님 리뷰 제안): "관리자의 열람·변경 기록(관리자 이메일, 시각, 동작·대상)은 서비스 운영 점검을 위해 체험 종료 후 일주일 안에 삭제합니다. 사용자의 개인정보는 담지 않습니다. 서버 백업 사본에는 최대 일주일 더 남을 수 있습니다."
 - 마이그레이션 사고 때 DB를 되돌리는 절차(`alembic downgrade` 또는 백업 복구)는 연습한 적이 없음.
 - 서버 밖 자동 백업(S3 등)은 아직 없음.
 - Docker 로그 크기 제한(`logging` 설정)이 없음. 지금은 크기가 작아서 급하지 않음.
