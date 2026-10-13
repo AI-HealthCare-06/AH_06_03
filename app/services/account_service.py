@@ -1,6 +1,7 @@
 """회원 탈퇴 매니저. 재인증(비밀번호) → 내 데이터 전부 삭제 → 계정 익명화.
 ERD 규칙: users 행은 지우지 않고 email을 'deleted+{id}@invalid'로 바꾸고 status='deleted', deleted_at을 남긴다."""
 from datetime import datetime
+from app.models.user import UserProfile
 
 from pydantic import BaseModel
 from fastapi.encoders import jsonable_encoder
@@ -66,8 +67,14 @@ async def delete_account_data(db: AsyncSession, user) -> AccountDeletionRequest:
 
 
 async def delete_health_data(db: AsyncSession, user_id: str) -> dict[str, int]:
-    """건강정보 동의 철회: 계정·동의·세션은 남기고 건강 관련 데이터만 지운다. commit은 부르는 쪽에서."""
-    return await _delete_user_rows(db, user_id, HEALTH_KEEP_TABLES)
+    """건강정보 동의 철회: 계정·생년월일·세션·동의 기록은 남기고 건강 관련 데이터와 성별을 지운다.
+    commit은 부르는 쪽에서."""
+    summary = await _delete_user_rows(db, user_id, HEALTH_KEEP_TABLES)
+    profile = await db.get(UserProfile, user_id)
+    if profile is not None and profile.sex is not None:
+        profile.sex = None   # 성별은 건강정보 입력 화면에서 받는 값이라 같이 비운다 (생년월일은 계정 정보라 유지)
+        summary["user_profiles.sex"] = 1
+    return summary
 
 
 async def request_deletion(db: AsyncSession, user_id: str, password: str) -> DeletionResult:
