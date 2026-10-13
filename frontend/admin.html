@@ -31,6 +31,13 @@
   .tag{font-size:11.5px; color:var(--muted); border:1px solid var(--sage-light); border-radius:20px; padding:2px 9px; white-space:nowrap}
   .sw{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; cursor:pointer; white-space:nowrap}
   .sw input{width:18px; height:18px; cursor:pointer}
+  .stat-wrap{background:#fff; border:1px solid var(--sage-light); border-radius:14px; padding:6px 10px; overflow-x:auto; margin-bottom:10px}
+  .stat{border-collapse:collapse; width:100%; font-size:12.5px}
+  .stat th,.stat td{padding:7px 6px; border-bottom:1px solid var(--sage-light); text-align:right; white-space:nowrap}
+  .stat th:first-child,.stat td:first-child{text-align:left}
+  .stat thead th{color:var(--muted); font-weight:500; font-size:12px}
+  .stat tr:last-child td{border-bottom:0}
+  .adm h4{margin:22px 0 8px; font-size:16px}
   .lock{max-width:520px; margin:40px auto; text-align:center; line-height:1.7}
   .lock a{font-weight:700; text-decoration:underline}
 </style>
@@ -51,6 +58,9 @@
         </div>
         <div id="msg" role="status" aria-live="polite"></div>
         <div id="list"></div>
+        <h4>챌린지 통계</h4>
+        <p class="meta">개인을 알아볼 수 있는 값 없이 숫자만 보여요. 끝난 미션 중 달성 비율이 달성률, 중간에 그만둔 비율이 포기율이에요.</p>
+        <div id="stats"></div>
       </div>
     </div>
   </div>
@@ -59,6 +69,7 @@
 <script src="assets/api.js"></script>
 <script>
 const $list = document.getElementById('list');
+const $stats = document.getElementById('stats');
 const $msg = document.getElementById('msg');
 let categories = [];
 let busy = false;
@@ -152,7 +163,37 @@ async function load(keepMessage) {
   }
 }
 
+const pct = (r) => (r == null ? '-' : `${Math.round(r * 1000) / 10}%`);
+const num = (v) => (v == null ? '-' : String(v));
+
+function renderStats(d) {
+  const c = d.cycles;
+  const head = ['미션', '선택 수', '배정 수', '진행', '달성', '미달', '포기', '달성률', '포기율', '평균 기록일', '평균 달성일'];
+  const rows = d.missions.map((m) => el('tr', {},
+    el('td', {}, m.challenge_name, el('small', { style: 'color:var(--muted); margin-left:6px' }, m.challenge_code)),
+    ...[m.selected_count, m.assigned_count, m.active_count, m.completed_count, m.incomplete_count, m.stopped_count]
+      .map((v) => el('td', {}, String(v))),
+    el('td', {}, pct(m.completion_rate)), el('td', {}, pct(m.giving_up_rate)),
+    el('td', {}, num(m.avg_logged_days)), el('td', {}, num(m.avg_completed_days))));
+  const table = el('table', { class: 'stat' }, el('thead', {}, el('tr', {}, ...head.map((h) => el('th', {}, h)))), el('tbody', {}, ...rows));
+  const summary = el('p', { class: 'meta' },
+    `4주 사이클 ${c.total}개 (시작한 사용자 ${c.users_started}명) · 진행 ${c.active} · 완료 ${c.completed} · 미달 ${c.incomplete} · 포기 ${c.stopped} · `,
+    el('b', {}, `4주 완료율 ${pct(c.completion_rate)}`), ` · 포기율 ${pct(c.giving_up_rate)}`);
+  const note = el('p', { class: 'meta' }, '참여자가 적을 때는 숫자 하나가 한 사람의 행동일 수 있어요. 선택 수는 사용자가 직접 고른 횟수, 배정 수는 고정 미션까지 센 횟수예요.');
+  $stats.replaceChildren(summary, el('div', { class: 'stat-wrap' }, table), note);
+}
+
+async function loadStats() {
+  try {
+    const body = await apiCall('GET', '/admin/stats/challenges', undefined, '통계를 불러오지 못했어요');
+    renderStats(body.data);
+  } catch (e) {
+    if (e.code !== 'ADMIN_FORBIDDEN') $stats.replaceChildren(el('p', { class: 'meta' }, friendlyError(e)));
+  }
+}
+
 load();
+loadStats();
 </script>
 </body>
 </html>

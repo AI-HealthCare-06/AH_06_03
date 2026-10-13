@@ -5,12 +5,12 @@
 """
 import logging
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
-from app.models.challenge import Challenge, ChallengeCategory
-from app.schemas.admin import AdminCategory, AdminMission
+from app.models.challenge import Challenge, ChallengeCategory, ChallengeCycle, ChallengeLog, CycleChallenge
+from app.schemas.admin import AdminCategory, AdminMission, ChallengeStats, CycleStat, MissionStat
 
 logger = logging.getLogger(__name__)
 
@@ -99,3 +99,57 @@ async def update_mission(db: AsyncSession, challenge_id: str, active: bool, admi
     await db.commit()
     logger.info("관리자 %s: 미션 %s 노출=%s", admin_email, ch.challenge_code, result.active)
     return result
+
+
+def _rate(part: int, whole: int) -> float | None:
+    return round(part / whole, 3) if whole else None
+
+
+def _mean(values: list[int]) -> float | None:
+    return round(sum(values) / len(values), 1) if values else None
+
+
+async def challenge_stats(db: AsyncSession) -> ChallengeStats:
+    """미션별·사이클별 통계. 이미 있는 기록을 세기만 하고, 사용자를 알아볼 수 있는 값은 내보내지 않는다.
+    탈퇴한 사용자의 기록은 탈퇴 때 지워져서 자연히 빠진다."""
+    catalog = (await db.execute(
+        select(Challenge, ChallengeCategory)
+        .join(ChallengeCategory, ChallengeCategory.category_id == Challenge.category_id)
+        .order_by(ChallengeCategory.display_order, Challenge.challenge_code)
+    )).all()
+
+    logged = func.count(ChallengeLog.challenge_log_id)
+    done = func.coalesce(func.sum(case((ChallengeLog.status == "completed", 1), else_=0)), 0)
+    rows = (await db.execute(
+        select(Challenge.challenge_code, CycleChallenge.selection_type, CycleChallenge.status, logged, done)
+        .select_from(CycleChallenge)
+        .join(ChallengeCycle, ChallengeCycle.cycle_id == CycleChallenge.cycle_id)  # 사이클이 남아 있는 기록만
+        .join(Challenge, Challenge.challenge_id == CycleChallenge.challenge_id)
+        .outerjoin(ChallengeLog, ChallengeLog.cycle_challenge_id == CycleChallenge.cycle_challenge_id)
+        .group_by(CycleChallenge.cycle_challenge_id, Challenge.challenge_code, CycleChallenge.selection_type, CycleChallenge.status)
+    )).all()
+    by_code: dict[str, list] = {}
+    for code, selection_type, status, n_logged, n_done in rows:
+        by_code.setdefault(code, []).append((selection_type, status, int(n_logged), int(n_done)))
+
+    missions = []
+    for ch, cat in catalog:
+        items = by_code.get(ch.challenge_code, [])
+        count = lambda st: sum(1 for _, status, _, _ in items if status == st)  # noqa: E731
+        completed, incomplete, stopped = count("completed"), count("incomplete"), count("stopped")
+        missions.append(MissionStat(
+            challenge_code=ch.challenge_code, challenge_name=ch.challenge_name, category_name=cat.category_name,
+            mission_role=ch.mission_role, assigned_count=len(items),
+            selected_count=sum(1 for t, _, _, _ in items if t == "selected"),
+            active_count=count("active"), completed_count=completed, incomplete_count=incomplete, stopped_count=stopped,
+            completion_rate=_rate(completed, completed + incomplete),
+            giving_up_rate=_rate(stopped, completed + incomplete + stopped),
+            avg_logged_days=_mean([n for _, _, n, _ in items]), avg_completed_days=_mean([d for _, _, _, d in items]),
+        ))
+
+    cyc = dict((await db.execute(select(ChallengeCycle.status, func.count()).group_by(ChallengeCycle.status))).all())
+    users_started = int((await db.execute(select(func.count(func.distinct(ChallengeCycle.user_id))))).scalar_one())
+    a, c, i, s_ = (int(cyc.get(k, 0)) for k in ("active", "completed", "incomplete", "stopped"))
+    cycles = CycleStat(total=a + c + i + s_, active=a, completed=c, incomplete=i, stopped=s_,
+                       completion_rate=_rate(c, c + i), giving_up_rate=_rate(s_, c + i + s_), users_started=users_started)
+    return ChallengeStats(missions=missions, cycles=cycles)

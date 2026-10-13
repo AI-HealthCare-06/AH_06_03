@@ -12,7 +12,7 @@ from app.core.db.databases import async_get_db
 from app.core.errors import AppError
 from app.repositories import user_repository
 from app.schemas.admin import (
-    AdminCategory, AdminMission, AdminUserDetail, AdminUserList, CategoryPatch, MissionPatch,
+    AdminCategory, AdminMission, ChallengeStats, AdminUserDetail, AdminUserList, CategoryPatch, MissionPatch,
     PurgeRequest, PurgeResult,
 )
 from app.schemas.common import DataResponse
@@ -67,3 +67,8 @@ async def user_detail(user_id: str, admin: str = Depends(require_admin), db: Asy
 @router.post("/purge", response_model=DataResponse[PurgeResult])
 async def purge(req: PurgeRequest, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
     return DataResponse(data=await admin_users_service.purge(db, admin, req.patterns, req.apply, req.confirm_count))
+
+
+@router.get("/stats/challenges", response_model=DataResponse[ChallengeStats])
+async def challenge_stats(admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
+    return DataResponse(data=await admin_service.challenge_stats(db))

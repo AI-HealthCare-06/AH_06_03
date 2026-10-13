@@ -9,5 +9,26 @@
     "max_abs_diff": 4.994534194557865e-07,
     "n_diff_gt_1e-4": 0
   },
+  "similarity_level_b": {
+    "model_version": "0.2.0",
+    "cuts": [
+      0.26,
+      0.41
+    ],
+    "boundary_ok": true,
+    "n": 11022,
+    "share_of_all": {
+      "similar": 0.379,
+      "slightly_different": 0.255,
+      "different": 0.365
+    },
+    "borderline_rate_by_level": {
+      "similar": 0.14,
+      "slightly_different": 0.355,
+      "different": 0.55
+    },
+    "normal_median_N": 0.261,
+    "normal_q75_N": 0.411
+  },
   "repeat_100x10_max_deviation": 0.0
 }

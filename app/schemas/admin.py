@@ -89,3 +89,37 @@ class PurgeResult(BaseModel):
     applied: bool
     done: int = 0
     failed: int = 0
+
+class MissionStat(BaseModel):
+    """미션 하나의 통계. 개인 식별 정보 없이 숫자만."""
+    challenge_code: str
+    challenge_name: str
+    category_name: str
+    mission_role: str
+    assigned_count: int      # 사이클에 들어간 횟수 (고정·대체 포함)
+    selected_count: int      # 사용자가 직접 고른 횟수
+    active_count: int        # 진행 중
+    completed_count: int     # 4주 달성
+    incomplete_count: int    # 4주를 마쳤지만 목표 미달
+    stopped_count: int       # 중간에 그만둠(포기)
+    completion_rate: float | None   # 달성 / (달성 + 미달). 끝난 것이 없으면 None
+    giving_up_rate: float | None    # 포기 / (달성 + 미달 + 포기). 끝난 것이 없으면 None
+    avg_logged_days: float | None   # 미션 한 번당 기록한 날 평균
+    avg_completed_days: float | None  # 미션 한 번당 목표를 지킨 날 평균
+
+
+class CycleStat(BaseModel):
+    """4주 사이클 전체 통계."""
+    total: int
+    active: int
+    completed: int
+    incomplete: int
+    stopped: int
+    completion_rate: float | None   # 4주 완료율: 완료 / (완료 + 미달)
+    giving_up_rate: float | None    # 포기율: 중단 / (완료 + 미달 + 중단)
+    users_started: int              # 챌린지를 시작한 사용자 수
+
+
+class ChallengeStats(BaseModel):
+    missions: list[MissionStat]
+    cycles: CycleStat

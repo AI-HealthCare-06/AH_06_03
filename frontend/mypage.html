@@ -61,6 +61,7 @@ function render() {
       ${state.editProfile ? `<div class="field" style="margin-top:10px"><label>생년월일</label><input id="p-birth" type="date" value="${me.birth_date || ''}" max="${new Date().toISOString().slice(0, 10)}"></div>
       <div class="field" style="margin-top:8px"><label>성별</label><select id="p-sex"><option value="male" ${me.sex === 'male' ? 'selected' : ''}>남</option><option value="female" ${me.sex === 'female' ? 'selected' : ''}>여</option></select></div>
       ${state.perr ? `<p class="err" style="margin-top:6px">${state.perr}</p>` : ''}
+      <p class="hint" style="margin:8px 0 0">고쳐도 이미 나온 분석 결과의 나이는 바뀌지 않아요. 새로 분석할 때부터 반영돼요.</p>
       <div style="display:flex; gap:8px; margin-top:10px"><button type="button" id="p-save" class="ghost">저장</button><button type="button" id="p-cancel" class="ghost">취소</button></div>`
       : `<button type="button" id="p-edit" class="ghost" style="margin-top:8px">생년월일·성별 수정</button>`}</div>` : ''}
     <div class="tworow">
