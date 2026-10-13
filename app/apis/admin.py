@@ -11,7 +11,7 @@ from app.core.config import settings
 from app.core.db.databases import async_get_db
 from app.core.errors import AppError
 from app.repositories import user_repository
-from app.schemas.admin import AdminCategory, AdminMission, CategoryPatch, MissionPatch
+from app.schemas.admin import AdminCategory, AdminMission, CategoryPatch, ChallengeStats, MissionPatch
 from app.schemas.common import DataResponse
 from app.services import admin_service
 
@@ -45,3 +45,8 @@ async def patch_mission(
     challenge_id: str, req: MissionPatch, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)
 ):
     return DataResponse(data=await admin_service.update_mission(db, challenge_id, req.active, admin))
+
+
+@router.get("/stats/challenges", response_model=DataResponse[ChallengeStats])
+async def challenge_stats(admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
+    return DataResponse(data=await admin_service.challenge_stats(db))

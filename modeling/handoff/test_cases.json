@@ -238,7 +238,8 @@
       },
       "missing_features": [],
       "risk_level": null,
-      "percentile": null
+      "percentile": null,
+      "similarity_level": "different"
     }
   },
   {
@@ -385,7 +386,8 @@
       "top_modifiable_factor": null,
       "missing_features": [],
       "risk_level": null,
-      "percentile": null
+      "percentile": null,
+      "similarity_level": "similar"
     }
   },
   {
@@ -806,7 +808,8 @@
       },
       "missing_features": [],
       "risk_level": null,
-      "percentile": null
+      "percentile": null,
+      "similarity_level": "different"
     }
   },
   {
@@ -988,7 +991,8 @@
         "drink_amount"
       ],
       "risk_level": null,
-      "percentile": null
+      "percentile": null,
+      "similarity_level": "similar"
     }
   }
 ]
