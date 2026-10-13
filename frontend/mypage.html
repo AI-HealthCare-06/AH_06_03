@@ -141,9 +141,22 @@ function wire() {
   on('p-save', async () => {
     const birth = document.getElementById('p-birth').value, sex = document.getElementById('p-sex').value;
     if (!birth) { state.perr = '생년월일을 입력해 주세요.'; render(); return; }
-    try { me = (await apiCall('PATCH', '/users/me', { birth_date: birth, sex }, '내 정보를 고치지 못했습니다')).data; state.editProfile = false; state.perr = ''; }
+    const changed = !me || me.birth_date !== birth || me.sex !== sex;
+    let saved = false;
+    try { me = (await apiCall('PATCH', '/users/me', { birth_date: birth, sex }, '내 정보를 고치지 못했습니다')).data; state.editProfile = false; state.perr = ''; saved = true; }
     catch (e) { state.perr = friendlyError(e); }
     render();
+    // 나이·성별이 바뀌면 이전 분석 결과는 옛 값 기준이므로, 새 값으로 다시 분석할지 묻는다
+    if (saved && changed && localStorage.getItem('paeon-health-record-id')) {
+      if (await confirmDialog('새 정보로 다시 분석할까요?', '고친 생년월일·성별로 위험 신호를 다시 분석해요. 지금 하지 않으면 이전 결과가 그대로 남아요.', '다시 분석하기')) {
+        try {
+          const L = (k) => JSON.parse(localStorage.getItem(k) || 'null');
+          const r = await apiRequestPrediction(L('paeon-profile'), L('paeon-eligibility'), L('paeon-health'), L('paeon-survey'));
+          localStorage.setItem('paeon-prediction', JSON.stringify(r.data));
+          location.href = 'result.html';
+        } catch (e) { state.perr = friendlyError(e); render(); }
+      }
+    }
   });
   document.querySelectorAll('[data-r]').forEach(b => b.addEventListener('click', () => { state.rating = b.dataset.r; state.saved = false; render(); }));
   document.getElementById('save-fb').addEventListener('click', () => { if (state.rating) { state.saved = true; render(); } });
