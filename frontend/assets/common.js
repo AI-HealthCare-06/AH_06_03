@@ -129,14 +129,22 @@ function simChangeText(before, after) {
   return SIM_RANK[after] < SIM_RANK[before] ? '4주 전보다 더 비슷해졌어요' : SIM_RANK[after] === SIM_RANK[before] ? '비슷한 자리예요' : '조금 달라졌어요';
 }
 
-// 혈압 상담 권고 배너: 160/100 이상, 또는 140/90 이상(고혈압 진단 없음)이면 같은 배너. X로 닫아도 진행은 막지 않고, 다음 방문 때 다시 보인다.
-function adviceBannerHtml(pred, health) {
+// 상담 권고가 필요한 경우의 제목(혈압 140/90·160/100 이상, 또는 10년 내 심장 혈관 건강 신호 높음). 필요 없으면 ''.
+function adviceTitle(pred, health) {
   if (!pred) return '';
   const very = health && (health.sbp >= 160 || health.dbp >= 100);
   const high = health && (health.sbp >= 140 || health.dbp >= 90);
-  const bpAdvice = very || (high && pred.htn_status === 'none');
   const aHigh = pred.model_a && pred.model_a.status === 'completed' && pred.model_a.risk_level === 'high';
-  if (!bpAdvice && !aHigh) return '';
-  const title = bpAdvice ? `입력하신 혈압이 ${very ? '많이 ' : ''}높아요 (${health.sbp}/${health.dbp} mmHg)` : '10년 내 심장 혈관 건강 신호가 높게 나왔어요';
-  return `<div class="callout" id="advice-banner" style="border-color:var(--risk); position:relative; padding-right:34px"><button type="button" aria-label="닫기" onclick="document.getElementById('advice-banner').remove()" style="position:absolute; top:8px; right:10px; border:0; background:none; font-size:18px; line-height:1; color:var(--muted); cursor:pointer">×</button><b>${title}</b><br>챌린지는 계속 하실 수 있어요. 가까운 의료기관에서 상담을 받아 보세요. <a href="guide.html" style="color:var(--sage-deep); font-weight:700">검사 · 상담 안내 보기</a></div>`;
+  if (very || (high && pred.htn_status === 'none')) return `입력하신 혈압이 ${very ? '많이 ' : ''}높아요 (${health.sbp}/${health.dbp} mmHg)`;
+  return aHigh ? '10년 내 심장 혈관 건강 신호가 높게 나왔어요' : '';
+}
+const ADVICE_ACK_TEXT = '의료기관 상담 권고를 확인했고, 이를 확인한 뒤 챌린지를 진행하는 데 동의합니다.';
+const adviceAcked = () => { try { return localStorage.getItem('paeon-advice-ack') === '1'; } catch (e) { return false; } };
+const setAdviceAck = (v) => { try { v ? localStorage.setItem('paeon-advice-ack', '1') : localStorage.removeItem('paeon-advice-ack'); } catch (e) { /* 저장 못 해도 화면은 계속 */ } };
+// 상담 권고 배너: X로 닫아도 챌린지는 계속 가능하고 다음 방문 때 다시 보인다. 확인 체크는 챌린지 시작 때 다시 묻는다.
+function adviceBannerHtml(pred, health) {
+  const title = adviceTitle(pred, health);
+  if (!title) return '';
+  return `<div class="callout" id="advice-banner" style="border-color:var(--risk); position:relative; padding-right:34px"><button type="button" aria-label="닫기" onclick="document.getElementById('advice-banner').remove()" style="position:absolute; top:8px; right:10px; border:0; background:none; font-size:18px; line-height:1; color:var(--muted); cursor:pointer">×</button><b>${title}</b><br>가까운 의료기관에서 상담을 받아 보세요. <a href="guide.html" style="color:var(--sage-deep); font-weight:700">검사 · 상담 안내 보기</a>
+    <label style="display:flex; gap:8px; align-items:flex-start; margin-top:10px; font-size:12.5px; line-height:1.5; cursor:pointer"><input type="checkbox" ${adviceAcked() ? 'checked' : ''} onchange="setAdviceAck(this.checked)" style="margin-top:3px"><span>${ADVICE_ACK_TEXT}</span></label></div>`;
 }
