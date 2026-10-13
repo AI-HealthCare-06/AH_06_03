@@ -49,6 +49,14 @@
   .detail{background:#fff; border:1px solid var(--sage-light); border-radius:14px; padding:12px 16px; margin-top:12px; font-size:13px; line-height:1.8}
   .pager{display:flex; gap:8px; align-items:center; margin-top:10px; font-size:12.5px; color:var(--muted)}
   section[hidden]{display:none}
+  .srow{display:grid; grid-template-columns:1fr 60px 60px 80px 80px; gap:8px; align-items:center; padding:9px 12px; border-bottom:1px solid var(--sage-light); font-size:12.5px; background:#fff}
+  .srow.head{font-weight:700; color:var(--muted); background:transparent}
+  .srow small{color:var(--muted)}
+  .bar2{height:6px; border-radius:3px; background:var(--sage-light); overflow:hidden; margin-top:4px}
+  .bar2 i{display:block; height:100%; background:var(--sage-deep,#BD8484)}
+  .lrow{display:grid; grid-template-columns:130px 150px 1fr; gap:8px; padding:9px 12px; border-bottom:1px solid var(--sage-light); font-size:12.5px; background:#fff}
+  .lrow.head{font-weight:700; color:var(--muted); background:transparent}
+  .empty{padding:18px 12px; font-size:12.5px; color:var(--muted); background:#fff; line-height:1.7}
 </style>
 </head>
 <body>
@@ -61,6 +69,8 @@
         <div class="tabs" id="tabs">
           <button type="button" data-t="mission" class="on">미션 관리</button>
           <button type="button" data-t="users">가입자</button>
+          <button type="button" data-t="stats">챌린지 통계</button>
+          <button type="button" data-t="logs">열람 기록</button>
           <button type="button" data-t="purge">테스트 계정 삭제</button>
         </div>
         <div id="msg" role="status" aria-live="polite"></div>
@@ -88,6 +98,16 @@
           <div class="ulist" id="u-list"></div>
           <div class="pager"><button type="button" class="btn" id="u-prev">이전</button><span id="u-info"></span><button type="button" class="btn" id="u-next">다음</button></div>
           <div id="u-detail"></div>
+        </section>
+
+        <section id="sec-stats" hidden>
+          <p class="meta">미션별로 몇 명이 골랐고, 얼마나 달성하고, 얼마나 중단했는지 보여요. 개인은 구분하지 않아요.</p>
+          <div class="ulist" id="s-list"></div>
+        </section>
+
+        <section id="sec-logs" hidden>
+          <p class="meta">관리자가 가입자 정보를 조회하거나 계정을 삭제한 기록이에요. 최근 100건을 보여요.</p>
+          <div class="ulist" id="l-list"></div>
         </section>
 
         <section id="sec-purge" hidden>
@@ -205,7 +225,7 @@ async function load(keepMessage) {
 }
 
 // ---- 탭 ----
-const sections = { mission: document.getElementById('sec-mission'), users: document.getElementById('sec-users'), purge: document.getElementById('sec-purge') };
+const sections = { mission: document.getElementById('sec-mission'), users: document.getElementById('sec-users'), stats: document.getElementById('sec-stats'), logs: document.getElementById('sec-logs'), purge: document.getElementById('sec-purge') };
 document.getElementById('tabs').addEventListener('click', (ev) => {
   const t = ev.target.dataset && ev.target.dataset.t;
   if (!t) return;
@@ -213,6 +233,8 @@ document.getElementById('tabs').addEventListener('click', (ev) => {
   for (const [k, sec] of Object.entries(sections)) sec.hidden = k !== t;
   say('');
   if (t === 'users' && !usersLoaded) loadUsers(0);
+  if (t === 'stats' && !statsLoaded) loadStats();
+  if (t === 'logs') loadLogs();
 });
 
 // ---- 가입자 ----
@@ -264,6 +286,47 @@ document.getElementById('u-q').addEventListener('keydown', (ev) => { if (ev.key 
 document.getElementById('u-prev').addEventListener('click', () => loadUsers(Math.max(0, userOffset - PAGE)));
 document.getElementById('u-next').addEventListener('click', () => loadUsers(userOffset + PAGE));
 
+// ---- 챌린지 통계 (서버 API: GET /admin/stats/challenges) ----
+const $sList = document.getElementById('s-list'), $lList = document.getElementById('l-list');
+let statsLoaded = false, logsLoaded = false;
+const pct = (v) => (v == null ? '—' : Math.round(v * 100) + '%');
+const notReady = (box, what) => box.replaceChildren(el('div', { class: 'empty' }, `${what} 서버 기능이 아직 준비되지 않았어요. 서버에 추가되면 이 화면에 바로 나와요.`));
+
+async function loadStats() {
+  try {
+    const { data } = await apiCall('GET', '/admin/stats/challenges', undefined, '통계를 불러오지 못했어요');
+    statsLoaded = true;
+    const head = el('div', { class: 'srow head' }, el('span', {}, `미션 (챌린지를 시작한 ${data.total_users_with_cycle}명 기준)`), el('span', {}, '고른 사람'), el('span', {}, '직접 선택'), el('span', {}, '달성률'), el('span', {}, '중단률'));
+    const rows = data.missions.map((m) => el('div', { class: 'srow' },
+      el('span', {}, m.challenge_name, el('small', {}, ` · ${m.category_name}`), el('div', { class: 'bar2' }, el('i', { style: `width:${Math.round((m.completion_rate || 0) * 100)}%` }))),
+      el('span', {}, `${m.users}명`), el('span', {}, `${m.selected_users}명`),
+      el('span', {}, m.completion_rate == null ? '기록 없음' : `${pct(m.completion_rate)} (${m.completed_logs}/${m.completed_logs + m.failed_logs})`),
+      el('span', {}, m.stop_rate == null ? '—' : `${pct(m.stop_rate)} (${m.stopped}건)`)));
+    $sList.replaceChildren(head, ...(rows.length ? rows : [el('div', { class: 'empty' }, '아직 챌린지를 시작한 사람이 없어요.')]));
+  } catch (e) {
+    if (!e.code && !(e instanceof TypeError)) notReady($sList, '챌린지 통계');
+    else say(friendlyError(e), 'err');
+  }
+}
+
+// ---- 열람 기록 (서버 API: GET /admin/access-logs) ----
+const ACTION_LABEL = { users_list: '가입자 목록 조회', user_detail: '가입자 상세 조회', challenge_stats: '챌린지 통계 조회', purge_preview: '삭제 미리보기', purge_apply: '계정 삭제 실행' };
+
+async function loadLogs() {
+  try {
+    const { data } = await apiCall('GET', '/admin/access-logs?limit=100', undefined, '기록을 불러오지 못했어요');
+    logsLoaded = true;
+    const head = el('div', { class: 'lrow head' }, el('span', {}, '시각'), el('span', {}, '관리자'), el('span', {}, '내용'));
+    const rows = data.map((r) => el('div', { class: 'lrow' },
+      el('span', {}, r.created_at), el('span', {}, r.admin_email),
+      el('span', {}, (ACTION_LABEL[r.action] || r.action) + (r.target ? ` · ${r.target}` : '') + (r.detail && r.detail.count != null ? ` · ${r.detail.count}명` : ''))));
+    $lList.replaceChildren(head, ...(rows.length ? rows : [el('div', { class: 'empty' }, '아직 기록이 없어요.')]));
+  } catch (e) {
+    if (!e.code && !(e instanceof TypeError)) notReady($lList, '열람 기록');
+    else say(friendlyError(e), 'err');
+  }
+}
+
 // ---- 테스트 계정 일괄 삭제 ----
 const $pat = document.getElementById('p-patterns'), $pPrev = document.getElementById('p-preview'), $pApply = document.getElementById('p-apply'), $pRes = document.getElementById('p-result');
 let previewCount = null, previewPatterns = [];
@@ -292,7 +355,7 @@ $pApply.addEventListener('click', async () => {
     $pRes.replaceChildren(el('b', {}, `삭제 완료 ${data.done}명${data.failed ? `, 실패 ${data.failed}명` : ''}`));
     say('테스트 계정을 삭제했어요.', 'ok');
     previewCount = null;
-    usersLoaded = false;
+    usersLoaded = false; logsLoaded = false;
   } catch (e) { say(friendlyError(e), 'err'); $pApply.disabled = false; }
 });
 
