@@ -3,7 +3,7 @@
 관리자는 서버 설정(.env)의 ADMIN_EMAILS 목록에 있는 계정으로, 평소와 같은 로그인으로 들어온다.
 목록이 비어 있으면 아무도 쓸 수 없다.
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apis.deps import get_current_user_id
@@ -11,9 +11,11 @@ from app.core.config import settings
 from app.core.db.databases import async_get_db
 from app.core.errors import AppError
 from app.repositories import user_repository
-from app.schemas.admin import AdminCategory, AdminMission, CategoryPatch, ChallengeStats, MissionPatch
+from app.schemas.admin import (
+    AdminCategory, AdminMission, AuditLogItem, CategoryPatch, ChallengeStats, MissionPatch,
+)
 from app.schemas.common import DataResponse
-from app.services import admin_service
+from app.services import admin_service, audit_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -30,7 +32,10 @@ async def require_admin(
 
 @router.get("/challenges", response_model=DataResponse[list[AdminCategory]])
 async def list_challenges(admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
-    return DataResponse(data=await admin_service.list_catalog(db))
+    data = await admin_service.list_catalog(db)
+    await audit_service.record(db, admin, "catalog_view", dedupe_seconds=audit_service.VIEW_DEDUPE_SECONDS)
+    await db.commit()
+    return DataResponse(data=data)
 
 
 @router.patch("/challenge-categories/{category_id}", response_model=DataResponse[AdminCategory])
@@ -49,4 +54,18 @@ async def patch_mission(
 
 @router.get("/stats/challenges", response_model=DataResponse[ChallengeStats])
 async def challenge_stats(admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
-    return DataResponse(data=await admin_service.challenge_stats(db))
+    data = await admin_service.challenge_stats(db)
+    await audit_service.record(db, admin, "stats_view", dedupe_seconds=audit_service.VIEW_DEDUPE_SECONDS)
+    await db.commit()
+    return DataResponse(data=data)
+
+
+@router.get("/audit-logs", response_model=DataResponse[list[AuditLogItem]])
+async def audit_logs(
+    limit: int = Query(100, ge=1, le=500), admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)
+):
+    """관리자 행위 기록 (최신순). 이 화면을 본 것도 기록에 남는다."""
+    data = await audit_service.list_logs(db, limit)
+    await audit_service.record(db, admin, "audit_view", dedupe_seconds=audit_service.VIEW_DEDUPE_SECONDS)
+    await db.commit()
+    return DataResponse(data=data)
