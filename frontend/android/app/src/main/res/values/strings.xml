@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PAEON</string>
+    <string name="title_activity_main">PAEON</string>
+    <string name="package_name">com.paeon.app</string>
+    <string name="custom_url_scheme">com.paeon.app</string>
+</resources>

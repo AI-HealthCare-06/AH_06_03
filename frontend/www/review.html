@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 입력 검토</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
+  .kpi{background:#fff; border:1px solid var(--sage-light); border-radius:14px; padding:10px 8px; text-align:center}
+  .kpi .k{font-size:11.5px; color:var(--muted)}
+  .kpi .v{font-size:18px; font-weight:900; margin-top:2px}
+  .confirm-headline{font-size:18px; font-weight:900; color:var(--accent); margin:2px 0 4px}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen">
+        <p class="sect">입력 내용 검토</p>
+        <p class="confirm-headline">아래 내용이 정확한지 확인해주세요</p>
+        <p class="lede">예측에 실제로 쓰이는 값만 보여드려요 — 잘못된 값이 있으면 사이드바의 "건강정보"에서 수정할 수 있어요.</p>
+        <div id="status-callout" class="callout"></div>
+        <div class="kpis" id="kpis"></div>
+
+        <p id="form-err" class="err" style="display:none"></p>
+        <button type="button" id="submit-btn" class="cta">이대로 위험도 분석하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+const profile = JSON.parse(localStorage.getItem('paeon-profile') || 'null');
+const elig = JSON.parse(localStorage.getItem('paeon-eligibility') || 'null');
+const health = JSON.parse(localStorage.getItem('paeon-health') || 'null');
+const survey = JSON.parse(localStorage.getItem('paeon-survey') || 'null');
+
+if (!profile || !elig || !health || !survey) {
+  document.getElementById('status-callout').innerHTML = '<b>이전 단계가 비어있어요</b><br>회원가입부터 순서대로 진행해주세요.';
+  document.getElementById('submit-btn').style.display = 'none';
+} else {
+  const skipA = elig.ageBand !== 'in' || elig.chd;
+  const skipB = elig.ageBand === 'under19' || health.htn_status !== 'none';
+  document.getElementById('status-callout').innerHTML = (skipA && skipB)
+    ? '<b>두 모델 모두 예측 대상이 아닙니다</b><br>예측은 건너뛰고 바로 챌린지로 안내합니다.'
+    : '<b>위험 예측 가능</b>';
+
+  const bmi = (health.weight_kg / Math.pow(health.height_cm / 100, 2)).toFixed(1);
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><div class="k">BMI</div><div class="v">${bmi}</div></div>
+    <div class="kpi"><div class="k">혈압</div><div class="v">${health.sbp}/${health.dbp}</div></div>
+    <div class="kpi"><div class="k">허리둘레</div><div class="v">${health.waist_cm}cm</div></div>
+    <div class="kpi"><div class="k">총콜레스테롤</div><div class="v">${health.total_chol}</div></div>`;
+}
+
+document.getElementById('submit-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('submit-btn');
+  const errEl = document.getElementById('form-err');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = '분석하는 중...';
+  try {
+    const result = await apiRequestPrediction(profile, elig, health, survey);
+    localStorage.setItem('paeon-prediction', JSON.stringify(result.data));
+    window.location.href = 'result.html';
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '위험도 분석하기';
+  }
+});
+</script>
+</body>
+</html>
