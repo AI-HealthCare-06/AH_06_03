@@ -149,5 +149,17 @@
       }
     }
   ],
-  "age_min": 19
+  "age_min": 19,
+  "similarity_cuts": {
+    "version": "0.2.0",
+    "similar_max": 0.26,
+    "slightly_different_max": 0.41,
+    "levels": {
+      "similar": "N <= 0.26",
+      "slightly_different": "0.26 < N <= 0.41",
+      "different": "N > 0.41"
+    },
+    "basis": "학습 데이터(KNHANES 2022~24, 19세 이상, HE_HP 1·2·3, n=11,022)에서 혈압 정상(HE_HP=1)인 사람의 점수 N: 중앙값 0.262, 상위 25% 경계 0.413. 구간별 실제 경계군 비율 14% / 35% / 55%. 조사 가중치 미적용, 학습 표본 안에서 계산한 값",
+    "note": "N은 화면에 노출하지 않음. 좋다/나쁘다 판정에 쓰지 않음. 모델 버전이 바뀌면 기준값을 다시 계산"
+  }
 }
