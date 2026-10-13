@@ -3,7 +3,7 @@
 관리자는 서버 설정(.env)의 ADMIN_EMAILS 목록에 있는 계정으로, 평소와 같은 로그인으로 들어온다.
 목록이 비어 있으면 아무도 쓸 수 없다.
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apis.deps import get_current_user_id
@@ -11,9 +11,12 @@ from app.core.config import settings
 from app.core.db.databases import async_get_db
 from app.core.errors import AppError
 from app.repositories import user_repository
-from app.schemas.admin import AdminCategory, AdminMission, CategoryPatch, MissionPatch
+from app.schemas.admin import (
+    AdminCategory, AdminMission, AdminUserDetail, AdminUserList, CategoryPatch, MissionPatch,
+    PurgeRequest, PurgeResult,
+)
 from app.schemas.common import DataResponse
-from app.services import admin_service
+from app.services import admin_service, admin_users_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -45,3 +48,22 @@ async def patch_mission(
     challenge_id: str, req: MissionPatch, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)
 ):
     return DataResponse(data=await admin_service.update_mission(db, challenge_id, req.active, admin))
+
+
+@router.get("/users", response_model=DataResponse[AdminUserList])
+async def list_users(
+    q: str | None = None, stage: str | None = None, consent: str | None = None, status: str | None = None,
+    limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0),
+    admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db),
+):
+    return DataResponse(data=await admin_users_service.list_users(db, admin, q, stage, consent, status, limit, offset))
+
+
+@router.get("/users/{user_id}", response_model=DataResponse[AdminUserDetail])
+async def user_detail(user_id: str, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
+    return DataResponse(data=await admin_users_service.user_detail(db, admin, user_id))
+
+
+@router.post("/purge", response_model=DataResponse[PurgeResult])
+async def purge(req: PurgeRequest, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
+    return DataResponse(data=await admin_users_service.purge(db, admin, req.patterns, req.apply, req.confirm_count))

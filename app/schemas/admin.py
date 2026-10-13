@@ -39,3 +39,53 @@ class MissionPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     active: bool
+
+
+# ---- 가입자·통계·삭제·열람 기록 (건강 수치는 어디에도 담지 않는다) ----
+class AdminUserRow(BaseModel):
+    user_id_short: str
+    user_id: str
+    email_masked: str
+    status: str                 # active / deleted
+    joined_at: str
+    stage: str                  # signup / eligibility / health / survey / prediction / challenge
+    health_consent: str         # agreed / withdrawn / none
+
+
+class AdminUserList(BaseModel):
+    total: int
+    items: list[AdminUserRow]
+
+
+class AdminConsentItem(BaseModel):
+    policy_type: str
+    version: str
+    status: str
+    consented_at: str
+    withdrawn_at: str | None
+
+
+class AdminUserDetail(AdminUserRow):
+    stages_done: list[str]
+    consents: list[AdminConsentItem]
+    cycles: int                 # 시작한 챌린지 사이클 수
+
+
+class PurgeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    patterns: list[str] = Field(min_length=1, max_length=5)   # 이메일 LIKE 패턴, 예: %@a.com
+    apply: bool = False
+    confirm_count: int | None = None   # 실제로 지울 때 미리보기에서 본 인원수를 그대로 보낸다
+
+
+class PurgeTarget(BaseModel):
+    email_masked: str
+    status: str
+
+
+class PurgeResult(BaseModel):
+    count: int
+    targets: list[PurgeTarget]
+    applied: bool
+    done: int = 0
+    failed: int = 0
