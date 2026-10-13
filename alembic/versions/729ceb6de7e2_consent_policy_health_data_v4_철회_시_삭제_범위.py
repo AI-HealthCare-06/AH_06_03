@@ -31,7 +31,7 @@ def upgrade() -> None:
         INSERT INTO consent_policies
             (policy_id, policy_type, version, purpose_text, collection_items,
              retention_policy, withdrawal_method, third_party_notice, published_at)
-        SELECT UUID(), policy_type, 'v4', purpose_text, collection_items,
+            SELECT UUID(), policy_type, 'v4', purpose_text, CONCAT('성별, ', collection_items),
                CONCAT(retention_policy, :sentence), withdrawal_method, third_party_notice, NOW()
         FROM consent_policies
         WHERE policy_type = 'health_data' AND version = 'v3'
