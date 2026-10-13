@@ -5,7 +5,7 @@ user_id 칸을 일부러 두지 않는다. 회원 탈퇴가 user_id 칸이 있�
 """
 from datetime import datetime
 
-from sqlalchemy import CHAR, DateTime, String
+from sqlalchemy import CHAR, DateTime, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db.databases import Base
@@ -14,6 +14,8 @@ from app.models.user import new_id
 
 class AdminAuditLog(Base):
     __tablename__ = "admin_audit_logs"
+    # 열람 중복 확인(같은 관리자·같은 동작의 가장 최근 시각)을 빠르게 찾는 묶음 색인
+    __table_args__ = (Index("ix_admin_audit_logs_actor_action_created", "actor_email", "action", "created_at"),)
 
     audit_id: Mapped[str] = mapped_column(CHAR(36), primary_key=True, default=new_id)
     actor_email: Mapped[str] = mapped_column(String(255), nullable=False)
