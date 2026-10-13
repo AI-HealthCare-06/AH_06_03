@@ -1,5 +1,10 @@
 {
   "appId": "com.paeon.app",
   "appName": "PAEON",
-  "webDir": "www"
+  "webDir": "www",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
 }
