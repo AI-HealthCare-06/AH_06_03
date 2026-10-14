@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>PAEON — 관리자 (운영 현황)</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .ov{max-width:760px; margin:0 auto; width:100%}
+  .ov h3{margin:0 0 4px; font-size:20px}
+  .ov h4{margin:24px 0 8px; font-size:16px}
+  .ov .meta{font-size:12.5px; color:var(--muted); margin:0 0 12px; line-height:1.6}
+  .ov .nav{font-size:13px; margin:0 0 14px}
+  .ov .nav a{text-decoration:underline; font-weight:700}
+  #msg{min-height:20px; font-size:13px; margin:0 0 8px}
+  #msg.err{color:var(--danger,#C97B6B); font-weight:700}
+  .card{background:#fff; border:1px solid var(--sage-light); border-radius:14px; padding:12px 16px; margin-bottom:12px}
+  .bar-row{display:grid; grid-template-columns:112px 1fr 92px; gap:10px; align-items:center; padding:6px 0; font-size:13px}
+  .bar-row .track{background:var(--sage-light); border-radius:8px; height:14px; overflow:hidden}
+  .bar-row .fill{background:var(--sage,#8FA894); height:100%; min-width:2px}
+  .bar-row .num{text-align:right; white-space:nowrap}
+  .bar-row .num small{color:var(--muted); display:block; font-size:11.5px}
+  table.t{border-collapse:collapse; width:100%; font-size:12.5px}
+  table.t th, table.t td{padding:7px 6px; border-bottom:1px solid var(--sage-light); text-align:right; white-space:nowrap}
+  table.t th:first-child, table.t td:first-child{text-align:left}
+  table.t thead th{color:var(--muted); font-weight:500}
+  table.t tr:last-child td{border-bottom:0}
+  .kv{display:grid; grid-template-columns:130px 1fr; gap:6px 10px; font-size:13px}
+  .kv div:nth-child(odd){color:var(--muted)}
+  .btn{border:1px solid var(--sage-light); background:#fff; border-radius:10px; padding:8px 14px; font-size:13px; cursor:pointer}
+  .btn:disabled{opacity:.5; cursor:default}
+  .mini{display:flex; align-items:center; gap:6px; justify-content:flex-end}
+  .mini-track{width:70px; background:var(--sage-light); border-radius:4px; height:8px; overflow:hidden}
+  .mini-fill{display:block; height:100%; min-width:2px; background:var(--sage,#8FA894)}
+  .range{display:flex; gap:6px; margin:0 0 10px}
+  .range .btn[aria-pressed="true"]{font-weight:700; border-color:var(--sage,#8FA894)}
+  .lock{max-width:520px; margin:40px auto; text-align:center; line-height:1.7}
+  .lock a{font-weight:700; text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen ov">
+        <h3>운영 현황 (관리자)</h3>
+        <p class="nav"><a href="admin.html">← 미션 관리·통계·기록</a></p>
+        <p class="meta">숫자만 보여요. 이메일이나 사용자 번호는 나오지 않고, 이 화면을 연 것도 관리자 행위 기록에 남아요.</p>
+        <div id="msg" role="status" aria-live="polite"></div>
+        <div id="content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/api.js"></script>
+<script>
+const $content = document.getElementById('content');
+const $msg = document.getElementById('msg');
+
+function el(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (v === true) e.setAttribute(k, '');
+    else if (v !== false && v != null) e.setAttribute(k, v);
+  }
+  for (const kid of kids) e.append(kid);
+  return e;
+}
+const pct = (r) => (r == null ? '-' : `${Math.round(r * 1000) / 10}%`);
+function say(text, kind) { $msg.textContent = text || ''; $msg.className = kind || ''; }
+function kst(iso) {
+  if (!iso) return '-';
+  const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + 'Z');   // 서버 시각은 UTC
+  return isNaN(d) ? iso : d.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function duration(sec) {
+  const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
+  return d ? `${d}일 ${h}시간` : h ? `${h}시간 ${m}분` : `${m}분`;
+}
+
+function renderFunnel(stages) {
+  const top = Math.max(1, ...stages.map((s) => s.users));
+  const rows = stages.map((s) => el('div', { class: 'bar-row' },
+    el('div', {}, s.label),
+    el('div', { class: 'track' }, el('div', { class: 'fill', style: `width:${Math.round((s.users / top) * 100)}%` })),
+    el('div', { class: 'num' }, `${s.users}명`, el('small', {}, s.rate_of_previous == null ? '시작' : `앞 단계 대비 ${pct(s.rate_of_previous)}`))));
+  return el('div', { class: 'card' }, ...rows);
+}
+
+let days = 14;
+
+function renderActivity(list) {
+  const top = Math.max(1, ...list.map((a) => a.active_users));
+  const range = el('div', { class: 'range' }, ...[14, 30, 90].map((n) =>
+    el('button', { class: 'btn', type: 'button', 'aria-pressed': String(n === days), onclick: () => { days = n; load(); } }, `${n}일`)));
+  const head = ['날짜', '가입', '로그인', '로그인한 사용자', '재방문'];
+  const rows = list.slice().reverse().map((a) => el('tr', {},
+    el('td', {}, a.date.slice(5)),
+    el('td', {}, String(a.signups)),
+    el('td', {}, String(a.logins)),
+    el('td', {}, el('div', { class: 'mini' }, String(a.active_users), el('span', { class: 'mini-track' }, el('span', { class: 'mini-fill', style: `width:${Math.round((a.active_users / top) * 100)}%` })))),
+    el('td', {}, String(a.returning_users))));
+  return el('div', {}, range, el('div', { class: 'card' },
+    el('table', { class: 't' }, el('thead', {}, el('tr', {}, ...head.map((h) => el('th', {}, h)))), el('tbody', {}, ...rows))),
+    el('p', { class: 'meta' }, '날짜는 한국 시각 기준이고 최근 날짜가 위예요. 재방문은 그 전에도 로그인한 적이 있는 사용자 수예요. 로그인 기록은 93일이 지나면 자동으로 지워져서 그 이전 날짜는 비어 있어요. 2026-10-12 이전에 가입한 계정의 가입 날짜는 예전 오류 때문에 정확하지 않을 수 있어요.'));
+}
+
+function renderConsents(list) {
+  const head = ['정책', '버전', '동의', '철회'];
+  const body = list.map((c) => el('tr', {}, el('td', {}, c.policy_type), el('td', {}, c.version), el('td', {}, String(c.agreed)), el('td', {}, String(c.withdrawn))));
+  return el('div', { class: 'card' }, el('table', { class: 't' }, el('thead', {}, el('tr', {}, ...head.map((h) => el('th', {}, h)))), el('tbody', {}, ...body)));
+}
+
+function renderDeletions(d) {
+  const lines = d.recent.map((e) => el('tr', {}, el('td', {}, kst(e.completed_at)), el('td', {}, `${e.deleted_rows}건`)));
+  return el('div', { class: 'card' },
+    el('div', { class: 'kv' }, el('div', {}, '탈퇴한 계정'), el('div', {}, `${d.deleted_accounts}명`), el('div', {}, '동의 철회'), el('div', {}, `${d.consent_withdrawals}건`)),
+    el('h4', {}, '최근 삭제 처리 (한국 시각, 지운 기록 수)'),
+    d.recent.length ? el('table', { class: 't' }, el('thead', {}, el('tr', {}, el('th', {}, '시각'), el('th', {}, '지운 기록'))), el('tbody', {}, ...lines))
+                    : el('p', { class: 'meta' }, '아직 삭제 처리가 없어요.'));
+}
+
+function renderStatus(s) {
+  return el('div', { class: 'card' }, el('div', { class: 'kv' },
+    el('div', {}, '서버 켜진 시각'), el('div', {}, kst(s.server_started_at)),
+    el('div', {}, '가동 시간'), el('div', {}, duration(s.uptime_seconds)),
+    el('div', {}, 'DB 연결'), el('div', {}, s.db_ok ? '정상' : '문제 있음'),
+    el('div', {}, '마이그레이션 번호'), el('div', {}, s.db_revision || '-'),
+    el('div', {}, '관리자 수'), el('div', {}, `${s.admin_count}명`)));
+}
+
+async function downloadCsv(button) {
+  button.disabled = true;
+  say('CSV를 만드는 중...');
+  try {
+    const res = await fetch(`${API_BASE}/admin/overview/export.csv`, { headers: { Authorization: `Bearer ${getAccessToken()}` } });
+    if (!res.ok) throw new Error('CSV를 내려받지 못했어요');
+    const blob = await res.blob();
+    const a = el('a', { href: URL.createObjectURL(blob), download: `paeon-overview-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}.csv` });
+    document.body.append(a); a.click(); a.remove();
+    say('내려받았어요. 이 내려받기는 관리자 행위 기록에 남았어요.');
+  } catch (e) {
+    say(friendlyError(e), 'err');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function render(d) {
+  const csv = el('button', { class: 'btn', type: 'button', onclick: (ev) => downloadCsv(ev.currentTarget) }, '집계 CSV 내려받기');
+  $content.replaceChildren(
+    el('h4', {}, '체험 진행 현황'),
+    el('p', { class: 'meta' }, '각 단계까지 간 사용자 수예요. 막대가 갑자기 짧아지는 곳이 사용자가 멈추는 단계예요.'),
+    renderFunnel(d.funnel),
+    el('h4', {}, '날짜별 활동'), el('p', { class: 'meta' }, '신규 가입과 로그인 수예요. 사용자를 알아볼 수 있는 값 없이 숫자만 세요.'), renderActivity(d.activity),
+    el('h4', {}, '동의 현황'), renderConsents(d.consents),
+    el('h4', {}, '삭제 현황'), renderDeletions(d.deletions),
+    el('h4', {}, '서비스 상태'), renderStatus(d.status),
+    el('h4', {}, '내보내기'),
+    el('p', { class: 'meta' }, '진행 현황, 동의 현황, 미션 통계의 집계 숫자만 담겨요. 사용자별 행은 없어요.'),
+    csv);
+}
+
+async function load() {
+  try {
+    const body = await apiCall('GET', `/admin/overview?days=${days}`, undefined, '운영 현황을 불러오지 못했어요');
+    render(body.data);
+  } catch (e) {
+    const text = e.code === 'ADMIN_FORBIDDEN' ? '이 계정은 관리자가 아니에요.' : friendlyError(e);
+    $content.replaceChildren(el('div', { class: 'lock' }, text, el('br'), el('a', { href: 'login.html' }, '관리자 계정으로 로그인하기')));
+  }
+}
+load();
+</script>
+</body>
+</html>
