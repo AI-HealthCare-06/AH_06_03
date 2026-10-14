@@ -92,3 +92,5 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .confirm-card p{font-size:13.5px; line-height:1.6; color:var(--muted); margin:10px 0 18px}
 .confirm-actions{display:flex; gap:10px}
 .confirm-actions button{flex:1; margin:0}
+
+.nav-dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:#e0584a; margin-left:6px; vertical-align:middle}

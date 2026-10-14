@@ -62,6 +62,7 @@ function render() {
       <p class="hint" style="margin:8px 0 0">고쳐도 이미 나온 분석 결과의 나이는 바뀌지 않아요. 새로 분석할 때부터 반영돼요.</p>
       <div style="display:flex; gap:8px; margin-top:10px"><button type="button" id="p-save" class="ghost">저장</button><button type="button" id="p-cancel" class="ghost">취소</button></div>`
       : `<button type="button" id="p-edit" class="ghost" style="margin-top:8px">생년월일·성별 수정</button>`}</div>` : ''}
+    <a class="ghost" href="inquiries.html" style="margin:12px 0; text-align:center">💬 1:1 문의 <span id="inq-count" style="color:#e0584a; font-weight:700"></span></a>
     <div class="tworow">
       <button type="button" class="opt" data-mp="rec" data-on="${state.mp === 'rec' ? '1' : '0'}">🩺 검진 기록</button>
       <button type="button" class="opt" data-mp="chal" data-on="${state.mp === 'chal' ? '1' : '0'}">🌱 챌린지 기록</button>
@@ -133,6 +134,7 @@ function renderChal() {
 }
 
 function wire() {
+  inquiryUnread().then((n) => { const c = document.getElementById('inq-count'); if (c && n) c.textContent = `새 답변 ${n}개`; });
   const on = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
   on('p-edit', () => { state.editProfile = true; state.perr = ''; render(); });
   on('p-cancel', () => { state.editProfile = false; state.perr = ''; render(); });
