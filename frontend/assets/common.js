@@ -64,7 +64,7 @@ async function inquiryUnread() {
   } catch (e) { return 0; }
 }
 
-const NO_NAV_PAGES = ['index.html', 'signup.html', 'login.html', 'eligibility.html', 'privacy.html', 'my-data.html'];
+const NO_NAV_PAGES = ['index.html', 'signup.html', 'login.html', 'guest-inquiry.html', 'eligibility.html', 'privacy.html', 'my-data.html'];
 
 function renderNav(){
   const body = document.querySelector('.frame-body');
