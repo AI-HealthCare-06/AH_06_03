@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import utcnow
 from app.models.access_log import AccessLog
 
-RETENTION_DAYS = 93   # 3개월(최대 92일) 이상 보관해야 하므로 여유를 둔다
+RETENTION_DAYS = 93   # 통신비밀보호법 로그기록자료 보관 기준(3개월, 최대 92일)을 참고해 여유를 둔다
 
 
 def client_ip(request: Request) -> str | None:
