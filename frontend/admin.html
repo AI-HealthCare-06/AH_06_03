@@ -356,7 +356,7 @@ async function loadStats() {
 }
 load();
 
-const ACTION_LABEL = { users_view: '가입자 목록 열람', user_detail_view: '가입자 상세 열람', purge_preview: '삭제 미리보기', purge_apply: '계정 일괄 삭제', catalog_view: '미션 목록 열람', stats_view: '통계 열람', audit_view: '기록 열람', category_update: '카테고리 변경', mission_update: '미션 변경' };
+const ACTION_LABEL = { users_view: '가입자 목록 열람', user_detail_view: '가입자 상세 열람', purge_preview: '삭제 미리보기', purge_apply: '계정 일괄 삭제', catalog_view: '미션 목록 열람', stats_view: '통계 열람', audit_view: '기록 열람', category_update: '카테고리 변경', mission_update: '미션 변경', admin_granted: '관리자 권한 부여', admin_revoked: '관리자 권한 회수' };
 
 function kst(iso) {
   const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + 'Z');   // 서버 시각은 UTC
