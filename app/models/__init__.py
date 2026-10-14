@@ -15,3 +15,4 @@ from app.models.admin_audit import AdminAuditLog  # noqa: F401
 from app.models.access_log import AccessLog  # noqa: F401
 from app.models.inquiry import Inquiry  # noqa: F401
 from app.models.guest_inquiry import GuestInquiry  # noqa: F401
+from app.models.notice import Notice  # noqa: F401
