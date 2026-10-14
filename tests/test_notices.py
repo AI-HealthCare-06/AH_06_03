@@ -147,3 +147,18 @@ async def test_timezone_inputs_are_stored_as_utc(client, db_session):
     assert r.json()["data"]["starts_at"].startswith("2030-01-02T00:00:00")                          # UTC로 저장
     async with db_session() as s:
         assert (await s.execute(select(Notice.starts_at))).scalar_one() == datetime(2030, 1, 2, 0, 0)
+
+
+async def test_upcoming_notice_taken_down_is_ended(client, db_session):
+    """아직 시작 전인 공지를 바로 내리면 관리자 화면에서도 '종료'로 보이고, 그 뒤에도 고칠 수 있다."""
+    h = await make_account(db_session, "admin@test.kr")
+    now = utcnow()
+    created = (await post(client, h, title="모레 시작", starts_at=iso(now + timedelta(days=2)))).json()["data"]
+    assert created["status"] == "upcoming"
+    r = await client.patch(f"/v1/admin/notices/{created['notice_id']}", json={"end_now": True}, headers=h)
+    assert r.status_code == 200 and r.json()["data"]["status"] == "ended"                      # 예전에는 계속 upcoming으로 보였다
+    listing = (await client.get("/v1/admin/notices", headers=h)).json()["data"]
+    assert [n["status"] for n in listing] == ["ended"]
+    assert await public_titles(client) == []                                                   # 이용자에게는 계속 안 보임
+    r = await client.patch(f"/v1/admin/notices/{created['notice_id']}", json={"title": "제목만 고침"}, headers=h)
+    assert r.status_code == 200 and r.json()["data"]["title"] == "제목만 고침"                    # 내린 뒤 제목을 고쳐도 거절되지 않음
