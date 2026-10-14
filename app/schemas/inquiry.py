@@ -76,3 +76,54 @@ class AdminInquiryDetail(BaseModel):
     answer: str | None
     answered_by: str | None
     answered_at: datetime | None
+
+
+# ---------------------------------------------------------------- 비회원 문의
+class GuestInquiryCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(min_length=1, max_length=100)
+    body: str = Field(min_length=1, max_length=1000)
+    website: str | None = Field(default=None, max_length=200)   # 사람 눈에 안 보이는 숨은 칸 (봇이 채우면 저장하지 않는다)
+
+    @field_validator("title", "body")
+    @classmethod
+    def not_blank(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("내용을 입력해 주세요.")
+        return v
+
+
+class GuestInquiryCreated(BaseModel):
+    code: str             # 조회 번호 (이때 한 번만 알려 준다)
+
+
+class GuestInquiryView(BaseModel):
+    title: str
+    body: str
+    created_at: datetime
+    answer: str | None
+    answered_at: datetime | None
+
+
+class AdminGuestItem(BaseModel):
+    inquiry_id: str
+    title: str
+    created_at: datetime
+    answered: bool
+
+
+class AdminGuestList(BaseModel):
+    total: int
+    items: list[AdminGuestItem]
+
+
+class AdminGuestDetail(BaseModel):
+    inquiry_id: str
+    title: str
+    body: str
+    created_at: datetime
+    answer: str | None
+    answered_by: str | None
+    answered_at: datetime | None
