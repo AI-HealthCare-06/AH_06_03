@@ -120,6 +120,28 @@ async def test_funnel_counts_each_stage(client, db_session, seeded):
     assert f["challenge_completed"]["rate_of_previous"] == 0.5
 
 
+async def test_funnel_counts_later_stage_as_passed(client, db_session):
+    """대상 확인 저장 전에 가입해 그 기록 없이 건강정보로 넘어간 사람도 대상 확인을 지난 것으로 센다.
+    아래 단계가 위 단계보다 많아지면(앞 단계 대비 100% 초과) 안 된다. 활성이 아닌 계정의 기록은 세지 않는다."""
+    h, _ = await make_account(db_session, "admin@test.kr")
+    _, new_user = await make_account(db_session, "new@test.kr")
+    _, old1 = await make_account(db_session, "old1@test.kr")
+    _, old2 = await make_account(db_session, "old2@test.kr")
+    _, waiting = await make_account(db_session, "waiting@test.kr", status="pending_guardian")
+    async with db_session() as s:
+        s.add(EligibilityAssessment(user_id=new_user, result_code="eligible", age_eligible=True, diagnosed_cad=False,
+                                    emergency_flag=False, assessed_at=NOW))
+        for uid in (old1, old2, waiting):                             # 대상 확인 기록 없이 건강정보만
+            s.add(HealthRecord(user_id=uid, health_schema_id="schema-1", input_type="initial",
+                               examination_date=date(2026, 10, 8), created_at=NOW))
+        await s.commit()
+    d = await overview(client, h)
+    assert [(s["code"], s["users"]) for s in d["funnel"]] == [
+        ("signup", 4), ("eligibility", 3), ("health", 2), ("survey", 0), ("prediction", 0),
+        ("challenge_started", 0), ("challenge_completed", 0)]
+    assert all(s["rate_of_previous"] is None or s["rate_of_previous"] <= 1 for s in d["funnel"])
+
+
 async def test_funnel_without_data_has_no_rates(client, db_session):
     h, _ = await make_account(db_session, "admin@test.kr")
     d = await overview(client, h)
