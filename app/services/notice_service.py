@@ -14,10 +14,11 @@ PUBLIC_LIMIT = 10   # 한꺼번에 보여 주는 게시 중 공지 수
 
 
 def _status(n: Notice, now: datetime) -> str:
-    if n.starts_at > now:
-        return "upcoming"
+    # 끝났는지를 먼저 본다: 아직 시작 전인 공지를 바로 내려도(end_now) '종료'로 보여야 한다
     if n.ends_at is not None and n.ends_at <= now:
         return "ended"
+    if n.starts_at > now:
+        return "upcoming"
     return "active"
 
 
@@ -77,7 +78,9 @@ async def update(db: AsyncSession, admin: str, notice_id: str, req: NoticePatch)
     elif req.ends_at is not None and req.ends_at != notice.ends_at:
         notice.ends_at = req.ends_at
         changes.append("종료")
-    if notice.ends_at is not None and notice.ends_at <= notice.starts_at and not req.end_now:
+    # 시작·종료 시각을 직접 바꿨을 때만 앞뒤를 검사한다 (시작 전 공지를 내린 뒤 제목만 고치는 경우는 통과)
+    if (req.starts_at is not None or req.ends_at is not None) and not req.end_now \
+            and notice.ends_at is not None and notice.ends_at <= notice.starts_at:
         await db.rollback()
         raise AppError(422, "NOTICE_RANGE_INVALID", "끝나는 시각은 시작하는 시각보다 뒤여야 합니다.")
     if changes:
