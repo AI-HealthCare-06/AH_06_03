@@ -22,6 +22,7 @@ async def signup(req: SignupRequest, db: AsyncSession = Depends(async_get_db)):
             req.email, 
             req.password, 
             req.birth_date,
+            req.consents,
             guardian_name=req.guardian_name,
             guardian_relation=req.guardian_relation,
             guardian_contact=req.guardian_contact,

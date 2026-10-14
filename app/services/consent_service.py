@@ -51,12 +51,31 @@ async def list_active_policies(db: AsyncSession) -> list[PolicyResult]:
     return [PolicyResult.model_validate(p, from_attributes=True) for p in await _active_policies(db)]
 
 
-async def record_signup_consents(db: AsyncSession, user_id: str) -> None:
-    """가입 = 필수 동의 체크 완료. 현재 정책에 동의한 기록을 남긴다 (commit은 부른 쪽이)."""
+async def check_signup_consents(db: AsyncSession, consents: list) -> list[ConsentPolicy]:
+    """가입 화면이 보낸 동의가 지금 유효한 필수 정책 전부에 대한 '동의'인지 확인한다. 맞으면 그 정책들을 돌려준다.
+    - 정책 ID·버전이 지금 유효한 것과 다르면 409 (약관이 바뀐 뒤에 낡은 화면에서 가입한 경우)
+    - 필수 정책이 빠졌거나 동의하지 않았으면 422"""
+    active = {p.policy_type: p for p in await _active_policies(db) if p.policy_type in SIGNUP_POLICY_TYPES}
+    by_id = {p.policy_id: p for p in active.values()}
+    sent: dict[str, bool] = {}
+    for c in consents:
+        p = by_id.get(c.policy_id)
+        if p is None or p.version != c.version:
+            raise AppError(409, "CONSENT_POLICY_OUTDATED", "약관이 새로 바뀌었어요. 화면을 새로고침한 뒤 다시 동의해 주세요.")
+        if c.policy_id in sent:
+            raise AppError(422, "CONSENT_DUPLICATED", "같은 약관에 대한 동의가 두 번 들어왔어요.")
+        sent[c.policy_id] = c.agreed
+    for p in active.values():
+        if sent.get(p.policy_id) is not True:
+            raise AppError(422, "CONSENT_REQUIRED", "필수 동의 항목에 모두 동의해야 가입할 수 있어요.")
+    return list(active.values())
+
+
+async def record_signup_consents(db: AsyncSession, user_id: str, policies: list[ConsentPolicy]) -> None:
+    """사용자가 동의한 정책(check_signup_consents를 통과한 것)의 동의 기록을 남긴다 (commit은 부른 쪽이)."""
     now = utcnow()
-    for p in await _active_policies(db):
-        if p.policy_type in SIGNUP_POLICY_TYPES:
-            db.add(UserConsent(user_id=user_id, policy_id=p.policy_id, status="agreed", consented_at=now))
+    for p in policies:
+        db.add(UserConsent(user_id=user_id, policy_id=p.policy_id, status="agreed", consented_at=now))
 
 
 async def list_my_consents(db: AsyncSession, user_id: str) -> list[ConsentResult]:
