@@ -18,7 +18,7 @@ from app.models.consent import ConsentPolicy, UserConsent
 from app.models.deletion import AccountDeletionRequest
 from app.models.eligibility import EligibilityAssessment
 from app.models.health import HealthRecord
-from app.models.prediction import Prediction
+from app.models.prediction import PredictionJob
 from app.models.survey import SurveyInstance
 from app.models.user import User
 from app.schemas.admin_overview import (
@@ -33,8 +33,8 @@ FUNNEL = [
     ("signup", "가입"),
     ("eligibility", "대상 확인"),
     ("health", "건강정보 입력"),
-    ("survey", "설문 제출"),
-    ("prediction", "분석 결과"),
+    ("survey", "설문 단계"),   # 설문은 건너뛸 수 있어서 "제출"이 아니라 "설문 단계를 지난 사람"
+    ("prediction", "분석 결과"),   # 예측 작업이 완료돼 결과 화면까지 온 사람. 모델이 건너뛰어져도 포함, 작업 실패는 제외
     ("challenge_started", "챌린지 시작"),
     ("challenge_completed", "4주 챌린지 완료"),
 ]
@@ -44,23 +44,35 @@ def _rate(part: int, whole: int | None) -> float | None:
     return round(part / whole, 3) if whole else None
 
 
-async def _count_users(db: AsyncSession, column, *conditions) -> int:
-    query = select(func.count(func.distinct(column)))
+async def _user_ids(db: AsyncSession, column, *conditions) -> set[str]:
+    """조건에 맞는 사용자 번호 모음. 단계별 인원을 세는 데만 쓰고 응답에는 넣지 않는다."""
+    query = select(column).distinct()
     if conditions:
         query = query.where(*conditions)
-    return int((await db.execute(query)).scalar_one())
+    return set((await db.execute(query)).scalars().all())
 
 
 async def funnel(db: AsyncSession) -> list[FunnelStage]:
-    counts = {
-        "signup": await _count_users(db, User.user_id, User.status == "active"),
-        "eligibility": await _count_users(db, EligibilityAssessment.user_id),
-        "health": await _count_users(db, HealthRecord.user_id),
-        "survey": await _count_users(db, SurveyInstance.user_id, SurveyInstance.status == "submitted"),
-        "prediction": await _count_users(db, Prediction.user_id, Prediction.status == "completed"),
-        "challenge_started": await _count_users(db, ChallengeCycle.user_id),
-        "challenge_completed": await _count_users(db, ChallengeCycle.user_id, ChallengeCycle.status == "completed"),
+    active = await _user_ids(db, User.user_id, User.status == "active")
+    records = {
+        "eligibility": await _user_ids(db, EligibilityAssessment.user_id),
+        "health": await _user_ids(db, HealthRecord.user_id),
+        "survey": await _user_ids(db, SurveyInstance.user_id, SurveyInstance.status == "submitted"),
+        "prediction": await _user_ids(db, PredictionJob.user_id, PredictionJob.status == "completed"),
+        "challenge_started": await _user_ids(db, ChallengeCycle.user_id),
+        "challenge_completed": await _user_ids(db, ChallengeCycle.user_id, ChallengeCycle.status == "completed"),
     }
+    # "그 단계까지 간 사람" = 그 단계나 더 뒤 단계에 기록이 있는 사용자.
+    # 앞 단계 기록이 없어도 뒤 단계에 왔으면 지나간 것으로 센다. 앞 단계 기록이 없는 경우:
+    #   - 대상 확인 저장(2026-10-08) 전에 가입한 사람은 대상 확인 기록이 없다.
+    #   - 동의를 철회했다가 다시 동의한 사람은 대상 확인 기록이 없을 수 있다.
+    #   - 설문을 건너뛴 사람은 설문 제출 기록 없이 분석으로 넘어간다.
+    # 그래서 아래 단계가 위 단계보다 많아지지 않는다(앞 단계 대비 100% 이하).
+    # 정상(active) 회원만 센다. 그 밖의 계정은 이용할 수 없는 계정이라 뺀다(가입 숫자와 기준을 맞춤).
+    counts, reached = {"signup": len(active)}, set()
+    for code, _ in reversed(FUNNEL[1:]):
+        reached |= records[code] & active
+        counts[code] = len(reached)
     stages, previous = [], None
     for code, label in FUNNEL:
         n = counts[code]

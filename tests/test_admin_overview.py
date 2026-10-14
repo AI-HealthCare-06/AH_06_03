@@ -16,7 +16,7 @@ from app.models.consent import ConsentPolicy, UserConsent
 from app.models.deletion import AccountDeletionRequest
 from app.models.eligibility import EligibilityAssessment
 from app.models.health import HealthRecord
-from app.models.prediction import Prediction
+from app.models.prediction import Prediction, PredictionJob
 from app.models.survey import SurveyInstance, SurveyVersion
 from app.models.user import User, UserProfile
 
@@ -67,10 +67,18 @@ async def seeded(db_session):
             s.add(SurveyInstance(user_id=uid, survey_version_id=ver.survey_version_id, status="submitted",
                                  started_at=NOW, submitted_at=NOW))
         s.add(SurveyInstance(user_id=ids[2], survey_version_id=ver.survey_version_id, status="abandoned", started_at=NOW))
-        for n, uid in enumerate(ids[4:]):                             # u4~u6 분석 결과 (u3은 건너뜀 상태라 안 센다)
-            s.add(Prediction(prediction_job_id=f"job{n}", user_id=uid, model_code="MODEL_A", status="completed", predicted_at=NOW))
-        s.add(Prediction(prediction_job_id="job-skip", user_id=ids[3], model_code="MODEL_A", status="skipped",
+        # 분석 결과는 예측 작업 상태로 센다: u3은 작업 실패라 안 세고, u4는 두 모델이 다 건너뛰어져도 결과 화면까지 와서 센다
+        s.add(PredictionJob(prediction_job_id="job-fail", user_id=ids[3], health_record_id="hr-3", request_type="initial",
+                            status="failed", requested_at=NOW))
+        for n, uid in enumerate(ids[4:]):                             # u4~u6 분석 결과
+            s.add(PredictionJob(prediction_job_id=f"job{n}", user_id=uid, health_record_id=f"hr-{n}", request_type="initial",
+                                status="completed", requested_at=NOW))
+        s.add(Prediction(prediction_job_id="job0", user_id=ids[4], model_code="MODEL_A", status="skipped",
                          skip_reason="age_out_of_range", predicted_at=NOW))
+        s.add(Prediction(prediction_job_id="job0", user_id=ids[4], model_code="MODEL_B", status="skipped",
+                         skip_reason="htn_diagnosed", predicted_at=NOW))
+        for n, uid in enumerate(ids[5:], start=1):
+            s.add(Prediction(prediction_job_id=f"job{n}", user_id=uid, model_code="MODEL_A", status="completed", predicted_at=NOW))
         for number, (uid, status) in enumerate([(ids[5], "active"), (ids[6], "completed")], start=1):
             s.add(ChallengeCycle(user_id=uid, cycle_number=number, started_on=date(2026, 9, 1), ended_on=date(2026, 9, 28),
                                  status=status, created_at=NOW, updated_at=NOW))
@@ -118,6 +126,31 @@ async def test_funnel_counts_each_stage(client, db_session, seeded):
     assert f["eligibility"]["rate_of_signup"] == 0.75 and f["eligibility"]["rate_of_previous"] == 0.75
     assert f["health"]["rate_of_previous"] == 0.833 and f["survey"]["rate_of_previous"] == 0.8
     assert f["challenge_completed"]["rate_of_previous"] == 0.5
+
+
+async def test_funnel_counts_later_stage_as_passed(client, db_session):
+    """대상 확인 저장 전에 가입해 그 기록 없이 건강정보로 넘어간 사람도 대상 확인을 지난 것으로 센다.
+    아래 단계가 위 단계보다 많아지면(앞 단계 대비 100% 초과) 안 된다. 활성이 아닌 계정의 기록은 세지 않는다."""
+    h, _ = await make_account(db_session, "admin@test.kr")
+    _, new_user = await make_account(db_session, "new@test.kr")
+    _, old1 = await make_account(db_session, "old1@test.kr")
+    _, old2 = await make_account(db_session, "old2@test.kr")
+    _, waiting = await make_account(db_session, "waiting@test.kr", status="pending_guardian")
+    async with db_session() as s:
+        s.add(EligibilityAssessment(user_id=new_user, result_code="eligible", age_eligible=True, diagnosed_cad=False,
+                                    emergency_flag=False, assessed_at=NOW))
+        for uid in (old1, old2, waiting):                             # 대상 확인 기록 없이 건강정보만
+            s.add(HealthRecord(user_id=uid, health_schema_id="schema-1", input_type="initial",
+                               examination_date=date(2026, 10, 8), created_at=NOW))
+        s.add(PredictionJob(prediction_job_id="job-old1", user_id=old1, health_record_id="hr-old1", request_type="initial",
+                            status="completed", requested_at=NOW))  # old1은 설문을 건너뛰고 분석까지
+        await s.commit()
+    d = await overview(client, h)
+    assert [(s["code"], s["users"]) for s in d["funnel"]] == [
+        ("signup", 4), ("eligibility", 3), ("health", 2), ("survey", 1), ("prediction", 1),
+        ("challenge_started", 0), ("challenge_completed", 0)]
+    assert {s["code"]: s["label"] for s in d["funnel"]}["survey"] == "설문 단계"
+    assert all(s["rate_of_previous"] is None or s["rate_of_previous"] <= 1 for s in d["funnel"])
 
 
 async def test_funnel_without_data_has_no_rates(client, db_session):
