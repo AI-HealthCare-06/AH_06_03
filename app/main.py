@@ -16,6 +16,7 @@ from app.apis.admin import router as admin_router
 from app.apis.admin_overview import router as admin_overview_router
 from app.apis.inquiry import router as inquiry_router
 from app.apis.guest_inquiry import router as guest_inquiry_router
+from app.apis.notice import admin_router as notice_admin_router, public_router as notice_router
 
 
 from app.apis.prediction import router as prediction_router
@@ -67,6 +68,8 @@ app.include_router(consent_router, prefix="/v1")
 app.include_router(eligibility_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.include_router(challenge_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.include_router(inquiry_router, prefix="/v1")
+app.include_router(notice_router, prefix="/v1")
+app.include_router(notice_admin_router, prefix="/v1")
 app.include_router(guest_inquiry_router, prefix="/v1")
 app.include_router(admin_router, prefix="/v1")
 app.include_router(admin_overview_router, prefix="/v1")
