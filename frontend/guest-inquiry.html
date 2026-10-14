@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 로그인·가입 문의</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  textarea{font:inherit; font-size:13.5px; padding:10px 12px; border-radius:12px; border:1.5px solid var(--sage-light); background:#fff; color:var(--ink); width:100%; min-height:120px; resize:vertical}
+  .box{background:#fff; border:1px solid var(--sage-light); border-radius:16px; padding:14px 16px; margin:0 0 12px; font-size:13.5px; line-height:1.7; white-space:pre-wrap; word-break:break-all}
+  .box.ans{background:var(--cream)}
+  .box .lb{display:block; font-size:12px; color:var(--muted); font-weight:700; margin-bottom:4px; white-space:normal}
+  .code{font-size:22px; font-weight:900; letter-spacing:1px; text-align:center; padding:12px; background:var(--cream); border-radius:14px; margin:8px 0; user-select:all}
+  .hp{position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden}
+  hr.sp{border:0; border-top:1px solid var(--sage-light); margin:22px 0}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" id="screen">
+        <p class="sect" style="margin-top:0">로그인·가입이 안 될 때 문의하기</p>
+        <p class="hint" style="margin:0 0 12px">로그인하지 않아도 문의를 남길 수 있어요. 이메일을 받지 않고 이 서비스 안에서만 보관해요. 답변은 문의를 보낼 때 알려 드리는 <b>조회 번호</b>로 확인할 수 있어요. <b>건강정보(혈압, 진단명 등)는 적지 마세요.</b></p>
+
+        <div id="form-area">
+          <div class="field"><label>제목</label><input id="g-title" maxlength="100" placeholder="예: 로그인이 안 돼요"></div>
+          <div class="field" style="margin-top:10px"><label>내용</label><textarea id="g-body" maxlength="1000" placeholder="어떤 화면에서 어떤 문제가 생기는지 적어 주세요"></textarea></div>
+          <div class="hp" aria-hidden="true"><label>웹사이트<input id="g-website" tabindex="-1" autocomplete="off"></label></div>
+          <p id="g-err" class="err" style="margin-top:6px; display:none"></p>
+          <button type="button" class="cta" id="g-send" style="margin-top:12px">문의 보내기</button>
+        </div>
+
+        <div id="done-area" style="display:none">
+          <p class="ok" style="font-weight:700; margin:0">문의를 남겼어요.</p>
+          <p class="hint" style="margin:6px 0 0">아래 조회 번호는 <b>지금만 보여 드려요.</b> 꼭 저장해 두세요. 답변이 오면 이 번호로 확인할 수 있어요.</p>
+          <div class="code" id="g-code"></div>
+          <button type="button" class="ghost" id="g-copy">번호 복사하기</button>
+        </div>
+
+        <hr class="sp">
+        <p class="sect" style="margin-top:0">답변 확인하기</p>
+        <div class="field"><label>조회 번호</label><input id="v-code" placeholder="XXXX-XXXX-XXXX" maxlength="20" autocomplete="off"></div>
+        <p id="v-err" class="err" style="margin-top:6px; display:none"></p>
+        <button type="button" class="ghost" id="v-btn" style="margin-top:10px">확인하기</button>
+        <div id="v-result" style="margin-top:12px"></div>
+
+        <a class="ghost" href="login.html" style="margin-top:16px; text-align:center">로그인 화면으로</a>
+        <p class="hint" style="margin-top:10px">답변이 오기까지 시간이 걸릴 수 있어요. 문의는 접수 후 30일이 지나면 삭제돼요.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const kst = (iso) => {
+  const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + 'Z');   // 서버 시각은 UTC
+  return isNaN(d) ? '' : d.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
+const $ = (id) => document.getElementById(id);
+// 로그인 없이 쓰는 API라 토큰 없이 부른다 (apiCall은 로그인 토큰을 붙이고 401이면 로그인 화면으로 보낸다)
+async function call(method, path, body) {
+  const res = await fetch(`${API_BASE}${path}`, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const j = await res.json();
+  if (!res.ok) throw new Error(j.error?.message || '요청에 실패했습니다');
+  return j.data;
+}
+function show(el, msg) { el.textContent = msg || ''; el.style.display = msg ? 'block' : 'none'; }
+
+$('g-send').addEventListener('click', async () => {
+  const title = $('g-title').value.trim(), body = $('g-body').value.trim();
+  show($('g-err'), '');
+  if (!title || !body) return show($('g-err'), '제목과 내용을 모두 입력해 주세요.');
+  $('g-send').disabled = true; $('g-send').textContent = '보내는 중...';
+  try {
+    const d = await call('POST', '/guest-inquiries', { title, body, website: $('g-website').value });
+    $('g-code').textContent = d.code; $('form-area').style.display = 'none'; $('done-area').style.display = 'block'; $('v-code').value = d.code;
+  } catch (e) { show($('g-err'), friendlyError(e)); $('g-send').disabled = false; $('g-send').textContent = '문의 보내기'; }
+});
+$('g-copy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('g-code').textContent); $('g-copy').textContent = '복사했어요 ✓'; } catch (e) { $('g-copy').textContent = '번호를 길게 눌러 복사해 주세요'; }
+});
+$('v-btn').addEventListener('click', async () => {
+  show($('v-err'), ''); $('v-result').innerHTML = '';
+  const code = $('v-code').value.trim();
+  if (!code) return show($('v-err'), '조회 번호를 입력해 주세요.');
+  try {
+    const d = await call('GET', `/guest-inquiries/${encodeURIComponent(code)}`);
+    $('v-result').innerHTML = `<p class="sect" style="margin-top:0">${esc(d.title)}</p>
+      <p class="hint" style="margin:0 0 8px">${kst(d.created_at)}에 남긴 문의</p>
+      <div class="box"><span class="lb">내 문의</span>${esc(d.body)}</div>
+      ${d.answer ? `<div class="box ans"><span class="lb">답변 · ${kst(d.answered_at)}</span>${esc(d.answer)}</div>` : '<div class="box ans"><span class="lb">답변</span>아직 답변을 준비하고 있어요. 나중에 다시 확인해 주세요.</div>'}`;
+  } catch (e) { show($('v-err'), friendlyError(e)); }
+});
+</script>
+</body>
+</html>
