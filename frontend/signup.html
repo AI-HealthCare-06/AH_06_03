@@ -98,6 +98,24 @@
 <script src="assets/api.js"></script>
 <script src="assets/policies.js"></script>
 <script>
+// 가입할 때 서버에 보내는 동의: 화면에 보여 준 정책(서버의 현재 유효한 정책)의 ID·버전과 체크 값. 서버가 이 값을 검사하고 그대로 기록한다.
+const AGREE_BOX = { terms_of_service: 'agree-terms', privacy: 'agree-privacy', health_data: 'agree-health' };
+let shownPolicies = null;
+async function fetchServerPolicies() {
+  try {
+    const list = (await (await fetch(`${API_BASE}/consent-policies/active`)).json()).data;
+    if (Array.isArray(list) && list.length) return list;
+  } catch (e) { /* 아래에서 다시 시도 */ }
+  return null;
+}
+fetchServerPolicies().then(l => { shownPolicies = l; });
+function buildConsents() {
+  return Object.keys(AGREE_BOX).map(t => {
+    const p = (shownPolicies || []).find(x => x.policy_type === t);
+    return p ? { policy_id: p.policy_id, version: p.version, agreed: document.getElementById(AGREE_BOX[t]).checked } : null;
+  });
+}
+
 // 약관 내용 보기: 서버의 현재 유효한 정책(GET /consent-policies/active)을 보여 주고, 못 받으면 내장 문구(policies.js)를 보여 준다.
 const TERMS_TITLE = { terms_of_service: '이용약관', privacy: '개인정보 수집·이용', health_data: '건강정보(민감정보) 수집·이용' };
 const esc = (t) => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -167,7 +185,10 @@ form.addEventListener('submit', async (event) => {
   submitBtn.disabled = true;
   submitBtn.textContent = '가입하는 중...';
   try {
-    await apiSignup(email, pw, birth);
+    if (!shownPolicies) shownPolicies = await fetchServerPolicies();
+    const consents = buildConsents();
+    if (consents.some(c => !c)) throw new Error('약관을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
+    await apiSignup(email, pw, birth, { consents });
     ['paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-cycle-history', 'paeon-progress'].forEach(k => localStorage.removeItem(k));
     localStorage.setItem('paeon-profile', JSON.stringify({ email, birth }));
     // 가입 후 자동 로그인하지 않고 홈에서 다시 로그인하게 한다
