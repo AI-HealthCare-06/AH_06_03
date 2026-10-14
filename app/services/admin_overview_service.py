@@ -44,23 +44,31 @@ def _rate(part: int, whole: int | None) -> float | None:
     return round(part / whole, 3) if whole else None
 
 
-async def _count_users(db: AsyncSession, column, *conditions) -> int:
-    query = select(func.count(func.distinct(column)))
+async def _user_ids(db: AsyncSession, column, *conditions) -> set[str]:
+    """조건에 맞는 사용자 번호 모음. 단계별 인원을 세는 데만 쓰고 응답에는 넣지 않는다."""
+    query = select(column).distinct()
     if conditions:
         query = query.where(*conditions)
-    return int((await db.execute(query)).scalar_one())
+    return set((await db.execute(query)).scalars().all())
 
 
 async def funnel(db: AsyncSession) -> list[FunnelStage]:
-    counts = {
-        "signup": await _count_users(db, User.user_id, User.status == "active"),
-        "eligibility": await _count_users(db, EligibilityAssessment.user_id),
-        "health": await _count_users(db, HealthRecord.user_id),
-        "survey": await _count_users(db, SurveyInstance.user_id, SurveyInstance.status == "submitted"),
-        "prediction": await _count_users(db, Prediction.user_id, Prediction.status == "completed"),
-        "challenge_started": await _count_users(db, ChallengeCycle.user_id),
-        "challenge_completed": await _count_users(db, ChallengeCycle.user_id, ChallengeCycle.status == "completed"),
+    active = await _user_ids(db, User.user_id, User.status == "active")
+    records = {
+        "eligibility": await _user_ids(db, EligibilityAssessment.user_id),
+        "health": await _user_ids(db, HealthRecord.user_id),
+        "survey": await _user_ids(db, SurveyInstance.user_id, SurveyInstance.status == "submitted"),
+        "prediction": await _user_ids(db, Prediction.user_id, Prediction.status == "completed"),
+        "challenge_started": await _user_ids(db, ChallengeCycle.user_id),
+        "challenge_completed": await _user_ids(db, ChallengeCycle.user_id, ChallengeCycle.status == "completed"),
     }
+    # "그 단계까지 간 사람" = 그 단계나 더 뒤 단계에 기록이 있는 활성 사용자.
+    # 대상 확인 저장이 생기기 전에 가입한 사람처럼 앞 단계 기록이 없어도 뒤 단계에 왔으면 지나간 것으로 센다.
+    # 그래서 아래 단계가 위 단계보다 많아지지 않는다(앞 단계 대비 100% 이하).
+    counts, reached = {"signup": len(active)}, set()
+    for code, _ in reversed(FUNNEL[1:]):
+        reached |= records[code] & active
+        counts[code] = len(reached)
     stages, previous = [], None
     for code, label in FUNNEL:
         n = counts[code]
