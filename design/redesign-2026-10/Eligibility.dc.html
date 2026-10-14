@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>대상 확인</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 960px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <div style="height: 64px; padding: 0 8px; display: flex; align-items: center; gap: 4px">
+    <a href="Login.dc.html" aria-label="뒤로" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#243749" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
+  </div>
+
+  <div style="padding: 8px 20px 0; display: flex; flex-direction: column; gap: 10px">
+    <div style="font-size: 28px; font-weight: 800; letter-spacing: -0.7px; line-height: 1.3">먼저 세 가지만<br>확인할게요</div>
+    <div style="font-size: 14px; color: #4A5C6D; line-height: 1.6">나에게 맞는 안내를 드리려고 해요.</div>
+  </div>
+
+  <div style="padding: 28px 20px 0; display: flex; flex-direction: column; gap: 26px">
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span style="font-size: 16px; font-weight: 800; line-height: 1.45">만 나이가 어떻게 되나요?</span>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <span style="height: 44px; box-sizing: border-box; padding: 0 18px; border-radius: 22px; border: 2px solid #5C86AC; background: #E4F0F5; font-size: 15px; font-weight: 700; display: inline-flex; align-items: center">32~70세</span>
+        <span style="height: 44px; box-sizing: border-box; padding: 0 18px; border-radius: 22px; border: 1px solid #E6DBCD; font-size: 15px; display: inline-flex; align-items: center">19~31세 또는 71세 이상</span>
+        <span style="height: 44px; box-sizing: border-box; padding: 0 18px; border-radius: 22px; border: 1px solid #E6DBCD; font-size: 15px; display: inline-flex; align-items: center">19세 미만</span>
+      </div>
+      <span style="font-size: 13px; color: #5A6B7A; line-height: 1.6">만 19세 이상 이용할 수 있고, 10년 내 심장 혈관 건강 신호는 만 32~70세에게만 분석해요.</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span style="font-size: 16px; font-weight: 800; line-height: 1.45">의사에게 심장 혈관 질환(협심증·심근경색 등)을<br>진단받은 적이 있나요?</span>
+      <div style="display: flex; gap: 10px">
+        <span style="flex: 1; height: 56px; box-sizing: border-box; border-radius: 16px; border: 2px solid #5C86AC; background: #E4F0F5; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; text-align: center">아니오</span>
+        <span style="flex: 1; height: 56px; box-sizing: border-box; border-radius: 16px; border: 1px solid #E6DBCD; font-size: 15px; display: flex; align-items: center; justify-content: center; text-align: center">예</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span style="font-size: 16px; font-weight: 800; line-height: 1.45">지금 가슴 통증·심한 두통·한쪽 마비·<br>말이 어눌해짐이 있나요?</span>
+      <div style="display: flex; gap: 10px">
+        <span style="flex: 1; height: 56px; box-sizing: border-box; border-radius: 16px; border: 2px solid #5C86AC; background: #E4F0F5; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; text-align: center">아니오</span>
+        <span style="flex: 1; height: 56px; box-sizing: border-box; border-radius: 16px; border: 1px solid #E6DBCD; font-size: 15px; display: flex; align-items: center; justify-content: center; text-align: center">예</span>
+        <span style="flex: 1; height: 56px; box-sizing: border-box; border-radius: 16px; border: 1px solid #E6DBCD; font-size: 15px; display: flex; align-items: center; justify-content: center; text-align: center">잘 모르겠습니다</span>
+      </div>
+      <div style="background: #F8F1E7; border-radius: 14px; padding: 12px 14px; font-size: 13px; color: #4A5C6D; line-height: 1.6">"예"나 "잘 모르겠습니다"를 고르면 지금 바로 119에 연락하라고 안내해요. 이 서비스는 응급 판단을 하지 않아요. 안내를 확인하면 "그래도 진행"으로 이어서 할 수 있어요.</div>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 20px 28px; background: #FFFFFF">
+    <a href="HealthInput.dc.html" style="height: 56px; border-radius: 28px; background: #81A6C6; color: #1E3246; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center">다음</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

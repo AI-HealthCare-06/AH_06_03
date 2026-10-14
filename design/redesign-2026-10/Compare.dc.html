@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>4주 전·후 비교</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1300px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <div style="height: 64px; padding: 0 8px; display: flex; align-items: center; gap: 4px">
+    <a href="Trend.dc.html" aria-label="뒤로" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#243749" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
+    <span style="font-size: 17px; font-weight: 800">4주 전·후 비교</span>
+  </div>
+
+  <div style="padding: 8px 20px 0; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 13px; color: #5A6B7A">1차 챌린지 · 9월 16일 ~ 10월 13일</span>
+      <div style="font-size: 28px; font-weight: 800; letter-spacing: -0.7px; line-height: 1.3">4주 동안<br>이렇게 달라졌어요</div>
+    </div>
+
+    <!-- 혈압 그래프 -->
+    <div style="border: 1px solid #E6DBCD; border-radius: 20px; padding: 20px 20px 16px; display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 800">수축기 혈압</span><span style="font-size: 13px; color: #5A6B7A">mmHg</span></div>
+      <svg width="310" height="170" viewBox="0 0 310 170" role="img" aria-label="수축기 혈압이 시작 138에서 4주 후 129로 내려갔어요" style="display: block">
+        <line x1="0" y1="92" x2="310" y2="92" stroke="#5A6B7A" stroke-width="1" stroke-dasharray="4 4"></line>
+        <text x="310" y="84" text-anchor="end" font-size="12" fill="#5A6B7A" font-family="Nanum Gothic, sans-serif">기준 130</text>
+        <line x1="70" y1="54" x2="240" y2="97" stroke="#243749" stroke-width="2.5" stroke-linecap="round"></line>
+        <circle cx="70" cy="54" r="6" fill="#243749"></circle>
+        <circle cx="240" cy="97" r="6" fill="#FFFFFF" stroke="#243749" stroke-width="2.5"></circle>
+        <text x="70" y="36" text-anchor="middle" font-size="16" font-weight="800" fill="#243749" font-family="Nanum Gothic, sans-serif">138</text>
+        <text x="240" y="125" text-anchor="middle" font-size="16" font-weight="800" fill="#243749" font-family="Nanum Gothic, sans-serif">129</text>
+        <text x="70" y="160" text-anchor="middle" font-size="13" fill="#5A6B7A" font-family="Nanum Gothic, sans-serif">시작</text>
+        <text x="240" y="160" text-anchor="middle" font-size="13" fill="#5A6B7A" font-family="Nanum Gothic, sans-serif">4주 후</text>
+      </svg>
+    </div>
+
+    <!-- 전·후 표 -->
+    <div style="display: flex; flex-direction: column">
+      <div style="display: flex; padding: 0 0 10px; font-size: 13px; color: #5A6B7A"><span style="flex: 1">항목</span><span style="width: 84px; text-align: right">시작</span><span style="width: 96px; text-align: right">4주 후</span></div>
+      <div style="display: flex; align-items: center; min-height: 56px; border-top: 1px solid #E6DBCD; font-size: 15px"><span style="flex: 1; color: #4A5C6D">혈압</span><span style="width: 84px; text-align: right; color: #5A6B7A">138/88</span><span style="width: 96px; text-align: right; font-weight: 800">129/82</span></div>
+      <div style="display: flex; align-items: center; min-height: 56px; border-top: 1px solid #E6DBCD; font-size: 15px"><span style="flex: 1; color: #4A5C6D">체중</span><span style="width: 84px; text-align: right; color: #5A6B7A">66.0kg</span><span style="width: 96px; text-align: right; font-weight: 800">64.8kg</span></div>
+      <div style="display: flex; align-items: center; min-height: 56px; border-top: 1px solid #E6DBCD; font-size: 15px"><span style="flex: 1; color: #4A5C6D">허리둘레</span><span style="width: 84px; text-align: right; color: #5A6B7A">84cm</span><span style="width: 96px; text-align: right; font-weight: 800">82cm</span></div>
+      <div style="display: flex; align-items: center; min-height: 56px; border-top: 1px solid #E6DBCD; font-size: 15px"><span style="flex: 1; color: #4A5C6D">챌린지 달성률</span><span style="width: 84px; text-align: right; color: #5A6B7A">—</span><span style="width: 96px; text-align: right; font-weight: 800">78%</span></div>
+      <div style="display: flex; align-items: center; min-height: 56px; border-top: 1px solid #E6DBCD; border-bottom: 1px solid #E6DBCD; font-size: 15px"><span style="flex: 1; color: #4A5C6D">건강 신호</span><span style="width: 84px; text-align: right; color: #5A6B7A">주의</span><span style="width: 96px; text-align: right; font-weight: 800">주의</span></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column">
+      <div style="font-size: 18px; font-weight: 800; padding-bottom: 8px">습관 변화</div>
+      <div style="display: flex; align-items: center; justify-content: space-between; min-height: 56px; border-top: 1px solid #E6DBCD; font-size: 15px"><span style="color: #4A5C6D">흡연</span><span>피운 적 없음 → <b>피운 적 없음</b></span></div>
+      <div style="display: flex; align-items: center; justify-content: space-between; min-height: 56px; border-top: 1px solid #E6DBCD; border-bottom: 1px solid #E6DBCD; font-size: 15px"><span style="color: #4A5C6D">음주</span><span>한 달에 2–4번 → <b>한 달에 1번</b></span></div>
+    </div>
+
+    <!-- 비슷한 사람 비교 -->
+    <div style="background: #F8F1E7; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 13px; color: #4A5C6D">혈압이 정상인 사람들의 전체 자료와 비교했어요</span>
+      <span style="font-size: 18px; font-weight: 800">더 비슷해졌어요</span>
+      <span style="font-size: 13px; color: #4A5C6D; line-height: 1.6">허리둘레, 몸무게, 술은 내가 바꿀 수 있는 부분이에요. 4주 뒤에 다시 비교해 봐요.</span>
+    </div>
+
+    <div style="font-size: 13px; color: #5A6B7A; line-height: 1.7">진단이 아닌 참고 정보예요. 걱정되면 의료기관에 상담하세요.</div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 20px 28px; background: #FFFFFF; border-top: 1px solid #E6DBCD; display: flex; flex-direction: column; gap: 8px">
+    <a href="ChallengePick.dc.html" style="height: 56px; border-radius: 28px; background: #81A6C6; color: #1E3246; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center">2차 챌린지 시작하기</a>
+    <a href="Summary.dc.html" style="height: 48px; border-radius: 24px; border: 1px solid #D2C4B4; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center">12주 요약 보기</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>관리자 · 가입자</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+input,select{outline:none}
+</style>
+</helmet>
+<div style="display: flex; width: 1280px; height: 900px; background: #F8F1E7; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <aside style="width: 240px; flex: none; box-sizing: border-box; background: #FFFFFF; border-right: 1px solid #E6DBCD; padding: 28px 16px; display: flex; flex-direction: column; gap: 4px">
+    <div style="font-size: 20px; font-weight: 800; letter-spacing: 3px; padding: 0 12px">PAEON</div>
+    <div style="font-size: 13px; color: #5A6B7A; padding: 2px 12px 22px">관리자</div>
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="7">
+      <a href="{{n.href}}" style="display: flex; align-items: center; justify-content: space-between; height: 44px; box-sizing: border-box; padding: 0 12px; border-radius: 12px; font-size: 15px; background: {{n.bg}}; color: {{n.color}}; font-weight: {{n.weight}}"><span>{{n.label}}</span><span style="display: {{n.show}}; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 10px; background: #5C86AC; color: #FFFFFF; font-size: 12px; font-weight: 800; align-items: center; justify-content: center">{{n.badge}}</span></a>
+    </sc-for>
+    <div style="flex: 1"></div>
+    <div style="border-top: 1px solid #E6DBCD; padding: 16px 12px 0; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 700">admin@paeon.kr</span><a href="Login.dc.html" style="font-size: 13px; color: #5A6B7A; text-decoration: underline">로그아웃</a></div>
+  </aside>
+
+  <main style="flex: 1; min-width: 0; padding: 32px 40px; display: flex; flex-direction: column; gap: 18px; overflow: hidden">
+    <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px">가입자</span><span style="font-size: 14px; color: #4A5C6D; line-height: 1.6">가입자의 진행 단계와 동의 상태만 보여요. 건강 수치와 일기·사진은 볼 수 없고, 이메일은 일부를 가려서 보여요.</span></div>
+
+    <div style="display: flex; gap: 10px; flex-wrap: wrap">
+      <input placeholder="이메일 검색" aria-label="이메일 검색" style="width: 240px; height: 44px; box-sizing: border-box; border: 1px solid #D2C4B4; border-radius: 12px; background: #FFFFFF; padding: 0 14px; font: 500 14px 'Nanum Gothic', sans-serif; color: #243749">
+      <select aria-label="단계" style="height: 44px; border: 1px solid #D2C4B4; border-radius: 12px; background: #FFFFFF; padding: 0 12px; font: 500 14px 'Nanum Gothic', sans-serif; color: #243749"><option>단계 전체</option><option>가입만</option><option>대상 확인</option><option>건강정보</option><option>설문</option><option>분석</option><option>챌린지</option></select>
+      <select aria-label="동의" style="height: 44px; border: 1px solid #D2C4B4; border-radius: 12px; background: #FFFFFF; padding: 0 12px; font: 500 14px 'Nanum Gothic', sans-serif; color: #243749"><option>건강정보 동의 전체</option><option>동의</option><option>철회</option><option>기록 없음</option></select>
+      <select aria-label="상태" style="height: 44px; border: 1px solid #D2C4B4; border-radius: 12px; background: #FFFFFF; padding: 0 12px; font: 500 14px 'Nanum Gothic', sans-serif; color: #243749"><option>상태 전체</option><option>이용 중</option><option>탈퇴</option></select>
+      <span style="height: 44px; padding: 0 22px; border-radius: 22px; background: #81A6C6; color: #1E3246; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center">검색</span>
+    </div>
+
+    <div style="display: flex; gap: 16px; align-items: flex-start">
+      <div style="flex: 1; min-width: 0; background: #FFFFFF; border: 1px solid #E6DBCD; border-radius: 22px; overflow: hidden">
+        <div style="display: grid; grid-template-columns: 90px 1fr 110px 100px 120px; gap: 8px; padding: 14px 20px; font-size: 13px; font-weight: 700; color: #5A6B7A; border-bottom: 1px solid #E6DBCD"><span>번호</span><span>이메일</span><span>가입일</span><span>단계</span><span>건강정보 동의</span></div>
+        <div style="display: grid; grid-template-columns: 90px 1fr 110px 100px 120px; gap: 8px; padding: 14px 20px; font-size: 14px; background: #E4F0F5; border-bottom: 1px solid #E6DBCD"><span>a41f9c</span><span>us***@example.com</span><span>2026-10-02</span><span>챌린지</span><span>동의</span></div>
+        <div style="display: grid; grid-template-columns: 90px 1fr 110px 100px 120px; gap: 8px; padding: 14px 20px; font-size: 14px; border-bottom: 1px solid #E6DBCD"><span>7be203</span><span>ki***@gmail.com</span><span>2026-10-01</span><span>분석</span><span>동의</span></div>
+        <div style="display: grid; grid-template-columns: 90px 1fr 110px 100px 120px; gap: 8px; padding: 14px 20px; font-size: 14px; border-bottom: 1px solid #E6DBCD"><span>c9d51a</span><span>pa***@naver.com</span><span>2026-09-30</span><span>설문</span><span>동의</span></div>
+        <div style="display: grid; grid-template-columns: 90px 1fr 110px 100px 120px; gap: 8px; padding: 14px 20px; font-size: 14px; border-bottom: 1px solid #E6DBCD"><span>0f8e77</span><span>mi***@daum.net</span><span>2026-09-29</span><span>건강정보</span><span>철회</span></div>
+        <div style="display: grid; grid-template-columns: 90px 1fr 110px 100px 120px; gap: 8px; padding: 14px 20px; font-size: 14px; border-bottom: 1px solid #E6DBCD"><span>5d2a60</span><span>je***@example.com</span><span>2026-09-27</span><span>대상 확인</span><span>기록 없음</span></div>
+        <div style="display: grid; grid-template-columns: 90px 1fr 110px 100px 120px; gap: 8px; padding: 14px 20px; font-size: 14px; border-bottom: 1px solid #E6DBCD"><span>e710b4</span><span>so***@gmail.com</span><span>2026-09-25</span><span>가입만</span><span>기록 없음</span></div>
+        <div style="display: grid; grid-template-columns: 90px 1fr 110px 100px 120px; gap: 8px; padding: 14px 20px; font-size: 14px"><span>3c9a18</span><span>ha***@naver.com</span><span>2026-09-24</span><span>챌린지</span><span>동의</span></div>
+      </div>
+
+      <div style="width: 340px; flex: none; box-sizing: border-box; background: #FFFFFF; border: 1px solid #E6DBCD; border-radius: 22px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+        <span style="font-size: 13px; font-weight: 700; color: #5A6B7A">선택한 가입자</span>
+        <span style="font-size: 17px; font-weight: 800">us***@example.com <span style="font-size: 13px; font-weight: 500; color: #5A6B7A">(a41f9c)</span></span>
+        <div style="font-size: 14px; color: #4A5C6D; line-height: 1.8">상태 이용 중 · 가입 2026-10-02<br>진행 단계: 가입 → 대상 확인 → 건강정보 → 설문 → 분석 → 챌린지<br>챌린지 사이클 1번 시작</div>
+        <div style="height: 1px; background: #E6DBCD"></div>
+        <span style="font-size: 13px; font-weight: 700; color: #5A6B7A">동의 기록</span>
+        <div style="font-size: 13.5px; line-height: 1.8">· 이용약관 v4 · 동의 (2026-10-02)<br>· 개인정보 v4 · 동의 (2026-10-02)<br>· 건강정보 v4 · 동의 (2026-10-02)</div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 10px; align-items: center; font-size: 13px; color: #5A6B7A"><span style="height: 38px; padding: 0 16px; border-radius: 19px; border: 1px solid #D2C4B4; display: inline-flex; align-items: center; color: #243749; font-weight: 700">이전</span><span>128명 중 1–50</span><span style="height: 38px; padding: 0 16px; border-radius: 19px; border: 1px solid #D2C4B4; display: inline-flex; align-items: center; color: #243749; font-weight: 700">다음</span></div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ACTIVE = 'users';
+    const items = [['mission', '미션 관리', 'AdminMission.dc.html', ''], ['users', '가입자', 'AdminUsers.dc.html', ''], ['stats', '챌린지 통계', 'AdminStats.dc.html', ''], ['cchal', '커뮤니티 챌린지', 'AdminCommunityChallenge.dc.html', ''], ['logs', '열람 기록', 'AdminLogs.dc.html', ''], ['inq', '문의', 'AdminInquiries.dc.html', '3'], ['reports', '커뮤니티 신고', 'AdminReports.dc.html', '2'], ['purge', '테스트 계정 삭제', 'AdminPurge.dc.html', '']];
+    return { nav: items.map(([k, label, href, badge]) => ({ label, href, badge, show: badge ? 'flex' : 'none', bg: k === ACTIVE ? '#E4F0F5' : 'transparent', color: k === ACTIVE ? '#243749' : '#4A5C6D', weight: k === ACTIVE ? 800 : 500 })) };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>내 데이터</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1640px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <div style="height: 64px; padding: 0 8px; display: flex; align-items: center; gap: 4px">
+    <a href="MyPage.dc.html" aria-label="뒤로" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#243749" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
+    <span style="font-size: 17px; font-weight: 800">내 데이터</span>
+  </div>
+
+  <div style="padding: 0 20px; display: flex; flex-direction: column; gap: 22px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px">내 데이터</span>
+      <span style="font-size: 13px; color: #5A6B7A; line-height: 1.6">파이온 PAEON · 2026-10-14 13:20 기준 · 이 기기에 저장된 값을 정리했어요</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 16px; font-weight: 800">기본 정보</span>
+      <div style="border: 1px solid #E6DBCD; border-radius: 20px; padding: 2px 16px">
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; font-size: 14px"><span style="color: #5A6B7A">이메일</span><b>user@example.com</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A">생년월일</span><b>1984-03-12</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A">성별</span><b>여</b></div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 16px; font-weight: 800">건강정보</span>
+      <div style="border: 1px solid #E6DBCD; border-radius: 20px; padding: 2px 16px">
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; font-size: 14px"><span style="color: #5A6B7A; flex: none">입력일</span><b style="text-align: right">2026-10-02</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">혈압</span><b style="text-align: right">128/82 mmHg</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">키 / 몸무게</span><b style="text-align: right">165cm / 64.8kg</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">허리둘레</span><b style="text-align: right">82cm</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">일반담배</span><b style="text-align: right">피운 적 없음</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">전자담배</span><b style="text-align: right">사용 안 함</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">음주(최근 1년)</span><b style="text-align: right">한 달에 2–4번 · 한 번에 3–4잔</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">당뇨병</span><b style="text-align: right">없음</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">고혈압 진단·치료</span><b style="text-align: right">진단받은 적 없음</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">총콜레스테롤</span><b style="text-align: right">입력 안 함</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">부모 고혈압 가족력</span><b style="text-align: right">있음</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">공복혈당</span><b style="text-align: right">입력 안 함</b></div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 16px; font-weight: 800">생활습관 설문</span>
+      <div style="border: 1px solid #E6DBCD; border-radius: 20px; padding: 2px 16px">
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; font-size: 14px"><span style="color: #5A6B7A; flex: none">추정 나트륨 섭취량</span><b style="text-align: right">약 3,400mg/일 · 주의 (많음)</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">운동(주당)</span><b style="text-align: right">1시간 이상 ~ 2시간 30분 미만</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">하루 평균 걸음 수</span><b style="text-align: right">6,200걸음</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">외식·배달</span><b style="text-align: right">주 3–4회</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">아침 식사</span><b style="text-align: right">주 3–4회</b></div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 16px; font-weight: 800">분석 결과</span>
+      <div style="border: 1px solid #E6DBCD; border-radius: 20px; padding: 2px 16px">
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; font-size: 14px"><span style="color: #5A6B7A; flex: none">입력 혈압 판정</span><b style="text-align: right">고혈압전단계</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">10년 내 심장 혈관 건강 신호</span><b style="text-align: right">주의</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">혈관 나이(추정)</span><b style="text-align: right">52세</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">나와 비슷한 사람들과 비교</span><b style="text-align: right">조금 달라요</b></div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 16px; font-weight: 800">챌린지</span>
+      <div style="border: 1px solid #E6DBCD; border-radius: 20px; padding: 2px 16px">
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; font-size: 14px"><span style="color: #5A6B7A; flex: none">챌린지</span><b style="text-align: right">12주 중 1차 (4주)</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">시작일</span><b style="text-align: right">2026-09-16</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">미션</span><b style="text-align: right; line-height: 1.6">식후 10분 걷기<br>국물은 반만 먹기<br>저녁에 채소 한 접시</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">모든 미션을 마친 날</span><b style="text-align: right">18일</b></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid #E6DBCD; font-size: 14px"><span style="color: #5A6B7A; flex: none">혈압 기록</span><b style="text-align: right; line-height: 1.6">9/16: 138/88 mmHg<br>10/13: 129/82 mmHg</b></div>
+      </div>
+    </div>
+
+    <div style="font-size: 12px; color: #5A6B7A; line-height: 1.7">진단이 아닌 선별 정보입니다. AI가 분석한 참고 정보이며, 정확한 진단은 의사에게 문의하세요. 서버에 저장된 모든 원본 기록은 마이페이지의 "원본 데이터 내려받기(JSON)"로 받을 수 있어요.</div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 20px 28px; background: #FFFFFF; border-top: 1px solid #E6DBCD; display: flex; gap: 10px">
+    <a href="MyPage.dc.html" style="width: 110px; height: 56px; box-sizing: border-box; border-radius: 28px; border: 1px solid #D2C4B4; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center">돌아가기</a>
+    <a href="MyData.dc.html" style="flex: 1; height: 56px; border-radius: 28px; background: #81A6C6; color: #1E3246; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center">PDF로 저장</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1640}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

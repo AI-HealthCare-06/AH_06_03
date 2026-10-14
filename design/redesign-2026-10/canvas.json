@@ -1,0 +1,518 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "AdminCommunityChallenge.dc.html": {
+      "h": 1000,
+      "title": "관리자 · 커뮤니티 챌린지",
+      "w": 1280,
+      "x": 1360,
+      "y": 19560
+    },
+    "AdminInquiries.dc.html": {
+      "h": 900,
+      "title": "관리자 · 문의",
+      "w": 1280,
+      "x": 0,
+      "y": 18260
+    },
+    "AdminLogs.dc.html": {
+      "h": 860,
+      "title": "관리자 · 열람 기록",
+      "w": 1280,
+      "x": 1360,
+      "y": 17000
+    },
+    "AdminMission.dc.html": {
+      "h": 1020,
+      "title": "관리자 · 미션 관리",
+      "w": 1280,
+      "x": 0,
+      "y": 15700
+    },
+    "AdminPurge.dc.html": {
+      "h": 800,
+      "title": "관리자 · 테스트 계정 삭제",
+      "w": 1280,
+      "x": 1360,
+      "y": 18260
+    },
+    "AdminReports.dc.html": {
+      "h": 860,
+      "title": "관리자 · 커뮤니티 신고",
+      "w": 1280,
+      "x": 0,
+      "y": 19560
+    },
+    "AdminStats.dc.html": {
+      "h": 860,
+      "title": "관리자 · 챌린지 통계",
+      "w": 1280,
+      "x": 0,
+      "y": 17000
+    },
+    "AdminUsers.dc.html": {
+      "h": 900,
+      "title": "관리자 · 가입자",
+      "w": 1280,
+      "x": 1360,
+      "y": 15700
+    },
+    "Badges.dc.html": {
+      "h": 1000,
+      "title": "내 배지",
+      "w": 390,
+      "x": 470,
+      "y": 5800
+    },
+    "Calendar.dc.html": {
+      "h": 1300,
+      "title": "캘린더",
+      "w": 390,
+      "x": 1410,
+      "y": 7200
+    },
+    "Challenge.dc.html": {
+      "h": 900,
+      "title": "챌린지 인증",
+      "w": 390,
+      "x": 0,
+      "y": 2980
+    },
+    "ChallengeDetail.dc.html": {
+      "h": 1330,
+      "title": "챌린지 순위",
+      "w": 390,
+      "x": 470,
+      "y": 20900
+    },
+    "ChallengePick.dc.html": {
+      "h": 1000,
+      "title": "챌린지 고르기",
+      "w": 390,
+      "x": 0,
+      "y": 5800
+    },
+    "CharacterCreate.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "캐릭터 만들기",
+      "w": 390,
+      "x": 0,
+      "y": 10200
+    },
+    "CommunityChallenges.dc.html": {
+      "h": 920,
+      "title": "커뮤니티 · 챌린지",
+      "w": 390,
+      "x": 0,
+      "y": 20900
+    },
+    "Compare.dc.html": {
+      "h": 1300,
+      "title": "4주 전·후 비교",
+      "w": 390,
+      "x": 1410,
+      "y": 1360
+    },
+    "Eligibility.dc.html": {
+      "h": 960,
+      "title": "대상 확인",
+      "w": 390,
+      "x": 0,
+      "y": 7200
+    },
+    "Feed.dc.html": {
+      "h": 1060,
+      "title": "커뮤니티 피드",
+      "w": 390,
+      "x": 940,
+      "y": 2980
+    },
+    "GuestInquiry.dc.html": {
+      "h": 844,
+      "title": "비회원 문의 · 문의 남기기",
+      "w": 390,
+      "x": 1880,
+      "y": 11560
+    },
+    "GuestInquiryCheck.dc.html": {
+      "h": 844,
+      "title": "비회원 문의 · 답변 확인",
+      "w": 390,
+      "x": 2820,
+      "y": 11560
+    },
+    "GuestInquiryDone.dc.html": {
+      "h": 844,
+      "title": "조회 번호 발급",
+      "w": 390,
+      "x": 2350,
+      "y": 11560
+    },
+    "Guide.dc.html": {
+      "h": 844,
+      "title": "검사·상담 안내",
+      "w": 390,
+      "x": 470,
+      "y": 13500
+    },
+    "HealthInput.dc.html": {
+      "h": 844,
+      "title": "건강정보 입력 (한 화면 한 질문)",
+      "w": 390,
+      "x": 470,
+      "y": 1360
+    },
+    "Home.dc.html": {
+      "h": 844,
+      "title": "홈",
+      "w": 390,
+      "x": 0,
+      "y": 1360
+    },
+    "Inquiries.dc.html": {
+      "h": 1000,
+      "title": "1:1 문의",
+      "w": 390,
+      "x": 470,
+      "y": 8700
+    },
+    "InquiryDetail.dc.html": {
+      "h": 844,
+      "title": "문의 상세",
+      "w": 390,
+      "x": 1410,
+      "y": 11560
+    },
+    "InquiryWrite.dc.html": {
+      "h": 844,
+      "title": "문의 남기기",
+      "w": 390,
+      "x": 940,
+      "y": 11560
+    },
+    "Intro.dc.html": {
+      "h": 844,
+      "title": "소개 · 시작",
+      "w": 390,
+      "x": 1320,
+      "y": 0
+    },
+    "Login.dc.html": {
+      "h": 844,
+      "title": "로그인",
+      "w": 390,
+      "x": 1790,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 960,
+      "title": "디자인 시스템",
+      "w": 1240,
+      "x": 0,
+      "y": 0
+    },
+    "Menu.dc.html": {
+      "h": 1000,
+      "title": "더보기 메뉴",
+      "w": 390,
+      "x": 0,
+      "y": 4340
+    },
+    "MyData.dc.html": {
+      "h": 1640,
+      "title": "내 데이터",
+      "w": 390,
+      "x": 0,
+      "y": 13500
+    },
+    "MyPage.dc.html": {
+      "h": 1000,
+      "title": "마이페이지",
+      "w": 390,
+      "x": 0,
+      "y": 8700
+    },
+    "PartyCreate.dc.html": {
+      "h": 844,
+      "title": "파티 만들기",
+      "w": 390,
+      "x": 1410,
+      "y": 20900
+    },
+    "PartyFeed.dc.html": {
+      "h": 1040,
+      "title": "파티 피드",
+      "w": 390,
+      "x": 2350,
+      "y": 20900
+    },
+    "PartyHome.dc.html": {
+      "h": 1260,
+      "title": "파티 현황",
+      "w": 390,
+      "x": 1880,
+      "y": 20900
+    },
+    "PartyStart.dc.html": {
+      "h": 920,
+      "title": "파티 시작",
+      "w": 390,
+      "x": 940,
+      "y": 20900
+    },
+    "Pie.dc.html": {
+      "h": 1000,
+      "title": "내 파이",
+      "w": 390,
+      "x": 470,
+      "y": 10200
+    },
+    "Privacy.dc.html": {
+      "h": 1240,
+      "title": "개인정보 처리방침",
+      "w": 390,
+      "x": 1410,
+      "y": 13500
+    },
+    "Reassessment.dc.html": {
+      "h": 1560,
+      "title": "4주 재입력",
+      "w": 390,
+      "x": 0,
+      "y": 11560
+    },
+    "Result.dc.html": {
+      "h": 1330,
+      "title": "분석 결과",
+      "w": 390,
+      "x": 940,
+      "y": 1360
+    },
+    "Review.dc.html": {
+      "h": 1100,
+      "title": "입력 검토",
+      "w": 390,
+      "x": 940,
+      "y": 7200
+    },
+    "Signup.dc.html": {
+      "h": 1100,
+      "title": "회원가입",
+      "w": 390,
+      "x": 2260,
+      "y": 0
+    },
+    "States.dc.html": {
+      "h": 560,
+      "title": "빈 상태 · 오류 · 로딩",
+      "w": 1360,
+      "x": 470,
+      "y": 4340
+    },
+    "Summary.dc.html": {
+      "h": 1000,
+      "title": "12주 요약",
+      "w": 390,
+      "x": 470,
+      "y": 2980
+    },
+    "Survey.dc.html": {
+      "h": 844,
+      "title": "생활습관 설문",
+      "w": 390,
+      "x": 470,
+      "y": 7200
+    },
+    "Terms.dc.html": {
+      "h": 1380,
+      "title": "이용약관",
+      "w": 390,
+      "x": 940,
+      "y": 13500
+    },
+    "Trend.dc.html": {
+      "h": 1380,
+      "is_interactive": true,
+      "title": "내 기록",
+      "w": 390,
+      "x": 470,
+      "y": 11560
+    },
+    "Write.dc.html": {
+      "h": 844,
+      "title": "커뮤니티 글쓰기",
+      "w": 390,
+      "x": 1410,
+      "y": 2980
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-14T04:30:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "t0": {
+      "kind": "title1",
+      "maxW": 1240,
+      "text": "PAEON 모바일 리디자인 — 디자인 시스템과 핵심 화면",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "t1": {
+      "kind": "title1",
+      "maxW": 1800,
+      "text": "핵심 흐름 1 — 홈 · 건강정보 입력 · 분석 결과 · 4주 전후 비교",
+      "w": 240,
+      "x": 0,
+      "y": 1100
+    },
+    "t10": {
+      "kind": "title1",
+      "maxW": 2240,
+      "text": "추가 화면 2 — 내 데이터 · 검사·상담 안내 · 이용약관 · 개인정보 처리방침",
+      "w": 240,
+      "x": 0,
+      "y": 13240
+    },
+    "t11": {
+      "kind": "title1",
+      "maxW": 2640,
+      "text": "관리자 화면 (데스크톱 1280px)",
+      "w": 240,
+      "x": 0,
+      "y": 15440
+    },
+    "t12": {
+      "kind": "title1",
+      "maxW": 2740,
+      "text": "커뮤니티 확장 — 챌린지 · 순위 · 파티 (최대 6명)",
+      "w": 240,
+      "x": 0,
+      "y": 20640
+    },
+    "t2": {
+      "kind": "title1",
+      "maxW": 1800,
+      "text": "핵심 흐름 2 — 챌린지 · 12주 요약 · 커뮤니티",
+      "w": 240,
+      "x": 0,
+      "y": 2720
+    },
+    "t3": {
+      "kind": "title1",
+      "maxW": 1830,
+      "text": "더보기 메뉴와 상태 화면",
+      "w": 240,
+      "x": 0,
+      "y": 4080
+    },
+    "t4": {
+      "kind": "title1",
+      "maxW": 1330,
+      "text": "시작 흐름 — 소개 · 로그인 · 회원가입",
+      "w": 240,
+      "x": 1320,
+      "y": -300
+    },
+    "t5": {
+      "kind": "title1",
+      "maxW": 860,
+      "text": "챌린지 확장 — 챌린지 고르기 · 배지",
+      "w": 240,
+      "x": 0,
+      "y": 5540
+    },
+    "t6": {
+      "kind": "title1",
+      "maxW": 1800,
+      "text": "입력 흐름과 캘린더 — 대상 확인 · 설문 · 입력 검토 · 캘린더",
+      "w": 240,
+      "x": 0,
+      "y": 6920
+    },
+    "t7": {
+      "kind": "title1",
+      "maxW": 860,
+      "text": "마이페이지와 문의",
+      "w": 240,
+      "x": 0,
+      "y": 8420
+    },
+    "t8": {
+      "kind": "title1",
+      "maxW": 860,
+      "text": "커뮤니티 시작과 파이 — 캐릭터 만들기 · 내 파이",
+      "w": 240,
+      "x": 0,
+      "y": 9940
+    },
+    "t9": {
+      "kind": "title1",
+      "maxW": 3210,
+      "text": "추가 화면 1 — 4주 재입력 · 내 기록 · 문의 · 비회원 문의",
+      "w": 240,
+      "x": 0,
+      "y": 11300
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Home.dc.html",
+    "HealthInput.dc.html",
+    "Result.dc.html",
+    "Compare.dc.html",
+    "Challenge.dc.html",
+    "Summary.dc.html",
+    "Feed.dc.html",
+    "Write.dc.html",
+    "Menu.dc.html",
+    "States.dc.html",
+    "Intro.dc.html",
+    "Login.dc.html",
+    "Signup.dc.html",
+    "ChallengePick.dc.html",
+    "Badges.dc.html",
+    "Eligibility.dc.html",
+    "Survey.dc.html",
+    "Review.dc.html",
+    "Calendar.dc.html",
+    "MyPage.dc.html",
+    "Inquiries.dc.html",
+    "CharacterCreate.dc.html",
+    "Pie.dc.html",
+    "Reassessment.dc.html",
+    "Trend.dc.html",
+    "InquiryWrite.dc.html",
+    "InquiryDetail.dc.html",
+    "GuestInquiry.dc.html",
+    "GuestInquiryDone.dc.html",
+    "GuestInquiryCheck.dc.html",
+    "MyData.dc.html",
+    "Guide.dc.html",
+    "Terms.dc.html",
+    "Privacy.dc.html",
+    "AdminMission.dc.html",
+    "AdminUsers.dc.html",
+    "AdminStats.dc.html",
+    "AdminLogs.dc.html",
+    "AdminInquiries.dc.html",
+    "AdminPurge.dc.html",
+    "AdminReports.dc.html",
+    "CommunityChallenges.dc.html",
+    "ChallengeDetail.dc.html",
+    "PartyStart.dc.html",
+    "PartyCreate.dc.html",
+    "PartyHome.dc.html",
+    "PartyFeed.dc.html",
+    "AdminCommunityChallenge.dc.html"
+  ],
+  "pages": [],
+  "title": "PAEON 모바일 리디자인"
+}

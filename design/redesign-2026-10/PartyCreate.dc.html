@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>파티 만들기</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+input{outline:none}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <div style="height: 64px; padding: 0 8px; display: flex; align-items: center; gap: 4px">
+    <a href="PartyStart.dc.html" aria-label="뒤로" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#243749" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
+    <span style="font-size: 17px; font-weight: 800">파티 만들기</span>
+  </div>
+
+  <div style="padding: 0 20px; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="pn" style="font-size: 14px; font-weight: 800">파티 이름</label>
+      <input id="pn" placeholder="예: 아침 걷기단" style="height: 54px; box-sizing: border-box; border: 2px solid #243749; border-radius: 14px; background: #F8F1E7; padding: 0 16px; font: 500 16px 'Nanum Gothic', sans-serif; color: #243749">
+      <span style="font-size: 12px; color: #5A6B7A; text-align: right">2~12자</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="pd" style="font-size: 14px; font-weight: 800">한 줄 소개 <span style="font-weight: 500; color: #5A6B7A">(선택)</span></label>
+      <input id="pd" placeholder="예: 점심 먹고 같이 걸어요" style="height: 54px; box-sizing: border-box; border: 2px solid transparent; border-radius: 14px; background: #F8F1E7; padding: 0 16px; font: 500 16px 'Nanum Gothic', sans-serif; color: #243749">
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 14px; font-weight: 800">인원</span>
+      <div style="display: flex; align-items: center; justify-content: space-between; background: #F8F1E7; border-radius: 16px; padding: 14px 18px">
+        <span style="font-size: 15px">개시자 포함 최대</span>
+        <span style="font-size: 20px; font-weight: 800">6명</span>
+      </div>
+      <div style="display: flex; gap: 6px">
+        <span style="flex: 1; height: 10px; border-radius: 5px; background: #5C86AC"></span><span style="flex: 1; height: 10px; border-radius: 5px; background: #E6DBCD"></span><span style="flex: 1; height: 10px; border-radius: 5px; background: #E6DBCD"></span><span style="flex: 1; height: 10px; border-radius: 5px; background: #E6DBCD"></span><span style="flex: 1; height: 10px; border-radius: 5px; background: #E6DBCD"></span><span style="flex: 1; height: 10px; border-radius: 5px; background: #E6DBCD"></span>
+      </div>
+      <span style="font-size: 12px; color: #5A6B7A">지금은 나 혼자예요. 만든 뒤에 초대 코드를 보내 친구를 불러요.</span>
+    </div>
+
+    <div style="background: #E4F0F5; border-radius: 16px; padding: 14px 16px; font-size: 13px; color: #234257; line-height: 1.7">· 초대 코드를 아는 사람만 들어올 수 있어요.<br>· 파티 글은 파티원에게만 보여요.<br>· 건강정보(혈압, 진단명 등)는 적지 마세요.</div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 20px 28px; background: #FFFFFF; border-top: 1px solid #E6DBCD">
+    <a href="PartyHome.dc.html" style="height: 56px; border-radius: 28px; background: #81A6C6; color: #1E3246; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center">파티 만들기</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

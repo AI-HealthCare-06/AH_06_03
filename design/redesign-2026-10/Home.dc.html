@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>홈</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <div style="height: 64px; padding: 0 8px 0 20px; display: flex; align-items: center; justify-content: space-between">
+    <span style="font-size: 20px; font-weight: 800; letter-spacing: 3px">PAEON</span>
+    <div style="display: flex; align-items: center; gap: 4px"><a href="Pie.dc.html" aria-label="내 파이 120개" style="height: 32px; box-sizing: border-box; padding: 0 12px 0 8px; border-radius: 16px; background: #F8F1E7; display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 800"><img src="/_blob/601e43b50a6822e0d7cf01755ff11887" alt="" width="26" style="display: block">120</a><button aria-label="알림, 새 답변 1개" style="position: relative; width: 44px; height: 44px; border: 0; background: transparent; color: #243749; padding: 0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"></path></svg><span style="position: absolute; top: 6px; right: 5px; min-width: 16px; height: 16px; border-radius: 8px; background: #5C86AC; color: #FFFFFF; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-sizing: border-box">1</span></button></div>
+  </div>
+
+  <div style="padding: 0 20px; display: flex; flex-direction: column; gap: 12px">
+    <div style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.35; padding-bottom: 4px">오늘도 하나씩,<br>차근차근 해봐요</div>
+
+    <!-- 오늘 달성 링 -->
+    <a href="Challenge.dc.html" style="display: flex; flex-direction: column; gap: 18px; background: #F8F1E7; border-radius: 28px; padding: 22px 22px 20px">
+      <span style="font-size: 15px; font-weight: 800">챌린지를 완료해서 파이를 구워봐요!</span>
+      <div style="display: flex; align-items: center; gap: 20px">
+        <img src="/_blob/29c77715f332275a3c975e6524e5bfbe" alt="파이 세 조각 중 두 조각을 구웠어요" width="123" style="display: block; flex: none; image-rendering: pixelated">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; color: #5A6B7A">연속 달성</span><span style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1">5일째</span><span style="font-size: 14px; color: #4A5C6D; line-height: 1.5; padding-top: 6px">하나만 더 구우면<br>오늘 파이 완성!</span></div>
+      </div>
+      <div style="display: flex; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="font-size: 12px; color: #5A6B7A">월</span><span style="width: 30px; height: 30px; border-radius: 15px; background: #5C86AC"></span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="font-size: 12px; color: #5A6B7A">화</span><span style="width: 30px; height: 30px; border-radius: 15px; background: #5C86AC"></span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="font-size: 12px; color: #5A6B7A">수</span><span style="width: 30px; height: 30px; border-radius: 15px; background: #5C86AC"></span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="font-size: 12px; color: #5A6B7A">목</span><span style="width: 30px; height: 30px; border-radius: 15px; background: #5C86AC"></span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="font-size: 12px; color: #5A6B7A">금</span><span style="width: 30px; height: 30px; border-radius: 15px; background: #5C86AC"></span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="font-size: 12px; font-weight: 800; color: #243749">토</span><span style="width: 30px; height: 30px; box-sizing: border-box; border-radius: 15px; border: 2px solid #5C86AC; background: #FFFFFF"></span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="font-size: 12px; color: #5A6B7A">일</span><span style="width: 30px; height: 30px; box-sizing: border-box; border-radius: 15px; border: 1px dashed #D2C4B4"></span></div>
+      </div>
+    </a>
+
+    <!-- 타일 두 개 -->
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+      <a href="Result.dc.html" style="display: flex; flex-direction: column; justify-content: space-between; gap: 14px; min-height: 148px; box-sizing: border-box; border: 1px solid #E6DBCD; border-radius: 24px; padding: 18px">
+        <span style="font-size: 13px; color: #5A6B7A; line-height: 1.4">10년 내 심장<br>혈관 건강 신호</span>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; align-items: center; gap: 8px"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#243749" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M8 2l6.5 11.5h-13z"></path></svg><span style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px; line-height: 1">주의</span></div>
+          <div style="display: flex; gap: 4px"><i style="flex: 1; height: 6px; border-radius: 3px; background: #5C86AC"></i><i style="flex: 1; height: 6px; border-radius: 3px; background: #5C86AC"></i><i style="flex: 1; height: 6px; border-radius: 3px; background: #E6DBCD"></i></div>
+        </div>
+      </a>
+      <a href="Reassessment.dc.html" style="display: flex; flex-direction: column; justify-content: space-between; gap: 14px; min-height: 148px; box-sizing: border-box; background: #E4F0F5; border-radius: 24px; padding: 18px">
+        <span style="font-size: 13px; color: #4A5C6D; line-height: 1.4">혈압·체중을<br>다시 재는 날까지</span>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <span style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px; line-height: 1">6일 <span style="font-size: 14px; font-weight: 700; color: #4A5C6D">남았어요</span></span>
+          <div style="height: 6px; border-radius: 3px; background: #FFFFFF"><div style="width: 64%; height: 6px; border-radius: 3px; background: #5C86AC"></div></div>
+          <span style="font-size: 12px; color: #4A5C6D">챌린지 18 / 28일</span>
+        </div>
+      </a>
+    </div>
+
+    <div style="font-size: 12px; color: #5A6B7A; line-height: 1.6; text-align: center; padding-top: 2px">진단이 아닌 참고 정보예요. 걱정되면 의료기관에 상담하세요.</div>
+  </div>
+
+  <nav aria-label="주요 메뉴" style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; box-sizing: border-box; background: #FFFFFF; border-top: 1px solid #E6DBCD; display: flex; padding: 8px 4px 0">
+    <a href="Trend.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 8h6M9 12h6M9 16h3"></path></svg>내 기록</a>
+    <a href="Challenge.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 12.5l3 3 5-6"></path></svg>챌린지</a>
+    <a href="Home.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #243749; font-size: 12px; font-weight: 800"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"></path></svg>홈</a>
+    <a href="Feed.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11h-7l-4 4v-4H4z"></path></svg>커뮤니티</a>
+    <a href="Menu.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>더보기</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

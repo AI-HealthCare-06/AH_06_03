@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>생활습관 설문</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <div style="height: 64px; padding: 0 8px; display: flex; align-items: center; gap: 4px">
+    <a href="HealthInput.dc.html" aria-label="뒤로" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#243749" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
+    <div style="flex: 1; height: 4px; border-radius: 2px; background: #E6DBCD"><div style="width: 58%; height: 4px; border-radius: 2px; background: #5C86AC"></div></div>
+    <span style="width: 56px; text-align: right; padding-right: 12px; font-size: 13px; color: #5A6B7A; box-sizing: border-box">7 / 12</span>
+  </div>
+
+  <div style="padding: 28px 20px 0; display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 14px; font-weight: 700; color: #5C86AC">생활습관 · 운동</span>
+    <div style="font-size: 26px; font-weight: 800; letter-spacing: -0.6px; line-height: 1.35">일주일에 몇 번,<br>30분 이상 움직이나요?</div>
+    <div style="font-size: 14px; color: #4A5C6D; line-height: 1.6">걷기도 포함해요. 평소 모습 그대로 골라 주세요.</div>
+  </div>
+
+  <div style="padding: 28px 20px 0; display: flex; flex-direction: column; gap: 10px">
+    <div style="height: 60px; box-sizing: border-box; border-radius: 18px; border: 1px solid #E6DBCD; padding: 0 20px; font-size: 16px; display: flex; align-items: center">거의 하지 않아요</div>
+    <div style="height: 60px; box-sizing: border-box; border-radius: 18px; border: 1px solid #E6DBCD; padding: 0 20px; font-size: 16px; display: flex; align-items: center">주 1~2번</div>
+    <div style="height: 60px; box-sizing: border-box; border-radius: 18px; border: 2px solid #5C86AC; background: #E4F0F5; padding: 0 20px; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: space-between">주 3~4번<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#5C86AC" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5l5 5L18 6.5"></path></svg></div>
+    <div style="height: 60px; box-sizing: border-box; border-radius: 18px; border: 1px solid #E6DBCD; padding: 0 20px; font-size: 16px; display: flex; align-items: center">주 5번 이상</div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 20px 28px; background: #FFFFFF">
+    <a href="Review.dc.html" style="height: 56px; border-radius: 28px; background: #81A6C6; color: #1E3246; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center">다음</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

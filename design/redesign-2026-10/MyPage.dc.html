@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>마이페이지</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1000px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <div style="height: 64px; padding: 0 8px; display: flex; align-items: center; gap: 4px">
+    <a href="Menu.dc.html" aria-label="뒤로" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#243749" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
+    <span style="font-size: 17px; font-weight: 800">마이페이지</span>
+  </div>
+
+  <div style="padding: 8px 20px 0; display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; flex-direction: column">
+      <div style="font-size: 13px; color: #5A6B7A; padding-bottom: 6px">내 정보</div>
+      <div style="display: flex; align-items: center; justify-content: space-between; min-height: 60px; border-top: 1px solid #E6DBCD"><span style="font-size: 15px; color: #4A5C6D">이메일</span><span style="font-size: 15px; font-weight: 700">user@example.com</span></div>
+      <a href="MyPage.dc.html" style="display: flex; align-items: center; justify-content: space-between; min-height: 60px; border-top: 1px solid #E6DBCD"><span style="font-size: 15px; color: #4A5C6D">생년월일</span><span style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700">1984.03.12<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#5A6B7A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"></path></svg></span></a>
+      <a href="MyPage.dc.html" style="display: flex; align-items: center; justify-content: space-between; min-height: 60px; border-top: 1px solid #E6DBCD; border-bottom: 1px solid #E6DBCD"><span style="font-size: 15px; color: #4A5C6D">성별</span><span style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700">여성<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#5A6B7A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"></path></svg></span></a>
+      <div style="background: #E4F0F5; border-radius: 14px; padding: 12px 14px; margin-top: 10px; font-size: 13px; color: #234257; line-height: 1.6">생년월일이나 성별을 수정하면 새 정보로 바로 다시 분석하고, 분석 결과 화면으로 이동해요. 입력한 건강정보가 아직 없으면 저장만 해요.</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <div style="font-size: 13px; color: #5A6B7A">건강정보 동의</div>
+      <div style="border: 1px solid #E6DBCD; border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; align-items: center; justify-content: space-between"><span style="font-size: 16px; font-weight: 800">동의 중</span><span style="height: 24px; padding: 0 10px; border-radius: 12px; background: #E4F0F5; color: #234257; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center">2026.10.02 동의</span></div>
+        <span style="font-size: 14px; color: #4A5C6D; line-height: 1.6">철회하면 저장된 건강정보가 모두 지워져요. 계정은 그대로 유지되고, 언제든 다시 동의할 수 있어요.</span>
+        <a href="MyPage.dc.html" style="height: 48px; box-sizing: border-box; border-radius: 24px; border: 1px solid #D2C4B4; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center">동의 철회하기</a>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column">
+      <div style="font-size: 13px; color: #5A6B7A; padding-bottom: 6px">내 데이터</div>
+      <a href="MyData.dc.html" style="display: flex; align-items: center; justify-content: space-between; min-height: 56px; border-top: 1px solid #E6DBCD; border-bottom: 1px solid #E6DBCD; font-size: 16px"><span>내 데이터 내려받기 (JSON · PDF)</span><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#5A6B7A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"></path></svg></a>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center">
+      <a href="Intro.dc.html" style="min-height: 44px; display: flex; align-items: center; font-size: 15px; font-weight: 700">로그아웃</a>
+      <a href="MyPage.dc.html" style="min-height: 44px; display: flex; align-items: center; font-size: 13px; color: #5A6B7A; text-decoration: underline">회원 탈퇴</a>
+    </div>
+    <div style="font-size: 12px; color: #5A6B7A; line-height: 1.6; margin-top: -12px">회원 탈퇴는 비밀번호를 다시 확인한 뒤 모든 데이터를 바로 지워요.</div>
+  </div>
+
+  <nav aria-label="주요 메뉴" style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; box-sizing: border-box; background: #FFFFFF; border-top: 1px solid #E6DBCD; display: flex; padding: 8px 4px 0">
+    <a href="Trend.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 8h6M9 12h6M9 16h3"></path></svg>내 기록</a>
+    <a href="Challenge.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 12.5l3 3 5-6"></path></svg>챌린지</a>
+    <a href="Home.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"></path></svg>홈</a>
+    <a href="Feed.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11h-7l-4 4v-4H4z"></path></svg>커뮤니티</a>
+    <a href="Menu.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #243749; font-size: 12px; font-weight: 800"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>더보기</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

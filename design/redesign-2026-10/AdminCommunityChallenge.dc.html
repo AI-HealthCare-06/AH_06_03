@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>관리자 · 커뮤니티 챌린지</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+input,select,textarea{outline:none}
+</style>
+</helmet>
+<div style="display: flex; width: 1280px; height: 1000px; background: #F8F1E7; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <aside style="width: 240px; flex: none; box-sizing: border-box; background: #FFFFFF; border-right: 1px solid #E6DBCD; padding: 28px 16px; display: flex; flex-direction: column; gap: 4px">
+    <div style="font-size: 20px; font-weight: 800; letter-spacing: 3px; padding: 0 12px">PAEON</div>
+    <div style="font-size: 13px; color: #5A6B7A; padding: 2px 12px 22px">관리자</div>
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="8">
+      <a href="{{n.href}}" style="display: flex; align-items: center; justify-content: space-between; height: 44px; box-sizing: border-box; padding: 0 12px; border-radius: 12px; font-size: 15px; background: {{n.bg}}; color: {{n.color}}; font-weight: {{n.weight}}"><span>{{n.label}}</span><span style="display: {{n.show}}; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 10px; background: #5C86AC; color: #FFFFFF; font-size: 12px; font-weight: 800; align-items: center; justify-content: center">{{n.badge}}</span></a>
+    </sc-for>
+    <div style="flex: 1"></div>
+    <div style="border-top: 1px solid #E6DBCD; padding: 16px 12px 0; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 700">admin@paeon.kr</span><a href="Login.dc.html" style="font-size: 13px; color: #5A6B7A; text-decoration: underline">로그아웃</a></div>
+  </aside>
+
+  <main style="flex: 1; min-width: 0; padding: 32px 40px; display: flex; flex-direction: column; gap: 18px; overflow: hidden">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <div style="display: flex; align-items: center; gap: 10px"><span style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px">커뮤니티 챌린지</span><span style="height: 24px; padding: 0 10px; border-radius: 12px; border: 1px solid #5C86AC; color: #234257; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center">새 기능</span></div>
+      <span style="font-size: 14px; color: #4A5C6D; line-height: 1.6">전체 이용자가 함께하는 챌린지를 운영팀이 열어요. 순위는 인증한 일수로만 정하고, 건강 수치는 쓰지 않아요. 챌린지를 만들고 순위 보상 파이를 정해요.</span>
+    </div>
+
+    <div style="display: flex; gap: 16px; align-items: flex-start">
+      <!-- 목록 -->
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+        <div style="background: #FFFFFF; border: 1px solid #E6DBCD; border-radius: 22px; overflow: hidden">
+          <div style="display: grid; grid-template-columns: 1.6fr 150px 90px 100px 90px; gap: 8px; padding: 14px 20px; font-size: 13px; font-weight: 700; color: #5A6B7A; border-bottom: 1px solid #E6DBCD"><span>챌린지</span><span>기간</span><span>참여</span><span>최대 보상</span><span>상태</span></div>
+          <div style="display: grid; grid-template-columns: 1.6fr 150px 90px 100px 90px; gap: 8px; align-items: center; padding: 14px 20px; font-size: 14px; background: #E4F0F5; border-bottom: 1px solid #E6DBCD"><span style="font-weight: 700">하루 7천 걸음, 10월을 걸어요!</span><span>10.1 ~ 10.31</span><span>2,575명</span><span>300 파이</span><span style="height: 24px; padding: 0 10px; border-radius: 12px; background: #243749; color: #FFFFFF; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-self: start">진행중</span></div>
+          <div style="display: grid; grid-template-columns: 1.6fr 150px 90px 100px 90px; gap: 8px; align-items: center; padding: 14px 20px; font-size: 14px; border-bottom: 1px solid #E6DBCD"><span style="font-weight: 700">식후 10분 걷기, 2주 도전!</span><span>10.5 ~ 10.18</span><span>1,204명</span><span>200 파이</span><span style="height: 24px; padding: 0 10px; border-radius: 12px; background: #243749; color: #FFFFFF; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-self: start">진행중</span></div>
+          <div style="display: grid; grid-template-columns: 1.6fr 150px 90px 100px 90px; gap: 8px; align-items: center; padding: 14px 20px; font-size: 14px; border-bottom: 1px solid #E6DBCD"><span style="font-weight: 700">물 1L 마시기 2주</span><span>10.19 ~ 11.1</span><span>318명</span><span>150 파이</span><span style="height: 24px; padding: 0 10px; border-radius: 12px; border: 1px solid #D2C4B4; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-self: start">예정</span></div>
+          <div style="display: grid; grid-template-columns: 1.6fr 150px 90px 100px 90px; gap: 8px; align-items: center; padding: 14px 20px; font-size: 14px; color: #5A6B7A"><span style="font-weight: 700">9월 식후 걷기</span><span>9.1 ~ 9.30</span><span>1,986명</span><span>300 파이</span><span style="height: 24px; padding: 0 10px; border-radius: 12px; background: #F8F1E7; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-self: start">종료</span></div>
+        </div>
+        <div style="font-size: 13px; color: #5A6B7A; line-height: 1.7">챌린지가 끝나면 순위를 확정하고 보상 파이를 한꺼번에 지급해요. 지급 내역은 열람 기록에 남아요.</div>
+      </div>
+
+      <!-- 새 챌린지 -->
+      <div style="width: 400px; flex: none; box-sizing: border-box; background: #FFFFFF; border: 1px solid #E6DBCD; border-radius: 22px; padding: 22px 24px; display: flex; flex-direction: column; gap: 12px">
+        <span style="font-size: 17px; font-weight: 800">새 챌린지 만들기</span>
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="ct" style="font-size: 13px; font-weight: 700; color: #5A6B7A">제목</label><input id="ct" placeholder="예: 하루 7천 걸음, 10월을 걸어요!" style="height: 44px; box-sizing: border-box; border: 1px solid #D2C4B4; border-radius: 12px; padding: 0 14px; font: 500 14px 'Nanum Gothic', sans-serif; color: #243749"></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+          <div style="display: flex; flex-direction: column; gap: 6px"><label for="cs" style="font-size: 13px; font-weight: 700; color: #5A6B7A">시작일</label><input id="cs" value="2026-10-19" style="height: 44px; box-sizing: border-box; border: 1px solid #D2C4B4; border-radius: 12px; padding: 0 14px; font: 500 14px 'Nanum Gothic', sans-serif; color: #243749"></div>
+          <div style="display: flex; flex-direction: column; gap: 6px"><label for="ce" style="font-size: 13px; font-weight: 700; color: #5A6B7A">종료일</label><input id="ce" value="2026-11-01" style="height: 44px; box-sizing: border-box; border: 1px solid #D2C4B4; border-radius: 12px; padding: 0 14px; font: 500 14px 'Nanum Gothic', sans-serif; color: #243749"></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="cm" style="font-size: 13px; font-weight: 700; color: #5A6B7A">인증 방식</label><select id="cm" style="height: 44px; border: 1px solid #D2C4B4; border-radius: 12px; background: #FFFFFF; padding: 0 12px; font: 500 14px 'Nanum Gothic', sans-serif; color: #243749"><option>오늘 미션 모두 완료한 날</option><option>걸음 수 (7천 걸음 이상)</option><option>직접 인증</option></select></div>
+        <span style="font-size: 13px; font-weight: 700; color: #5A6B7A">순위 보상 (파이)</span>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+          <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; color: #5A6B7A">1위</span><input aria-label="1위 보상" value="300" style="height: 40px; box-sizing: border-box; border: 1px solid #D2C4B4; border-radius: 10px; padding: 0 10px; font: 700 14px 'Nanum Gothic', sans-serif; width: 100%"></div>
+          <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; color: #5A6B7A">2위</span><input aria-label="2위 보상" value="200" style="height: 40px; box-sizing: border-box; border: 1px solid #D2C4B4; border-radius: 10px; padding: 0 10px; font: 700 14px 'Nanum Gothic', sans-serif; width: 100%"></div>
+          <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; color: #5A6B7A">3위</span><input aria-label="3위 보상" value="100" style="height: 40px; box-sizing: border-box; border: 1px solid #D2C4B4; border-radius: 10px; padding: 0 10px; font: 700 14px 'Nanum Gothic', sans-serif; width: 100%"></div>
+          <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; color: #5A6B7A">완주</span><input aria-label="완주 보상" value="20" style="height: 40px; box-sizing: border-box; border: 1px solid #D2C4B4; border-radius: 10px; padding: 0 10px; font: 700 14px 'Nanum Gothic', sans-serif; width: 100%"></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="cd" style="font-size: 13px; font-weight: 700; color: #5A6B7A">소개 문구</label><textarea id="cd" placeholder="참여 방법과 인증 방법을 적어 주세요" style="height: 80px; box-sizing: border-box; border: 1px solid #D2C4B4; border-radius: 12px; padding: 10px 14px; resize: none; font: 500 14px 'Nanum Gothic', sans-serif; line-height: 1.6; color: #243749"></textarea></div>
+        <div style="display: flex; gap: 8px; margin-top: 4px"><span style="flex: 1; height: 46px; border-radius: 23px; border: 1px solid #D2C4B4; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center">초안으로 저장</span><span style="flex: 1; height: 46px; border-radius: 23px; background: #81A6C6; color: #1E3246; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center">게시하기</span></div>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ACTIVE = 'cchal';
+    const items = [['mission', '미션 관리', 'AdminMission.dc.html', ''], ['users', '가입자', 'AdminUsers.dc.html', ''], ['stats', '챌린지 통계', 'AdminStats.dc.html', ''], ['cchal', '커뮤니티 챌린지', 'AdminCommunityChallenge.dc.html', ''], ['logs', '열람 기록', 'AdminLogs.dc.html', ''], ['inq', '문의', 'AdminInquiries.dc.html', '3'], ['reports', '커뮤니티 신고', 'AdminReports.dc.html', '2'], ['purge', '테스트 계정 삭제', 'AdminPurge.dc.html', '']];
+    return { nav: items.map(([k, label, href, badge]) => ({ label, href, badge, show: badge ? 'flex' : 'none', bg: k === ACTIVE ? '#E4F0F5' : 'transparent', color: k === ACTIVE ? '#243749' : '#4A5C6D', weight: k === ACTIVE ? 800 : 500 })) };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>4주 재입력</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+input,select{outline:none}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1560px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <div style="height: 64px; padding: 0 8px; display: flex; align-items: center; gap: 4px">
+    <a href="Challenge.dc.html" aria-label="뒤로" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#243749" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
+    <span style="font-size: 17px; font-weight: 800">4주 재입력</span>
+  </div>
+
+  <div style="padding: 0 20px; display: flex; flex-direction: column; gap: 22px">
+    <div style="font-size: 26px; font-weight: 800; letter-spacing: -0.6px; line-height: 1.35">1차 4주가 끝났어요.<br>지금 상태를 적어 주세요</div>
+    <div style="font-size: 14px; color: #4A5C6D; line-height: 1.6; margin-top: -10px">처음과 비교해서 변화를 보여 드려요.</div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span style="font-size: 18px; font-weight: 800">혈압</span>
+      <div style="background: #F8F1E7; border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 14px; font-weight: 700; line-height: 1.55">아침이나 저녁 중 편한 시간에 재 주세요. 다음에도 같은 시간대에 재야 비교할 수 있어요.</span>
+        <div style="font-size: 13px; color: #4A5C6D; line-height: 1.7">· 아침: 일어난 지 1시간 안에, 화장실에 다녀온 뒤, 식사·약 먹기 전<br>· 저녁: 잠자리에 들기 전 1시간 안에<br>· 재기 30분 전부터는 커피, 운동, 흡연, 목욕, 음주를 피해요<br>· 의자에 앉아 1~2분 쉰 다음, 1~2분 간격으로 두 번 재요<br>· 소매를 걷고 맨팔에 감는 게 좋아요</div>
+        <span style="font-size: 12px; color: #5A6B7A; line-height: 1.6">집에 혈압계가 없으면 가까운 약국이나 보건소에서 재도 돼요.</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="s1" style="font-size: 13px; color: #5A6B7A">첫 번째 수축기</label><input id="s1" inputmode="numeric" value="128" style="height: 52px; box-sizing: border-box; border: 2px solid #243749; border-radius: 14px; background: #F8F1E7; padding: 0 14px; font: 800 18px 'Nanum Gothic', sans-serif; color: #243749"></div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="d1" style="font-size: 13px; color: #5A6B7A">첫 번째 이완기</label><input id="d1" inputmode="numeric" value="82" style="height: 52px; box-sizing: border-box; border: 2px solid transparent; border-radius: 14px; background: #F8F1E7; padding: 0 14px; font: 800 18px 'Nanum Gothic', sans-serif; color: #243749"></div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="s2" style="font-size: 13px; color: #5A6B7A">두 번째 수축기 (선택)</label><input id="s2" inputmode="numeric" placeholder="예: 126" style="height: 52px; box-sizing: border-box; border: 2px solid transparent; border-radius: 14px; background: #F8F1E7; padding: 0 14px; font: 800 18px 'Nanum Gothic', sans-serif; color: #243749"></div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="d2" style="font-size: 13px; color: #5A6B7A">두 번째 이완기 (선택)</label><input id="d2" inputmode="numeric" placeholder="예: 80" style="height: 52px; box-sizing: border-box; border: 2px solid transparent; border-radius: 14px; background: #F8F1E7; padding: 0 14px; font: 800 18px 'Nanum Gothic', sans-serif; color: #243749"></div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span style="font-size: 18px; font-weight: 800">몸</span>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="w" style="font-size: 13px; color: #5A6B7A">몸무게 (kg)</label><input id="w" inputmode="decimal" value="64.8" style="height: 52px; box-sizing: border-box; border: 2px solid transparent; border-radius: 14px; background: #F8F1E7; padding: 0 14px; font: 800 18px 'Nanum Gothic', sans-serif; color: #243749"></div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="wa" style="font-size: 13px; color: #5A6B7A">허리둘레 (cm, 선택)</label><input id="wa" inputmode="decimal" value="82" style="height: 52px; box-sizing: border-box; border: 2px solid transparent; border-radius: 14px; background: #F8F1E7; padding: 0 14px; font: 800 18px 'Nanum Gothic', sans-serif; color: #243749"></div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span style="font-size: 18px; font-weight: 800">흡연 · 음주</span>
+      <div style="display: flex; flex-direction: column; gap: 6px"><label for="sm" style="font-size: 13px; color: #5A6B7A">현재 일반담배를 피우십니까?</label>
+        <select id="sm" style="height: 52px; border: 0; border-radius: 14px; background: #F8F1E7; padding: 0 14px; font: 500 15px 'Nanum Gothic', sans-serif; color: #243749"><option>피운 적 없음</option><option>매일 피움</option><option>가끔 피움</option><option>과거엔 피웠으나, 현재 피우지 않음</option></select></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><label for="df" style="font-size: 13px; color: #5A6B7A">최근 4주 동안 술을 얼마나 자주 마십니까?</label>
+        <select id="df" style="height: 52px; border: 0; border-radius: 14px; background: #F8F1E7; padding: 0 14px; font: 500 15px 'Nanum Gothic', sans-serif; color: #243749"><option>한 달에 2–4번</option><option>평생 술을 마셔 본 적 없음</option><option>최근 4주간 전혀 마시지 않았다</option><option>한 달에 1번 미만</option><option>한 달에 1번 정도</option><option>일주일에 2–3번 정도</option><option>일주일에 4번 이상</option></select></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><label for="da" style="font-size: 13px; color: #5A6B7A">최근 4주 동안 한 번에 술을 얼마나 마십니까?</label>
+        <select id="da" style="height: 52px; border: 0; border-radius: 14px; background: #F8F1E7; padding: 0 14px; font: 500 15px 'Nanum Gothic', sans-serif; color: #243749"><option>3–4잔</option><option>1–2잔</option><option>5–6잔</option><option>7–9잔</option><option>10잔 이상</option></select>
+        <span style="font-size: 12px; color: #5A6B7A; line-height: 1.6">술을 마시는 경우에만 물어봐요. 소주·양주 구분 없이 각각의 술잔으로 세어 주세요.</span></div>
+    </div>
+
+    <div style="font-size: 13px; color: #5A6B7A; line-height: 1.6">키·콜레스테롤·당뇨·고혈압 진단·가족력은 처음 입력한 값을 그대로 써요.</div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 20px 28px; background: #FFFFFF; border-top: 1px solid #E6DBCD">
+    <a href="Compare.dc.html" style="height: 56px; border-radius: 28px; background: #81A6C6; color: #1E3246; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center">저장하고 변화 보기</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

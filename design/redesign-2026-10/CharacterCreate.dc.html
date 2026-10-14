@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>캐릭터 만들기</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+input{outline:none}
+button{cursor:pointer}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <div style="height: 56px; padding: 0 8px; display: flex; align-items: center; justify-content: space-between">
+    <a href="Feed.dc.html" aria-label="뒤로" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#243749" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
+    <span style="font-size: 17px; font-weight: 800">내 친구 만들기</span>
+    <button onClick="{{random}}" style="height: 36px; box-sizing: border-box; padding: 0 14px; margin-right: 4px; border-radius: 18px; border: 1px solid #D2C4B4; background: #FFFFFF; font: 700 13px 'Nanum Gothic', sans-serif; color: #243749">랜덤</button>
+  </div>
+
+  <!-- 미리보기 -->
+  <div style="margin: 6px 20px 0; height: 214px; border-radius: 28px; background: #F8F1E7; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+    <div style="display: grid; grid-template-columns: repeat(16, 11px); grid-auto-rows: 11px" role="img" aria-label="내 캐릭터 미리보기">
+      <sc-for list="{{cells}}" as="c" hint-placeholder-count="256">
+        <div style="width: 11px; height: 11px; background: {{c.fill}}"></div>
+      </sc-for>
+    </div>
+    <i style="width: 110px; height: 7px; border-radius: 4px; background: #E6DBCD"></i>
+  </div>
+
+  <!-- 탭 -->
+  <div style="margin: 14px 20px 0; display: flex; border-bottom: 1px solid #E6DBCD">
+    <sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+      <button onClick="{{t.pick}}" style="flex: 1; height: 44px; border: 0; border-bottom: {{t.line}}; margin-bottom: -1px; background: transparent; font: {{t.weight}} 15px 'Nanum Gothic', sans-serif; color: {{t.color}}">{{t.label}}</button>
+    </sc-for>
+  </div>
+
+  <!-- 선택지 -->
+  <div style="margin: 12px 20px 0; height: 218px; overflow-y: auto">
+    <sc-if value="{{isColor}}" hint-placeholder-val="{{ false }}">
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px 0; justify-items: center; padding: 8px 0 4px">
+        <sc-for list="{{swatches}}" as="s" hint-placeholder-count="12">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
+            <button aria-label="{{s.label}}" onClick="{{s.pick}}" style="width: 52px; height: 52px; border-radius: 26px; padding: 0; background: {{s.hex}}; border: 1px solid #D2C4B4; box-shadow: {{s.ring}}"></button>
+            <span style="font-size: 12px; color: #5A6B7A">{{s.label}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{notColor}}" hint-placeholder-val="{{ true }}">
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 8px">
+        <sc-for list="{{items}}" as="it" hint-placeholder-count="4">
+          <button onClick="{{it.pick}}" aria-label="{{it.label}}" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0 8px; border-radius: 16px; background: {{it.bg}}; border: {{it.border}}">
+            <div style="display: grid; grid-template-columns: repeat(16, 4px); grid-auto-rows: 4px">
+              <sc-for list="{{it.cells}}" as="c" hint-placeholder-count="256">
+                <div style="width: 4px; height: 4px; background: {{c.fill}}"></div>
+              </sc-for>
+            </div>
+            <span style="font-size: 12px; font-weight: 700; color: #243749">{{it.label}}</span>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 20px 28px; background: #FFFFFF; border-top: 1px solid #E6DBCD; display: flex; flex-direction: column; gap: 10px">
+    <label for="nick" style="position: absolute; left: -9999px">닉네임</label>
+    <input id="nick" value="몽글이" placeholder="닉네임 (2~8자)" style="height: 48px; box-sizing: border-box; border: 0; border-radius: 14px; background: #F8F1E7; padding: 0 16px; font: 700 16px 'Nanum Gothic', sans-serif; color: #243749">
+    <a href="Feed.dc.html" style="height: 54px; border-radius: 27px; background: #81A6C6; color: #1E3246; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center">커뮤니티 시작하기</a>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; color: #5A6B7A"><img src="/_blob/601e43b50a6822e0d7cf01755ff11887" alt="" width="20" style="display: block">시작 선물로 파이 10개를 드려요</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  state = { tab: 'body', body: 'mongle', color: '#AACDDC', expr: 'basic', face: 'none', head: 'none' };
+
+  build(s) {
+    const BODIES = {
+      mongle: { top: 3, rows: ['................', '...oo......oo...', '..obbo....obbo..', '..obbboooobbbo..', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '..obboooooobbo..', '..oooo....oooo..'] },
+      bobo: { top: 2, rows: ['................', '................', '.....oooooo.....', '...ooobbbbooo...', '..obbbbbbbbbbo..', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '...obbbbbbbbo...', '....oooooooo....'] },
+      rabbit: { top: 3, rows: ['...oooo..oooo...', '...obbo..obbo...', '...obbo..obbo...', '..ooobbbbbbooo..', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '...obbbbbbbbo...', '....oooooooo....'] },
+      cat: { top: 3, rows: ['................', '..o..........o..', '..oo........oo..', '..obboooooobbo..', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '..obboooooobbo..', '..oooo....oooo..'] }
+    };
+    const g = BODIES[s.body].rows.map((r) => r.split(''));
+    const put = (r, c, ch) => { if (r >= 0 && r < 16 && c >= 0 && c < 16) g[r][c] = ch; };
+    const many = (list, ch) => list.forEach(([r, c]) => put(r, c, ch));
+    const cheeks = [[9, 2], [9, 3], [9, 12], [9, 13]];
+    const smile = [[10, 6], [10, 9], [11, 7], [11, 8]];
+    const E = {
+      basic: [[[7, 4], [7, 5], [8, 4], [8, 5], [7, 10], [7, 11], [8, 10], [8, 11], [10, 7], [10, 8]]],
+      smile: [[[8, 4], [7, 5], [8, 6], [8, 9], [7, 10], [8, 11]].concat(smile)],
+      sleepy: [[[8, 4], [8, 5], [8, 10], [8, 11], [10, 7]]],
+      wow: [[[7, 4], [7, 5], [8, 4], [8, 5], [9, 4], [9, 5], [7, 10], [7, 11], [8, 10], [8, 11], [9, 10], [9, 11], [10, 7], [10, 8], [11, 7], [11, 8]]],
+      wink: [[[8, 4], [8, 5], [7, 10], [7, 11], [8, 10], [8, 11]].concat(smile)]
+    };
+    many(cheeks, 'c');
+    many(E[s.expr][0], 'e');
+
+    if (s.face === 'glasses') {
+      for (let c = 3; c <= 6; c++) { put(6, c, 'o'); put(9, c, 'o'); }
+      for (let c = 9; c <= 12; c++) { put(6, c, 'o'); put(9, c, 'o'); }
+      [3, 6, 9, 12].forEach((c) => { put(7, c, 'o'); put(8, c, 'o'); });
+      put(7, 7, 'o'); put(7, 8, 'o');
+    }
+    if (s.face === 'shades') {
+      for (let c = 3; c <= 6; c++) { put(7, c, 'o'); put(8, c, 'o'); }
+      for (let c = 9; c <= 12; c++) { put(7, c, 'o'); put(8, c, 'o'); }
+      put(7, 7, 'o'); put(7, 8, 'o');
+    }
+    if (s.face === 'mask') {
+      for (let c = 4; c <= 11; c++) { put(10, c, 'w'); put(11, c, 'w'); }
+      put(10, 3, 'o'); put(10, 12, 'o');
+    }
+
+    const a = BODIES[s.body].top;
+    if (s.head === 'sprout') { put(a - 1, 7, 'g'); put(a - 2, 6, 'g'); put(a - 2, 8, 'g'); }
+    if (s.head === 'crown') {
+      for (let c = 6; c <= 9; c++) put(a - 1, c, 'y');
+      put(a - 2, 6, 'y'); put(a - 2, 9, 'y');
+    }
+    if (s.head === 'bow') {
+      many([[4, 10], [4, 12], [5, 10], [5, 11], [5, 12], [6, 10], [6, 12]], 'r');
+    }
+
+    const fills = { o: '#243749', e: '#243749', m: '#243749', b: s.color, h: '#FFFFFF', c: '#E8B9A5', g: '#6FA58A', y: '#F2C94C', r: '#E58F9B', w: '#DCE8EF', '.': 'transparent' };
+    const cells = [];
+    g.forEach((r) => r.forEach((ch) => cells.push({ fill: fills[ch] })));
+    return cells;
+  }
+
+  renderVals() {
+    const s = this.state;
+    const COLORS = [
+      ['#AACDDC', '하늘'], ['#81A6C6', '파랑'], ['#C9BEE6', '라벤더'], ['#F0B8C4', '분홍'],
+      ['#F2C6A8', '살구'], ['#F5DE8F', '노랑'], ['#CFE3A0', '연두'], ['#A9D6C2', '민트'],
+      ['#F3E3D0', '크림'], ['#D2C4B4', '베이지'], ['#CBD2D9', '회색'], ['#FFFFFF', '흰색']
+    ];
+    const SETS = {
+      body: { field: 'body', list: [['mongle', '몽글이'], ['bobo', '동글이'], ['rabbit', '말랑이'], ['cat', '뾰족이']] },
+      expr: { field: 'expr', list: [['basic', '기본'], ['smile', '웃음'], ['sleepy', '졸림'], ['wow', '놀람'], ['wink', '윙크']] },
+      face: { field: 'face', list: [['none', '없음'], ['glasses', '안경'], ['shades', '선글라스'], ['mask', '마스크']] },
+      head: { field: 'head', list: [['none', '없음'], ['sprout', '새싹'], ['crown', '왕관'], ['bow', '리본']] }
+    };
+    const TABS = [['body', '몸체'], ['color', '색'], ['expr', '표정'], ['face', '얼굴'], ['head', '머리']];
+    const setSel = (patch) => this.setState(patch);
+    const tabs = TABS.map(([key, label]) => {
+      const on = s.tab === key;
+      return { label, pick: () => setSel({ tab: key }), line: on ? '3px solid #243749' : '3px solid transparent', color: on ? '#243749' : '#5A6B7A', weight: on ? 800 : 500 };
+    });
+    const isColor = s.tab === 'color';
+    let items = [];
+    if (!isColor) {
+      const set = SETS[s.tab];
+      items = set.list.map(([key, label]) => {
+        const on = s[set.field] === key;
+        return {
+          label,
+          cells: this.build({ ...s, [set.field]: key }),
+          bg: on ? '#E4F0F5' : '#F8F1E7',
+          border: on ? '2px solid #5C86AC' : '2px solid transparent',
+          pick: () => setSel({ [set.field]: key })
+        };
+      });
+    }
+    const swatches = COLORS.map(([hex, label]) => ({
+      hex, label,
+      ring: s.color === hex ? '0 0 0 3px #FFFFFF, 0 0 0 5px #243749' : 'none',
+      pick: () => setSel({ color: hex })
+    }));
+    const rnd = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    return {
+      cells: this.build(s),
+      tabs, isColor, notColor: !isColor, items, swatches,
+      random: () => setSel({
+        body: rnd(SETS.body.list)[0], color: rnd(COLORS)[0], expr: rnd(SETS.expr.list)[0],
+        face: rnd(SETS.face.list)[0], head: rnd(SETS.head.list)[0]
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>
