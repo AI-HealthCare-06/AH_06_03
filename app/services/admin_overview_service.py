@@ -18,7 +18,7 @@ from app.models.consent import ConsentPolicy, UserConsent
 from app.models.deletion import AccountDeletionRequest
 from app.models.eligibility import EligibilityAssessment
 from app.models.health import HealthRecord
-from app.models.prediction import Prediction
+from app.models.prediction import PredictionJob
 from app.models.survey import SurveyInstance
 from app.models.user import User
 from app.schemas.admin_overview import (
@@ -34,7 +34,7 @@ FUNNEL = [
     ("eligibility", "대상 확인"),
     ("health", "건강정보 입력"),
     ("survey", "설문 단계"),   # 설문은 건너뛸 수 있어서 "제출"이 아니라 "설문 단계를 지난 사람"
-    ("prediction", "분석 결과"),
+    ("prediction", "분석 결과"),   # 예측 작업이 완료돼 결과 화면까지 온 사람. 모델이 건너뛰어져도 포함, 작업 실패는 제외
     ("challenge_started", "챌린지 시작"),
     ("challenge_completed", "4주 챌린지 완료"),
 ]
@@ -58,7 +58,7 @@ async def funnel(db: AsyncSession) -> list[FunnelStage]:
         "eligibility": await _user_ids(db, EligibilityAssessment.user_id),
         "health": await _user_ids(db, HealthRecord.user_id),
         "survey": await _user_ids(db, SurveyInstance.user_id, SurveyInstance.status == "submitted"),
-        "prediction": await _user_ids(db, Prediction.user_id, Prediction.status == "completed"),
+        "prediction": await _user_ids(db, PredictionJob.user_id, PredictionJob.status == "completed"),
         "challenge_started": await _user_ids(db, ChallengeCycle.user_id),
         "challenge_completed": await _user_ids(db, ChallengeCycle.user_id, ChallengeCycle.status == "completed"),
     }
