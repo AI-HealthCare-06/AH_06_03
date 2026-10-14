@@ -62,9 +62,12 @@ async def funnel(db: AsyncSession) -> list[FunnelStage]:
         "challenge_started": await _user_ids(db, ChallengeCycle.user_id),
         "challenge_completed": await _user_ids(db, ChallengeCycle.user_id, ChallengeCycle.status == "completed"),
     }
-    # "그 단계까지 간 사람" = 그 단계나 더 뒤 단계에 기록이 있는 활성 사용자.
-    # 대상 확인 저장이 생기기 전에 가입한 사람처럼 앞 단계 기록이 없어도 뒤 단계에 왔으면 지나간 것으로 센다.
+    # "그 단계까지 간 사람" = 그 단계나 더 뒤 단계에 기록이 있는 사용자.
+    # 앞 단계 기록이 없어도 뒤 단계에 왔으면 지나간 것으로 센다. 앞 단계 기록이 없는 경우:
+    #   - 대상 확인 저장(2026-10-08) 전에 가입한 사람은 대상 확인 기록이 없다.
+    #   - 동의를 철회했다가 다시 동의한 사람은 대상 확인 기록이 없을 수 있다.
     # 그래서 아래 단계가 위 단계보다 많아지지 않는다(앞 단계 대비 100% 이하).
+    # 정상(active) 회원만 센다. 그 밖의 계정은 이용할 수 없는 계정이라 뺀다(가입 숫자와 기준을 맞춤).
     counts, reached = {"signup": len(active)}, set()
     for code, _ in reversed(FUNNEL[1:]):
         reached |= records[code] & active
