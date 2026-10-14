@@ -32,7 +32,7 @@ def _result(r: AccountDeletionRequest) -> DeletionResult:
 
 
 # 건강정보 동의 철회 때 남기는 표: 계정·프로필·로그인 세션·동의 기록 (+ 탈퇴 때도 남기는 표)
-HEALTH_KEEP_TABLES = KEEP_TABLES | {"users", "user_profiles", "user_sessions", "user_consents"}
+HEALTH_KEEP_TABLES = KEEP_TABLES | {"users", "user_profiles", "user_sessions", "user_consents", "inquiries"}
 
 
 async def _delete_user_rows(db: AsyncSession, user_id: str, keep: set[str]) -> dict[str, int]:

@@ -4,12 +4,22 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
+class SignupConsent(BaseModel):
+    """가입 화면에서 사용자가 본 정책과 체크한 값. 서버가 대신 동의한 것으로 채우지 않는다."""
+    model_config = ConfigDict(extra="forbid")
+
+    policy_id: str = Field(min_length=1, max_length=36)
+    version: str = Field(min_length=1, max_length=30)
+    agreed: bool
+
+
 class SignupRequest(BaseModel):
     model_config=ConfigDict(extra="forbid")
 
     email: EmailStr
     password: str =Field(min_length=8, max_length=72, description="8자 이상")
     birth_date: date=Field(description="만 14세 미만 확인용 ")
+    consents: list[SignupConsent] = Field(description="가입 화면의 필수 동의 (정책 ID·버전·체크 값)")
 
     # 만 14세 미만만: 법정대리인 정보 (세 칸은 다 채우거나 다 비운다)
     guardian_name: str | None = Field(default=None, max_length=50)

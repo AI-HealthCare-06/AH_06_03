@@ -79,9 +79,10 @@ async def test_admin_email_is_case_insensitive_and_trimmed(client, db_session):
     assert (await client.get("/v1/admin/challenges", headers=h)).status_code == 200
 
 
-async def test_deleted_admin_is_forbidden(client, db_session):
+async def test_deleted_admin_is_rejected(client, db_session):
     h = await make_account(db_session, ADMIN_EMAIL, status="deleted")
-    assert (await client.get("/v1/admin/challenges", headers=h)).status_code == 403
+    # 탈퇴한 계정은 공통 인증에서 먼저 막힌다 (남은 토큰 차단, #85)
+    assert (await client.get("/v1/admin/challenges", headers=h)).status_code == 401
 
 
 async def test_non_admin_cannot_change_anything(client, db_session):

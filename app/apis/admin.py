@@ -16,7 +16,8 @@ from app.schemas.admin import (
     PurgeRequest, PurgeResult,
 )
 from app.schemas.common import DataResponse
-from app.services import admin_service, admin_users_service, audit_service
+from app.schemas.inquiry import AdminGuestDetail, AdminGuestList, AdminInquiryDetail, AdminInquiryList, AnswerRequest
+from app.services import admin_service, admin_users_service, audit_service, guest_inquiry_service, inquiry_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -89,3 +90,39 @@ async def audit_logs(
     await audit_service.record(db, admin, "audit_view", dedupe_seconds=audit_service.VIEW_DEDUPE_SECONDS)
     await db.commit()
     return DataResponse(data=data)
+
+
+@router.get("/inquiries", response_model=DataResponse[AdminInquiryList])
+async def inquiries(
+    status: str | None = Query(None, pattern="^(open|answered)$"), limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0),
+    admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db),
+):
+    return DataResponse(data=await inquiry_service.admin_list(db, admin, status, limit, offset))
+
+
+@router.get("/inquiries/{inquiry_id}", response_model=DataResponse[AdminInquiryDetail])
+async def inquiry_detail(inquiry_id: str, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
+    return DataResponse(data=await inquiry_service.admin_detail(db, admin, inquiry_id))
+
+
+@router.put("/inquiries/{inquiry_id}/answer", response_model=DataResponse[AdminInquiryDetail])
+async def answer_inquiry(inquiry_id: str, req: AnswerRequest, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
+    return DataResponse(data=await inquiry_service.admin_answer(db, admin, inquiry_id, req.answer))
+
+
+@router.get("/guest-inquiries", response_model=DataResponse[AdminGuestList])
+async def guest_inquiries(
+    status: str | None = Query(None, pattern="^(open|answered)$"), limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0),
+    admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db),
+):
+    return DataResponse(data=await guest_inquiry_service.admin_list(db, admin, status, limit, offset))
+
+
+@router.get("/guest-inquiries/{inquiry_id}", response_model=DataResponse[AdminGuestDetail])
+async def guest_inquiry_detail(inquiry_id: str, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
+    return DataResponse(data=await guest_inquiry_service.admin_detail(db, admin, inquiry_id))
+
+
+@router.put("/guest-inquiries/{inquiry_id}/answer", response_model=DataResponse[AdminGuestDetail])
+async def answer_guest_inquiry(inquiry_id: str, req: AnswerRequest, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
+    return DataResponse(data=await guest_inquiry_service.admin_answer(db, admin, inquiry_id, req.answer))

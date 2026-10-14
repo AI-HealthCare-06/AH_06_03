@@ -16,7 +16,7 @@ from app.core.security import (
     verify_password_async,
 )
 from app.repositories import user_repository
-from app.services import consent_service
+from app.services import access_log_service, consent_service
 from app.schemas.auth import SignupResult, TokenResult, MeResult
 
 
@@ -33,6 +33,7 @@ async def signup(
     email: str,
     password: str,
     birth_date: date,
+    consents: list,
     guardian_name: str | None = None,
     guardian_relation: str | None = None,
     guardian_contact: str | None = None,
@@ -43,6 +44,8 @@ async def signup(
     if _age_on(birth_date, today) < MIN_AGE:
         raise AppError(403, "AUTH_ADULT_ONLY", "만 19세 이상만 가입할 수 있습니다.")
 
+    agreed_policies = await consent_service.check_signup_consents(db, consents)   # 화면이 보낸 동의 값 검사 (계정을 만들기 전에)
+
     email = email.lower()
     if await user_repository.get_user_by_email(db, email):
         raise AppError(409, "AUTH_EMAIL_DUPLICATED", "이미 가입된 이메일입니다.")
@@ -51,7 +54,7 @@ async def signup(
         user = await user_repository.create_user_with_profile(
             db, email, await hash_password_async(password), birth_date
         )
-        await consent_service.record_signup_consents(db, user.user_id)   # 가입 화면의 필수 동의 체크 기록
+        await consent_service.record_signup_consents(db, user.user_id, agreed_policies)   # 사용자가 동의한 정책 기록
         await db.commit()
     except IntegrityError:
         await db.rollback()
@@ -77,7 +80,7 @@ async def _issue_tokens(db: AsyncSession, user_id: str) -> TokenResult:
     )
 
 
-async def login(db: AsyncSession, email: str, password: str) -> TokenResult:
+async def login(db: AsyncSession, email: str, password: str, ip: str | None = None) -> TokenResult:
     user = await user_repository.get_user_by_email(db, email.lower())
     if user is None:
         await verify_password_async(password, DUMMY_PASSWORD_HASH)  # 없는 이메일도 같은 시간 걸리게
@@ -87,6 +90,7 @@ async def login(db: AsyncSession, email: str, password: str) -> TokenResult:
         raise INVALID_LOGIN
     if user.status == "pending_guardian":
         raise AppError(403, "AUTH_GUARDIAN_PENDING", "법정대리인 동의가 확인된 뒤 이용할 수 있습니다.")
+    await access_log_service.record_login(db, user.user_id, ip)   # _issue_tokens의 commit과 함께 저장된다
     return await _issue_tokens(db, user.user_id)
 
 async def get_me(db: AsyncSession, user_id: str) -> MeResult:
