@@ -16,7 +16,7 @@ from app.core.security import (
     verify_password_async,
 )
 from app.repositories import user_repository
-from app.services import consent_service
+from app.services import access_log_service, consent_service
 from app.schemas.auth import SignupResult, TokenResult, MeResult
 
 
@@ -80,7 +80,7 @@ async def _issue_tokens(db: AsyncSession, user_id: str) -> TokenResult:
     )
 
 
-async def login(db: AsyncSession, email: str, password: str) -> TokenResult:
+async def login(db: AsyncSession, email: str, password: str, ip: str | None = None) -> TokenResult:
     user = await user_repository.get_user_by_email(db, email.lower())
     if user is None:
         await verify_password_async(password, DUMMY_PASSWORD_HASH)  # 없는 이메일도 같은 시간 걸리게
@@ -90,6 +90,7 @@ async def login(db: AsyncSession, email: str, password: str) -> TokenResult:
         raise INVALID_LOGIN
     if user.status == "pending_guardian":
         raise AppError(403, "AUTH_GUARDIAN_PENDING", "법정대리인 동의가 확인된 뒤 이용할 수 있습니다.")
+    await access_log_service.record_login(db, user.user_id, ip)   # _issue_tokens의 commit과 함께 저장된다
     return await _issue_tokens(db, user.user_id)
 
 async def get_me(db: AsyncSession, user_id: str) -> MeResult:

@@ -1,3 +1,5 @@
+import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Depends, FastAPI
@@ -16,7 +18,9 @@ from app.apis.admin import router as admin_router
 from app.apis.prediction import router as prediction_router
 from app.apis.auth import router as auth_router
 from app.apis.challenge import router as challenge_router
+from app.core.db.databases import AsyncSessionLocal
 from app.core.errors import register_error_handlers
+from app.services import admin_registry_service
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -24,7 +28,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 (BASE_DIR / "static").mkdir(exist_ok=True)
 (BASE_DIR / "media").mkdir(exist_ok=True)
 
-app = FastAPI(title="PAEON API")
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """서버가 켜질 때 관리자 목록의 변화(권한 부여·회수)를 관리자 행위 기록에 남긴다. 실패해도 서버는 켠다."""
+    try:
+        async with AsyncSessionLocal() as db:
+            await admin_registry_service.sync_admin_log(db)
+    except Exception:
+        logging.getLogger(__name__).exception("관리자 권한 기록 실패")
+    yield
+
+
+app = FastAPI(title="PAEON API", lifespan=lifespan)
 register_error_handlers(app)
 
 app.add_middleware(
