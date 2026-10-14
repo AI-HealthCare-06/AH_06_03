@@ -61,3 +61,17 @@ async def test_admin_grant_and_revoke_are_logged_once(db_session, monkeypatch):
     async with db_session() as s:
         rows = (await s.execute(select(AdminAuditLog.action, AdminAuditLog.target))).all()
     assert sorted(rows) == [("admin_granted", "a@x.kr"), ("admin_granted", "b@x.kr"), ("admin_granted", "b@x.kr"), ("admin_revoked", "b@x.kr")]
+
+
+async def test_관리자_기록은_2년이_지나면_새_기록을_남길_때_지워진다(db_session):
+    from app.services import audit_service
+    now = utcnow()
+    async with db_session() as s:
+        s.add(AdminAuditLog(actor_email="a@x.kr", action="old", created_at=now - timedelta(days=731)))
+        s.add(AdminAuditLog(actor_email="a@x.kr", action="recent", created_at=now - timedelta(days=700)))
+        await s.commit()
+    async with db_session() as s:
+        await audit_service.record(s, "a@x.kr", "new")
+        await s.commit()
+        actions = sorted(a for (a,) in (await s.execute(select(AdminAuditLog.action))).all())
+    assert actions == ["new", "recent"]

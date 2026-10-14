@@ -1,5 +1,7 @@
 """관리자 행위 기록 (REQ-ADM-005). 열람은 같은 관리자가 같은 화면을 새로고침할 때마다 쌓이지 않게 한동안 한 번만 남긴다."""
-from sqlalchemy import func, select
+from datetime import timedelta
+
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import utcnow
@@ -7,6 +9,7 @@ from app.models.admin_audit import AdminAuditLog
 from app.schemas.admin import AuditLogItem
 
 VIEW_DEDUPE_SECONDS = 600
+RETENTION_DAYS = 730   # 관리자 접속 기록은 2년 보관하고, 새 기록을 남길 때 그보다 오래된 기록을 지운다
 
 
 async def record(
@@ -15,6 +18,7 @@ async def record(
 ) -> bool:
     """기록을 더한다 (commit은 부르는 쪽에서). 막 같은 기록을 남겼다면 건너뛰고 False를 돌려준다."""
     now = utcnow()
+    await db.execute(delete(AdminAuditLog).where(AdminAuditLog.created_at < now - timedelta(days=RETENTION_DAYS)))
     if dedupe_seconds:
         last = (await db.execute(
             select(func.max(AdminAuditLog.created_at))
