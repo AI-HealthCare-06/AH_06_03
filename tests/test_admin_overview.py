@@ -134,11 +134,14 @@ async def test_funnel_counts_later_stage_as_passed(client, db_session):
         for uid in (old1, old2, waiting):                             # 대상 확인 기록 없이 건강정보만
             s.add(HealthRecord(user_id=uid, health_schema_id="schema-1", input_type="initial",
                                examination_date=date(2026, 10, 8), created_at=NOW))
+        s.add(Prediction(prediction_job_id="job-old1", user_id=old1, model_code="MODEL_B", status="completed",
+                         predicted_at=NOW))                           # old1은 설문을 건너뛰고 분석까지
         await s.commit()
     d = await overview(client, h)
     assert [(s["code"], s["users"]) for s in d["funnel"]] == [
-        ("signup", 4), ("eligibility", 3), ("health", 2), ("survey", 0), ("prediction", 0),
+        ("signup", 4), ("eligibility", 3), ("health", 2), ("survey", 1), ("prediction", 1),
         ("challenge_started", 0), ("challenge_completed", 0)]
+    assert {s["code"]: s["label"] for s in d["funnel"]}["survey"] == "설문 단계"
     assert all(s["rate_of_previous"] is None or s["rate_of_previous"] <= 1 for s in d["funnel"])
 
 
