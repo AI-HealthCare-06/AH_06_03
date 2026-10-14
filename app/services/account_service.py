@@ -31,8 +31,13 @@ def _result(r: AccountDeletionRequest) -> DeletionResult:
                           completed_at=r.completed_at, result_summary=r.result_summary)
 
 
-# 건강정보 동의 철회 때 남기는 표: 계정·프로필·로그인 세션·동의 기록 (+ 탈퇴 때도 남기는 표)
-HEALTH_KEEP_TABLES = KEEP_TABLES | {"users", "user_profiles", "user_sessions", "user_consents", "inquiries"}
+# 건강정보 동의 철회 때 남기는 표: 계정·프로필·로그인 세션·동의 기록, 문의, 커뮤니티 닉네임·글·댓글(건강정보가 아니라서)
+# (+ 탈퇴 때도 남기는 표). 파이 장부와 공통 챌린지 참여·인증 기록은 건강 활동에서 나온 것이라 철회 때 지운다.
+# 배지·파티·캐릭터 표를 만들 때는 이 목록을 보고 남길지 지울지 정한다 (캐릭터만 남기고 파이·배지·파티는 지운다).
+HEALTH_KEEP_TABLES = KEEP_TABLES | {
+    "users", "user_profiles", "user_sessions", "user_consents", "inquiries",
+    "community_profiles", "community_posts", "community_comments", "community_likes", "community_reports",
+}
 
 
 async def _delete_user_rows(db: AsyncSession, user_id: str, keep: set[str]) -> dict[str, int]:
