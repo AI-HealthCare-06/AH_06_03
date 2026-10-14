@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>비회원 문의</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+input,textarea{outline:none}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <div style="height: 64px; padding: 0 8px; display: flex; align-items: center; gap: 4px">
+    <a href="Login.dc.html" aria-label="뒤로" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#243749" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
+    <span style="font-size: 17px; font-weight: 800">비회원 문의</span>
+  </div>
+
+  <div style="padding: 0 20px; display: flex; flex-direction: column; gap: 18px">
+    <div style="display: flex; background: #F8F1E7; border-radius: 24px; padding: 4px">
+      <span style="flex: 1; height: 44px; border-radius: 20px; background: #FFFFFF; font-size: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 1px #E6DBCD">문의 남기기</span>
+      <a href="GuestInquiryCheck.dc.html" style="flex: 1; height: 44px; border-radius: 20px; font-size: 15px; color: #4A5C6D; display: flex; align-items: center; justify-content: center">답변 확인하기</a>
+    </div>
+
+    <div style="background: #F8F1E7; border-radius: 16px; padding: 14px 16px; font-size: 14px; color: #4A5C6D; line-height: 1.65">로그인·가입이 안 될 때 로그인 없이 문의를 남길 수 있어요. 이메일을 받지 않고 서비스 안에서만 보관해요. 답변은 문의를 보낼 때 알려 드리는 <b>조회 번호</b>로 확인해요. <b>건강정보(혈압, 진단명 등)는 적지 마세요.</b></div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="gt" style="font-size: 14px; font-weight: 800">제목</label>
+      <input id="gt" placeholder="예: 로그인이 안 돼요" style="height: 54px; box-sizing: border-box; border: 2px solid #243749; border-radius: 14px; background: #F8F1E7; padding: 0 16px; font: 500 16px 'Nanum Gothic', sans-serif; color: #243749">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="gb" style="font-size: 14px; font-weight: 800">내용</label>
+      <textarea id="gb" placeholder="어떤 화면에서 어떤 문제가 생기는지 적어 주세요" style="height: 170px; box-sizing: border-box; border: 2px solid transparent; border-radius: 14px; background: #F8F1E7; padding: 14px 16px; resize: none; font: 500 15px 'Nanum Gothic', sans-serif; line-height: 1.65; color: #243749"></textarea>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 20px 28px; background: #FFFFFF; border-top: 1px solid #E6DBCD; display: flex; flex-direction: column; gap: 6px">
+    <a href="GuestInquiryDone.dc.html" style="height: 56px; border-radius: 28px; background: #81A6C6; color: #1E3246; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center">문의 보내기</a>
+    <span style="text-align: center; font-size: 12px; color: #5A6B7A">문의는 접수 후 30일이 지나면 삭제돼요.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

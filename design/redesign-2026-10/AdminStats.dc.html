@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>관리자 · 챌린지 통계</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+</style>
+</helmet>
+<div style="display: flex; width: 1280px; height: 860px; background: #F8F1E7; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <aside style="width: 240px; flex: none; box-sizing: border-box; background: #FFFFFF; border-right: 1px solid #E6DBCD; padding: 28px 16px; display: flex; flex-direction: column; gap: 4px">
+    <div style="font-size: 20px; font-weight: 800; letter-spacing: 3px; padding: 0 12px">PAEON</div>
+    <div style="font-size: 13px; color: #5A6B7A; padding: 2px 12px 22px">관리자</div>
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="7">
+      <a href="{{n.href}}" style="display: flex; align-items: center; justify-content: space-between; height: 44px; box-sizing: border-box; padding: 0 12px; border-radius: 12px; font-size: 15px; background: {{n.bg}}; color: {{n.color}}; font-weight: {{n.weight}}"><span>{{n.label}}</span><span style="display: {{n.show}}; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 10px; background: #5C86AC; color: #FFFFFF; font-size: 12px; font-weight: 800; align-items: center; justify-content: center">{{n.badge}}</span></a>
+    </sc-for>
+    <div style="flex: 1"></div>
+    <div style="border-top: 1px solid #E6DBCD; padding: 16px 12px 0; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 700">admin@paeon.kr</span><a href="Login.dc.html" style="font-size: 13px; color: #5A6B7A; text-decoration: underline">로그아웃</a></div>
+  </aside>
+
+  <main style="flex: 1; min-width: 0; padding: 32px 40px; display: flex; flex-direction: column; gap: 18px; overflow: hidden">
+    <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px">챌린지 통계</span><span style="font-size: 14px; color: #4A5C6D; line-height: 1.6">개인을 알아볼 수 있는 값 없이 숫자만 보여요. 끝난 미션 중 달성 비율이 달성률, 중간에 그만둔 비율이 포기율이에요.</span></div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">
+      <div style="background: #FFFFFF; border: 1px solid #E6DBCD; border-radius: 22px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; color: #5A6B7A">4주 사이클</span><span style="font-size: 32px; font-weight: 800; letter-spacing: -1px">128<span style="font-size: 15px; font-weight: 700; color: #5A6B7A">개</span></span><span style="font-size: 12.5px; color: #5A6B7A">시작한 사용자 74명</span></div>
+      <div style="background: #FFFFFF; border: 1px solid #E6DBCD; border-radius: 22px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; color: #5A6B7A">4주 완료율</span><span style="font-size: 32px; font-weight: 800; letter-spacing: -1px">63.9%</span><span style="font-size: 12.5px; color: #5A6B7A">완료 62 · 미달 13</span></div>
+      <div style="background: #FFFFFF; border: 1px solid #E6DBCD; border-radius: 22px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; color: #5A6B7A">포기율</span><span style="font-size: 32px; font-weight: 800; letter-spacing: -1px">22.7%</span><span style="font-size: 12.5px; color: #5A6B7A">포기 22</span></div>
+      <div style="background: #FFFFFF; border: 1px solid #E6DBCD; border-radius: 22px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; color: #5A6B7A">진행 중</span><span style="font-size: 32px; font-weight: 800; letter-spacing: -1px">31<span style="font-size: 15px; font-weight: 700; color: #5A6B7A">개</span></span><span style="font-size: 12.5px; color: #5A6B7A">지금 하고 있는 사이클</span></div>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #E6DBCD; border-radius: 22px; padding: 8px 8px 4px; overflow: hidden">
+      <div style="display: grid; grid-template-columns: 1.7fr repeat(10, 1fr); gap: 4px; padding: 12px 14px; font-size: 12.5px; font-weight: 700; color: #5A6B7A; text-align: right; border-bottom: 1px solid #E6DBCD"><span style="text-align: left">미션</span><span>선택 수</span><span>배정 수</span><span>진행</span><span>달성</span><span>미달</span><span>포기</span><span>달성률</span><span>포기율</span><span>평균 기록일</span><span>평균 달성일</span></div>
+      <div style="display: grid; grid-template-columns: 1.7fr repeat(10, 1fr); gap: 4px; padding: 14px; font-size: 14px; text-align: right; border-bottom: 1px solid #E6DBCD"><span style="text-align: left; font-weight: 700">식후 10분 걷기</span><span>41</span><span>41</span><span>12</span><span>19</span><span>3</span><span>7</span><span>73.1%</span><span>17.1%</span><span>21.4</span><span>17.2</span></div>
+      <div style="display: grid; grid-template-columns: 1.7fr repeat(10, 1fr); gap: 4px; padding: 14px; font-size: 14px; text-align: right; border-bottom: 1px solid #E6DBCD"><span style="text-align: left; font-weight: 700">국물은 반만 먹기</span><span>36</span><span>36</span><span>9</span><span>15</span><span>4</span><span>8</span><span>65.2%</span><span>22.2%</span><span>19.8</span><span>15.9</span></div>
+      <div style="display: grid; grid-template-columns: 1.7fr repeat(10, 1fr); gap: 4px; padding: 14px; font-size: 14px; text-align: right; border-bottom: 1px solid #E6DBCD"><span style="text-align: left; font-weight: 700">저녁에 채소 한 접시</span><span>28</span><span>28</span><span>7</span><span>12</span><span>3</span><span>6</span><span>66.7%</span><span>21.4%</span><span>20.1</span><span>16.4</span></div>
+      <div style="display: grid; grid-template-columns: 1.7fr repeat(10, 1fr); gap: 4px; padding: 14px; font-size: 14px; text-align: right; border-bottom: 1px solid #E6DBCD"><span style="text-align: left; font-weight: 700">계단 오르기</span><span>14</span><span>14</span><span>3</span><span>5</span><span>2</span><span>4</span><span>55.6%</span><span>28.6%</span><span>16.5</span><span>12.6</span></div>
+      <div style="display: grid; grid-template-columns: 1.7fr repeat(10, 1fr); gap: 4px; padding: 14px; font-size: 14px; text-align: right; border-bottom: 1px solid #E6DBCD"><span style="text-align: left; font-weight: 700">7시간 수면 지키기</span><span>9</span><span>9</span><span>2</span><span>3</span><span>1</span><span>3</span><span>50.0%</span><span>33.3%</span><span>15.2</span><span>11.7</span></div>
+      <div style="display: grid; grid-template-columns: 1.7fr repeat(10, 1fr); gap: 4px; padding: 14px; font-size: 14px; text-align: right"><span style="text-align: left; font-weight: 700">금연하기 <span style="font-size: 12px; font-weight: 500; color: #5A6B7A">(고정)</span></span><span>—</span><span>11</span><span>2</span><span>8</span><span>0</span><span>1</span><span>88.9%</span><span>9.1%</span><span>25.3</span><span>23.8</span></div>
+    </div>
+
+    <div style="font-size: 13px; color: #5A6B7A; line-height: 1.7">참여자가 적을 때는 숫자 하나가 한 사람의 행동일 수 있어요. 선택 수는 사용자가 직접 고른 횟수, 배정 수는 고정 미션까지 센 횟수예요. 위 숫자는 예시예요.</div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ACTIVE = 'stats';
+    const items = [['mission', '미션 관리', 'AdminMission.dc.html', ''], ['users', '가입자', 'AdminUsers.dc.html', ''], ['stats', '챌린지 통계', 'AdminStats.dc.html', ''], ['cchal', '커뮤니티 챌린지', 'AdminCommunityChallenge.dc.html', ''], ['logs', '열람 기록', 'AdminLogs.dc.html', ''], ['inq', '문의', 'AdminInquiries.dc.html', '3'], ['reports', '커뮤니티 신고', 'AdminReports.dc.html', '2'], ['purge', '테스트 계정 삭제', 'AdminPurge.dc.html', '']];
+    return { nav: items.map(([k, label, href, badge]) => ({ label, href, badge, show: badge ? 'flex' : 'none', bg: k === ACTIVE ? '#E4F0F5' : 'transparent', color: k === ACTIVE ? '#243749' : '#4A5C6D', weight: k === ACTIVE ? 800 : 500 })) };
+  }
+}
+</script>
+</body>
+</html>

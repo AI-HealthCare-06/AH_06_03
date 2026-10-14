@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>문의 상세</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <div style="height: 64px; padding: 0 8px; display: flex; align-items: center; gap: 4px">
+    <a href="Inquiries.dc.html" aria-label="뒤로" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#243749" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
+    <span style="font-size: 17px; font-weight: 800">1:1 문의</span>
+  </div>
+
+  <div style="padding: 0 20px; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="height: 24px; padding: 0 10px; border-radius: 12px; background: #5C86AC; color: #FFFFFF; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; align-self: flex-start">답변 도착</span>
+      <span style="font-size: 22px; font-weight: 800; letter-spacing: -0.4px; line-height: 1.35">총콜레스테롤을 모르면 어떻게 하나요?</span>
+      <span style="font-size: 13px; color: #5A6B7A">10월 12일 오후 2:41에 남긴 문의</span>
+    </div>
+
+    <div style="border: 1px solid #E6DBCD; border-radius: 20px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 13px; font-weight: 700; color: #5A6B7A">내 문의</span>
+      <span style="font-size: 15px; line-height: 1.7">건강검진 결과지에 총콜레스테롤 수치가 없어요. 비워 두고 분석해도 되는지 궁금해요.</span>
+    </div>
+
+    <div style="background: #F8F1E7; border-radius: 20px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 13px; font-weight: 700; color: #5A6B7A">답변 · 10월 13일 오후 4:20</span>
+      <span style="font-size: 15px; line-height: 1.7">비워 두고 분석하셔도 돼요. 이 경우 학습 데이터의 중앙값(234)으로 대신 계산하고, 결과 화면에 그렇게 계산했다는 안내가 함께 나와요. 나중에 수치를 알게 되면 마이페이지에서 정보를 고치고 다시 분석할 수 있어요.</span>
+    </div>
+
+    <div style="border: 1px dashed #D2C4B4; border-radius: 16px; padding: 12px 16px; font-size: 13px; color: #5A6B7A; line-height: 1.6">답변 전에는 "아직 답변을 준비하고 있어요. 답변이 오면 알려 드릴게요."라고 보여요.</div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 20px 28px; background: #FFFFFF">
+    <a href="Inquiries.dc.html" style="height: 56px; box-sizing: border-box; border-radius: 28px; border: 1px solid #D2C4B4; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center">목록으로</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

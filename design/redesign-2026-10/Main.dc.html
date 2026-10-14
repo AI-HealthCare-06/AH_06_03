@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>디자인 시스템</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1240px; height: 960px; box-sizing: border-box; padding: 56px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; gap: 36px; overflow: hidden">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-size: 32px; font-weight: 800; letter-spacing: -0.5px">PAEON 디자인 시스템</div>
+    <div style="font-size: 14px; color: #4A5C6D; line-height: 1.6">차분한 파랑과 크림·베이지 팔레트입니다. 버튼의 파랑 위 글자는 짙은 남색으로 두어 대비를 지키고, 상태는 색이 아니라 글자와 모양으로도 구분합니다. 기준 폭 390px.</div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 48px">
+
+    <!-- 1열: 색 · 글꼴 -->
+    <div style="display: flex; flex-direction: column; gap: 32px">
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #5A6B7A">색</div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 8px"><div style="display: flex; align-items: center; gap: 10px"><div style="flex: none; width: 34px; height: 34px; border-radius: 9px; background: #FFFFFF; border: 1px solid #E6DBCD"></div><div style="font-size: 12px; line-height: 1.35"><b>Paper</b> #FFFFFF<br><span style="color: #5A6B7A">배경, 카드</span></div></div><div style="display: flex; align-items: center; gap: 10px"><div style="flex: none; width: 34px; height: 34px; border-radius: 9px; background: #F8F1E7; border: 1px solid #E6DBCD"></div><div style="font-size: 12px; line-height: 1.35"><b>Surface</b> #F8F1E7<br><span style="color: #5A6B7A">바탕 면, 입력창</span></div></div><div style="display: flex; align-items: center; gap: 10px"><div style="flex: none; width: 34px; height: 34px; border-radius: 9px; background: #F3E3D0; border: 1px solid #E6DBCD"></div><div style="font-size: 12px; line-height: 1.35"><b>Cream</b> #F3E3D0<br><span style="color: #5A6B7A">강조 면, 사진 자리</span></div></div><div style="display: flex; align-items: center; gap: 10px"><div style="flex: none; width: 34px; height: 34px; border-radius: 9px; background: #E6DBCD; border: 1px solid #E6DBCD"></div><div style="font-size: 12px; line-height: 1.35"><b>Line</b> #E6DBCD<br><span style="color: #5A6B7A">구분선, 빈 막대</span></div></div><div style="display: flex; align-items: center; gap: 10px"><div style="flex: none; width: 34px; height: 34px; border-radius: 9px; background: #D2C4B4; border: 1px solid #E6DBCD"></div><div style="font-size: 12px; line-height: 1.35"><b>Beige</b> #D2C4B4<br><span style="color: #5A6B7A">테두리, 보조 버튼선</span></div></div><div style="display: flex; align-items: center; gap: 10px"><div style="flex: none; width: 34px; height: 34px; border-radius: 9px; background: #AACDDC; border: 1px solid #E6DBCD"></div><div style="font-size: 12px; line-height: 1.35"><b>Sky</b> #AACDDC<br><span style="color: #5A6B7A">보조 강조, 안내 테두리</span></div></div><div style="display: flex; align-items: center; gap: 10px"><div style="flex: none; width: 34px; height: 34px; border-radius: 9px; background: #81A6C6; border: 1px solid #E6DBCD"></div><div style="font-size: 12px; line-height: 1.35"><b>Accent</b> #81A6C6<br><span style="color: #5A6B7A">버튼, 선택, 체크</span></div></div><div style="display: flex; align-items: center; gap: 10px"><div style="flex: none; width: 34px; height: 34px; border-radius: 9px; background: #5C86AC; border: 1px solid #E6DBCD"></div><div style="font-size: 12px; line-height: 1.35"><b>Accent 진</b> #5C86AC<br><span style="color: #5A6B7A">막대, 그래프, 진행</span></div></div><div style="display: flex; align-items: center; gap: 10px"><div style="flex: none; width: 34px; height: 34px; border-radius: 9px; background: #243749; border: 1px solid #E6DBCD"></div><div style="font-size: 12px; line-height: 1.35"><b>Ink</b> #243749<br><span style="color: #5A6B7A">제목, 아이콘</span></div></div><div style="display: flex; align-items: center; gap: 10px"><div style="flex: none; width: 34px; height: 34px; border-radius: 9px; background: #3B5063; border: 1px solid #E6DBCD"></div><div style="font-size: 12px; line-height: 1.35"><b>Body</b> #3B5063<br><span style="color: #5A6B7A">본문</span></div></div><div style="display: flex; align-items: center; gap: 10px"><div style="flex: none; width: 34px; height: 34px; border-radius: 9px; background: #5A6B7A; border: 1px solid #E6DBCD"></div><div style="font-size: 12px; line-height: 1.35"><b>Sub</b> #5A6B7A<br><span style="color: #5A6B7A">보조 글자</span></div></div><div style="display: flex; align-items: center; gap: 10px"><div style="flex: none; width: 34px; height: 34px; border-radius: 9px; background: #E4F0F5; border: 1px solid #E6DBCD"></div><div style="font-size: 12px; line-height: 1.35"><b>Notice</b> #E4F0F5<br><span style="color: #5A6B7A">상담 권고 배너</span></div></div></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #5A6B7A">글꼴 · 나눔고딕</div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-size: 40px; font-weight: 800; letter-spacing: -1px; line-height: 1">주의</span><span style="font-size: 13px; color: #5A6B7A">Display 40 / 800</span></div>
+          <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px">분석 결과</span><span style="font-size: 13px; color: #5A6B7A">Title 24 / 800</span></div>
+          <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-size: 18px; font-weight: 700">오늘 할 일</span><span style="font-size: 13px; color: #5A6B7A">Heading 18 / 700</span></div>
+          <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-size: 14px; color: #3B5063">진단이 아닌 참고 정보예요</span><span style="font-size: 13px; color: #5A6B7A">Body 14 / 400</span></div>
+          <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-size: 13px; color: #5A6B7A">수축기 · 이완기</span><span style="font-size: 13px; color: #5A6B7A">Caption 12 / 400</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2열: 형태 · 버튼 · 입력 · 칩 -->
+    <div style="display: flex; flex-direction: column; gap: 32px">
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #5A6B7A">모서리 · 간격</div>
+        <div style="display: flex; gap: 14px; align-items: flex-end">
+          <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start"><div style="width: 64px; height: 48px; background: #F8F1E7; border: 1px solid #E6DBCD; border-radius: 12px"></div><span style="font-size: 13px; color: #5A6B7A">입력 12</span></div>
+          <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start"><div style="width: 64px; height: 48px; background: #FFFFFF; border: 1px solid #E6DBCD; border-radius: 20px"></div><span style="font-size: 13px; color: #5A6B7A">카드 20</span></div>
+          <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start"><div style="width: 64px; height: 48px; background: #5C86AC; border-radius: 24px"></div><span style="font-size: 13px; color: #5A6B7A">버튼 알약</span></div>
+        </div>
+        <div style="font-size: 13px; color: #4A5C6D; line-height: 1.6">간격은 4 · 8 · 12 · 16 · 24 · 32. 화면 좌우 20, 카드 안쪽 20. 그림자 없이 1px 선만 씁니다.</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #5A6B7A">버튼</div>
+        <button style="height: 52px; border: 0; border-radius: 26px; background: #81A6C6; color: #1E3246; font: 700 16px 'Nanum Gothic', sans-serif">분석하기</button>
+        <button style="height: 52px; border: 1px solid #D2C4B4; border-radius: 26px; background: #FFFFFF; color: #243749; font: 700 16px 'Nanum Gothic', sans-serif">나중에 하기</button>
+        <button disabled="" style="height: 52px; border: 0; border-radius: 26px; background: #E6DBCD; color: #5A6B7A; font: 700 16px 'Nanum Gothic', sans-serif">다음</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #5A6B7A">입력 · 칩</div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="dsKey" style="font-size: 13px; color: #5A6B7A">키</label>
+          <div style="display: flex; align-items: center; height: 52px; border-radius: 12px; background: #F8F1E7; padding: 0 16px; gap: 8px"><input id="dsKey" value="165" style="flex: 1; min-width: 0; border: 0; background: transparent; font: 700 18px 'Nanum Gothic', sans-serif; color: #243749; outline: none"><span style="font-size: 14px; color: #5A6B7A">cm</span></div>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap">
+          <span style="height: 36px; box-sizing: border-box; padding: 0 16px; border-radius: 18px; background: #81A6C6; color: #1E3246; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center">전체</span>
+          <span style="height: 36px; box-sizing: border-box; padding: 0 16px; border-radius: 18px; border: 1px solid #D2C4B4; color: #3B5063; font-size: 13px; display: inline-flex; align-items: center">식단</span>
+          <span style="height: 36px; box-sizing: border-box; padding: 0 16px; border-radius: 18px; border: 1px solid #D2C4B4; color: #3B5063; font-size: 13px; display: inline-flex; align-items: center">운동</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3열: 상태 · 카드 · 탭 · 바텀시트 -->
+    <div style="display: flex; flex-direction: column; gap: 32px">
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #5A6B7A">신호 범주 — 색 없이 막대 · 모양 · 글자</div>
+        <div style="display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; align-items: center; gap: 12px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#243749" stroke-width="1.8" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle></svg><span style="width: 44px; font-size: 16px; font-weight: 800">양호</span><div style="display: flex; gap: 4px"><i style="width: 28px; height: 8px; border-radius: 4px; background: #5C86AC"></i><i style="width: 28px; height: 8px; border-radius: 4px; background: #E6DBCD"></i><i style="width: 28px; height: 8px; border-radius: 4px; background: #E6DBCD"></i></div></div>
+          <div style="display: flex; align-items: center; gap: 12px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#243749" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M8 2l6.5 11.5h-13z"></path></svg><span style="width: 44px; font-size: 16px; font-weight: 800">주의</span><div style="display: flex; gap: 4px"><i style="width: 28px; height: 8px; border-radius: 4px; background: #5C86AC"></i><i style="width: 28px; height: 8px; border-radius: 4px; background: #5C86AC"></i><i style="width: 28px; height: 8px; border-radius: 4px; background: #E6DBCD"></i></div></div>
+          <div style="display: flex; align-items: center; gap: 12px"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="1.5" fill="#243749"></rect></svg><span style="width: 44px; font-size: 16px; font-weight: 800">높음</span><div style="display: flex; gap: 4px"><i style="width: 28px; height: 8px; border-radius: 4px; background: #5C86AC"></i><i style="width: 28px; height: 8px; border-radius: 4px; background: #5C86AC"></i><i style="width: 28px; height: 8px; border-radius: 4px; background: #5C86AC"></i></div></div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #5A6B7A">카드</div>
+        <div style="border: 1px solid #E6DBCD; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 13px; color: #5A6B7A">이번 챌린지</span>
+          <span style="font-size: 18px; font-weight: 800">1차 · 3주차</span>
+          <div style="height: 6px; border-radius: 3px; background: #E6DBCD; margin-top: 8px"><div style="width: 64%; height: 6px; border-radius: 3px; background: #5C86AC"></div></div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #5A6B7A">하단 탭 항목</div>
+        <div style="display: flex; gap: 24px">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; color: #243749; font-size: 12px; font-weight: 800"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"></path></svg>홈</div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 8h6M9 12h6M9 16h3"></path></svg>내 기록</div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 12.5l3 3 5-6"></path></svg>챌린지</div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #5A6B7A">바텀시트</div>
+        <div style="background: #F8F1E7; border-radius: 16px 16px 0 0; padding: 12px 20px 20px; display: flex; flex-direction: column; gap: 10px">
+          <div style="width: 36px; height: 4px; border-radius: 2px; background: #D2C4B4; align-self: center"></div>
+          <div style="font-size: 16px; font-weight: 800">개인정보 처리방침</div>
+          <div style="font-size: 13px; color: #4A5C6D; line-height: 1.6">내용 보기는 아래에서 올라오는 시트로 엽니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1240,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

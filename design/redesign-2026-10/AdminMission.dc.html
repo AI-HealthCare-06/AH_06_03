@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>관리자 · 미션 관리</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+</style>
+</helmet>
+<div style="display: flex; width: 1280px; height: 1020px; background: #F8F1E7; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <aside style="width: 240px; flex: none; box-sizing: border-box; background: #FFFFFF; border-right: 1px solid #E6DBCD; padding: 28px 16px; display: flex; flex-direction: column; gap: 4px">
+    <div style="font-size: 20px; font-weight: 800; letter-spacing: 3px; padding: 0 12px">PAEON</div>
+    <div style="font-size: 13px; color: #5A6B7A; padding: 2px 12px 22px">관리자</div>
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="7">
+      <a href="{{n.href}}" style="display: flex; align-items: center; justify-content: space-between; height: 44px; box-sizing: border-box; padding: 0 12px; border-radius: 12px; font-size: 15px; background: {{n.bg}}; color: {{n.color}}; font-weight: {{n.weight}}"><span>{{n.label}}</span><span style="display: {{n.show}}; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 10px; background: #5C86AC; color: #FFFFFF; font-size: 12px; font-weight: 800; align-items: center; justify-content: center">{{n.badge}}</span></a>
+    </sc-for>
+    <div style="flex: 1"></div>
+    <div style="border-top: 1px solid #E6DBCD; padding: 16px 12px 0; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 700">admin@paeon.kr</span><a href="Login.dc.html" style="font-size: 13px; color: #5A6B7A; text-decoration: underline">로그아웃</a></div>
+  </aside>
+
+  <main style="flex: 1; min-width: 0; padding: 32px 40px; display: flex; flex-direction: column; gap: 18px; overflow: hidden">
+    <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px">미션 관리</span><span style="font-size: 14px; color: #4A5C6D; line-height: 1.6">챌린지 미션을 새 추천에 보일지(노출)와 카테고리 순서를 바꿔요. 바꾼 값은 바로 반영돼요.</span></div>
+
+    <div style="background: #E4F0F5; border-radius: 18px; padding: 16px 20px; font-size: 13.5px; color: #234257; line-height: 1.8">· <b>켬</b> = 새로 챌린지를 시작하는 사람의 추천 후보에 나와요. 이미 챌린지를 하는 사람은 그대로 끝까지 해요.<br>· 금연·절주 같은 <b>고정 미션</b>은 추천 규칙이 정해서 스위치가 없어요.<br>· <b>순서</b>는 추천 후보가 보이는 순서예요. 선택 미션이 하나도 안 남게 끄는 건 막아 둬요.</div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start">
+      <div style="background: #FFFFFF; border: 1px solid #E6DBCD; border-radius: 22px; padding: 6px 20px 8px">
+        <div style="display: flex; align-items: center; gap: 12px; height: 60px; border-bottom: 1px solid #E6DBCD">
+          <div style="display: flex; flex-direction: column; gap: 2px"><span style="width: 26px; height: 20px; border: 1px solid #D2C4B4; border-radius: 6px; font-size: 10px; display: flex; align-items: center; justify-content: center">▲</span><span style="width: 26px; height: 20px; border: 1px solid #D2C4B4; border-radius: 6px; font-size: 10px; display: flex; align-items: center; justify-content: center">▼</span></div>
+          <span style="flex: 1; font-size: 16px; font-weight: 800">식단 <small style="font-size: 12px; font-weight: 500; color: #5A6B7A; margin-left: 6px">diet</small></span>
+          <span style="font-size: 13px; color: #4A5C6D">노출 중</span><span style="width: 44px; height: 26px; border-radius: 13px; background: #5C86AC; position: relative"><i style="position: absolute; right: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; background: #FFFFFF"></i></span>
+        </div>
+        <div style="display: flex; align-items: center; height: 52px; border-bottom: 1px solid #E6DBCD; font-size: 14px"><span style="flex: 1">국물은 반만 먹기</span><span style="width: 44px; height: 26px; border-radius: 13px; background: #5C86AC; position: relative"><i style="position: absolute; right: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; background: #FFFFFF"></i></span></div>
+        <div style="display: flex; align-items: center; height: 52px; border-bottom: 1px solid #E6DBCD; font-size: 14px"><span style="flex: 1">채소 먼저 먹기</span><span style="width: 44px; height: 26px; border-radius: 13px; background: #5C86AC; position: relative"><i style="position: absolute; right: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; background: #FFFFFF"></i></span></div>
+        <div style="display: flex; align-items: center; height: 52px; border-bottom: 1px solid #E6DBCD; font-size: 14px"><span style="flex: 1">저녁에 채소 한 접시</span><span style="width: 44px; height: 26px; border-radius: 13px; background: #5C86AC; position: relative"><i style="position: absolute; right: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; background: #FFFFFF"></i></span></div>
+        <div style="display: flex; align-items: center; height: 52px; font-size: 14px; color: #5A6B7A"><span style="flex: 1">야식 줄이기</span><span style="width: 44px; height: 26px; border-radius: 13px; background: #D2C4B4; position: relative"><i style="position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; background: #FFFFFF"></i></span></div>
+      </div>
+
+      <div style="background: #FFFFFF; border: 1px solid #E6DBCD; border-radius: 22px; padding: 6px 20px 8px">
+        <div style="display: flex; align-items: center; gap: 12px; height: 60px; border-bottom: 1px solid #E6DBCD">
+          <div style="display: flex; flex-direction: column; gap: 2px"><span style="width: 26px; height: 20px; border: 1px solid #D2C4B4; border-radius: 6px; font-size: 10px; display: flex; align-items: center; justify-content: center">▲</span><span style="width: 26px; height: 20px; border: 1px solid #D2C4B4; border-radius: 6px; font-size: 10px; display: flex; align-items: center; justify-content: center">▼</span></div>
+          <span style="flex: 1; font-size: 16px; font-weight: 800">운동 <small style="font-size: 12px; font-weight: 500; color: #5A6B7A; margin-left: 6px">exercise</small></span>
+          <span style="font-size: 13px; color: #4A5C6D">노출 중</span><span style="width: 44px; height: 26px; border-radius: 13px; background: #5C86AC; position: relative"><i style="position: absolute; right: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; background: #FFFFFF"></i></span>
+        </div>
+        <div style="display: flex; align-items: center; height: 52px; border-bottom: 1px solid #E6DBCD; font-size: 14px"><span style="flex: 1">식후 10분 걷기</span><span style="width: 44px; height: 26px; border-radius: 13px; background: #5C86AC; position: relative"><i style="position: absolute; right: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; background: #FFFFFF"></i></span></div>
+        <div style="display: flex; align-items: center; height: 52px; border-bottom: 1px solid #E6DBCD; font-size: 14px"><span style="flex: 1">계단 오르기</span><span style="width: 44px; height: 26px; border-radius: 13px; background: #5C86AC; position: relative"><i style="position: absolute; right: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; background: #FFFFFF"></i></span></div>
+        <div style="display: flex; align-items: center; height: 52px; font-size: 14px"><span style="flex: 1">운동 20분 이상 하기</span><span style="width: 44px; height: 26px; border-radius: 13px; background: #5C86AC; position: relative"><i style="position: absolute; right: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; background: #FFFFFF"></i></span></div>
+      </div>
+
+      <div style="background: #FFFFFF; border: 1px solid #E6DBCD; border-radius: 22px; padding: 6px 20px 8px">
+        <div style="display: flex; align-items: center; gap: 12px; height: 60px; border-bottom: 1px solid #E6DBCD">
+          <div style="display: flex; flex-direction: column; gap: 2px"><span style="width: 26px; height: 20px; border: 1px solid #D2C4B4; border-radius: 6px; font-size: 10px; display: flex; align-items: center; justify-content: center">▲</span><span style="width: 26px; height: 20px; border: 1px solid #D2C4B4; border-radius: 6px; font-size: 10px; display: flex; align-items: center; justify-content: center">▼</span></div>
+          <span style="flex: 1; font-size: 16px; font-weight: 800">수면 · 습관 <small style="font-size: 12px; font-weight: 500; color: #5A6B7A; margin-left: 6px">habit</small></span>
+          <span style="font-size: 13px; color: #4A5C6D">노출 중</span><span style="width: 44px; height: 26px; border-radius: 13px; background: #5C86AC; position: relative"><i style="position: absolute; right: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; background: #FFFFFF"></i></span>
+        </div>
+        <div style="display: flex; align-items: center; height: 52px; border-bottom: 1px solid #E6DBCD; font-size: 14px"><span style="flex: 1">7시간 수면 지키기</span><span style="width: 44px; height: 26px; border-radius: 13px; background: #5C86AC; position: relative"><i style="position: absolute; right: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; background: #FFFFFF"></i></span></div>
+        <div style="display: flex; align-items: center; height: 52px; font-size: 14px"><span style="flex: 1">하루 1L 이상 물 마시기</span><span style="width: 44px; height: 26px; border-radius: 13px; background: #5C86AC; position: relative"><i style="position: absolute; right: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; background: #FFFFFF"></i></span></div>
+      </div>
+
+      <div style="background: #FFFFFF; border: 1px solid #E6DBCD; border-radius: 22px; padding: 6px 20px 8px">
+        <div style="display: flex; align-items: center; gap: 12px; height: 60px; border-bottom: 1px solid #E6DBCD">
+          <div style="display: flex; flex-direction: column; gap: 2px"><span style="width: 26px; height: 20px; border: 1px solid #D2C4B4; border-radius: 6px; font-size: 10px; display: flex; align-items: center; justify-content: center">▲</span><span style="width: 26px; height: 20px; border: 1px solid #D2C4B4; border-radius: 6px; font-size: 10px; display: flex; align-items: center; justify-content: center">▼</span></div>
+          <span style="flex: 1; font-size: 16px; font-weight: 800">금연 · 절주 <small style="font-size: 12px; font-weight: 500; color: #5A6B7A; margin-left: 6px">fixed</small></span>
+          <span style="height: 24px; padding: 0 10px; border-radius: 12px; border: 1px solid #D2C4B4; font-size: 12px; color: #4A5C6D; display: inline-flex; align-items: center">고정</span>
+        </div>
+        <div style="display: flex; align-items: center; height: 52px; border-bottom: 1px solid #E6DBCD; font-size: 14px"><span style="flex: 1">금연하기</span><span style="height: 24px; padding: 0 10px; border-radius: 12px; border: 1px solid #D2C4B4; font-size: 12px; color: #4A5C6D; display: inline-flex; align-items: center">규칙으로 정해짐</span></div>
+        <div style="display: flex; align-items: center; height: 52px; font-size: 14px"><span style="flex: 1">절주하기</span><span style="height: 24px; padding: 0 10px; border-radius: 12px; border: 1px solid #D2C4B4; font-size: 12px; color: #4A5C6D; display: inline-flex; align-items: center">규칙으로 정해짐</span></div>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1020}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ACTIVE = 'mission';
+    const items = [['mission', '미션 관리', 'AdminMission.dc.html', ''], ['users', '가입자', 'AdminUsers.dc.html', ''], ['stats', '챌린지 통계', 'AdminStats.dc.html', ''], ['cchal', '커뮤니티 챌린지', 'AdminCommunityChallenge.dc.html', ''], ['logs', '열람 기록', 'AdminLogs.dc.html', ''], ['inq', '문의', 'AdminInquiries.dc.html', '3'], ['reports', '커뮤니티 신고', 'AdminReports.dc.html', '2'], ['purge', '테스트 계정 삭제', 'AdminPurge.dc.html', '']];
+    return { nav: items.map(([k, label, href, badge]) => ({ label, href, badge, show: badge ? 'flex' : 'none', bg: k === ACTIVE ? '#E4F0F5' : 'transparent', color: k === ACTIVE ? '#243749' : '#4A5C6D', weight: k === ACTIVE ? 800 : 500 })) };
+  }
+}
+</script>
+</body>
+</html>

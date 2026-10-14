@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>챌린지 인증</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 900px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <div style="height: 64px; padding: 0 8px 0 20px; display: flex; align-items: center; justify-content: space-between">
+    <span style="font-size: 20px; font-weight: 800">챌린지</span>
+    <a href="ChallengePick.dc.html" style="height: 36px; box-sizing: border-box; padding: 0 14px; border-radius: 18px; border: 1px solid #D2C4B4; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 2v10M2 7h10"></path></svg>챌린지 고르기</a>
+  </div>
+
+  <div style="padding: 0 20px; display: flex; flex-direction: column; gap: 14px">
+    <!-- 큰 링 -->
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; background: #F8F1E7; border-radius: 28px; padding: 22px 20px 20px">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; width: 100%"><span style="font-size: 14px; color: #4A5C6D; font-weight: 700">1차 · 3주차</span><span style="font-size: 13px; color: #5A6B7A">연속 5일</span></div>
+      <span style="font-size: 17px; font-weight: 800; text-align: center; line-height: 1.4">챌린지를 완료해서<br>파이를 구워봐요!</span>
+      <div style="display: flex; justify-content: center"><img src="/_blob/29c77715f332275a3c975e6524e5bfbe" alt="파이 세 조각 중 두 조각을 구웠어요" width="184" style="display: block; image-rendering: pixelated"></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><span style="font-size: 20px; font-weight: 800; letter-spacing: -0.3px">2개 구웠어요 <span style="font-size: 15px; color: #5A6B7A; font-weight: 700">/ 3</span></span><span style="font-size: 14px; color: #4A5C6D">하나만 더 구우면 오늘 파이 완성!</span></div>
+      <div style="width: 100%; display: flex; flex-direction: column; gap: 8px">
+        <div style="display: flex; justify-content: space-between; font-size: 13px; color: #4A5C6D"><span>4주 진행</span><span><b style="color: #243749">18</b> / 28일</span></div>
+        <div style="height: 8px; border-radius: 4px; background: #E6DBCD"><div style="width: 64%; height: 8px; border-radius: 4px; background: #5C86AC"></div></div>
+      </div>
+    </div>
+
+    <!-- 오늘 할 일 -->
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-size: 18px; font-weight: 800">오늘 할 일</span></div>
+
+      <div style="display: flex; align-items: center; gap: 14px; background: #E4F0F5; border-radius: 20px; padding: 12px 14px">
+        <span style="width: 44px; height: 44px; border-radius: 14px; background: #FFFFFF; color: #5C86AC; display: flex; align-items: center; justify-content: center; flex: none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h4l2.5-6 4 11 2.5-5H21"></path></svg></span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 700; color: #5A6B7A; text-decoration: line-through">식후 10분 걷기</span><span style="font-size: 13px; color: #5A6B7A">점심 후 인증했어요</span></div>
+        <button aria-label="식후 10분 걷기, 완료됨" aria-pressed="true" style="width: 44px; height: 44px; border: 0; background: transparent; padding: 0"><span style="width: 30px; height: 30px; border-radius: 15px; background: #5C86AC; color: #FFFFFF; display: flex; align-items: center; justify-content: center; margin: 0 auto"><svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5l2.5 2.5L11 4.5"></path></svg></span></button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 14px; background: #E4F0F5; border-radius: 20px; padding: 12px 14px">
+        <span style="width: 44px; height: 44px; border-radius: 14px; background: #FFFFFF; color: #5C86AC; display: flex; align-items: center; justify-content: center; flex: none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11h16a8 8 0 0 1-16 0zM9 4c0 2 2 2 2 4"></path></svg></span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 700; color: #5A6B7A; text-decoration: line-through">국물은 반만 먹기</span><span style="font-size: 13px; color: #5A6B7A">짠 음식 줄이기</span></div>
+        <button aria-label="국물은 반만 먹기, 완료됨" aria-pressed="true" style="width: 44px; height: 44px; border: 0; background: transparent; padding: 0"><span style="width: 30px; height: 30px; border-radius: 15px; background: #5C86AC; color: #FFFFFF; display: flex; align-items: center; justify-content: center; margin: 0 auto"><svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5l2.5 2.5L11 4.5"></path></svg></span></button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 14px; border: 1px solid #E6DBCD; border-radius: 20px; padding: 12px 14px">
+        <span style="width: 44px; height: 44px; border-radius: 14px; background: #F8F1E7; color: #5A6B7A; display: flex; align-items: center; justify-content: center; flex: none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19C5 10 10 5 19 5c0 9-5 14-14 14zM5 19l8-8"></path></svg></span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 700">저녁에 채소 한 접시</span><span style="font-size: 13px; color: #5A6B7A">식단 개선</span></div>
+        <button aria-label="저녁에 채소 한 접시, 인증하기" aria-pressed="false" style="width: 44px; height: 44px; border: 0; background: transparent; padding: 0"><span style="width: 30px; height: 30px; box-sizing: border-box; border-radius: 15px; border: 2px solid #5C86AC; display: block; margin: 0 auto"></span></button>
+      </div>
+    </div>
+
+    <!-- 배지 -->
+    <a href="Badges.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 4px 2px">
+      <div style="display: flex"><span style="width: 32px; height: 32px; border-radius: 16px; background: #AACDDC; border: 2px solid #FFFFFF"></span><span style="width: 32px; height: 32px; border-radius: 16px; background: #F3E3D0; border: 2px solid #FFFFFF; margin-left: -10px"></span><span style="width: 32px; height: 32px; border-radius: 16px; background: #81A6C6; border: 2px solid #FFFFFF; margin-left: -10px"></span></div>
+      <span style="flex: 1; font-size: 14px; font-weight: 700">모은 배지 7개</span>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#5A6B7A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"></path></svg>
+    </a>
+  </div>
+
+  <nav aria-label="주요 메뉴" style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; box-sizing: border-box; background: #FFFFFF; border-top: 1px solid #E6DBCD; display: flex; padding: 8px 4px 0">
+    <a href="Trend.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 8h6M9 12h6M9 16h3"></path></svg>내 기록</a>
+    <a href="Challenge.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #243749; font-size: 12px; font-weight: 800"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 12.5l3 3 5-6"></path></svg>챌린지</a>
+    <a href="Home.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"></path></svg>홈</a>
+    <a href="Feed.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11h-7l-4 4v-4H4z"></path></svg>커뮤니티</a>
+    <a href="Menu.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>더보기</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

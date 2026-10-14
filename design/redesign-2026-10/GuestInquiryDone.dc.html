@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>조회 번호 발급</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <div style="height: 64px"></div>
+  <div style="padding: 40px 20px 0; display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center">
+    <span style="width: 72px; height: 72px; border-radius: 36px; background: #E4F0F5; color: #5C86AC; display: flex; align-items: center; justify-content: center"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span>
+    <div style="font-size: 26px; font-weight: 800; letter-spacing: -0.6px">문의를 남겼어요</div>
+    <div style="font-size: 14px; color: #4A5C6D; line-height: 1.7">아래 조회 번호는 <b>지금만 보여 드려요.</b><br>꼭 저장해 두세요. 답변이 오면 이 번호로 확인할 수 있어요.</div>
+
+    <div style="width: 100%; box-sizing: border-box; background: #F8F1E7; border-radius: 22px; padding: 26px 16px; font-size: 26px; font-weight: 800; letter-spacing: 2px">K7P2-9XQ4-M6TD</div>
+
+    <a href="GuestInquiryDone.dc.html" style="width: 100%; height: 52px; box-sizing: border-box; border-radius: 26px; border: 1px solid #D2C4B4; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center">번호 복사하기</a>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 20px 28px; background: #FFFFFF; display: flex; flex-direction: column; gap: 8px">
+    <a href="GuestInquiryCheck.dc.html" style="height: 56px; border-radius: 28px; background: #81A6C6; color: #1E3246; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center">답변 확인하러 가기</a>
+    <a href="Login.dc.html" style="min-height: 44px; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #5A6B7A">로그인 화면으로</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

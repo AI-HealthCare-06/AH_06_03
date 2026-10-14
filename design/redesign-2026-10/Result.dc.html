@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>분석 결과</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1330px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <div style="height: 64px; padding: 0 8px; display: flex; align-items: center; gap: 4px">
+    <a href="Home.dc.html" aria-label="뒤로" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#243749" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
+    <span style="font-size: 17px; font-weight: 800">분석 결과</span>
+  </div>
+
+  <div style="padding: 8px 20px 0; display: flex; flex-direction: column; gap: 16px">
+
+    <!-- 상담 권고 배너 -->
+    <div style="background: #E4F0F5; border: 1px solid #AACDDC; border-radius: 16px; padding: 16px 16px 14px 20px; display: flex; flex-direction: column; gap: 12px; color: #234257">
+      <div style="display: flex; gap: 12px; align-items: flex-start">
+        <div style="flex: 1; font-size: 14px; line-height: 1.6"><b>입력한 혈압이 140/90 이상이에요.</b><br>결과와 별개로 가까운 의료기관에서 상담받아 보길 권해요.<br><a href="Guide.dc.html" style="font-weight: 700; text-decoration: underline">상담 안내 보기</a></div>
+        <button aria-label="배너 닫기" style="width: 32px; height: 32px; margin: -4px -4px 0 0; border: 0; background: transparent; color: #234257; padding: 0; flex: none"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 4l10 10M14 4L4 14"></path></svg></button>
+      </div>
+      <label style="display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; min-height: 44px"><input type="checkbox" style="width: 22px; height: 22px; margin: 0; accent-color: #243749">확인했어요</label>
+    </div>
+
+    <!-- 핵심 결과 -->
+    <div style="border: 1px solid #E6DBCD; border-radius: 20px; padding: 24px 20px; display: flex; flex-direction: column; gap: 16px">
+      <span style="font-size: 14px; color: #4A5C6D">10년 내 심장 혈관 건강 신호</span>
+      <div style="display: flex; align-items: center; gap: 12px"><svg width="26" height="26" viewBox="0 0 16 16" fill="none" stroke="#243749" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M8 2l6.5 11.5h-13z"></path></svg><span style="font-size: 48px; font-weight: 800; letter-spacing: -1.5px; line-height: 1">주의</span></div>
+      <div style="display: flex; align-items: center; gap: 8px"><div style="display: flex; gap: 4px; flex: 1"><i style="flex: 1; height: 8px; border-radius: 4px; background: #5C86AC"></i><i style="flex: 1; height: 8px; border-radius: 4px; background: #5C86AC"></i><i style="flex: 1; height: 8px; border-radius: 4px; background: #E6DBCD"></i></div></div>
+      <div style="display: flex; justify-content: space-between; font-size: 13px; color: #5A6B7A"><span>양호</span><span style="font-weight: 800; color: #243749">주의</span><span>높음</span></div>
+      <div style="font-size: 14px; color: #3B5063; line-height: 1.6">혈압과 허리둘레가 이 신호에 가장 크게 영향을 주고 있어요.</div>
+    </div>
+
+    <!-- 혈관 나이 -->
+    <div style="background: #F8F1E7; border-radius: 16px; padding: 18px 20px; display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 14px; font-weight: 700">혈관 나이 (추정)</span><span style="font-size: 13px; color: #4A5C6D">실제 나이와 차이가 클 수 있어요</span></div>
+      <span style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px">52세</span>
+    </div>
+
+    <!-- 바꿀 수 있는 요인 -->
+    <div style="display: flex; flex-direction: column; gap: 14px; padding-top: 8px">
+      <div style="font-size: 18px; font-weight: 800">바꿀 수 있는 요인</div>
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; align-items: center; gap: 12px"><span style="width: 64px; font-size: 14px">혈압</span><div style="flex: 1; height: 10px; border-radius: 5px; background: #E6DBCD"><div style="width: 86%; height: 10px; border-radius: 5px; background: #5C86AC"></div></div></div>
+        <div style="display: flex; align-items: center; gap: 12px"><span style="width: 64px; font-size: 14px">허리둘레</span><div style="flex: 1; height: 10px; border-radius: 5px; background: #E6DBCD"><div style="width: 62%; height: 10px; border-radius: 5px; background: #5C86AC"></div></div></div>
+        <div style="display: flex; align-items: center; gap: 12px"><span style="width: 64px; font-size: 14px">흡연</span><div style="flex: 1; height: 10px; border-radius: 5px; background: #E6DBCD"><div style="width: 38%; height: 10px; border-radius: 5px; background: #5C86AC"></div></div></div>
+        <div style="display: flex; align-items: center; gap: 12px"><span style="width: 64px; font-size: 14px">운동</span><div style="flex: 1; height: 10px; border-radius: 5px; background: #E6DBCD"><div style="width: 24%; height: 10px; border-radius: 5px; background: #5C86AC"></div></div></div>
+      </div>
+      <div style="font-size: 13px; color: #5A6B7A">막대가 길수록 이번 결과에 더 크게 작용한 요인이에요.</div>
+      <div style="font-size: 13px; color: #5A6B7A">나이·성별처럼 바꿀 수 없는 요인은 뺐어요.</div>
+    </div>
+
+    <!-- 나와 비슷한 사람 -->
+    <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 8px">
+      <div style="font-size: 18px; font-weight: 800">나와 비슷한 사람</div>
+      <div style="font-size: 13px; color: #4A5C6D; line-height: 1.6">혈압이 정상인 사람들의 전체 자료와 비교했어요. 허리둘레, 몸무게, 술은 내가 바꿀 수 있는 부분이에요. 4주 뒤에 다시 비교해 봐요.</div>
+      <div style="display: flex; gap: 8px">
+        <span style="flex: 1; height: 48px; border-radius: 24px; border: 1px solid #D2C4B4; font-size: 13px; color: #5A6B7A; display: flex; align-items: center; justify-content: center">비슷한 편이에요</span>
+        <span style="flex: 1; height: 48px; border-radius: 24px; background: #81A6C6; color: #1E3246; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center">조금 달라요</span>
+        <span style="flex: 1; height: 48px; border-radius: 24px; border: 1px solid #D2C4B4; font-size: 13px; color: #5A6B7A; display: flex; align-items: center; justify-content: center">많이 달라요</span>
+      </div>
+    </div>
+
+    <!-- 안내 -->
+    <div style="display: flex; flex-direction: column; gap: 8px; padding-top: 8px; font-size: 13px; color: #5A6B7A; line-height: 1.7">
+      <div>총콜레스테롤은 입력하지 않아서 학습 데이터의 중앙값(234)으로 대신해 계산했어요. 이 값은 내 실제 수치가 아니에요.</div>
+      <div>진단이 아닌 참고 정보예요. 걱정되면 의료기관에 상담하세요.</div>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 20px 28px; background: #FFFFFF; border-top: 1px solid #E6DBCD">
+    <a href="Challenge.dc.html" style="height: 56px; border-radius: 28px; background: #81A6C6; color: #1E3246; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center">챌린지 시작하기</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1330}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

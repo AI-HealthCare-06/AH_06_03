@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>커뮤니티 · 파티</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+input{outline:none}
+</style>
+</helmet>
+<svg width="0" height="0" style="position: absolute" shape-rendering="crispEdges" aria-hidden="true"><defs><symbol id="av1" viewBox="0 0 16 16"><path fill="#243749" d="M2 1h1v1h-1zM13 1h1v1h-1zM2 2h2v1h-2zM12 2h2v1h-2zM2 3h1v1h-1zM5 3h6v1h-6zM13 3h1v1h-1zM1 4h1v1h-1zM14 4h1v1h-1zM1 5h1v1h-1zM14 5h1v1h-1zM0 6h1v1h-1zM15 6h1v1h-1zM0 7h1v1h-1zM4 7h2v1h-2zM10 7h2v1h-2zM15 7h1v1h-1zM0 8h1v1h-1zM4 8h2v1h-2zM10 8h2v1h-2zM15 8h1v1h-1zM0 9h1v1h-1zM15 9h1v1h-1zM0 10h1v1h-1zM7 10h2v1h-2zM15 10h1v1h-1zM0 11h1v1h-1zM15 11h1v1h-1zM1 12h1v1h-1zM14 12h1v1h-1zM2 13h1v1h-1zM13 13h1v1h-1zM2 14h1v1h-1zM5 14h6v1h-6zM13 14h1v1h-1zM2 15h4v1h-4zM10 15h4v1h-4z"></path><path fill="#81A6C6" d="M3 3h2v1h-2zM11 3h2v1h-2zM2 4h12v1h-12zM2 5h1v1h-1zM5 5h9v1h-9zM1 6h14v1h-14zM1 7h3v1h-3zM6 7h4v1h-4zM12 7h3v1h-3zM1 8h3v1h-3zM6 8h4v1h-4zM12 8h3v1h-3zM1 9h1v1h-1zM4 9h8v1h-8zM14 9h1v1h-1zM1 10h6v1h-6zM9 10h6v1h-6zM1 11h14v1h-14zM2 12h12v1h-12zM3 13h10v1h-10zM3 14h2v1h-2zM11 14h2v1h-2z"></path><path fill="#FFFFFF" d="M3 5h2v1h-2z"></path><path fill="#E8B9A5" d="M2 9h2v1h-2zM12 9h2v1h-2z"></path></symbol><symbol id="av2" viewBox="0 0 16 16"><path fill="#243749" d="M5 2h6v1h-6zM3 3h3v1h-3zM10 3h3v1h-3zM2 4h1v1h-1zM13 4h1v1h-1zM1 5h1v1h-1zM14 5h1v1h-1zM0 6h1v1h-1zM15 6h1v1h-1zM0 7h1v1h-1zM5 7h1v1h-1zM10 7h1v1h-1zM15 7h1v1h-1zM0 8h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM9 8h1v1h-1zM11 8h1v1h-1zM15 8h1v1h-1zM0 9h1v1h-1zM15 9h1v1h-1zM0 10h1v1h-1zM6 10h1v1h-1zM9 10h1v1h-1zM15 10h1v1h-1zM0 11h1v1h-1zM7 11h2v1h-2zM15 11h1v1h-1zM1 12h1v1h-1zM14 12h1v1h-1zM2 13h1v1h-1zM13 13h1v1h-1zM3 14h1v1h-1zM12 14h1v1h-1zM4 15h8v1h-8z"></path><path fill="#A9D6C2" d="M6 3h4v1h-4zM3 4h10v1h-10zM2 5h1v1h-1zM5 5h9v1h-9zM1 6h14v1h-14zM1 7h4v1h-4zM6 7h4v1h-4zM11 7h4v1h-4zM1 8h3v1h-3zM5 8h1v1h-1zM7 8h2v1h-2zM10 8h1v1h-1zM12 8h3v1h-3zM1 9h1v1h-1zM4 9h8v1h-8zM14 9h1v1h-1zM1 10h5v1h-5zM7 10h2v1h-2zM10 10h5v1h-5zM1 11h6v1h-6zM9 11h6v1h-6zM2 12h12v1h-12zM3 13h10v1h-10zM4 14h8v1h-8z"></path><path fill="#FFFFFF" d="M3 5h2v1h-2z"></path><path fill="#E8B9A5" d="M2 9h2v1h-2zM12 9h2v1h-2z"></path></symbol><symbol id="av3" viewBox="0 0 16 16"><path fill="#243749" d="M3 0h4v1h-4zM9 0h4v1h-4zM3 1h1v1h-1zM9 1h1v1h-1zM12 1h1v1h-1zM3 2h1v1h-1zM6 2h1v1h-1zM9 2h1v1h-1zM12 2h1v1h-1zM2 3h3v1h-3zM11 3h3v1h-3zM1 4h1v1h-1zM14 4h1v1h-1zM1 5h1v1h-1zM14 5h1v1h-1zM0 6h1v1h-1zM15 6h1v1h-1zM0 7h1v1h-1zM15 7h1v1h-1zM0 8h1v1h-1zM4 8h2v1h-2zM10 8h2v1h-2zM15 8h1v1h-1zM0 9h1v1h-1zM15 9h1v1h-1zM0 10h1v1h-1zM7 10h1v1h-1zM15 10h1v1h-1zM0 11h1v1h-1zM15 11h1v1h-1zM1 12h1v1h-1zM14 12h1v1h-1zM2 13h1v1h-1zM13 13h1v1h-1zM3 14h1v1h-1zM12 14h1v1h-1zM4 15h8v1h-8z"></path><path fill="#F3E3D0" d="M4 1h2v1h-2zM10 1h2v1h-2zM4 2h2v1h-2zM10 2h2v1h-2zM5 3h6v1h-6zM2 4h12v1h-12zM2 5h1v1h-1zM5 5h9v1h-9zM1 6h14v1h-14zM1 7h14v1h-14zM1 8h3v1h-3zM6 8h4v1h-4zM12 8h3v1h-3zM1 9h1v1h-1zM4 9h8v1h-8zM14 9h1v1h-1zM1 10h6v1h-6zM8 10h7v1h-7zM1 11h14v1h-14zM2 12h12v1h-12zM3 13h10v1h-10zM4 14h8v1h-8z"></path><path fill="#6FA58A" d="M6 1h1v1h-1zM8 1h1v1h-1zM7 2h1v1h-1z"></path><path fill="#FFFFFF" d="M3 5h2v1h-2z"></path><path fill="#E8B9A5" d="M2 9h2v1h-2zM12 9h2v1h-2z"></path></symbol><symbol id="av4" viewBox="0 0 16 16"><path fill="#243749" d="M3 1h2v1h-2zM11 1h2v1h-2zM2 2h1v1h-1zM5 2h1v1h-1zM10 2h1v1h-1zM13 2h1v1h-1zM2 3h1v1h-1zM6 3h4v1h-4zM13 3h1v1h-1zM1 4h1v1h-1zM14 4h1v1h-1zM1 5h1v1h-1zM14 5h1v1h-1zM0 6h1v1h-1zM15 6h1v1h-1zM0 7h1v1h-1zM4 7h2v1h-2zM10 7h2v1h-2zM15 7h1v1h-1zM0 8h1v1h-1zM4 8h2v1h-2zM10 8h2v1h-2zM15 8h1v1h-1zM0 9h1v1h-1zM15 9h1v1h-1zM0 10h1v1h-1zM7 10h2v1h-2zM15 10h1v1h-1zM0 11h1v1h-1zM15 11h1v1h-1zM1 12h1v1h-1zM14 12h1v1h-1zM2 13h1v1h-1zM13 13h1v1h-1zM2 14h1v1h-1zM5 14h6v1h-6zM13 14h1v1h-1zM2 15h4v1h-4zM10 15h4v1h-4z"></path><path fill="#AACDDC" d="M3 2h2v1h-2zM11 2h2v1h-2zM3 3h3v1h-3zM10 3h3v1h-3zM2 4h12v1h-12zM2 5h1v1h-1zM5 5h9v1h-9zM1 6h14v1h-14zM1 7h3v1h-3zM6 7h4v1h-4zM12 7h3v1h-3zM1 8h3v1h-3zM6 8h4v1h-4zM12 8h3v1h-3zM1 9h1v1h-1zM4 9h8v1h-8zM14 9h1v1h-1zM1 10h6v1h-6zM9 10h6v1h-6zM1 11h14v1h-14zM2 12h12v1h-12zM3 13h10v1h-10zM3 14h2v1h-2zM11 14h2v1h-2z"></path><path fill="#FFFFFF" d="M3 5h2v1h-2z"></path><path fill="#E8B9A5" d="M2 9h2v1h-2zM12 9h2v1h-2z"></path></symbol><symbol id="av5" viewBox="0 0 16 16"><path fill="#243749" d="M5 2h6v1h-6zM3 3h3v1h-3zM10 3h3v1h-3zM2 4h1v1h-1zM13 4h1v1h-1zM1 5h1v1h-1zM14 5h1v1h-1zM0 6h1v1h-1zM15 6h1v1h-1zM0 7h1v1h-1zM4 7h2v1h-2zM10 7h2v1h-2zM15 7h1v1h-1zM0 8h1v1h-1zM4 8h2v1h-2zM10 8h2v1h-2zM15 8h1v1h-1zM0 9h1v1h-1zM4 9h2v1h-2zM10 9h2v1h-2zM15 9h1v1h-1zM0 10h1v1h-1zM7 10h2v1h-2zM15 10h1v1h-1zM0 11h1v1h-1zM7 11h2v1h-2zM15 11h1v1h-1zM1 12h1v1h-1zM14 12h1v1h-1zM2 13h1v1h-1zM13 13h1v1h-1zM3 14h1v1h-1zM12 14h1v1h-1zM4 15h8v1h-8z"></path><path fill="#C9BEE6" d="M6 3h4v1h-4zM3 4h10v1h-10zM2 5h1v1h-1zM5 5h9v1h-9zM1 6h14v1h-14zM1 7h3v1h-3zM6 7h4v1h-4zM12 7h3v1h-3zM1 8h3v1h-3zM6 8h4v1h-4zM12 8h3v1h-3zM1 9h1v1h-1zM6 9h4v1h-4zM14 9h1v1h-1zM1 10h6v1h-6zM9 10h6v1h-6zM1 11h6v1h-6zM9 11h6v1h-6zM2 12h12v1h-12zM3 13h10v1h-10zM4 14h8v1h-8z"></path><path fill="#FFFFFF" d="M3 5h2v1h-2z"></path><path fill="#E8B9A5" d="M2 9h2v1h-2zM12 9h2v1h-2z"></path></symbol><symbol id="av6" viewBox="0 0 16 16"><path fill="#243749" d="M2 1h1v1h-1zM13 1h1v1h-1zM2 2h2v1h-2zM12 2h2v1h-2zM2 3h1v1h-1zM5 3h6v1h-6zM13 3h1v1h-1zM1 4h1v1h-1zM14 4h1v1h-1zM1 5h1v1h-1zM14 5h1v1h-1zM0 6h1v1h-1zM15 6h1v1h-1zM0 7h1v1h-1zM10 7h2v1h-2zM15 7h1v1h-1zM0 8h1v1h-1zM4 8h2v1h-2zM10 8h2v1h-2zM15 8h1v1h-1zM0 9h1v1h-1zM15 9h1v1h-1zM0 10h1v1h-1zM6 10h1v1h-1zM9 10h1v1h-1zM15 10h1v1h-1zM0 11h1v1h-1zM7 11h2v1h-2zM15 11h1v1h-1zM1 12h1v1h-1zM14 12h1v1h-1zM2 13h1v1h-1zM13 13h1v1h-1zM2 14h1v1h-1zM5 14h6v1h-6zM13 14h1v1h-1zM2 15h4v1h-4zM10 15h4v1h-4z"></path><path fill="#F2C6A8" d="M3 3h2v1h-2zM11 3h2v1h-2zM2 4h12v1h-12zM2 5h1v1h-1zM5 5h9v1h-9zM1 6h14v1h-14zM1 7h9v1h-9zM12 7h3v1h-3zM1 8h3v1h-3zM6 8h4v1h-4zM12 8h3v1h-3zM1 9h1v1h-1zM4 9h8v1h-8zM14 9h1v1h-1zM1 10h5v1h-5zM7 10h2v1h-2zM10 10h5v1h-5zM1 11h6v1h-6zM9 11h6v1h-6zM2 12h12v1h-12zM3 13h10v1h-10zM3 14h2v1h-2zM11 14h2v1h-2z"></path><path fill="#FFFFFF" d="M3 5h2v1h-2z"></path><path fill="#E8B9A5" d="M2 9h2v1h-2zM12 9h2v1h-2z"></path></symbol></defs></svg>
+<div style="position: relative; width: 390px; height: 920px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <div style="height: 64px; padding: 0 8px 0 20px; display: flex; align-items: center; justify-content: space-between">
+    <span style="font-size: 20px; font-weight: 800">커뮤니티</span>
+    <div style="display: flex; align-items: center">
+      <button aria-label="검색" style="width: 44px; height: 44px; border: 0; background: transparent; color: #243749; padding: 0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg></button>
+      <a href="CharacterCreate.dc.html" aria-label="내 캐릭터" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center"><svg width="30" height="30" viewBox="0 0 16 16" aria-hidden="true"><use href="#av4"></use></svg></a>
+    </div>
+  </div>
+  <div style="display: flex; padding: 0 20px; border-bottom: 1px solid #E6DBCD">
+    <a href="Feed.dc.html" style="flex: 1; height: 46px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #5A6B7A; border-bottom: 3px solid transparent; margin-bottom: -1px">피드</a>
+    <a href="CommunityChallenges.dc.html" style="flex: 1; height: 46px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #5A6B7A; border-bottom: 3px solid transparent; margin-bottom: -1px">챌린지</a>
+    <span style="flex: 1; height: 46px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; border-bottom: 3px solid #243749; margin-bottom: -1px">파티</span>
+  </div>
+
+  <div style="padding: 24px 20px 0; display: flex; flex-direction: column; gap: 18px">
+    <div style="background: #F8F1E7; border-radius: 28px; padding: 26px 20px 22px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center">
+      <div style="display: flex; gap: 6px">
+        <svg width="44" height="44" viewBox="0 0 16 16" aria-hidden="true"><use href="#av1"></use></svg><svg width="44" height="44" viewBox="0 0 16 16" aria-hidden="true"><use href="#av2"></use></svg><svg width="44" height="44" viewBox="0 0 16 16" aria-hidden="true"><use href="#av3"></use></svg>
+        <svg width="44" height="44" viewBox="0 0 16 16" aria-hidden="true"><use href="#av5"></use></svg><svg width="44" height="44" viewBox="0 0 16 16" aria-hidden="true"><use href="#av6"></use></svg><svg width="44" height="44" viewBox="0 0 16 16" aria-hidden="true"><use href="#av4"></use></svg>
+      </div>
+      <span style="font-size: 22px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.35">같이 하면<br>더 오래 해요</span>
+      <span style="font-size: 14px; color: #4A5C6D; line-height: 1.65">친구와 파티를 만들어 서로 챌린지 인증을 응원하고, 파티 안에서만 글을 나눠요.</span>
+      <a href="PartyCreate.dc.html" style="width: 100%; box-sizing: border-box; height: 54px; border-radius: 27px; background: #81A6C6; color: #1E3246; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center">파티 만들기</a>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 16px; font-weight: 800">초대 코드로 참여하기</span>
+      <div style="display: flex; gap: 8px">
+        <label for="code" style="position: absolute; left: -9999px">초대 코드</label>
+        <input id="code" placeholder="초대 코드 입력" style="flex: 1; min-width: 0; height: 52px; box-sizing: border-box; border: 0; border-radius: 14px; background: #F8F1E7; padding: 0 16px; font: 700 16px 'Nanum Gothic', sans-serif; letter-spacing: 1px; color: #243749">
+        <a href="PartyHome.dc.html" style="width: 84px; height: 52px; border-radius: 14px; border: 1px solid #D2C4B4; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-sizing: border-box">참여</a>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #5A6B7A; line-height: 1.65">
+      <span>· 파티는 개시자를 포함해 최대 6명이에요.</span>
+      <span>· 한 사람이 하나의 파티에 들어갈 수 있어요.</span>
+      <span>· 파티 글은 파티원에게만 보여요. 건강정보는 적지 마세요.</span>
+    </div>
+  </div>
+
+  <nav aria-label="주요 메뉴" style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; box-sizing: border-box; background: #FFFFFF; border-top: 1px solid #E6DBCD; display: flex; padding: 8px 4px 0">
+    <a href="Trend.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 8h6M9 12h6M9 16h3"></path></svg>내 기록</a>
+    <a href="Challenge.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 12.5l3 3 5-6"></path></svg>챌린지</a>
+    <a href="Home.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"></path></svg>홈</a>
+    <a href="Feed.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #243749; font-size: 12px; font-weight: 800"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11h-7l-4 4v-4H4z"></path></svg>커뮤니티</a>
+    <a href="Menu.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; color: #5A6B7A; font-size: 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>더보기</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":920}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

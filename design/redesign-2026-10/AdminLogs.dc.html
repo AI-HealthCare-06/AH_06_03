@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>관리자 · 열람 기록</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+</style>
+</helmet>
+<div style="display: flex; width: 1280px; height: 860px; background: #F8F1E7; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+  <aside style="width: 240px; flex: none; box-sizing: border-box; background: #FFFFFF; border-right: 1px solid #E6DBCD; padding: 28px 16px; display: flex; flex-direction: column; gap: 4px">
+    <div style="font-size: 20px; font-weight: 800; letter-spacing: 3px; padding: 0 12px">PAEON</div>
+    <div style="font-size: 13px; color: #5A6B7A; padding: 2px 12px 22px">관리자</div>
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="7">
+      <a href="{{n.href}}" style="display: flex; align-items: center; justify-content: space-between; height: 44px; box-sizing: border-box; padding: 0 12px; border-radius: 12px; font-size: 15px; background: {{n.bg}}; color: {{n.color}}; font-weight: {{n.weight}}"><span>{{n.label}}</span><span style="display: {{n.show}}; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 10px; background: #5C86AC; color: #FFFFFF; font-size: 12px; font-weight: 800; align-items: center; justify-content: center">{{n.badge}}</span></a>
+    </sc-for>
+    <div style="flex: 1"></div>
+    <div style="border-top: 1px solid #E6DBCD; padding: 16px 12px 0; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 700">admin@paeon.kr</span><a href="Login.dc.html" style="font-size: 13px; color: #5A6B7A; text-decoration: underline">로그아웃</a></div>
+  </aside>
+
+  <main style="flex: 1; min-width: 0; padding: 32px 40px; display: flex; flex-direction: column; gap: 18px; overflow: hidden">
+    <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px">열람 기록</span><span style="font-size: 14px; color: #4A5C6D; line-height: 1.6">관리자가 무엇을 보고 바꿨는지 시각과 함께 남아요. 같은 화면을 새로고침해도 10분 안에는 한 번만 남겨요. 최근 50건이에요.</span></div>
+
+    <div style="background: #FFFFFF; border: 1px solid #E6DBCD; border-radius: 22px; padding: 4px 8px; overflow: hidden">
+      <div style="display: grid; grid-template-columns: 150px 170px 190px 150px 1fr; gap: 10px; padding: 14px 16px; font-size: 13px; font-weight: 700; color: #5A6B7A; border-bottom: 1px solid #E6DBCD"><span>시각(한국)</span><span>관리자</span><span>동작</span><span>대상</span><span>내용</span></div>
+      <div style="display: grid; grid-template-columns: 150px 170px 190px 150px 1fr; gap: 10px; padding: 13px 16px; font-size: 13.5px; border-bottom: 1px solid #E6DBCD"><span>10/14 13:02:11</span><span>admin@paeon.kr</span><span>문의 답변</span><span>q-1042</span><span>—</span></div>
+      <div style="display: grid; grid-template-columns: 150px 170px 190px 150px 1fr; gap: 10px; padding: 13px 16px; font-size: 13.5px; border-bottom: 1px solid #E6DBCD"><span>10/14 13:01:40</span><span>admin@paeon.kr</span><span>문의 열람</span><span>q-1042</span><span>번호만 기록</span></div>
+      <div style="display: grid; grid-template-columns: 150px 170px 190px 150px 1fr; gap: 10px; padding: 13px 16px; font-size: 13.5px; border-bottom: 1px solid #E6DBCD"><span>10/14 12:48:05</span><span>admin@paeon.kr</span><span>비회원 문의 답변</span><span>g-0217</span><span>—</span></div>
+      <div style="display: grid; grid-template-columns: 150px 170px 190px 150px 1fr; gap: 10px; padding: 13px 16px; font-size: 13.5px; border-bottom: 1px solid #E6DBCD"><span>10/14 11:30:22</span><span>hyomin@paeon.kr</span><span>통계 열람</span><span>—</span><span>—</span></div>
+      <div style="display: grid; grid-template-columns: 150px 170px 190px 150px 1fr; gap: 10px; padding: 13px 16px; font-size: 13.5px; border-bottom: 1px solid #E6DBCD"><span>10/14 11:12:09</span><span>admin@paeon.kr</span><span>미션 변경</span><span>야식 줄이기</span><span>노출 끔</span></div>
+      <div style="display: grid; grid-template-columns: 150px 170px 190px 150px 1fr; gap: 10px; padding: 13px 16px; font-size: 13.5px; border-bottom: 1px solid #E6DBCD"><span>10/14 10:55:47</span><span>admin@paeon.kr</span><span>가입자 상세 열람</span><span>a41f9c</span><span>—</span></div>
+      <div style="display: grid; grid-template-columns: 150px 170px 190px 150px 1fr; gap: 10px; padding: 13px 16px; font-size: 13.5px; border-bottom: 1px solid #E6DBCD"><span>10/13 18:20:31</span><span>admin@paeon.kr</span><span>관리자 권한 부여</span><span>hyomin@paeon.kr</span><span>—</span></div>
+      <div style="display: grid; grid-template-columns: 150px 170px 190px 150px 1fr; gap: 10px; padding: 13px 16px; font-size: 13.5px; border-bottom: 1px solid #E6DBCD"><span>10/13 17:04:58</span><span>admin@paeon.kr</span><span>삭제 미리보기</span><span>%@test.com</span><span>대상 3명</span></div>
+      <div style="display: grid; grid-template-columns: 150px 170px 190px 150px 1fr; gap: 10px; padding: 13px 16px; font-size: 13.5px; border-bottom: 1px solid #E6DBCD"><span>10/13 17:05:30</span><span>admin@paeon.kr</span><span>계정 일괄 삭제</span><span>%@test.com</span><span>3명 삭제</span></div>
+      <div style="display: grid; grid-template-columns: 150px 170px 190px 150px 1fr; gap: 10px; padding: 13px 16px; font-size: 13.5px"><span>10/12 09:41:12</span><span>admin@paeon.kr</span><span>카테고리 변경</span><span>운동</span><span>순서 변경</span></div>
+    </div>
+    <div style="font-size: 13px; color: #5A6B7A; line-height: 1.7">위 내용은 예시예요. 문의 내용은 기록하지 않고 번호만 남아요.</div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ACTIVE = 'logs';
+    const items = [['mission', '미션 관리', 'AdminMission.dc.html', ''], ['users', '가입자', 'AdminUsers.dc.html', ''], ['stats', '챌린지 통계', 'AdminStats.dc.html', ''], ['cchal', '커뮤니티 챌린지', 'AdminCommunityChallenge.dc.html', ''], ['logs', '열람 기록', 'AdminLogs.dc.html', ''], ['inq', '문의', 'AdminInquiries.dc.html', '3'], ['reports', '커뮤니티 신고', 'AdminReports.dc.html', '2'], ['purge', '테스트 계정 삭제', 'AdminPurge.dc.html', '']];
+    return { nav: items.map(([k, label, href, badge]) => ({ label, href, badge, show: badge ? 'flex' : 'none', bg: k === ACTIVE ? '#E4F0F5' : 'transparent', color: k === ACTIVE ? '#243749' : '#4A5C6D', weight: k === ACTIVE ? 800 : 500 })) };
+  }
+}
+</script>
+</body>
+</html>
