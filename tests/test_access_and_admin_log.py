@@ -26,8 +26,8 @@ async def make_login_user(Session, email="a@test.kr"):
 
 async def test_login_records_ip_and_purges_old(client, db_session):
     uid = await make_login_user(db_session)
-    async with db_session() as s:    # 91일 전 기록 하나
-        s.add(AccessLog(account_id=uid, event="login", ip="1.1.1.1", created_at=utcnow() - timedelta(days=91)))
+    async with db_session() as s:    # 94일 전 기록 하나
+        s.add(AccessLog(account_id=uid, event="login", ip="1.1.1.1", created_at=utcnow() - timedelta(days=94)))
         s.add(AccessLog(account_id=uid, event="login", ip="2.2.2.2", created_at=utcnow() - timedelta(days=30)))
         await s.commit()
     r = await client.post("/v1/auth/login", json={"email": "a@test.kr", "password": "password1"},
@@ -35,7 +35,7 @@ async def test_login_records_ip_and_purges_old(client, db_session):
     assert r.status_code == 200
     async with db_session() as s:
         ips = sorted(a.ip for a in (await s.execute(select(AccessLog))).scalars().all())
-    assert ips == ["2.2.2.2", "203.0.113.7"]      # 91일 전 기록은 지워지고 새 기록이 남는다
+    assert ips == ["2.2.2.2", "203.0.113.7"]      # 94일 전 기록은 지워지고 새 기록이 남는다
 
 
 async def test_failed_login_leaves_no_record(client, db_session):

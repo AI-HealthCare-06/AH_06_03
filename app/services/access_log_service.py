@@ -1,4 +1,4 @@
-"""서비스 접속(로그인) 기록. 3개월(90일)이 지난 기록은 새 기록을 남길 때 함께 지운다."""
+"""서비스 접속(로그인) 기록. 3개월(93일)이 지난 기록은 새 기록을 남길 때 함께 지운다."""
 from datetime import timedelta
 
 from fastapi import Request
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import utcnow
 from app.models.access_log import AccessLog
 
-RETENTION_DAYS = 90
+RETENTION_DAYS = 93   # 3개월(최대 92일) 이상 보관해야 하므로 여유를 둔다
 
 
 def client_ip(request: Request) -> str | None:
