@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 4주 결과 화면 시안 (데모)</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .demo-bar{background:var(--warn-soft); color:var(--warn); border-bottom:1px solid var(--peach); padding:8px 20px; font-size:12.5px; font-weight:700; text-align:center}
+  .tabs{display:flex; gap:8px; flex-wrap:wrap; margin:0 0 10px}
+  .tabs button{border:1.5px solid var(--sage); background:#fff; color:var(--ink); border-radius:999px; padding:7px 14px; font-size:12.5px; font-weight:700; cursor:pointer}
+  .tabs button.on{background:var(--sage-deep); color:#fff; border-color:var(--sage-deep)}
+  .sc{display:flex; gap:8px; align-items:center; font-size:12px; color:var(--muted); margin:0 0 14px}
+  .sc select{border:1px solid var(--sage); border-radius:10px; padding:5px 8px; font-size:12px; background:#fff}
+  .card{background:#fff; border:1px solid var(--sage-light); border-radius:16px; padding:14px 16px; margin:0 0 12px}
+  .card h3{margin:0 0 4px; font-size:15px}
+  .sub{font-size:12px; color:var(--muted); margin:0 0 10px}
+  .tbl{display:grid; grid-template-columns:1fr auto auto auto; gap:9px 14px; align-items:center; font-size:13px}
+  .tbl .h{font-size:11.5px; color:var(--muted); font-weight:700; text-align:right}
+  .tbl .v{font-weight:800; text-align:right}
+  .tbl .d{font-weight:800; text-align:right; min-width:52px}
+  .down{color:var(--ok)} .up{color:var(--warn)} .same{color:var(--muted)}
+  .msg{background:var(--cream); border:1px solid var(--sage-light); border-radius:12px; padding:10px 12px; font-size:13px; font-weight:700; margin-top:10px}
+  .note{font-size:11.5px; color:var(--faint); margin:10px 0 0}
+  .row{display:flex; justify-content:space-between; align-items:center; font-size:13px; padding:6px 0}
+  .pill{display:inline-block; padding:4px 14px; border-radius:999px; font-weight:800; font-size:13px}
+  .p-warn{background:var(--warn-soft); color:var(--warn)} .p-ok{background:var(--ok-soft); color:var(--ok)} .p-high{background:var(--risk-soft); color:var(--risk)}
+  .arrow{color:var(--muted); font-size:18px}
+  .bar{height:9px; background:var(--track); border-radius:99px; overflow:hidden; margin:8px 0 6px}
+  .bar i{display:block; height:100%; background:var(--sage-deep); border-radius:99px}
+  .cta2{display:block; text-align:center; text-decoration:none; width:100%; border:0; border-radius:999px; padding:13px 22px; font-weight:700; font-size:14.5px; background:var(--sage-deep); color:#fff; box-shadow:0 6px 14px var(--shadow-btn); margin-top:12px}
+  .grid5{display:grid; grid-template-columns:1.1fr repeat(4,1fr); gap:9px 6px; align-items:center; font-size:12.5px; text-align:right}
+  .grid5 .h{font-size:11.5px; color:var(--muted); font-weight:700}
+  .grid5 .lbl{text-align:left}
+  .grid5 .na{color:var(--faint); font-weight:400}
+  .tl{display:flex; gap:8px; margin:10px 0 2px}
+  .tl div{flex:1; border:1.5px solid var(--sage-light); border-radius:12px; padding:9px 6px; text-align:center; font-size:12px; background:#fff}
+  .tl div.done{background:var(--ok-soft); border-color:#b9d6c0} .tl div.stop{background:var(--warn-soft); border-color:var(--peach)}
+  .tl b{display:block; font-size:13px}
+  svg text{font-family:'Nanum Gothic','Malgun Gothic','Apple SD Gothic Neo',sans-serif}
+</style>
+</head>
+<body>
+<div class="demo-bar">데모 화면 · 4주 결과 시안 · 숫자는 모두 가상의 예시예요 (실제 계정 데이터와 연결되지 않아요)</div>
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen">
+        <div class="tabs" id="tabs">
+          <button data-v="A" class="on">시안 A · 숫자로 비교</button>
+          <button data-v="B">시안 B · 변화 그래프</button>
+          <button data-v="C">시안 C · 한눈에 보는 요약</button>
+          <button data-v="D">12주 전체 보기</button>
+        </div>
+        <div class="sc">예시 상황
+          <select id="scn">
+            <option value="good">잘 해낸 경우</option>
+            <option value="hard">아쉬운 경우 (혈압·체중이 늘고 달성률이 낮음)</option>
+          </select>
+        </div>
+        <div class="sc" id="prog-box" style="display:none">진행 상황
+          <select id="prog">
+            <option value="1">1차까지 마침</option>
+            <option value="2" selected>2차까지 마침</option>
+            <option value="3">3차까지 마침 (12주 완료)</option>
+            <option value="stop">2차에서 중단함</option>
+          </select>
+        </div>
+        <div id="view"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 가상 데이터 (시안 숫자 기준). 서버와 연결하지 않는다.
+const DATA = {
+  good: { sbp: [142, 134, 131, 127], dbp: [90, 86], weight: [72, 70.5], waist: [90, 88], rate: 80, band: ['borderline', 'normal'], vage: [52, 50], sim: 'closer', cycle: 1 },
+  hard: { sbp: [138, 141, null, null], dbp: [88, 90], weight: [72, 72.8], waist: [90, 91], rate: 35, band: ['borderline', 'borderline'], vage: [52, 53], sim: 'farther', cycle: 1 },
+};
+const BAND = { normal: ['양호', 'p-ok'], borderline: ['주의', 'p-warn'], high: ['높음', 'p-high'] };
+const SIM = { closer: ['혈압이 정상인 사람들과 조금 달라요', '더 비슷해졌어요'], same: ['비슷한 자리예요', '비슷한 자리예요'], farther: ['혈압이 정상인 사람들과 조금 달라요', '조금 달라졌어요'] };
+const NOTE = '진단이 아니에요. 걱정되면 의료기관에 상담하세요.';
+const TOTAL = 3;
+
+function delta(a, b, unit, digits) {
+  const d = Math.round((b - a) * 10 ** digits) / 10 ** digits;
+  if (d === 0) return '<span class="d same">–</span>';
+  return d < 0 ? `<span class="d down">▼ ${Math.abs(d)}${unit}</span>` : `<span class="d up">▲ ${d}${unit}</span>`;
+}
+function rateMsg(r) {
+  if (r >= 70) return '목표를 잘 해냈어요!';
+  if (r >= 40) return '절반 넘게 해냈어요. 다음엔 한 가지만 더 챙겨 봐요.';
+  return '쉽지 않은 4주였어요. 다음엔 한 가지 미션만 정해서 가볍게 시작해 봐요.';
+}
+function bpMsg(a, b) {
+  const d = b - a;
+  if (d <= -3) return `처음보다 ${Math.abs(d)} 낮아졌어요. 꾸준히 이어 가고 있어요.`;
+  if (d >= 3) return `처음보다 ${d} 높아졌어요. 한 번 잰 값이라 오차일 수 있어요. 다음 4주에 다시 재 봐요.`;
+  return '처음과 비슷해요. 다음 4주에 다시 재 봐요.';
+}
+function next(d) {
+  return d.cycle < TOTAL
+    ? `<a class="cta2" href="#" onclick="return false">${d.cycle + 1}차 4주 이어서 시작하기</a>`
+    : '<div class="msg">12주 챌린지를 모두 마쳤어요. 수고하셨어요!</div>';
+}
+
+function viewA(d) {
+  return `<div class="card"><h3>${d.cycle}차 4주 동안의 변화예요</h3><p class="sub">처음 입력과 4주 뒤 재입력을 나란히 보여 드려요.</p>
+    <div class="tbl"><span></span><span class="h">처음</span><span class="h">4주 후</span><span class="h">변화</span>
+      <span>혈압 (mmHg)</span><span class="v">${d.sbp[0]}/${d.dbp[0]}</span><span class="v">${d.sbp[1]}/${d.dbp[1]}</span>${delta(d.sbp[0], d.sbp[1], '', 0)}
+      <span>몸무게 (kg)</span><span class="v">${d.weight[0]}</span><span class="v">${d.weight[1]}</span>${delta(d.weight[0], d.weight[1], '', 1)}
+      <span>허리둘레 (cm)</span><span class="v">${d.waist[0]}</span><span class="v">${d.waist[1]}</span>${delta(d.waist[0], d.waist[1], '', 0)}
+      <span>미션 달성률</span><span class="v">–</span><span class="v">${d.rate}%</span><span class="d"></span>
+    </div>
+    <div class="msg">${rateMsg(d.rate)}</div>
+    <p class="note">한 번 잰 값이라 차이가 작으면 측정 오차일 수 있어요. ${NOTE}</p></div>${next(d)}`;
+}
+
+function viewB(d) {
+  const W = 320, H = 170, L = 30, R = 20, T = 20, B = 36;
+  const xs = [0, 1, 2, 3].map(i => L + (W - L - R) * i / 3);
+  const vals = d.sbp.filter(v => v != null);
+  const lo = Math.min(120, ...vals) - 4, hi = Math.max(145, ...vals) + 4;
+  const y = (v) => T + (H - T - B) * (hi - v) / (hi - lo);
+  const pts = d.sbp.map((v, i) => v == null ? null : [xs[i], y(v), v]).filter(Boolean);
+  const line = pts.map(p => p.slice(0, 2).join(',')).join(' ');
+  const labels = ['시작', '4주', '8주', '12주'];
+  return `<div class="card"><h3>수축기 혈압 변화</h3><p class="sub">시작할 때와 4주마다 다시 쟀던 값을 이어서 보여 드려요.</p>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="수축기 혈압 변화 그래프">
+      <line x1="${L}" x2="${W - R}" y1="${y(140)}" y2="${y(140)}" stroke="#D97362" stroke-dasharray="4 3"/>
+      <text x="${W - R}" y="${y(140) - 4}" text-anchor="end" font-size="9" fill="#B0543F">140 기준선</text>
+      <polyline points="${line}" fill="none" stroke="#BD8484" stroke-width="2.5"/>
+      ${pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="4.5" fill="#fff" stroke="#BD8484" stroke-width="2.5"/><text x="${p[0]}" y="${p[1] - 9}" text-anchor="middle" font-size="11" font-weight="800" fill="#384038">${p[2]}</text>`).join('')}
+      ${labels.map((t, i) => `<text x="${xs[i]}" y="${H - 12}" text-anchor="middle" font-size="10" fill="${d.sbp[i] == null ? '#B5BAB5' : '#5C665C'}">${t}${d.sbp[i] == null ? '' : ''}</text>`).join('')}
+    </svg>
+    ${vals.length < 4 ? '<p class="note" style="margin-top:0">아직 재지 않은 시점은 점이 없어요. 4주마다 재입력하면 이어서 그려져요.</p>' : ''}
+    <div class="msg">${bpMsg(d.sbp[0], vals[vals.length - 1])}</div>
+    <p class="note">점선은 140 기준선이에요. ${NOTE}</p></div>${next(d)}`;
+}
+
+function viewC(d) {
+  const [a, b] = d.band.map(k => BAND[k]);
+  const s = SIM[d.sim];
+  return `<div class="card"><h3>${d.cycle}차 4주가 끝났어요</h3><p class="sub">달라진 점을 한눈에 정리했어요.</p>
+    <div class="row"><span>10년 내 심장 혈관 건강 신호</span><span><span class="pill ${a[1]}">${a[0]}</span> <span class="arrow">→</span> <span class="pill ${b[1]}">${b[0]}</span></span></div>
+    <div class="row"><span>혈관 나이(추정)</span><b>${d.vage[0]}세 → ${d.vage[1]}세</b></div></div>
+    <div class="card"><p class="sub" style="margin:0">나와 비슷한 사람들과 비교</p><b style="font-size:13.5px">${s[0]}</b>
+      <div class="row"><span class="arrow">↓</span><span class="pill ${d.sim === 'closer' ? 'p-ok' : 'p-warn'}">${s[1]}</span></div></div>
+    <div class="card"><div class="row" style="padding-top:0"><b>이번 4주 미션 달성률</b><b>${d.rate}%</b></div>
+      <div class="bar"><i style="width:${d.rate}%"></i></div><p class="note" style="margin:0">${rateMsg(d.rate)}</p>
+      ${next(d)}<p class="note" style="text-align:center">${NOTE}</p></div>`;
+}
+
+
+// ---- 12주 전체 보기 (가상 데이터)
+const CYC = [
+  { sbp: 134, dbp: 86, w: 70.5, wa: 88, rate: 80 },
+  { sbp: 131, dbp: 84, w: 69.8, wa: 87, rate: 72 },
+  { sbp: 127, dbp: 82, w: 69, wa: 85, rate: 84 },
+];
+const START = { sbp: 142, dbp: 90, w: 72, wa: 90 };
+function viewD() {
+  const mode = document.getElementById('prog').value;
+  const done = mode === 'stop' ? 1 : +mode;            // 끝까지 마친 차수
+  const stopped = mode === 'stop' ? 2 : 0;              // 중단한 차수 번호
+  const cs = CYC.slice(0, done);
+  const W = 320, H = 170, L = 30, R = 20, T = 20, B = 36;
+  const xs = [0, 1, 2, 3].map(i => L + (W - L - R) * i / 3);
+  const vals = [START.sbp, ...cs.map(c => c.sbp)];
+  const lo = 120 - 4, hi = 145 + 4, y = (v) => T + (H - T - B) * (hi - v) / (hi - lo);
+  const pts = vals.map((v, i) => [xs[i], y(v), v]);
+  const labels = ['시작', '4주', '8주', '12주'];
+  const status = (i) => i < done ? 'done' : (stopped === i + 1 ? 'stop' : '');
+  const stText = (i) => i < done ? '마침' : (stopped === i + 1 ? '중단함' : '아직 시작 전');
+  const cell = (v, i, f) => i < done ? `<b>${f(CYC[i])}</b>` : '<span class="na">–</span>';
+  let sum = '';
+  if (done === 3) {
+    const avg = Math.round(CYC.reduce((a, c) => a + c.rate, 0) / 3);
+    sum = `<div class="card"><h3>12주 챌린지를 마쳤어요</h3><p class="sub">처음과 12주 뒤를 비교했어요.</p>
+      <div class="row"><span>혈압</span><b>${START.sbp}/${START.dbp} → ${CYC[2].sbp}/${CYC[2].dbp}</b></div>
+      <div class="row"><span>몸무게</span><b>${START.w}kg → ${CYC[2].w}kg</b></div>
+      <div class="row"><span>허리둘레</span><b>${START.wa}cm → ${CYC[2].wa}cm</b></div>
+      <div class="row"><span>12주 평균 미션 달성률</span><b>${avg}%</b></div>
+      <div class="msg">${bpMsg(START.sbp, CYC[2].sbp)}</div></div>`;
+  }
+  return `<div class="card"><h3>12주 동안의 기록</h3><p class="sub">4주씩 3번, 지금까지 한 챌린지를 모아서 보여 드려요.</p>
+    <div class="tl">${[0, 1, 2].map(i => `<div class="${status(i)}"><b>${i + 1}차</b>${stText(i)}</div>`).join('')}</div></div>
+    <div class="card"><h3>수축기 혈압 변화</h3>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="12주 수축기 혈압 변화 그래프">
+      <line x1="${L}" x2="${W - R}" y1="${y(140)}" y2="${y(140)}" stroke="#D97362" stroke-dasharray="4 3"/>
+      <text x="${W - R}" y="${y(140) - 4}" text-anchor="end" font-size="9" fill="#B0543F">140 기준선</text>
+      <polyline points="${pts.map(p => p[0] + ',' + p[1]).join(' ')}" fill="none" stroke="#BD8484" stroke-width="2.5"/>
+      ${pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="4.5" fill="#fff" stroke="#BD8484" stroke-width="2.5"/><text x="${p[0]}" y="${p[1] - 9}" text-anchor="middle" font-size="11" font-weight="800" fill="#384038">${p[2]}</text>`).join('')}
+      ${labels.map((t, i) => `<text x="${xs[i]}" y="${H - 12}" text-anchor="middle" font-size="10" fill="${i < pts.length ? '#5C665C' : '#B5BAB5'}">${t}</text>`).join('')}
+    </svg>
+    <div class="msg">${bpMsg(START.sbp, vals[vals.length - 1])}</div></div>
+    <div class="card"><h3>차수별 비교</h3>
+    <div class="grid5"><span></span><span class="h">처음</span><span class="h">1차</span><span class="h">2차</span><span class="h">3차</span>
+      <span class="lbl">혈압</span><b>${START.sbp}/${START.dbp}</b>${[0, 1, 2].map(i => cell(0, i, c => c.sbp + '/' + c.dbp)).join('')}
+      <span class="lbl">몸무게</span><b>${START.w}</b>${[0, 1, 2].map(i => cell(0, i, c => c.w)).join('')}
+      <span class="lbl">허리둘레</span><b>${START.wa}</b>${[0, 1, 2].map(i => cell(0, i, c => c.wa)).join('')}
+      <span class="lbl">미션 달성률</span><span class="na">–</span>${[0, 1, 2].map(i => cell(0, i, c => c.rate + '%')).join('')}
+    </div>
+    <p class="note">${stopped ? stopped + '차는 중간에 멈췄어요. 언제든 다시 시작할 수 있어요. ' : ''}${NOTE}</p></div>${sum}
+    ${done < 3 && !stopped ? `<a class="cta2" href="#" onclick="return false">${done + 1}차 4주 이어서 시작하기</a>` : ''}
+    ${stopped ? '<a class="cta2" href="#" onclick="return false">2차 4주 다시 시작하기</a>' : ''}`;
+}
+
+let cur = 'A';
+function render() {
+  const d = DATA[document.getElementById('scn').value];
+  document.getElementById('prog-box').style.display = cur === 'D' ? 'flex' : 'none';
+  document.getElementById('scn').parentElement.style.display = cur === 'D' ? 'none' : 'flex';
+  document.getElementById('view').innerHTML = { A: viewA, B: viewB, C: viewC, D: viewD }[cur](d);
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === cur));
+}
+document.getElementById('tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { cur = b.dataset.v; render(); } });
+document.getElementById('scn').addEventListener('change', render);
+document.getElementById('prog').addEventListener('change', render);
+render();
+</script>
+</body>
+</html>
