@@ -4,8 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PAEON — 회원가입</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
 <style>
   .modal-backdrop{position:fixed; inset:0; background:rgba(56,64,56,.45); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100}
@@ -63,7 +61,7 @@
               <input id="agree-age" class="agree" type="checkbox" required style="margin-top:2px">
               <span>[필수] 만 19세 이상입니다.</span>
             </label>
-            <p class="hint" style="margin-top:8px"><a href="privacy.html" target="_blank" style="text-decoration:underline; color:var(--muted)">개인정보 처리방침 전체 보기</a></p>
+            <p class="hint" style="margin-top:8px"><a href="terms.html" target="_blank" style="text-decoration:underline; color:var(--muted)">이용약관 전문 보기</a> · <a href="privacy.html" target="_blank" style="text-decoration:underline; color:var(--muted)">개인정보 처리방침 전체 보기</a></p>
           </div>
 
           <div id="age-box" class="callout" style="margin-top:10px; display:none">
@@ -73,6 +71,7 @@
           <p class="hint" style="margin-top:10px">이름·전화번호는 받지 않습니다. 성별은 건강정보 입력에서 받습니다.</p>
 
           <button type="submit" id="submit-btn" class="cta" style="margin-top:14px">가입하기</button>
+          <p class="hint" style="text-align:center; margin-top:8px">가입이 안 되나요? <a href="guest-inquiry.html" style="color:var(--muted); font-weight:700; text-decoration:underline">문의하기</a></p>
         </form>
       </div>
     </div>
@@ -98,6 +97,24 @@
 <script src="assets/api.js"></script>
 <script src="assets/policies.js"></script>
 <script>
+// 가입할 때 서버에 보내는 동의: 화면에 보여 준 정책(서버의 현재 유효한 정책)의 ID·버전과 체크 값. 서버가 이 값을 검사하고 그대로 기록한다.
+const AGREE_BOX = { terms_of_service: 'agree-terms', privacy: 'agree-privacy', health_data: 'agree-health' };
+let shownPolicies = null;
+async function fetchServerPolicies() {
+  try {
+    const list = (await (await fetch(`${API_BASE}/consent-policies/active`)).json()).data;
+    if (Array.isArray(list) && list.length) return list;
+  } catch (e) { /* 아래에서 다시 시도 */ }
+  return null;
+}
+fetchServerPolicies().then(l => { shownPolicies = l; });
+function buildConsents() {
+  return Object.keys(AGREE_BOX).map(t => {
+    const p = (shownPolicies || []).find(x => x.policy_type === t);
+    return p ? { policy_id: p.policy_id, version: p.version, agreed: document.getElementById(AGREE_BOX[t]).checked } : null;
+  });
+}
+
 // 약관 내용 보기: 서버의 현재 유효한 정책(GET /consent-policies/active)을 보여 주고, 못 받으면 내장 문구(policies.js)를 보여 준다.
 const TERMS_TITLE = { terms_of_service: '이용약관', privacy: '개인정보 수집·이용', health_data: '건강정보(민감정보) 수집·이용' };
 const esc = (t) => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -167,7 +184,10 @@ form.addEventListener('submit', async (event) => {
   submitBtn.disabled = true;
   submitBtn.textContent = '가입하는 중...';
   try {
-    await apiSignup(email, pw, birth);
+    if (!shownPolicies) shownPolicies = await fetchServerPolicies();
+    const consents = buildConsents();
+    if (consents.some(c => !c)) throw new Error('약관을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
+    await apiSignup(email, pw, birth, { consents });
     ['paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-cycle-history', 'paeon-progress'].forEach(k => localStorage.removeItem(k));
     localStorage.setItem('paeon-profile', JSON.stringify({ email, birth }));
     // 가입 후 자동 로그인하지 않고 홈에서 다시 로그인하게 한다

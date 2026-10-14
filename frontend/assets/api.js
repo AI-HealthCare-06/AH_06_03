@@ -16,7 +16,7 @@ async function apiSignup(email, password, birthDate, opts = {}) {
     await sleep(400);
     return { data: { user_id: 'mock-user-1' } };
   }
-  const payload = { email, password, birth_date: birthDate };
+  const payload = { email, password, birth_date: birthDate, consents: opts.consents || [] };
   const res = await fetch(`${API_BASE}/auth/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

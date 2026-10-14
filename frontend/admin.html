@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>PAEON — 관리자</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
 <style>
   .adm h3{margin:0 0 4px; font-size:20px}
@@ -75,6 +73,8 @@
           <button type="button" data-t="users">가입자</button>
           <button type="button" data-t="stats">챌린지 통계</button>
           <button type="button" data-t="logs">열람 기록</button>
+          <button type="button" data-t="inquiries">문의</button>
+          <button type="button" data-t="guest">비회원 문의</button>
           <button type="button" data-t="purge">테스트 계정 삭제</button>
         </div>
         <div id="msg" role="status" aria-live="polite"></div>
@@ -112,6 +112,26 @@
         <section id="sec-logs" hidden>
           <p class="meta">관리자가 무엇을 보고 바꿨는지 시각과 함께 남아요. 같은 화면을 새로고침해도 10분 안에는 한 번만 남겨요. 최근 50건이에요.</p>
           <div id="audit"></div>
+        </section>
+
+        <section id="sec-inquiries" hidden>
+          <p class="meta">이용자가 남긴 1:1 문의예요. 건강정보가 들어 있을 수 있어서, 문의를 열면 관리자 기록에 남아요(내용은 기록하지 않고 번호만 남아요). 답변은 이용자 화면에서 바로 보여요.</p>
+          <div class="filters">
+            <select id="i-status"><option value="open">답변 대기</option><option value="answered">답변 완료</option><option value="">전체</option></select>
+            <button type="button" class="btn" id="i-load">불러오기</button>
+          </div>
+          <div id="i-list"></div>
+          <div id="i-detail"></div>
+        </section>
+
+        <section id="sec-guest" hidden>
+          <p class="meta">로그인·가입이 안 될 때 로그인 없이 남긴 문의예요. 이메일이 없어서 답변은 이용자가 조회 번호로 확인해요. 문의를 열면 관리자 기록에 번호만 남아요.</p>
+          <div class="filters">
+            <select id="g-status"><option value="open">답변 대기</option><option value="answered">답변 완료</option><option value="">전체</option></select>
+            <button type="button" class="btn" id="g-load">불러오기</button>
+          </div>
+          <div id="g-list"></div>
+          <div id="g-detail"></div>
         </section>
 
         <section id="sec-purge" hidden>
@@ -232,7 +252,7 @@ async function load(keepMessage) {
 }
 
 // ---- 탭 ----
-const sections = { mission: document.getElementById('sec-mission'), users: document.getElementById('sec-users'), stats: document.getElementById('sec-stats'), logs: document.getElementById('sec-logs'), purge: document.getElementById('sec-purge') };
+const sections = { mission: document.getElementById('sec-mission'), users: document.getElementById('sec-users'), stats: document.getElementById('sec-stats'), logs: document.getElementById('sec-logs'), inquiries: document.getElementById('sec-inquiries'), guest: document.getElementById('sec-guest'), purge: document.getElementById('sec-purge') };
 document.getElementById('tabs').addEventListener('click', (ev) => {
   const t = ev.target.dataset && ev.target.dataset.t;
   if (!t) return;
@@ -242,6 +262,8 @@ document.getElementById('tabs').addEventListener('click', (ev) => {
   if (t === 'users' && !usersLoaded) loadUsers(0);
   if (t === 'stats') loadStats();
   if (t === 'logs') loadAudit();
+  if (t === 'inquiries') loadInquiries();
+  if (t === 'guest') loadGuest();
 });
 
 // ---- 가입자 ----
@@ -356,7 +378,7 @@ async function loadStats() {
 }
 load();
 
-const ACTION_LABEL = { users_view: '가입자 목록 열람', user_detail_view: '가입자 상세 열람', purge_preview: '삭제 미리보기', purge_apply: '계정 일괄 삭제', catalog_view: '미션 목록 열람', stats_view: '통계 열람', audit_view: '기록 열람', category_update: '카테고리 변경', mission_update: '미션 변경' };
+const ACTION_LABEL = { users_view: '가입자 목록 열람', user_detail_view: '가입자 상세 열람', purge_preview: '삭제 미리보기', purge_apply: '계정 일괄 삭제', catalog_view: '미션 목록 열람', stats_view: '통계 열람', audit_view: '기록 열람', category_update: '카테고리 변경', mission_update: '미션 변경', admin_granted: '관리자 권한 부여', admin_revoked: '관리자 권한 회수', inquiries_view: '문의 목록 열람', inquiry_view: '문의 열람', inquiry_answer: '문의 답변', guest_inquiries_view: '비회원 문의 목록 열람', guest_inquiry_view: '비회원 문의 열람', guest_inquiry_answer: '비회원 문의 답변' };
 
 function kst(iso) {
   const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + 'Z');   // 서버 시각은 UTC
@@ -381,6 +403,68 @@ async function loadAudit() {
   }
 }
 
+
+// ---- 문의 ----
+const $iList = document.getElementById('i-list'), $iDetail = document.getElementById('i-detail');
+async function loadInquiries() {
+  const status = document.getElementById('i-status').value;
+  try {
+    const { data } = await apiCall('GET', `/admin/inquiries?limit=50${status ? '&status=' + status : ''}`, undefined, '문의를 불러오지 못했어요');
+    $iList.replaceChildren(...(data.items.length
+      ? data.items.map((i) => el('button', { type: 'button', class: 'btn', style: 'display:block; width:100%; text-align:left; margin:0 0 6px', onclick: () => showInquiry(i.inquiry_id) },
+          `${kst(i.created_at)} · ${i.title} · ${i.answered ? '답변 완료' : '답변 대기'} (${i.user_id_short})`))
+      : [el('p', { class: 'meta' }, '문의가 없어요.')]));
+    $iDetail.replaceChildren();
+  } catch (e) { $iList.replaceChildren(el('p', { class: 'meta' }, friendlyError(e))); }
+}
+async function showInquiry(id) {
+  try {
+    const { data: d } = await apiCall('GET', `/admin/inquiries/${encodeURIComponent(id)}`, undefined, '문의를 불러오지 못했어요');
+    const ta = el('textarea', { rows: '5', maxlength: '2000', placeholder: '답변을 적어 주세요' });
+    ta.value = d.answer || '';
+    const save = el('button', { type: 'button', class: 'btn', onclick: async () => {
+      if (!ta.value.trim()) return say('답변을 입력해 주세요', 'err');
+      try { await apiCall('PUT', `/admin/inquiries/${encodeURIComponent(id)}/answer`, { answer: ta.value }, '답변을 저장하지 못했어요'); say('답변을 저장했어요', 'ok'); await showInquiry(id); }
+      catch (e) { say(friendlyError(e), 'err'); }
+    } }, d.answer ? '답변 고치기' : '답변 보내기');
+    $iDetail.replaceChildren(el('div', { class: 'detail' },
+      el('b', {}, d.title), el('br'), `${kst(d.created_at)} · 계정 ${d.user_id_short}`, el('br'),
+      el('div', { style: 'white-space:pre-wrap; word-break:break-all; margin:8px 0' }, d.body),
+      d.answered_at ? el('div', { class: 'meta' }, `답변 ${kst(d.answered_at)} · ${d.answered_by}`) : '', ta, el('br'), save));
+  } catch (e) { say(friendlyError(e), 'err'); }
+}
+document.getElementById('i-load').addEventListener('click', loadInquiries);
+
+// ---- 비회원 문의 ----
+const $gList = document.getElementById('g-list'), $gDetail = document.getElementById('g-detail');
+async function loadGuest() {
+  const status = document.getElementById('g-status').value;
+  try {
+    const { data } = await apiCall('GET', `/admin/guest-inquiries?limit=50${status ? '&status=' + status : ''}`, undefined, '문의를 불러오지 못했어요');
+    $gList.replaceChildren(...(data.items.length
+      ? data.items.map((i) => el('button', { type: 'button', class: 'btn', style: 'display:block; width:100%; text-align:left; margin:0 0 6px', onclick: () => showGuest(i.inquiry_id) },
+          `${kst(i.created_at)} · ${i.title} · ${i.answered ? '답변 완료' : '답변 대기'}`))
+      : [el('p', { class: 'meta' }, '문의가 없어요.')]));
+    $gDetail.replaceChildren();
+  } catch (e) { $gList.replaceChildren(el('p', { class: 'meta' }, friendlyError(e))); }
+}
+async function showGuest(id) {
+  try {
+    const { data: d } = await apiCall('GET', `/admin/guest-inquiries/${encodeURIComponent(id)}`, undefined, '문의를 불러오지 못했어요');
+    const ta = el('textarea', { rows: '5', maxlength: '2000', placeholder: '답변을 적어 주세요' });
+    ta.value = d.answer || '';
+    const save = el('button', { type: 'button', class: 'btn', onclick: async () => {
+      if (!ta.value.trim()) return say('답변을 입력해 주세요', 'err');
+      try { await apiCall('PUT', `/admin/guest-inquiries/${encodeURIComponent(id)}/answer`, { answer: ta.value }, '답변을 저장하지 못했어요'); say('답변을 저장했어요', 'ok'); await showGuest(id); }
+      catch (e) { say(friendlyError(e), 'err'); }
+    } }, d.answer ? '답변 고치기' : '답변 보내기');
+    $gDetail.replaceChildren(el('div', { class: 'detail' },
+      el('b', {}, d.title), el('br'), kst(d.created_at), el('br'),
+      el('div', { style: 'white-space:pre-wrap; word-break:break-all; margin:8px 0' }, d.body),
+      d.answered_at ? el('div', { class: 'meta' }, `답변 ${kst(d.answered_at)} · ${d.answered_by}`) : '', ta, el('br'), save));
+  } catch (e) { say(friendlyError(e), 'err'); }
+}
+document.getElementById('g-load').addEventListener('click', loadGuest);
 </script>
 </body>
 </html>

@@ -1,3 +1,7 @@
+/* 나눔고딕 (SIL OFL, 우리 서버에서 직접 제공 — 외부 글꼴 서버를 부르지 않는다. 라이선스: assets/fonts/OFL.txt) */
+@font-face{font-family:'Nanum Gothic'; font-weight:400 500; font-style:normal; font-display:swap; src:url('fonts/NanumGothic-Regular.woff2') format('woff2')}
+@font-face{font-family:'Nanum Gothic'; font-weight:600 700; font-style:normal; font-display:swap; src:url('fonts/NanumGothic-Bold.woff2') format('woff2')}
+@font-face{font-family:'Nanum Gothic'; font-weight:800 900; font-style:normal; font-display:swap; src:url('fonts/NanumGothic-ExtraBold.woff2') format('woff2')}
 :root{
   --cream:#F5EBEB; --sage-light:#E8C9C9; --sage:#CB9F9F; --sage-deep:#BD8484; --track:#F0E0E0;
   --petal1:#F2A6BE; --petal2:#E8879F; --center:#FCE8B8; --dots:#E0A836; --stem:#BD8484;
@@ -15,8 +19,8 @@
   --shadow:0 8px 24px rgba(56,64,56,.08), 0 2px 6px rgba(56,64,56,.06);
 }
 *{box-sizing:border-box}
-body{margin:0; background:#F1ECE4; color:var(--ink); font-family:'Noto Sans KR',sans-serif; font-size:14px; line-height:1.6; padding-bottom:70px}
-h1,h2,h3,.heading-font{font-family:'Gowun Dodum','Noto Sans KR',sans-serif}
+body{margin:0; background:#F1ECE4; color:var(--ink); font-family:'Nanum Gothic','Malgun Gothic','Apple SD Gothic Neo',sans-serif; font-size:14px; line-height:1.6; padding-bottom:70px}
+h1,h2,h3,.heading-font{font-family:'Nanum Gothic','Malgun Gothic','Apple SD Gothic Neo',sans-serif}
 h1,h2,h3{margin:0; font-weight:700}
 p{margin:0}
 button{font:inherit; cursor:pointer}
@@ -88,3 +92,5 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .confirm-card p{font-size:13.5px; line-height:1.6; color:var(--muted); margin:10px 0 18px}
 .confirm-actions{display:flex; gap:10px}
 .confirm-actions button{flex:1; margin:0}
+
+.nav-dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:#e0584a; margin-left:6px; vertical-align:middle}

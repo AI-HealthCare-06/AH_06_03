@@ -51,9 +51,20 @@ const NAV_ITEMS = [
   { icon: '🩺', label: '건강정보', href: 'health-info.html', pages: ['health-info.html', 'survey.html', 'review.html'] },
   { icon: '🎯', label: '챌린지', href: localStorage.getItem('paeon-cycle') ? 'challenge-progress.html' : 'challenges.html', pages: ['challenges.html', 'challenge-progress.html'] },
   { icon: '📝', label: '내 기록', href: 'trend.html', pages: ['trend.html'] },
-  { icon: '👤', label: '마이페이지', href: 'mypage.html', pages: ['mypage.html'] },
+  { icon: '👤', label: '마이페이지', href: 'mypage.html', pages: ['mypage.html', 'inquiries.html'] },
 ];
-const NO_NAV_PAGES = ['index.html', 'signup.html', 'login.html', 'eligibility.html', 'privacy.html', 'my-data.html'];
+// 안 읽은 문의 답변 수. 로그인하지 않았거나 서버에 닿지 않으면 0 (메뉴만 빠지고 화면은 그대로 동작한다)
+async function inquiryUnread() {
+  try {
+    const t = localStorage.getItem('paeon-access-token');
+    if (!t) return 0;
+    const base = typeof API_BASE !== 'undefined' ? API_BASE : (['5500'].includes(location.port) ? 'http://127.0.0.1:8000/v1' : 'https://54-116-113-17.sslip.io/v1');
+    const r = await fetch(base + '/inquiries', { headers: { Authorization: 'Bearer ' + t } });
+    return r.ok ? ((await r.json()).data.unread || 0) : 0;
+  } catch (e) { return 0; }
+}
+
+const NO_NAV_PAGES = ['index.html', 'signup.html', 'login.html', 'guest-inquiry.html', 'eligibility.html', 'privacy.html', 'my-data.html'];
 
 function renderNav(){
   const body = document.querySelector('.frame-body');
@@ -65,6 +76,10 @@ function renderNav(){
   const navCol = document.createElement('div');
   navCol.className = 'nav-col';
   navCol.innerHTML = NAV_ITEMS.map(it => `<a class="nav-item${it.pages.includes(page) ? ' active' : ''}" href="${it.href}">${it.icon} ${it.label}</a>`).join('');
+  inquiryUnread().then((n) => {   // 1:1 문의에 답변이 오면 마이페이지 메뉴에 빨간 점
+    const a = navCol.querySelector('a[href="mypage.html"]');
+    if (n && a) a.insertAdjacentHTML('beforeend', '<span class="nav-dot" aria-label="새 답변"></span>');
+  });
   const contentCol = document.createElement('div');
   contentCol.className = 'content-col';
   while (body.firstChild) contentCol.appendChild(body.firstChild);
