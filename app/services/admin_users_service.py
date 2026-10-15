@@ -21,6 +21,7 @@ from app.models.user import User
 from app.schemas.admin import (
     AdminConsentItem, AdminUserDetail, AdminUserList, AdminUserRow, PurgeResult, PurgeTarget,
 )
+from app.repositories import user_repository
 from app.services import account_service, audit_service, suspension
 
 logger = logging.getLogger(__name__)
@@ -179,6 +180,7 @@ async def suspend(db: AsyncSession, admin: str, user_id: str, days: int | None) 
     """이용 정지. days를 비우면 무기한. 정지 중에는 로그인도, 이미 받은 로그인으로 하는 요청도 막힌다."""
     user = await _target(db, user_id)
     user.suspended_until = suspension.FOREVER if days is None else utcnow() + timedelta(days=days)
+    await user_repository.revoke_active_sessions(db, user.user_id, utcnow())   # 정지 즉시 모든 기기에서 로그아웃
     await audit_service.record(db, admin, "user_suspend", target=user_id[-8:], detail="무기한" if days is None else f"{days}일")
     await db.commit()
 

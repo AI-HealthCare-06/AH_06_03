@@ -65,16 +65,18 @@ async def _issue_tokens(db: AsyncSession, user_id: str) -> TokenResult:
     """팔찌와 쿠폰을 발급한다. 쿠폰 기록은 DB에 남긴다."""
     now = utcnow()
     refresh_token = new_refresh_token()
-    await user_repository.create_session(
+    session = await user_repository.create_session(
         db,
         user_id=user_id,
         refresh_token_hash=hash_token(refresh_token),
         expires_at=now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
         now=now,
     )
+    await db.flush()                     # 로그인 번호(session_id)를 팔찌에 넣으려면 먼저 받아야 한다
+    session_id = session.session_id
     await db.commit()
     return TokenResult(
-        access_token=create_access_token(user_id),
+        access_token=create_access_token(user_id, session_id),
         refresh_token=refresh_token,
         expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
@@ -91,6 +93,8 @@ async def login(db: AsyncSession, email: str, password: str, ip: str | None = No
     suspension.check(user)
     if user.status == "pending_guardian":
         raise AppError(403, "AUTH_GUARDIAN_PENDING", "법정대리인 동의가 확인된 뒤 이용할 수 있습니다.")
+    # 한 계정은 한 기기에서만: 새로 로그인하면 다른 기기의 로그인은 끊는다 (그 기기의 팔찌도 바로 못 쓰게 됨)
+    await user_repository.revoke_active_sessions(db, user.user_id, utcnow())
     await access_log_service.record_login(db, user.user_id, ip)   # _issue_tokens의 commit과 함께 저장된다
     return await _issue_tokens(db, user.user_id)
 

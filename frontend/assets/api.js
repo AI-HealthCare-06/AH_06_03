@@ -80,9 +80,10 @@ async function apiLogin(email, password) {
 // 로그인이 필요한 요청 공통 창구. 팔찌 만료(401 AUTH_TOKEN_EXPIRED)면 재발급 후 원래 요청을 한 번 다시 보낸다.
 let refreshing = null; // 동시에 여러 요청이 만료돼도 재발급은 한 번만 (쓴 쿠폰은 버려지므로)
 
-function goLogin() {
+// reason이 있으면 로그인 화면이 이유를 보여 준다 (예: other-device = 다른 기기에서 로그인해 끊김)
+function goLogin(reason) {
   PaeonTokens.clear();
-  location.href = 'login.html';
+  location.href = 'login.html' + (reason ? '?reason=' + encodeURIComponent(reason) : '');
   return new Promise(() => {}); // 이동 중에는 호출한 쪽이 에러를 띄우지 않게 멈춰 둔다
 }
 
@@ -131,6 +132,7 @@ async function apiCall(method, path, payload, failMsg, retried = false) {
       if (await refreshTokens()) return apiCall(method, path, payload, failMsg, true);
       return goLogin();
     }
+    if (code === 'AUTH_SESSION_ENDED') return goLogin('other-device');   // 다른 기기에서 로그인함 (한 계정 한 기기)
     if (code === 'AUTH_UNAUTHORIZED' || code === 'AUTH_TOKEN_EXPIRED' || code === 'AUTH_INVALID_REFRESH_TOKEN') return goLogin();
     if (code === 'CONSENT_WITHDRAWN') showConsentBanner();
     const err = new Error(body.error?.message || failMsg);
@@ -761,6 +763,7 @@ async function apiUploadPhoto(postId, blob, retried = false) {
   if (!res.ok) {
     const code = body.error?.code;
     if (code === 'AUTH_TOKEN_EXPIRED' && !retried && await refreshTokens()) return apiUploadPhoto(postId, blob, true);
+    if (code === 'AUTH_SESSION_ENDED') return goLogin('other-device');
     const err = new Error(body.error?.message || '사진을 올리지 못했어요.'); err.code = code; throw err;
   }
   return body;
