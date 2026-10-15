@@ -35,5 +35,5 @@ async def get_current_user_id(
     if sid is not None:
         session = await db.get(UserSession, sid)
         if session is None or session.user_id != user_id or session.revoked_at is not None:
-            raise AppError(401, "AUTH_SESSION_ENDED", "다른 기기에서 로그인해 이 기기는 로그아웃됐어요. 다시 로그인해 주세요.")
+            raise AppError(401, "AUTH_SESSION_ENDED", "이 기기의 로그인이 끝났어요. 다시 로그인해 주세요.")
     return user_id
