@@ -12,7 +12,7 @@
   .ring .top b{font-size:14px; color:#4A5C6D}
   .ring .top span{font-size:13px; color:var(--muted)}
   .ring .t{font-size:17px; font-weight:800; text-align:center; line-height:1.4}
-  .ring svg{width:184px; height:184px}
+  .ring svg,.ring img{width:184px; height:184px; image-rendering:pixelated}
   .ring .cnt{display:flex; flex-direction:column; align-items:center; gap:4px}
   .ring .cnt b{font-size:20px; font-weight:800; letter-spacing:-.3px}
   .ring .cnt b small{font-size:15px; color:var(--muted); font-weight:700}
@@ -127,16 +127,8 @@ const allDoneOn = (d) => cycle.missions.every(m => doneOn(m, d));
 function showError(msg) { const el = document.getElementById('err'); el.style.display = msg ? 'block' : 'none'; el.textContent = msg || ''; }
 
 function pieSvg(n, done) {
-  n = Math.max(1, n);
-  const pt = (i) => { const a = -Math.PI / 2 + 2 * Math.PI * i / n; return [50 + 44 * Math.cos(a), 50 + 44 * Math.sin(a)]; };
-  let g = '';
-  for (let i = 0; i < n; i++) {
-    const fill = i < done ? '#F2C94C' : '#FFFFFF';
-    if (n === 1) { g += `<circle cx="50" cy="50" r="44" fill="${fill}" stroke="#243749" stroke-width="2"/>`; break; }
-    const [x1, y1] = pt(i), [x2, y2] = pt(i + 1);
-    g += `<path d="M50 50L${x1.toFixed(1)} ${y1.toFixed(1)}A44 44 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}Z" fill="${fill}" stroke="#243749" stroke-width="2" stroke-linejoin="round"/>`;
-  }
-  return `<svg viewBox="0 0 100 100" role="img" aria-label="파이 ${n}조각 중 ${done}조각을 구웠어요">${g}</svg>`;
+  const k = Math.min(3, Math.round(3 * done / Math.max(1, n)));   // 시안의 파이 그림은 3조각 기준
+  return `<img src="assets/img/pie${k}.png" alt="파이 ${n}조각 중 ${done}조각을 구웠어요">`;
 }
 
 function ringHtml() {

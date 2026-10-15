@@ -40,7 +40,7 @@ const ICON = {
   search: _svg('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>'),
   plus: _svg('<path d="M12 5v14M5 12h14"/>', 18),
   calendar: _svg('<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>', 26),
-  pie: '<svg class="pie-coin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#F3E3D0" stroke="#243749" stroke-width="1.6"/><path d="M12 12V2a10 10 0 0 1 8.5 4.8z" fill="#F2C94C" stroke="#243749" stroke-width="1.6" stroke-linejoin="round"/><circle cx="8" cy="14" r="1.2" fill="#243749"/></svg>',
+  pie: '<img class="pie-coin" src="assets/img/pie-coin.png" alt="">',
 };
 
 function _apiBase() {

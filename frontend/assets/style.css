@@ -45,7 +45,7 @@ button{font:inherit; cursor:pointer}
 .hdr-right{margin-left:auto; display:flex; align-items:center; gap:2px}
 .picker .hdr-logout{border:1px solid var(--sage); background:#fff; color:var(--ink); border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer; margin-right:8px}
 .hdr-pie{height:32px; padding:0 12px; border-radius:16px; background:var(--cream); display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:800; text-decoration:none; color:var(--ink)}
-.hdr-pie svg{width:20px; height:20px}
+.hdr-pie .pie-coin{width:26px; height:auto}
 .hdr-bell{position:relative; width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--ink); text-decoration:none}
 .hdr-bell .badge{position:absolute; top:6px; right:5px; min-width:16px; height:16px; border-radius:8px; background:var(--accent); color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; padding:0 4px}
 .page-bar{display:flex; align-items:center; gap:4px; min-height:56px; margin:0 -12px 4px}
@@ -96,7 +96,7 @@ button{font:inherit; cursor:pointer}
 .ctag.party{background:#A9D6C2; color:#0F2E20}
 .ctag.common{background:#243749; color:#fff}
 .pill-btn{height:44px; padding:0 22px; border-radius:22px; border:1px solid var(--sage); background:#fff; font-weight:700; font-size:14px; display:inline-flex; align-items:center; text-decoration:none; color:var(--ink)}
-.pie-coin{width:18px; height:18px; display:inline-block; vertical-align:-3px}
+.pie-coin{width:22px; height:auto; display:inline-block; vertical-align:-5px; image-rendering:pixelated}
 .empty{padding:40px 0; text-align:center; font-size:14px; color:var(--muted); line-height:1.7}
 
 /* 숫자 칸의 위아래 화살표(스피너)는 쓰지 않는다 */
