@@ -63,12 +63,15 @@ function kstDate(iso) {
   const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + 'Z');
   return d.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric' });
 }
+// 산 아이템 이름 (body:bear → 곰돌이). 못 받아 오면 이름 없이 보여 준다
+const ITEM_NAME = {};
+const itemsReady = apiCall('GET', '/characters/items', undefined, '').then(r => r.data.slots.forEach(sl => sl.items.forEach(it => { ITEM_NAME[sl.slot + ':' + it.key] = it.label; }))).catch(() => {});
 const st = { offset: 0, total: 0 };
 async function load(append) {
   try {
     const d = (await apiCall('GET', '/pie/history?limit=20&offset=' + (append ? st.offset : 0), undefined, '파이 내역을 불러오지 못했어요')).data;
     document.getElementById('bal').textContent = d.balance; st.total = d.total;
-    const rows = d.items.map(i => '<div class="r"><div><div>' + esc(LABEL[i.reason] || '파이') + '</div><div class="d">' + kstDate(i.created_at) + '</div></div><span class="' + (i.delta >= 0 ? 'pl' : 'mi') + '">' + (i.delta >= 0 ? '+' : '−') + Math.abs(i.delta) + '</span></div>').join('');
+    const rows = d.items.map(i => '<div class="r"><div><div>' + esc((LABEL[i.reason] || '파이') + (i.item_key && ITEM_NAME[i.item_key] ? ' · ' + ITEM_NAME[i.item_key] : '')) + '</div><div class="d">' + kstDate(i.created_at) + '</div></div><span class="' + (i.delta >= 0 ? 'pl' : 'mi') + '">' + (i.delta >= 0 ? '+' : '−') + Math.abs(i.delta) + '</span></div>').join('');
     const box = document.getElementById('hist');
     box.innerHTML = append ? box.innerHTML + rows : (rows || '<div class="empty" style="padding:20px 0">아직 내역이 없어요.</div>');
     st.offset = (append ? st.offset : 0) + d.items.length;
@@ -76,7 +79,7 @@ async function load(append) {
   } catch (e) { document.getElementById('hist').innerHTML = '<div class="empty">' + esc(friendlyError(e)) + '</div>'; }
 }
 document.getElementById('more').addEventListener('click', () => load(true));
-load(false);
+itemsReady.then(() => load(false));
 </script>
 </body>
 </html>

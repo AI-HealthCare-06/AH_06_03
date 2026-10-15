@@ -13,6 +13,7 @@
   .feed-head h1{font-size:20px}
   .me-char{width:44px; height:44px; display:flex; align-items:center; justify-content:center}
   .hero{background:var(--cream); border-radius:28px; padding:26px 20px 22px; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center}
+  .crew{display:flex; justify-content:center; gap:2px; margin-bottom:-4px}
   .hero h2{font-size:22px; font-weight:800; letter-spacing:-.5px; line-height:1.35; margin:0}
   .hero p{font-size:14px; color:#4A5C6D; line-height:1.65; margin:0}
   .join{display:flex; gap:8px}
@@ -32,6 +33,7 @@
     <span class="on" role="tab" aria-selected="true">파티</span>
   </div>
   <div class="hero">
+    <div class="crew" id="crew" aria-hidden="true"></div>
     <h2>같이 하면<br>더 오래 해요</h2>
     <p>친구와 파티를 만들어 서로 챌린지 인증을 응원해요.</p>
     <a class="cta" href="party-create.html">파티 만들기</a>
@@ -72,6 +74,11 @@ btn.addEventListener('click', async () => {
     if (e.code === 'PARTY_ALREADY_JOINED') setTimeout(() => location.href = 'party-home.html', 1500);
   }
 });
+</script>
+<script>
+// 시안의 캐릭터 6개 (예시 그림이라 서버 값이 아님)
+document.getElementById('crew').innerHTML = [['cat', '#81A6C6'], ['mongle', '#A9D6C2'], ['rabbit', '#F3E3D0'], ['bobo', '#C9BEE6'], ['cat', '#F2C6A8'], ['mongle', '#AACDDC']]
+  .map(([body, color]) => characterSvg({ body, color, expr: 'basic' }, 38)).join('');
 </script>
 </body>
 </html>
