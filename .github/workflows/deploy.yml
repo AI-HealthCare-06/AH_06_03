@@ -21,6 +21,8 @@ jobs:
           script: |
             cd ~/AH_06_03
             git pull origin main
+            # 컨테이너를 다시 만들면 그 로그가 사라지므로, 그 전에 보관 폴더로 옮긴다 (실패해도 배포는 계속)
+            if [ -x ~/paeon-monitor/log_archive.sh ]; then ~/paeon-monitor/log_archive.sh || echo "로그 옮기기 실패, 배포는 계속함"; fi
             sudo docker compose up --build -d
             sudo docker builder prune -f --filter until=24h || true
             sudo docker compose exec -T fastapi alembic upgrade head
