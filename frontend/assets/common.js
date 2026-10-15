@@ -1,3 +1,37 @@
+// 로그인 토큰 보관. '로그인 상태 유지'를 켜면 localStorage(브라우저를 닫아도 유지),
+// 끄면 sessionStorage(이 탭을 닫으면 로그아웃). common.js와 api.js에 같은 내용이 있으니 고칠 때는 둘 다 고친다.
+var PaeonTokens = window.PaeonTokens || (window.PaeonTokens = (function () {
+  var KEYS = ['paeon-access-token', 'paeon-refresh-token'];
+  function stores() {
+    var s = [];
+    try { s.push(window.sessionStorage); } catch (e) {}
+    try { s.push(window.localStorage); } catch (e) {}
+    return s;
+  }
+  function holder() {   // 토큰이 들어 있는 곳 (없으면 null)
+    var all = stores();
+    for (var i = 0; i < all.length; i++) {
+      try { if (all[i].getItem(KEYS[1]) || all[i].getItem(KEYS[0])) return all[i]; } catch (e) {}
+    }
+    return null;
+  }
+  function read(k) { var h = holder(); try { return h ? (h.getItem(k) || '') : ''; } catch (e) { return ''; } }
+  function clear() { stores().forEach(function (s) { KEYS.forEach(function (k) { try { s.removeItem(k); } catch (e) {} }); }); }
+  return {
+    access: function () { return read(KEYS[0]); },
+    refresh: function () { return read(KEYS[1]); },
+    // keep: 새로 로그인할 때 true(유지)/false(이 탭만). 재발급처럼 비워 두면 지금 들어 있는 곳에 그대로 둔다.
+    save: function (access, refresh, keep) {
+      var h = holder();
+      var target = keep === undefined ? (h || window.localStorage) : (keep ? window.localStorage : window.sessionStorage);
+      clear();
+      target.setItem(KEYS[0], access);
+      target.setItem(KEYS[1], refresh);
+    },
+    clear: clear,
+  };
+})());
+
 const PAEON_LOGO_SVG = `
 <svg width="20" height="20" viewBox="0 0 100 100">
   <g style="fill:var(--stem)">
@@ -49,7 +83,7 @@ function _apiBase() {
 // 로그인한 사람의 파이 잔액. 로그인하지 않았거나 서버에 닿지 않으면 null (칩만 빠지고 화면은 그대로 동작한다)
 async function pieBalance() {
   try {
-    const t = localStorage.getItem('paeon-access-token');
+    const t = PaeonTokens.access();
     if (!t) return null;
     const r = await fetch(_apiBase() + '/pie', { headers: { Authorization: 'Bearer ' + t } });
     return r.ok ? (await r.json()).data.balance : null;
@@ -82,7 +116,7 @@ function renderHeader(){
     if (n) document.getElementById('hdr-bell').insertAdjacentHTML('beforeend', `<span class="badge" aria-label="새 답변 ${n}개">${n}</span>`);
   });
 }
-function loggedIn(){ try { return !!localStorage.getItem('paeon-access-token'); } catch (e) { return false; } }
+function loggedIn(){ return !!PaeonTokens.access(); }
 
 // 하단 탭 5개. 챌린지는 진행 중인 사이클이 있으면 수행 화면, 없으면 시작 화면으로 간다.
 const NAV_ITEMS = [
@@ -95,7 +129,7 @@ const NAV_ITEMS = [
 // 안 읽은 문의 답변 수. 로그인하지 않았거나 서버에 닿지 않으면 0 (메뉴만 빠지고 화면은 그대로 동작한다)
 async function inquiryUnread() {
   try {
-    const t = localStorage.getItem('paeon-access-token');
+    const t = PaeonTokens.access();
     if (!t) return 0;
     const r = await fetch(_apiBase() + '/inquiries', { headers: { Authorization: 'Bearer ' + t } });
     return r.ok ? ((await r.json()).data.unread || 0) : 0;
