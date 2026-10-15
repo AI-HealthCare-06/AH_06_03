@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.apis.deps import get_current_user_id
 from app.core.db.databases import async_get_db
 from app.schemas.common import DataResponse
-from app.services import streak_service
+from app.services import badge_service, streak_service
 from app.services.challenge_service import today_kst
 
 router = APIRouter(tags=["home"])
@@ -43,3 +43,26 @@ async def participants(
     db: AsyncSession = Depends(async_get_db),
 ):
     return DataResponse(data=await streak_service.participant_counts(db))
+
+class Badge(BaseModel):
+    code: str
+    label: str
+    group: str                  # streak(연속 달성) / record(완주와 기록)
+    hint: str                   # 아직 못 받았을 때 보여 줄 조건
+    earned: bool
+    earned_on: date | None
+
+
+class BadgeSummary(BaseModel):
+    earned_count: int
+    total: int
+    next: Badge | None          # 다음에 받을 배지 (다 받았으면 None)
+    badges: list[Badge]
+
+
+@router.get("/badges", response_model=DataResponse[BadgeSummary])
+async def badges(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(async_get_db),
+):
+    return DataResponse(data=await badge_service.my_badges(db, user_id))
