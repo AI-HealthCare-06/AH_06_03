@@ -73,7 +73,7 @@
       "y": 7200
     },
     "Challenge.dc.html": {
-      "h": 1220,
+      "h": 1300,
       "title": "챌린지 인증",
       "w": 390,
       "x": 0,
@@ -94,7 +94,7 @@
       "y": 5800
     },
     "CharacterCreate.dc.html": {
-      "h": 844,
+      "h": 970,
       "is_interactive": true,
       "title": "캐릭터 만들기",
       "w": 390,
@@ -123,7 +123,7 @@
       "y": 7200
     },
     "Feed.dc.html": {
-      "h": 1060,
+      "h": 1100,
       "title": "커뮤니티 피드",
       "w": 390,
       "x": 940,
@@ -165,7 +165,7 @@
       "y": 1360
     },
     "Home.dc.html": {
-      "h": 844,
+      "h": 940,
       "title": "홈",
       "w": 390,
       "x": 0,
@@ -242,7 +242,7 @@
       "y": 20900
     },
     "PartyFeed.dc.html": {
-      "h": 1040,
+      "h": 1090,
       "title": "파티 피드",
       "w": 390,
       "x": 2350,
@@ -263,7 +263,7 @@
       "y": 20900
     },
     "Pie.dc.html": {
-      "h": 1000,
+      "h": 1130,
       "title": "내 파이",
       "w": 390,
       "x": 470,
@@ -298,7 +298,7 @@
       "y": 7200
     },
     "Signup.dc.html": {
-      "h": 1100,
+      "h": 1140,
       "title": "회원가입",
       "w": 390,
       "x": 2260,
@@ -333,7 +333,7 @@
       "y": 13500
     },
     "Trend.dc.html": {
-      "h": 1380,
+      "h": 1470,
       "is_interactive": true,
       "title": "내 기록",
       "w": 390,
@@ -341,11 +341,33 @@
       "y": 11560
     },
     "Write.dc.html": {
-      "h": 844,
+      "h": 1130,
       "title": "커뮤니티 글쓰기",
       "w": 390,
       "x": 1410,
       "y": 2980
+    },
+    "StatesNotice.dc.html": {
+      "h": 560,
+      "title": "분석 불가 · 입력 이어서 하기 · 확인창",
+      "w": 1360,
+      "x": 470,
+      "y": 5020
+    },
+    "HealthInputStart.dc.html": {
+      "h": 844,
+      "title": "건강정보 입력 시작 (사진 입력 준비 중)",
+      "w": 390,
+      "x": 940,
+      "y": 8700
+    },
+    "TwelveWeekList.dc.html": {
+      "h": 844,
+      "title": "지난 12주 기록",
+      "w": 390,
+      "x": 1880,
+      "y": 8700,
+      "is_interactive": true
     }
   },
   "createdOnFiles": {
@@ -465,6 +487,7 @@
   "order": [
     "Main.dc.html",
     "Home.dc.html",
+    "HealthInputStart.dc.html",
     "HealthInput.dc.html",
     "Result.dc.html",
     "Compare.dc.html",
@@ -474,6 +497,7 @@
     "Write.dc.html",
     "Menu.dc.html",
     "States.dc.html",
+    "StatesNotice.dc.html",
     "Intro.dc.html",
     "Login.dc.html",
     "Signup.dc.html",
@@ -489,6 +513,7 @@
     "Pie.dc.html",
     "Reassessment.dc.html",
     "Trend.dc.html",
+    "TwelveWeekList.dc.html",
     "InquiryWrite.dc.html",
     "InquiryDetail.dc.html",
     "GuestInquiry.dc.html",
