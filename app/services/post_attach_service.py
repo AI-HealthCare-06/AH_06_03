@@ -59,6 +59,8 @@ def _not_allowed() -> AppError:
 
 async def resolve(db: AsyncSession, user_id: str, req: AttachRequest) -> tuple[str, str, int]:
     """붙일 챌린지를 확인하고 (종류, 이름, 인증 일수)를 돌려준다. 오늘 인증하지 않았거나 내 것이 아니면 거절한다."""
+    if req.party_card:                      # 파티 카드는 파티 글을 쓸 때만 (파티 글쓰기가 따로 처리한다)
+        raise _not_allowed()
     for o in await options(db, user_id):
         if req.mission_code and o.mission_code == req.mission_code:
             return o.kind, o.label, o.days

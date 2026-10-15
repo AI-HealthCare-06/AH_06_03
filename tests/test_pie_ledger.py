@@ -97,3 +97,16 @@ async def test_동시에_같은_적립이_들어와도_부르는_쪽의_작업�
     async with db_session() as s:
         assert (await s.execute(select(User).where(User.email == "keep@test.kr"))).scalar_one_or_none() is not None
         assert len((await s.execute(select(PieLedger))).scalars().all()) == 1
+
+
+async def test_내역에_산_아이템이_함께_나온다(db_session):
+    uid = await new_user(db_session, "item@test.kr")
+    async with db_session() as s:
+        await pie_service.add(s, uid, 100, "welcome", "x")
+        await pie_service.add(s, uid, -40, "shop_buy", "body:bear")
+        await s.commit()
+    async with db_session() as s:
+        h = await pie_service.history(s, uid, 10, 0)
+    by_reason = {e.reason: e.item_key for e in h.items}
+    assert by_reason["shop_buy"] == "body:bear"
+    assert by_reason["welcome"] is None          # 아이템이 아닌 내역에는 붙이지 않는다

@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import AppError
 from app.core.security import utcnow
 from app.models.challenge import Challenge
-from app.models.community import CommunityProfile
+from app.models.community import CommunityComment, CommunityLike, CommunityPost, CommunityPostPhoto, CommunityProfile, CommunityReport
 from app.models.party import MAX_MEMBERS, Party, PartyCheckin, PartyMember
 from app.schemas.party import PartyCard, PartyChallengeOption, PartyHome, PartyInfo, PartyMemberView
 from app.services import character_service, pie_service
@@ -119,6 +119,15 @@ async def leave(db: AsyncSession, user_id: str) -> None:
         select(func.count()).select_from(PartyMember).where(PartyMember.party_id == party_id)
     )).scalar_one()
     if left == 0:
+        # 파티가 없어지면 파티 글과 거기 딸린 좋아요·댓글·신고도 지운다 (DB의 CASCADE와 같은 결과, 테스트 DB에서도 같게)
+        post_ids = select(CommunityPost.post_id).where(CommunityPost.party_id == party_id)
+        comment_ids = select(CommunityComment.comment_id).where(CommunityComment.post_id.in_(post_ids))
+        await db.execute(delete(CommunityReport).where(
+            (CommunityReport.post_id.in_(post_ids)) | (CommunityReport.comment_id.in_(comment_ids))))
+        await db.execute(delete(CommunityLike).where(CommunityLike.post_id.in_(post_ids)))
+        await db.execute(delete(CommunityComment).where(CommunityComment.post_id.in_(post_ids)))
+        await db.execute(delete(CommunityPostPhoto).where(CommunityPostPhoto.post_id.in_(post_ids)))
+        await db.execute(delete(CommunityPost).where(CommunityPost.party_id == party_id))
         await db.execute(delete(Party).where(Party.party_id == party_id))
     await db.commit()
 
@@ -226,3 +235,10 @@ async def card(db: AsyncSession, party_id: str) -> PartyCard:
         raise AppError(404, "PARTY_NOT_FOUND", "파티를 찾을 수 없어요.")
     members = await _members(db, party_id)
     return PartyCard(name=party.name, streak=_party_streak(members, await _checkins(db, party_id), today_kst()))
+
+async def my_party_id(db: AsyncSession, user_id: str) -> str:
+    """파티 글을 쓰거나 볼 때 쓰는 내 파티 번호. 파티가 없으면 PARTY_NOT_JOINED."""
+    m = await _membership(db, user_id)
+    if m is None:
+        raise AppError(404, "PARTY_NOT_JOINED", "들어가 있는 파티가 없어요.")
+    return m.party_id

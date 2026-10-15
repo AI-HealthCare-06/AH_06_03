@@ -87,3 +87,17 @@
 
 ## 이번 범위에 없는 것
 사진 첨부, 파티, 배지, 캐릭터, 기존 4주 챌린지의 파이 적립(+5, +10, +50). 파이 적립은 `pie_service.add(db, user_id, delta, reason, ref_key)`를 부르면 되고, 같은 (회원, reason, ref_key)는 한 번만 적립된다.
+
+## 파티 피드 (파티원에게만 보이는 글)
+- `GET /v1/parties/me/posts?limit=&offset=` 내 파티의 글 (최신순). 파티가 없으면 404 `PARTY_NOT_JOINED`.
+- `POST /v1/parties/me/posts` 파티 글쓰기 (본문은 `POST /community/posts`와 같다). 파티 글은 글쓰기 파이를 주지 않는다.
+- 상세·좋아요·댓글·신고는 `/v1/community/posts/{id}...`를 그대로 쓴다. 파티 글은 그 파티원이 아니면 404.
+- 파티 글은 전체 커뮤니티 목록(`GET /community/posts`)에 나오지 않는다. 파티를 나간 사람은 못 보고, 파티가 없어지면(마지막 한 명이 나가면) 글도 같이 지워진다.
+- 마이그레이션 `e5b7c9d1a3f2`: `community_posts.party_id` (parties 삭제 시 CASCADE).
+
+## 글 사진
+- `POST /v1/community/posts/{post_id}/photos` 내 글에 사진 한 장. 본문이 곧 JPEG 파일(`Content-Type: image/jpeg`). 가로 640px로 줄인 JPEG, 한 장 300KB 이하, 한 글에 최대 3장.
+  - 거절: JPEG가 아니면 415 `PHOTO_NOT_JPEG`, 300KB 초과 413 `PHOTO_TOO_LARGE`, 촬영 위치(EXIF GPS)가 있으면 400 `PHOTO_HAS_LOCATION`, 4장째 409 `PHOTO_LIMIT`, 남의 글은 404.
+- `GET /v1/community/posts/{post_id}/photos/{position}` 사진 한 장(0부터). 글을 볼 수 있는 사람만 받는다(숨김 처리된 글은 작성자만, 파티 글은 파티원만).
+- 글 목록·상세에는 사진 수(`photo_count`)만 있고 사진은 따로 받는다.
+- 저장은 DB 표 `community_post_photos`(마이그레이션 `f6c8d0e2b4a1`). 글이나 회원이 지워지면 함께 지워진다.

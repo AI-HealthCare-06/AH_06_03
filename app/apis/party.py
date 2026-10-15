@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apis.deps import get_current_user_id
 from app.core.db.databases import async_get_db
 from app.schemas.common import DataResponse
+from app.schemas.community import PostCreate, PostCreated, PostList
 from app.schemas.party import PartyChallengeOption, PartyCreate, PartyHome, PartyInfo, PartyJoin
-from app.services import party_service
+from app.services import community_service, party_service
 
 router = APIRouter(tags=["party"])
 
@@ -42,3 +43,23 @@ async def checkin(user_id: str = Depends(get_current_user_id), db: AsyncSession 
 async def leave(user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)):
     await party_service.leave(db, user_id)
     return Response(status_code=204)
+
+# ---------------------------------------------------------------- 파티 피드 (파티원에게만 보이는 글)
+# 글 상세·좋아요·댓글·신고는 커뮤니티 글과 같은 주소(/community/posts/...)를 쓴다. 파티 글은 그 파티원만 열 수 있다.
+@router.get("/parties/me/posts", response_model=DataResponse[PostList])
+async def party_posts(
+    q: str | None = Query(None, max_length=50), limit: int = Query(20, ge=1, le=50), offset: int = Query(0, ge=0),
+    user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db),
+):
+    party_id = await party_service.my_party_id(db, user_id)
+    return DataResponse(data=await community_service.list_posts(db, user_id, None, "latest", q, limit, offset, party_id))
+
+
+@router.post("/parties/me/posts", status_code=status.HTTP_201_CREATED, response_model=DataResponse[PostCreated])
+async def create_party_post(req: PostCreate, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)):
+    party_id = await party_service.my_party_id(db, user_id)
+    card = None
+    if req.attach is not None and req.attach.party_card:
+        c = await party_service.card(db, party_id)
+        card = (f"{c.name} 연속 인증", c.streak)
+    return DataResponse(data=await community_service.create_post(db, user_id, req, party_id, card))

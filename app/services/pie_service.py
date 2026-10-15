@@ -55,7 +55,7 @@ async def count_today(db: AsyncSession, user_id: str, reason: str) -> int:
 
 
 def _entry(r: PieLedger) -> PieEntry:
-    return PieEntry(reason=r.reason, delta=r.delta, created_at=r.created_at)
+    return PieEntry(reason=r.reason, delta=r.delta, created_at=r.created_at, item_key=r.ref_key if r.reason == "shop_buy" else None)
 
 
 async def summary(db: AsyncSession, user_id: str) -> PieSummary:
