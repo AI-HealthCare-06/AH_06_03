@@ -29,6 +29,7 @@ from app.apis.challenge import router as challenge_router
 from app.core.db.databases import AsyncSessionLocal
 from app.core.errors import register_error_handlers
 from app.services import admin_registry_service
+from app.apis.character import router as character_router
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -83,6 +84,7 @@ app.include_router(guest_inquiry_router, prefix="/v1")
 app.include_router(admin_router, prefix="/v1")
 app.include_router(admin_overview_router, prefix="/v1")
 app.include_router(home_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
+app.include_router(character_router, prefix="/v1")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.mount("/media", StaticFiles(directory=BASE_DIR / "media"), name="media")
 
