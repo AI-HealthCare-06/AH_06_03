@@ -7,7 +7,7 @@
 """
 from datetime import timedelta
 
-from sqlalchemy import delete, exists, func, or_, select
+from sqlalchemy import and_, delete, exists, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +20,7 @@ from app.schemas.community import (
     AttachOption, CommentCreate, CommentItem, LikeResult, MyCommunity, PostAttach, PostCreate, PostCreated, PostDetail,
     PostItem, PostList, ReportRequest, ReportResult,
 )
+from app.models.party import PartyMember
 from app.services import pie_service, post_attach_service
 
 WELCOME_PIE = 10
@@ -95,9 +96,20 @@ def _item(p: CommunityPost, nickname: str | None, likes: int, comments: int, lik
 
 
 def _visible_to(user_id: str):
-    """남에게는 visible만, 내 글은 숨김 처리된 것도 (삭제된 글은 아무에게도 안 보인다)."""
-    return or_(CommunityPost.status == "visible",
-               (CommunityPost.status == "hidden") & (CommunityPost.user_id == user_id))
+    """남에게는 visible만, 내 글은 숨김 처리된 것도 (삭제된 글은 아무에게도 안 보인다). 파티 글은 그 파티원에게만."""
+    my_party = select(PartyMember.party_id).where(PartyMember.user_id == user_id).scalar_subquery()
+    return and_(
+        or_(CommunityPost.status == "visible", (CommunityPost.status == "hidden") & (CommunityPost.user_id == user_id)),
+        or_(CommunityPost.party_id.is_(None), CommunityPost.party_id == my_party),
+    )
+
+
+async def _can_see_party(db: AsyncSession, user_id: str, p: CommunityPost) -> bool:
+    """파티 글이 아니면 누구나, 파티 글이면 그 파티원만."""
+    if p.party_id is None:
+        return True
+    return (await db.execute(select(PartyMember.party_member_id).where(
+        PartyMember.user_id == user_id, PartyMember.party_id == p.party_id))).first() is not None
 
 
 async def _load_post(db: AsyncSession, user_id: str, post_id: str):
@@ -115,17 +127,17 @@ async def attach_options(db: AsyncSession, user_id: str) -> list[AttachOption]:
     return await post_attach_service.options(db, user_id)
 
 
-async def create_post(db: AsyncSession, user_id: str, req: PostCreate) -> PostCreated:
+async def create_post(db: AsyncSession, user_id: str, req: PostCreate, party_id: str | None = None) -> PostCreated:
     nickname = await require_nickname(db, user_id)
     kind = label = days = None
     if req.attach is not None:
         kind, label, days = await post_attach_service.resolve(db, user_id, req.attach)
     post = CommunityPost(user_id=user_id, category=req.category, title=req.title, body=req.body,
-                         status="visible", created_at=utcnow(), attach_kind=kind, attach_label=label, attach_days=days)
+                         status="visible", created_at=utcnow(), attach_kind=kind, attach_label=label, attach_days=days, party_id=party_id)
     db.add(post)
     await db.flush()
     gain = 0
-    if await pie_service.count_today(db, user_id, pie_service.POST_WRITE) < POST_PIE_PER_DAY:
+    if party_id is None and await pie_service.count_today(db, user_id, pie_service.POST_WRITE) < POST_PIE_PER_DAY:   # 파티 글은 파이를 주지 않는다
         if await pie_service.add(db, user_id, POST_PIE, pie_service.POST_WRITE, post.post_id):
             gain = POST_PIE
     await db.commit()
@@ -133,8 +145,9 @@ async def create_post(db: AsyncSession, user_id: str, req: PostCreate) -> PostCr
 
 
 async def list_posts(db: AsyncSession, user_id: str, category: str | None, sort: str, q: str | None,
-                     limit: int, offset: int) -> PostList:
+                     limit: int, offset: int, party_id: str | None = None) -> PostList:
     base = select(CommunityPost).where(_visible_to(user_id))
+    base = base.where(CommunityPost.party_id == party_id) if party_id else base.where(CommunityPost.party_id.is_(None))
     if category:
         base = base.where(CommunityPost.category == category)
     if sort == "popular":
@@ -180,7 +193,7 @@ async def delete_post(db: AsyncSession, user_id: str, post_id: str) -> None:
 async def toggle_like(db: AsyncSession, user_id: str, post_id: str) -> LikeResult:
     await require_nickname(db, user_id)
     p = await db.get(CommunityPost, post_id)
-    if p is None or p.status != "visible":
+    if p is None or p.status != "visible" or not await _can_see_party(db, user_id, p):
         raise not_found()
     mine = (await db.execute(select(CommunityLike).where(
         CommunityLike.post_id == post_id, CommunityLike.user_id == user_id))).scalar_one_or_none()
@@ -211,7 +224,7 @@ async def list_comments(db: AsyncSession, user_id: str, post_id: str) -> list[Co
 async def create_comment(db: AsyncSession, user_id: str, post_id: str, req: CommentCreate) -> CommentItem:
     nickname = await require_nickname(db, user_id)
     p = await db.get(CommunityPost, post_id)
-    if p is None or p.status != "visible":
+    if p is None or p.status != "visible" or not await _can_see_party(db, user_id, p):
         raise not_found()
     c = CommunityComment(post_id=post_id, user_id=user_id, body=req.body, status="visible", created_at=utcnow())
     db.add(c)
@@ -245,7 +258,7 @@ async def _report(db: AsyncSession, user_id: str, key: str, req: ReportRequest, 
 
 async def report_post(db: AsyncSession, user_id: str, post_id: str, req: ReportRequest) -> ReportResult:
     p = await db.get(CommunityPost, post_id)
-    if p is None or p.status != "visible":
+    if p is None or p.status != "visible" or not await _can_see_party(db, user_id, p):
         raise not_found()
     if p.user_id == user_id:
         raise AppError(400, "REPORT_OWN", "내 글은 신고할 수 없어요.")
@@ -259,6 +272,6 @@ async def report_comment(db: AsyncSession, user_id: str, comment_id: str, req: R
     if c.user_id == user_id:
         raise AppError(400, "REPORT_OWN", "내 댓글은 신고할 수 없어요.")
     post = await db.get(CommunityPost, c.post_id)
-    if post is None or post.status != "visible":
+    if post is None or post.status != "visible" or not await _can_see_party(db, user_id, post):
         raise not_found("댓글")
     return await _report(db, user_id, f"comment:{comment_id}", req, comment_id=comment_id)

@@ -42,6 +42,10 @@ class CommunityPost(Base):
     attach_kind: Mapped[str | None] = mapped_column(String(10), nullable=True)           # fixed / selected / common
     attach_label: Mapped[str | None] = mapped_column(String(150), nullable=True)
     attach_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # 파티 글이면 그 파티 번호. 파티원에게만 보이고, 전체 커뮤니티 목록에는 나오지 않는다 (파티가 없어지면 글도 같이 지워진다)
+    party_id: Mapped[str | None] = mapped_column(
+        CHAR(36), ForeignKey("parties.party_id", ondelete="CASCADE"), nullable=True, index=True
+    )
 
 
 class CommunityComment(Base):

@@ -87,3 +87,10 @@
 
 ## 이번 범위에 없는 것
 사진 첨부, 파티, 배지, 캐릭터, 기존 4주 챌린지의 파이 적립(+5, +10, +50). 파이 적립은 `pie_service.add(db, user_id, delta, reason, ref_key)`를 부르면 되고, 같은 (회원, reason, ref_key)는 한 번만 적립된다.
+
+## 파티 피드 (파티원에게만 보이는 글)
+- `GET /v1/parties/me/posts?limit=&offset=` 내 파티의 글 (최신순). 파티가 없으면 404 `PARTY_NOT_JOINED`.
+- `POST /v1/parties/me/posts` 파티 글쓰기 (본문은 `POST /community/posts`와 같다). 파티 글은 글쓰기 파이를 주지 않는다.
+- 상세·좋아요·댓글·신고는 `/v1/community/posts/{id}...`를 그대로 쓴다. 파티 글은 그 파티원이 아니면 404.
+- 파티 글은 전체 커뮤니티 목록(`GET /community/posts`)에 나오지 않는다. 파티를 나간 사람은 못 보고, 파티가 없어지면(마지막 한 명이 나가면) 글도 같이 지워진다.
+- 마이그레이션 `e5b7c9d1a3f2`: `community_posts.party_id` (parties 삭제 시 CASCADE).
