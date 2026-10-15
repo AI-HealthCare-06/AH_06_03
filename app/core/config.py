@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 14
     # 관리자 이메일 목록 (쉼표로 구분). 비어 있으면 아무도 관리자가 아니다. 실제 값은 .env에만 적는다.
     ADMIN_EMAILS: str = ""
+    # 운영 알림(신고 누적 자동 숨김 등)을 보낼 디스코드 웹후크 주소. 비우면 보내지 않는다. 실제 값은 .env에만 적는다.
+    ADMIN_ALERT_WEBHOOK: str = ""
 
     @property
     def admin_email_set(self) -> set[str]:
