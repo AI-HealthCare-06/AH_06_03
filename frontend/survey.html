@@ -6,33 +6,37 @@
 <title>PAEON — 생활습관 설문</title>
 <link rel="stylesheet" href="assets/style.css">
 <style>
-  .substeps{display:flex; gap:6px; flex-wrap:wrap}
-  .substeps span{font-size:12px; border:1px solid var(--sage-light); border-radius:999px; padding:4px 12px; color:var(--muted); background:var(--cream); font-weight:700}
-  .substeps span[data-on="1"]{background:var(--sage-deep); border-color:var(--sage-deep); color:#fff}
-  .substeps span[data-done="1"]{color:var(--ink)}
-  .trk{background:var(--track); border-radius:999px; height:10px; overflow:hidden}
-  .trk i{display:block; height:100%; background:var(--sage-deep); border-radius:999px}
-  .q{display:flex; flex-direction:column; gap:7px; margin-top:12px; padding-bottom:12px; border-bottom:1px dashed var(--sage-light)}
-  .q:last-of-type{border-bottom:0}
+  .top{display:flex; align-items:center; gap:4px; min-height:56px; margin:0 -12px -8px}
+  .top .back{width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--ink)}
+  .trk{flex:1; background:var(--line); border-radius:2px; height:4px; overflow:hidden}
+  .trk i{display:block; height:100%; background:#5C86AC; border-radius:2px}
+  .top .cnt{width:56px; text-align:right; padding-right:12px; box-sizing:border-box; font-size:13px; color:var(--muted)}
+  .substeps{font-size:14px; font-weight:700; color:#5C86AC; margin-top:8px}
+  .note{font-size:14px; color:var(--body); line-height:1.6; margin:0}
+  .note span{color:var(--muted)}
+  .q{display:flex; flex-direction:column; gap:10px; margin-top:22px}
   .qhead{display:flex; justify-content:space-between; align-items:flex-start; gap:10px}
-  .qt{font-size:13.5px; font-weight:700; white-space:pre-line}
-  .qh{font-size:11.5px; color:var(--muted); white-space:pre-line}
-  .skip{flex:none; border:0; background:transparent; color:var(--faint); font-size:11.5px; text-decoration:underline; padding:2px 4px}
+  .qt{font-size:18px; font-weight:800; line-height:1.45; letter-spacing:-.3px; white-space:pre-line}
+  .qh{font-size:12.5px; color:var(--muted); line-height:1.6; white-space:pre-line}
+  .skip{flex:none; border:0; background:transparent; color:var(--muted); font:inherit; font-size:13px; text-decoration:underline; padding:2px 4px; cursor:pointer}
   .skip[data-on="1"]{color:var(--risk); font-weight:700; text-decoration:none}
   .q[data-skipped="1"] .optrow,.q[data-skipped="1"] .stepsin{opacity:.4}
-  .optrow{display:flex; flex-wrap:wrap; gap:8px}
-  .opt{border:1.5px solid var(--sage-light); background:#fff; color:var(--ink); border-radius:16px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer}
+  .optrow{display:flex; flex-direction:column; gap:10px}
+  .opt{position:relative; box-sizing:border-box; min-height:60px; border:1px solid var(--line); background:#fff; color:var(--ink); border-radius:18px; padding:12px 20px; font-size:16px; display:flex; align-items:center; justify-content:space-between; cursor:pointer}
   .opt input{position:absolute; opacity:0; pointer-events:none}
-  .opt[data-on="1"]{border-color:var(--sage-deep); background:var(--sage-light)}
+  .opt[data-on="1"]{border:2px solid #5C86AC; background:var(--notice); font-weight:700; padding:12px 19px}
+  .opt[data-on="1"]::after{content:""; width:22px; height:22px; flex:none; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22' fill='none' stroke='%235C86AC' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 11.5l5 5L18 6.5'/%3E%3C/svg%3E")}
   .step{display:none}
   .step[data-active="1"]{display:flex; flex-direction:column; gap:6px}
-  .stepsin{display:flex; align-items:center; gap:8px}
-  .stepsin input[type=number]{width:150px; font:inherit; padding:9px 12px; border-radius:12px; border:1.5px solid var(--sage-light)}
-  .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px}
-  .kpi{background:#fff; border:1px solid var(--sage-light); border-radius:14px; padding:10px 10px; text-align:center}
-  .kpi .k{font-size:11.5px; color:var(--muted)}
-  .kpi .v{font-size:16px; font-weight:900; margin-top:2px}
-  .kpi .s{font-size:11px; color:var(--muted); margin-top:2px}
+  .stepsin{display:flex; align-items:center; gap:8px; font-size:15px; color:var(--muted)}
+  .stepsin input[type=number]{width:180px; height:64px; box-sizing:border-box; font-weight:800; font-size:24px; font-family:inherit; padding:0 20px; border-radius:14px; border:2px solid transparent; background:var(--cream); color:var(--ink)}
+  .kpis{display:flex; flex-direction:column; gap:10px}
+  .kpi{border:1px solid var(--line); border-radius:20px; padding:14px 18px}
+  .kpi .k{font-size:13px; color:var(--muted)}
+  .kpi .v{font-size:16px; font-weight:800; margin-top:2px}
+  .kpi .s{font-size:12px; color:var(--muted); margin-top:2px}
+  .bar{position:sticky; bottom:84px; background:#fff; padding:12px 0; display:flex; flex-direction:column; gap:8px; z-index:5}
+  .bar .cta,.bar .ghost{height:56px; font-size:17px; border-radius:28px; margin:0}
   .modal-backdrop{position:fixed; inset:0; background:rgba(56,64,56,.45); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100}
   .modal-card{background:#fff; border-radius:20px; padding:24px 22px; max-width:340px; width:100%; text-align:center; box-shadow:0 12px 30px rgba(56,64,56,.2)}
   .modal-card b{font-size:15px}
@@ -44,15 +48,15 @@
   <div class="frame">
     <div class="frame-body">
       <div class="screen">
-        <div class="callout"><b>챌린지 추천에 쓰는 설문이에요. 위험 신호 계산에는 쓰지 않아요.</b><br>모르거나 답하기 싫은 문항은 "건너뛰기"를 누르세요. 건너뛴 문항이 있어도 위험 신호 분석은 그대로 진행돼요.</div>
+        <div class="top"><a class="back" id="back" href="health-info.html" aria-label="뒤로"><span data-icon="back"></span></a><div class="trk"><i id="progress-bar" style="width:0%"></i></div><span class="cnt" id="progress-cnt"></span></div>
         <div class="substeps" id="substeps"></div>
-        <div class="trk"><i id="progress-bar" style="width:0%"></i></div>
+        <p class="note"><b>챌린지 추천에 쓰는 설문이에요. 위험 신호 계산에는 쓰지 않아요.</b><br><span>모르거나 답하기 싫은 문항은 "건너뛰기"를 누르세요. 건너뛴 문항이 있어도 위험 신호 분석은 그대로 진행돼요.</span></p>
         <div id="steps"></div>
         <p id="step-note" class="hint" style="display:none"></p>
         <p id="form-err" class="err" style="display:none"></p>
-        <div style="display:flex; gap:8px">
-          <button type="button" id="prev-btn" class="ghost">이전</button>
+        <div class="bar">
           <button type="button" id="next-btn" class="cta">다음</button>
+          <button type="button" id="prev-btn" class="ghost">이전</button>
         </div>
       </div>
     </div>
@@ -186,8 +190,9 @@ function renderFinal() {
 }
 
 function renderSubsteps() {
-  document.getElementById('substeps').innerHTML = SUB.map((n, i) => `<span data-on="${i === step ? 1 : 0}" data-done="${i < step ? 1 : 0}">${n}</span>`).join('');
-  document.getElementById('progress-bar').style.width = Math.round(step / (SUB.length - 1) * 100) + '%';
+  document.getElementById('substeps').textContent = '생활습관 · ' + SUB[step];
+  document.getElementById('progress-cnt').textContent = (step + 1) + ' / ' + SUB.length;
+  document.getElementById('progress-bar').style.width = Math.round((step + 1) / SUB.length * 100) + '%';
 }
 function renderStep() {
   document.querySelectorAll('.step').forEach(el => el.dataset.active = Number(el.dataset.step) === step ? '1' : '0');
@@ -197,6 +202,7 @@ function renderStep() {
   renderSubsteps();
 }
 document.getElementById('prev-btn').addEventListener('click', () => { if (step > 0) { step--; renderStep(); } });
+document.getElementById('back').addEventListener('click', (e) => { if (step > 0) { e.preventDefault(); step--; renderStep(); } });
 document.getElementById('next-btn').addEventListener('click', async () => {
   if (step < SUB.length - 1) { step++; renderStep(); return; }
   const errEl = document.getElementById('form-err');

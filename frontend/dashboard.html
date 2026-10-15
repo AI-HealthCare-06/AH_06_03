@@ -6,54 +6,54 @@
 <title>PAEON — 홈</title>
 <link rel="stylesheet" href="assets/style.css">
 <style>
-  .hero{background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:16px 20px}
-  .hero h1{font-size:18px; line-height:1.35; margin:0}
-  .hero p{font-size:12.5px; color:var(--muted); margin-top:4px}
-  .tworow{display:grid; grid-template-columns:1fr 1fr; gap:12px}
-  .mini{background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px; text-align:center}
-  .mini .lb{font-size:11.5px; color:var(--muted)}
-  .mini .vv{font-size:26px; font-weight:900}
-  .mini .sb{font-size:12px; color:var(--muted)}
-  figure{margin:0; background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px 18px}
+  .home{display:flex; flex-direction:column; gap:12px}
+  .home h1{font-size:24px; line-height:1.35; letter-spacing:-.5px; padding-bottom:4px}
+  .ring{display:flex; flex-direction:column; gap:18px; background:var(--cream); border-radius:28px; padding:22px 22px 20px; text-decoration:none}
+  .ring .t{font-size:15px; font-weight:800}
+  .ring .mid{display:flex; align-items:center; gap:20px}
+  .ring .mid svg{width:123px; height:123px; flex:none}
+  .ring .mid .tx{flex:1; display:flex; flex-direction:column; gap:4px}
+  .ring .lb{font-size:13px; color:var(--muted)}
+  .ring .big{font-size:26px; font-weight:800; letter-spacing:-.5px; line-height:1.1}
+  .ring .sub{font-size:14px; color:#4A5C6D; line-height:1.5; padding-top:6px}
+  .week{display:flex; justify-content:space-between}
+  .week div{display:flex; flex-direction:column; align-items:center; gap:6px}
+  .week span{font-size:12px; color:var(--muted)}
+  .week i{width:30px; height:30px; border-radius:15px; box-sizing:border-box; border:1px dashed var(--sage)}
+  .week .on i{background:var(--accent); border:0}
+  .week .now span{font-weight:800; color:var(--ink)}
+  .week .now i{border:2px solid var(--accent); background:#fff}
+  .week .now.on i{background:var(--accent)}
+  .tiles{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px}
+  .tiles.one{grid-template-columns:1fr}
+  .tile{display:flex; flex-direction:column; justify-content:space-between; gap:14px; min-height:148px; border-radius:24px; padding:18px; text-decoration:none}
+  .tile.line{border:1px solid var(--line)}
+  .tile.blue{background:var(--notice)}
+  .tile .lb{font-size:13px; color:var(--muted); line-height:1.4}
+  .tile.blue .lb{color:#4A5C6D}
+  .tile .vv{font-size:28px; font-weight:800; letter-spacing:-.5px; line-height:1; display:flex; align-items:center; gap:8px}
+  .tile .vv small{font-size:14px; font-weight:700; color:#4A5C6D}
+  .tile .bars{display:flex; gap:4px; margin-top:10px}
+  .tile .bars i{flex:1; height:6px; border-radius:3px; background:var(--line)}
+  .tile .bars i.on{background:var(--accent)}
+  .tile .trk{height:6px; border-radius:3px; background:#fff; margin:8px 0}
+  .tile .trk b{display:block; height:6px; border-radius:3px; background:var(--accent)}
+  .tile .ft{font-size:12px; color:#4A5C6D}
+  .shortcut{display:flex; gap:8px; padding-top:2px}
+  .shortcut a{display:flex; flex-direction:column; align-items:center; gap:6px; width:76px; text-decoration:none; font-size:12px; font-weight:700; color:var(--body)}
+  .shortcut a span{width:56px; height:56px; border-radius:20px; background:var(--cream); color:var(--ink); display:flex; align-items:center; justify-content:center}
+  .foot{font-size:12px; color:var(--muted); line-height:1.6; text-align:center; padding-top:2px}
+  .state{background:#fff; border:1px solid var(--line); border-radius:20px; padding:24px 20px; display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center}
+  .state svg{width:44px; height:44px; color:var(--muted)}
+  .state .st{font-size:18px; font-weight:800; line-height:1.4}
+  .state .sd{font-size:14px; color:#4A5C6D; line-height:1.6}
+  .state .cta,.state .ghost{margin-top:8px; width:auto; height:48px; padding:0 28px; font-size:15px}
+  .state .segs{display:flex; gap:4px}
+  .state .segs i{width:28px; height:6px; border-radius:3px; background:var(--line)}
+  .state .segs i.on{background:var(--accent)}
+  figure{margin:0; border:1px solid var(--line); border-radius:24px; padding:14px 18px}
   figcaption{font-size:12.5px; color:var(--muted); margin-bottom:8px}
   .chart{width:100%; height:auto; display:block}
-
-  .panels{display:flex; gap:16px; flex-direction:column; align-items:stretch}
-  .left-col{display:flex; flex-direction:column; gap:16px}
-
-  .pio-big-card{background:var(--cream); border:1px solid var(--sage-light); border-radius:20px; padding:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; text-align:center}
-  .pio-big-card svg{width:110px; height:110px}
-  .pio-big-card .pt{font-size:13.5px; font-weight:700}
-
-  .cal-card{flex:1; min-width:0; background:#fff; border:1px solid var(--sage-light); border-radius:20px; padding:16px 18px}
-  .cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
-  .cal-head .ym{font-family:'Nanum Gothic','Malgun Gothic','Apple SD Gothic Neo',sans-serif; font-size:16px; font-weight:700}
-  .dow-row{display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:11px; color:var(--muted); font-weight:700; margin-bottom:4px}
-  .dow-row span:first-child{color:var(--danger)}
-  .day-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px 0}
-  .day{position:relative; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; font-size:12.5px; color:var(--ink)}
-  .day.blank{visibility:hidden}
-  .day .num{position:relative; z-index:1}
-  .day.today .num{color:#fff; font-weight:900}
-  .day.today::before{content:''; position:absolute; width:26px; height:26px; border-radius:999px; background:var(--petal2)}
-  .day .dots{position:absolute; bottom:4px; left:50%; transform:translateX(-50%); display:flex; gap:3px}
-  .day .dot{width:4px; height:4px; border-radius:999px; background:var(--peach)}
-  .day .dot-bp{width:4px; height:4px; border-radius:999px; background:var(--sage-deep)}
-  .day.sun .num{color:var(--danger)}
-  .day.clickable{cursor:pointer}
-  .cal-legend{display:flex; gap:14px; margin-top:10px; font-size:11px; color:var(--muted); flex-wrap:wrap}
-  .cal-legend span{display:inline-flex; align-items:center; gap:5px}
-  .dot-sample{width:5px; height:5px; border-radius:999px; background:var(--peach); display:inline-block}
-  .dot-bp-sample{width:5px; height:5px; border-radius:999px; background:var(--sage-deep); display:inline-block}
-  .ring-sample{width:12px; height:12px; border-radius:999px; background:var(--petal2); display:inline-block}
-
-  .today-card{background:var(--cream); border:1px solid var(--sage-light); border-radius:20px; padding:16px 18px; display:flex; flex-direction:column; gap:10px}
-  .today-card .tt{font-size:12px; color:var(--muted); font-weight:700}
-  .today-card .dd{font-family:'Nanum Gothic','Malgun Gothic','Apple SD Gothic Neo',sans-serif; font-size:22px; font-weight:700}
-  .mission{display:flex; align-items:center; gap:8px; background:#fff; border:1.5px solid var(--sage-light); border-radius:14px; padding:9px 12px; font-size:12.5px; font-weight:600}
-  .mission .mark{width:18px; height:18px; border-radius:999px; border:2px solid var(--sage); flex:none}
-  .mission.done .mark{background:var(--petal2); border-color:var(--petal2)}
-  .mission.done{color:var(--muted); text-decoration:line-through}
 </style>
 </head>
 <body>
@@ -63,12 +63,13 @@
 <div class="wrapper">
   <div class="frame">
     <div class="frame-body">
-      <div class="screen" id="screen"></div>
+      <div class="screen home" id="screen"></div>
     </div>
   </div>
 </div>
 
 <script src="assets/common.js"></script>
+
 <script>
 function cssv(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 function shortDate(iso) { if (!iso) return ''; const [, m, d] = iso.split('-'); return `${Number(m)}/${Number(d)}`; }
@@ -98,147 +99,120 @@ function bpChart(points) {
   return s.join('');
 }
 
-const profile = JSON.parse(localStorage.getItem('paeon-profile') || 'null');
 const health = JSON.parse(localStorage.getItem('paeon-health') || 'null');
 const pred = JSON.parse(localStorage.getItem('paeon-prediction') || 'null');
 const cycle = JSON.parse(localStorage.getItem('paeon-cycle') || 'null');
 const progress = JSON.parse(localStorage.getItem('paeon-progress') || '{"days":[],"bpLog":[]}');
 
-const COLOR = { normal: 'var(--ok)', borderline: 'var(--warn)', high: 'var(--risk)' };
 const RISK_LABEL = { normal: '양호', borderline: '주의', high: '높음' };
-// 예측 결과(또는 건강정보)가 있으면 챌린지 시작 전에도 캘린더를 보여 주는 'ready' 상태
+const RISK_BARS = { normal: 1, borderline: 2, high: 3 };
+const ICON_WARN = '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#243749" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M8 2l6.5 11.5h-13z"/></svg>';
+const ICON_OK = '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#243749" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M5.3 8.2l1.9 1.9 3.5-4"/></svg>';
+const STATE_ICON = {
+  doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>',
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>',
+};
+const btn = (href, label, cls = 'cta') => `<a class="${cls}" href="${href}">${label}</a>`;
+const stateCard = (icon, title, desc, extra = '', actions = '') => `<div class="state">${icon}<div class="st">${title}</div>${extra}<div class="sd">${desc}</div>${actions}</div>`;
+
+const todayD = new Date(); todayD.setHours(0, 0, 0, 0);
 const cycleNo = cycle ? (cycle.cycleNo || 1) : 1;                 // 12주 = 4주 x 3차
-const cycleDone = cycle && Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(cycle.startedOn + 'T00:00:00')) / 86400000) >= 28;
+const startedOn = cycle ? new Date(cycle.startedOn + 'T00:00:00') : null;
+const dayNo = startedOn ? Math.round((todayD - startedOn) / 86400000) + 1 : 0;   // 시작한 날이 1일째
+const cycleDone = cycle && dayNo > 28;
 // 건강정보만 있고 예측 결과가 없으면(대상 확인·입력 검토를 안 마쳤으면) 'pending': 이어서 하도록 안내
-let state = (health || pred) ? (cycle ? (cycleDone ? 'redo' : 'active') : (pred ? 'ready' : 'pending')) : 'empty';
+const state = (health || pred) ? (cycle ? (cycleDone ? 'redo' : 'active') : (pred ? 'ready' : 'pending')) : 'empty';
 // 4주 재입력은 서버에 저장되는 화면으로 (사이클 번호가 있을 때). 없으면 예전 추이 화면
 const reassessHref = cycle && cycle.cycleId ? `reassessment.html?cycle=${encodeURIComponent(cycle.cycleId)}` : 'trend.html';
 
-const PIO_BODY = `
-  <g style="fill:var(--stem)"><ellipse cx="50" cy="76" rx="8" ry="16" transform="rotate(35 50 76)"/><ellipse cx="50" cy="76" rx="8" ry="16" transform="rotate(-35 50 76)"/></g>
-  <g style="fill:var(--petal1)">
-    <ellipse cx="50" cy="26" rx="14" ry="21"/><ellipse cx="50" cy="26" rx="14" ry="21" transform="rotate(60 50 50)"/>
-    <ellipse cx="50" cy="26" rx="14" ry="21" transform="rotate(120 50 50)"/><ellipse cx="50" cy="26" rx="14" ry="21" transform="rotate(180 50 50)"/>
-    <ellipse cx="50" cy="26" rx="14" ry="21" transform="rotate(240 50 50)"/><ellipse cx="50" cy="26" rx="14" ry="21" transform="rotate(300 50 50)"/>
-  </g>
-  <g style="fill:var(--petal2)">
-    <ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(30 50 50)"/><ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(90 50 50)"/>
-    <ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(150 50 50)"/><ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(210 50 50)"/>
-    <ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(270 50 50)"/><ellipse cx="50" cy="30" rx="11" ry="17" transform="rotate(330 50 50)"/>
-  </g>
-  <circle cx="50" cy="50" r="14" style="fill:var(--center)"/>`;
-
-const PIO_FACES = {
-  cry: `<path d="M43,49 Q45,46 48,49" stroke="var(--ink)" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-    <path d="M52,49 Q55,46 57,49" stroke="var(--ink)" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-    <path d="M45,58 Q50,54.5 55,58" stroke="var(--ink)" stroke-width="1.4" fill="none" stroke-linecap="round"/>
-    <path d="M44,50 Q42,56 44,60 Q46,58 45,52 Z" style="fill:#7EB6E0" opacity="0.85"/>
-    <path d="M56,50 Q58,56 56,60 Q54,58 55,52 Z" style="fill:#7EB6E0" opacity="0.85"/>`,
-  smile: `<circle cx="45" cy="48" r="2" style="fill:var(--ink)"/><circle cx="55" cy="48" r="2" style="fill:var(--ink)"/>
-    <circle cx="40" cy="52" r="2.6" style="fill:var(--petal2)" opacity="0.55"/><circle cx="60" cy="52" r="2.6" style="fill:var(--petal2)" opacity="0.55"/>
-    <path d="M46,54 Q50,57.5 54,54" stroke="var(--ink)" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
-  cheer: `<path d="M42,47 Q45,43 48,47" stroke="var(--ink)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-    <path d="M52,47 Q55,43 58,47" stroke="var(--ink)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-    <circle cx="40" cy="53" r="2.8" style="fill:var(--petal2)" opacity="0.6"/><circle cx="60" cy="53" r="2.8" style="fill:var(--petal2)" opacity="0.6"/>
-    <path d="M44,53 Q50,60 56,53" stroke="var(--ink)" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
-};
-
-function panelsHtml() {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const startedOn = cycle ? new Date(cycle.startedOn + 'T00:00:00') : null;
-  const todayIdx = startedOn ? Math.round((today - startedOn) / 86400000) : -1;
-  const missionLog = progress.missionLog || {};
-  const todaySet = (todayIdx >= 0 && todayIdx < 28)
-    ? (missionLog[todayIdx] ? new Set(missionLog[todayIdx]) : (progress.days.includes(todayIdx) ? new Set(cycle.missions.map(m => m.id)) : new Set()))
-    : new Set();
-  const todayDone = todayIdx >= 0 && todayIdx < 28 && progress.days.includes(todayIdx);
-  const todayCount = todaySet.size;
-
-  let pioState, pioText;
-  if (!cycle) { pioState = 'smile'; pioText = '챌린지를 시작하면 오늘 할 일이 여기에 보여요'; }
-  else if (todayCount === 0) { pioState = 'cry'; pioText = '오늘 챌린지, 아직이에요'; }
-  else if (todayDone || todayCount >= cycle.missions.length) { pioState = 'cheer'; pioText = '오늘 목표 달성했어요!'; }
-  else { pioState = 'smile'; pioText = `오늘 ${todayCount}회 실천 중`; }
-
-  const missionsHtml = !cycle ? '' : cycle.missions.map(m => `<div class="mission${todaySet.has(m.id) ? ' done' : ''}"><span class="mark"></span>${m.t}</div>`).join('');
-
-  const y = today.getFullYear(), m = today.getMonth();
-  const firstDow = new Date(y, m, 1).getDay();
-  const daysInMonth = new Date(y, m + 1, 0).getDate();
-  const hasDot = d => {
-    if (!startedOn) return false;
-    const idx = Math.round((new Date(y, m, d) - startedOn) / 86400000);
-    return idx >= 0 && idx < 28 && progress.days.includes(idx);
-  };
-  const hasBp = d => progress.bpLog.some(l => l.date === `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
-  let dayGrid = '';
-  for (let i = 0; i < firstDow; i++) dayGrid += `<div class="day blank"></div>`;
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dow = (firstDow + d - 1) % 7;
-    const dateKey = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    const chal = hasDot(d), bp = hasBp(d);
-    const dots = (chal || bp) ? `<span class="dots">${chal ? '<span class="dot"></span>' : ''}${bp ? '<span class="dot-bp"></span>' : ''}</span>` : '';
-    dayGrid += `<div class="day clickable${d === today.getDate() ? ' today' : ''}${dow === 0 ? ' sun' : ''}" data-date="${dateKey}"><span class="num">${d}</span>${dots}</div>`;
+// 파이 n조각 중 done조각을 구운 그림 (시안의 파이 이미지 대신 SVG)
+function pieSvg(n, done) {
+  n = Math.max(1, n);
+  const pt = (i) => { const a = -Math.PI / 2 + 2 * Math.PI * i / n; return [50 + 44 * Math.cos(a), 50 + 44 * Math.sin(a)]; };
+  let g = '';
+  for (let i = 0; i < n; i++) {
+    const fill = i < done ? '#F2C94C' : '#FFFFFF';
+    if (n === 1) { g += `<circle cx="50" cy="50" r="44" fill="${fill}" stroke="#243749" stroke-width="2"/>`; break; }
+    const [x1, y1] = pt(i), [x2, y2] = pt(i + 1);
+    g += `<path d="M50 50L${x1.toFixed(1)} ${y1.toFixed(1)}A44 44 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}Z" fill="${fill}" stroke="#243749" stroke-width="2" stroke-linejoin="round"/>`;
   }
+  return `<svg viewBox="0 0 100 100" role="img" aria-label="파이 ${n}조각 중 ${done}조각을 구웠어요">${g}</svg>`;
+}
 
-  return `<div class="panels">
-    <div class="left-col">
-      <div class="pio-big-card">
-        <svg viewBox="0 0 100 100">${PIO_BODY}${PIO_FACES[pioState]}</svg>
-        <span class="pt">${pioText}</span>
-      </div>
-      <div class="today-card">
-        <div><div class="tt">${['일', '월', '화', '수', '목', '금', '토'][today.getDay()]}요일</div><div class="dd">${today.getMonth() + 1}월 ${today.getDate()}일</div></div>
-        ${missionsHtml}
-        <a class="cta" style="display:block;text-align:center;text-decoration:none;margin-top:4px" href="${cycle ? 'challenge-progress.html' : 'challenges.html'}">${cycle ? '오늘 챌린지 인증하기' : '4주 챌린지 시작'}</a>
-      </div>
-    </div>
-    <div class="cal-card">
-      <div class="cal-head"><div class="ym">${y}년 ${m + 1}월</div></div>
-      <div class="dow-row"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
-      <div class="day-grid">${dayGrid}</div>
-      <div class="cal-legend"><span><i class="ring-sample"></i>오늘</span><span><i class="dot-sample"></i>챌린지 완료</span><span><i class="dot-bp-sample"></i>혈압 측정</span></div>
-    </div>
-  </div>`;
+// 챌린지 기록(paeon-progress)으로 계산한 오늘 상태·연속 달성·이번 주 요일 원
+function ringHtml() {
+  const idxToday = dayNo - 1;
+  const doneDays = new Set(progress.days);
+  const ml = progress.missionLog || {};
+  const n = cycle.missions.length;
+  const todaySet = doneDays.has(idxToday) ? n : (ml[idxToday] ? new Set(ml[idxToday]).size : 0);
+  let streak = 0;
+  for (let i = doneDays.has(idxToday) ? idxToday : idxToday - 1; i >= 0 && doneDays.has(i); i--) streak++;
+  const left = n - todaySet;
+  const sub = left <= 0 ? '오늘 파이를 모두 구웠어요!' : left === 1 ? '하나만 더 구우면<br>오늘 파이 완성!' : `${left}개 더 구우면<br>오늘 파이 완성!`;
+  const dow = ['일', '월', '화', '수', '목', '금', '토'];
+  const mon = new Date(todayD); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
+  let week = '';
+  for (let k = 0; k < 7; k++) {
+    const d = new Date(mon); d.setDate(mon.getDate() + k);
+    const i = Math.round((d - startedOn) / 86400000);
+    const cls = [i >= 0 && doneDays.has(i) ? 'on' : '', d.getTime() === todayD.getTime() ? 'now' : ''].join(' ');
+    week += `<div class="${cls}"><span>${dow[d.getDay()]}</span><i></i></div>`;
+  }
+  return `<a class="ring" href="challenge-progress.html">
+    <span class="t">챌린지를 완료해서 파이를 구워봐요!</span>
+    <div class="mid">${pieSvg(n, todaySet)}<div class="tx"><span class="lb">연속 달성</span><span class="big">${streak}일째</span><span class="sub">${sub}</span></div></div>
+    <div class="week">${week}</div>
+  </a>`;
+}
+
+function tilesHtml() {
+  const a = pred && pred.model_a && pred.model_a.status === 'completed' ? pred.model_a : null;
+  let html = '';
+  if (!a) {
+    const age = pred.model_a && pred.model_a.skip_reason === 'age_out_of_range';
+    html += stateCard(STATE_ICON.info, '이번엔 분석할 수 없어요',
+      (age ? '만 32~70세가 아니어서<br>10년 내 심장 혈관 건강 신호는<br>분석하지 않아요.' : '심장 혈관 질환 진단 이력이 있거나<br>고혈압으로 진단·치료 중이면<br>분석하지 않아요.<br>담당 의사와 상의해 주세요.')
+      + '<br>챌린지는 그대로 할 수 있어요.');
+  }
+  const risk = a ? `<a class="tile line" href="result.html"><span class="lb">10년 내 심장<br>혈관 건강 신호</span><div><div class="vv">${a.risk_level === 'normal' ? ICON_OK : ICON_WARN}${RISK_LABEL[a.risk_level]}</div><div class="bars">${[1, 2, 3].map(i => `<i class="${i <= RISK_BARS[a.risk_level] ? 'on' : ''}"></i>`).join('')}</div></div></a>` : '';
+  let vv, pct, ft;
+  if (state === 'active') {
+    const left = 28 - dayNo;
+    vv = left > 0 ? `${left}일 <small>남았어요</small>` : '<small>오늘이에요</small>'; pct = Math.round(dayNo / 28 * 100); ft = `챌린지 ${dayNo} / 28일`;
+  } else if (state === 'redo') { vv = '<small>지금 재요</small>'; pct = 100; ft = '챌린지 28 / 28일'; }
+  else { vv = '<small>챌린지 시작 전</small>'; pct = 0; ft = '챌린지 0 / 28일'; }
+  const href = state === 'active' || state === 'redo' ? reassessHref : 'challenges.html';
+  const when = `<a class="tile blue" href="${href}"><span class="lb">혈압·체중을<br>다시 재는 날까지</span><div><div class="vv">${vv}</div><div class="trk"><b style="width:${pct}%"></b></div><span class="ft">${ft}</span></div></a>`;
+  html += `<div class="tiles${risk ? '' : ' one'}">${risk}${when}</div>`;
+  if (a && a.vascular_age != null) html += `<p class="foot" style="text-align:left">혈관 나이(추정) <b>${a.vascular_age}세</b> · 실제 나이와 차이가 클 수 있어요</p>`;
+  return html;
 }
 
 function render() {
-  const screen = document.getElementById('screen');
   const sp = setupProgress();
-  const H = {
-    empty: ['혈압, 마지막으로 재신 게 언제인가요?', '검진 결과지를 보면서 몇 가지만 입력하면 됩니다.', '건강정보 입력하기', 'health-info.html'],
-    active: ['오늘도 챌린지 실천해 볼까요?', `${cycle ? `${cycleNo}차 · ` + cycle.missions.map(m => m.t).join(' · ') : ''}`, '오늘 챌린지 인증하기', 'challenge-progress.html'],
-    ready: ['분석이 끝났어요. 챌린지를 시작해 볼까요?', '결과에 맞는 챌린지를 골라 보세요. 12주를 4주씩 3번으로 나눠 해요.', '4주 챌린지 시작', 'challenges.html'],
-    pending: ['입력을 이어서 마무리해 주세요', '네 단계를 모두 마치면 위험 신호 결과를 볼 수 있어요.', sp.next ? `${sp.next.label} 이어서 하기` : '입력 검토로', sp.next ? sp.next.href : 'review.html'],
-    redo: cycleNo >= 3
-      ? ['12주 챌린지를 모두 마쳤어요. 얼마나 달라졌을까요?', '바뀐 항목만 다시 입력하면 같은 모델로 비교해 드려요.', '12주 결과 확인하기', reassessHref]
-      : [`${cycleNo}차 4주가 끝났어요. 얼마나 달라졌을까요?`, '바뀐 항목만 다시 입력하면 같은 모델로 비교해 드려요.', '4주 결과 확인하기', reassessHref],
-  }[state];
+  let body = '<h1>오늘도 하나씩,<br>차근차근 해봐요</h1>' + adviceBannerHtml(pred, health);
 
-  let body = adviceBannerHtml(pred, health) + `<div class="hero"><h1>${H[0]}</h1><p>${H[1]}</p></div>`;
-  if (state !== 'active' && state !== 'ready') {
-    body += `<a class="cta" style="display:block;text-align:center;text-decoration:none" href="${H[3]}">${H[2]}</a>`;
-    if (state === 'redo' && cycle && cycleNo < 3 && !cycle.cycleId) body += `<a class="ghost" style="display:block;text-align:center;text-decoration:none" href="challenges.html">다음 4주 챌린지 시작 (${cycleNo + 1}차)</a>`;
-  }
-
-  if (state !== 'empty' && pred) {
-    const a = pred.model_a && pred.model_a.status === 'completed' ? pred.model_a : null;
-    body += `<div class="tworow">
-      <div class="mini"><div class="lb">10년 내 심장 혈관 건강 신호</div>${a ? `<div class="vv" style="color:${COLOR[a.risk_level]}">${RISK_LABEL[a.risk_level]}</div><div class="sb">범주만 표시(보정 전)</div>` : '<div class="sb">분석 대상 아님</div>'}</div>
-      <div class="mini"><div class="lb">혈관 나이(추정)</div>${a && a.vascular_age != null ? `<div class="vv">${a.vascular_age}세</div><div class="sb">실제 나이와 차이가 클 수 있어요</div>` : '<div class="sb">-</div>'}</div>
-    </div>`;
-    if ((state === 'active' && cycle) || state === 'ready') body += panelsHtml();
-    const bpPts = bpPoints(health, progress.bpLog);
-    if (bpPts.length) body += `<figure><figcaption>수축기 혈압 · <b>시작과 4주마다 측정</b></figcaption>${bpChart(bpPts)}</figure>`;
-    body += `<div class="callout"><b>이번 주 챌린지 ${Math.min(5, progress.days.length)} / 5일</b></div>`;
+  if (state === 'empty') {
+    body += stateCard(STATE_ICON.doc, '아직 분석 결과가 없어요', '건강정보와 설문을 입력하면<br>10년 내 심장 혈관 건강 신호를<br>볼 수 있어요.', '', btn('health-info.html', '입력 시작하기'));
   } else if (state === 'pending') {
-    body += sp.html;
-  } else if (state === 'empty') {
-    body += `<div class="callout"><b>아직 분석할 정보가 없습니다</b><br>건강정보를 입력하면 여기에 결과가 표시됩니다.</div>`;
+    const segs = `<div class="segs">${sp.steps.map(s => `<i class="${s.done ? 'on' : ''}"></i>`).join('')}</div>`;
+    body += stateCard(STATE_ICON.doc, '입력을 이어서 마무리해 주세요', '네 단계를 모두 마치면<br>위험 신호 결과를 볼 수 있어요.', segs, btn(sp.next ? sp.next.href : 'review.html', '이어서 하기'));
+  } else {
+    if (state === 'active') body += ringHtml();
+    else if (state === 'ready') body += stateCard(STATE_ICON.doc, '분석이 끝났어요', '결과에 맞는 챌린지를 골라 보세요.<br>12주를 4주씩 3번으로 나눠 해요.', '', btn('challenges.html', '4주 챌린지 시작'));
+    else {
+      const last = cycleNo >= 3;
+      body += stateCard(STATE_ICON.doc, last ? '12주 챌린지를 모두 마쳤어요' : `${cycleNo}차 4주가 끝났어요`, '얼마나 달라졌을까요?<br>바뀐 항목만 다시 입력하면 같은 모델로 비교해 드려요.', '',
+        btn(reassessHref, last ? '12주 결과 확인하기' : '4주 결과 확인하기') + (!last && !cycle.cycleId ? btn('challenges.html', `다음 4주 챌린지 시작 (${cycleNo + 1}차)`, 'ghost') : ''));
+    }
+    if (pred) body += tilesHtml();
+    body += `<div class="shortcut"><a href="calendar-diary.html"><span>${ICON.calendar}</span>캘린더</a></div>`;
+    const bpPts = bpPoints(health, progress.bpLog);
+    if (bpPts.length > 1) body += `<figure><figcaption>수축기 혈압 · <b>시작과 4주마다 측정</b></figcaption>${bpChart(bpPts)}</figure>`;
+    body += '<div class="foot">진단이 아닌 참고 정보예요. 걱정되면 의료기관에 상담하세요.</div>';
   }
-
-  screen.innerHTML = body;
-  screen.querySelectorAll('.day[data-date]').forEach(el => el.addEventListener('click', () => { window.location.href = 'calendar-diary.html?date=' + el.dataset.date; }));
+  document.getElementById('screen').innerHTML = body;
 }
 render();
 </script>

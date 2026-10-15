@@ -6,14 +6,32 @@
 <title>PAEON — 마이페이지</title>
 <link rel="stylesheet" href="assets/style.css">
 <style>
-  .tworow{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-  .opt{border:1.5px solid var(--sage-light); background:#fff; color:var(--ink); border-radius:16px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer}
-  .opt[data-on="1"]{border-color:var(--sage-deep); background:var(--sage-light)}
+  .grp{display:flex; flex-direction:column}
+  .gt{font-size:13px; color:var(--muted); padding-bottom:6px}
+  .ln{display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; box-sizing:border-box; min-height:60px; padding:0; margin:0; border:0; border-top:1px solid var(--line); background:none; font:inherit; font-size:15px; color:inherit; text-align:left; text-decoration:none; cursor:pointer}
+  .ln.last{border-bottom:1px solid var(--line)}
+  .ln.big{min-height:56px; font-size:16px}
+  .ln .k{color:var(--body)}
+  .ln .v{display:flex; align-items:center; gap:8px; font-weight:700}
+  .ln [data-icon=chevron]{color:var(--muted)}
+  .ln .nw{color:#e0584a; font-weight:700; font-size:13px}
+  .grp .callout{margin-top:10px; font-size:13px}
+  .cons{border:1px solid var(--line); border-radius:22px; padding:18px; display:flex; flex-direction:column; gap:14px}
+  .cons .hd{display:flex; align-items:center; justify-content:space-between}
+  .cons .hd b{font-size:16px; font-weight:800}
+  .cons .tag{height:24px; padding:0 10px; border-radius:12px; background:var(--notice); color:#234257; font-size:12px; font-weight:700; display:inline-flex; align-items:center}
+  .cons p{margin:0; font-size:14px; color:var(--body); line-height:1.6}
+  .cons .btn{height:48px; border-radius:24px; border:1px solid var(--sage); background:#fff; color:var(--ink); font:inherit; font-size:15px; font-weight:700; cursor:pointer}
+  .opt{height:36px; padding:0 16px; border-radius:18px; border:1px solid var(--sage); background:#fff; color:var(--body); font:inherit; font-size:13px; cursor:pointer}
+  .opt[data-on="1"]{background:var(--accent-light); border-color:var(--accent-light); color:#1E3246; font-weight:700}
   .optrow{display:flex; flex-wrap:wrap; gap:8px}
-  .sum-card{background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:4px 16px}
-  .sumrow{display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--sage-light); font-size:13px}
-  .sumrow:last-child{border-bottom:0}
+  .sum-card{border:1px solid var(--line); border-radius:20px; padding:2px 16px; margin:10px 0}
+  .sumrow{display:flex; justify-content:space-between; gap:12px; padding:11px 0; border-top:1px solid var(--line); font-size:14px}
+  .sumrow:first-child{border-top:0}
   .sumrow .lb{color:var(--muted)} .sumrow .vv{font-weight:700; text-align:right}
+  .foot{display:flex; justify-content:space-between; align-items:center}
+  .foot button{border:0; background:none; min-height:44px; padding:0; font:inherit; font-size:15px; font-weight:700; color:var(--ink); cursor:pointer}
+  .foot button.del{font-size:13px; font-weight:500; color:var(--muted); text-decoration:underline}
   .warnbox{border:1.5px solid var(--danger); background:#FBEAE5; border-radius:18px; padding:14px 18px; font-size:13px}
   .warnbox b{color:var(--risk)}
 </style>
@@ -25,7 +43,7 @@
 <div class="wrapper">
   <div class="frame">
     <div class="frame-body">
-      <div class="screen" id="screen"></div>
+      <div class="screen" id="screen" style="gap:24px"></div>
     </div>
   </div>
 </div>
@@ -34,7 +52,7 @@
 <script src="assets/api.js"></script>
 <script>
 let me = null;
-const SEX_LABEL = { male: '남', female: '여' };
+const SEX_LABEL = { male: '남성', female: '여성' };
 const state = { notice: '', editProfile: false, perr: '', rating: null, saved: false, consent: true, mp: null, gone: false, pwd: '', err: '' };
 
 function render() {
@@ -44,42 +62,65 @@ function render() {
       <a class="cta" style="display:block;text-align:center;text-decoration:none;margin-top:10px" href="index.html">처음으로</a>`;
     return;
   }
+  const chev = '<span data-icon="chevron"></span>';
   screen.innerHTML = `
-    <div class="callout">
-      <b>이 결과가 도움이 되었나요?</b>
-      <div class="optrow" style="margin-top:8px">
+    <div class="page-bar" style="margin-bottom:-16px"><a class="back" href="menu.html" aria-label="뒤로" id="back"></a><span class="ttl">마이페이지</span></div>
+    <div class="grp">
+      <div class="gt">내 정보</div>
+      ${me ? `<div class="ln"><span class="k">이메일</span><span class="v">${me.email}</span></div>
+      ${state.editProfile ? `<div style="border-top:1px solid var(--line); padding-top:12px; display:flex; flex-direction:column; gap:10px">
+        <div class="field"><label>생년월일</label><input id="p-birth" type="date" value="${me.birth_date || ''}" max="${new Date().toISOString().slice(0, 10)}"></div>
+        <div class="field"><label>성별</label><select id="p-sex"><option value="male" ${me.sex === 'male' ? 'selected' : ''}>남성</option><option value="female" ${me.sex === 'female' ? 'selected' : ''}>여성</option></select></div>
+        ${state.perr ? `<p class="err">${state.perr}</p>` : ''}
+        <p class="hint" style="margin:0">고쳐도 이미 나온 분석 결과의 나이는 바뀌지 않아요. 새로 분석할 때부터 반영돼요.</p>
+        <div style="display:flex; gap:8px"><button type="button" id="p-save" class="ghost">저장</button><button type="button" id="p-cancel" class="ghost">취소</button></div></div>`
+      : `<button type="button" id="p-edit" class="ln"><span class="k">생년월일</span><span class="v">${(me.birth_date || '').replace(/-/g, '.')}${chev}</span></button>
+      <button type="button" id="p-edit2" class="ln last"><span class="k">성별</span><span class="v">${SEX_LABEL[me.sex] || '미입력'}${chev}</span></button>
+      <div class="callout">생년월일이나 성별을 수정하면 새 정보로 바로 다시 분석하고, 분석 결과 화면으로 이동해요. 입력한 건강정보가 아직 없으면 저장만 해요.</div>`}` : ''}
+    </div>
+
+    <div class="grp" style="gap:12px">
+      <div class="gt" style="padding:0">건강정보 동의</div>
+      <div class="cons">
+        <div class="hd"><b>${state.consent ? '동의 중' : '동의 철회됨'}</b>${state.consent && state.consentAt ? `<span class="tag">${state.consentAt} 동의</span>` : ''}</div>
+        ${state.consent ? '<p>철회하면 저장된 건강정보와 파이·배지·파티 기록이 모두 지워져요. 닉네임·글·댓글·캐릭터와 계정은 그대로 남고, 언제든 다시 동의할 수 있어요.</p>'
+          : '<p>저장된 건강정보가 삭제되었고 새 입력과 분석이 멈춥니다. 계정은 유지됩니다. 다시 동의하면 처음부터 입력해요.</p>'}
+        ${state.notice ? `<p class="ok" style="font-weight:700">${state.notice}</p>` : ''}
+        ${state.err && state.mp !== 'delete' ? `<p class="err">${state.err}</p>` : ''}
+        <button type="button" id="toggle-consent" class="btn">${state.consent ? '동의 철회하기' : '동의 다시 하기'}</button>
+      </div>
+    </div>
+
+    <div class="grp">
+      <div class="gt">내 데이터</div>
+      <a class="ln big" href="my-data.html"><span>내 데이터 내려받기 (JSON · PDF)</span>${chev}</a>
+      <button type="button" id="download" class="ln big last"><span>원본 데이터 내려받기 (JSON)</span>${chev}</button>
+    </div>
+
+    <div class="grp">
+      <div class="gt">내 기록</div>
+      <button type="button" class="ln big" data-mp="rec"><span>검진 기록</span>${chev}</button>
+      ${state.mp === 'rec' ? renderInfo() : ''}
+      <button type="button" class="ln big" data-mp="chal"><span>챌린지 기록</span>${chev}</button>
+      ${state.mp === 'chal' ? renderChal() : ''}
+      <a class="ln big last" href="inquiries.html"><span>1:1 문의</span><span class="v"><span class="nw" id="inq-count"></span>${chev}</span></a>
+    </div>
+
+    <div class="grp" style="gap:8px">
+      <div class="gt" style="padding:0">이 결과가 도움이 되었나요?</div>
+      <div class="optrow">
         <button type="button" class="opt" data-r="up" data-on="${state.rating === 'up' ? '1' : '0'}">😀 도움됨</button>
         <button type="button" class="opt" data-r="mid" data-on="${state.rating === 'mid' ? '1' : '0'}">😐 보통</button>
         <button type="button" class="opt" data-r="down" data-on="${state.rating === 'down' ? '1' : '0'}">🙁 아님</button>
+        <button type="button" id="save-fb" class="opt">${state.saved ? '저장했습니다 ✓' : '평가 저장'}</button>
       </div>
-      <button type="button" id="save-fb" class="ghost" style="margin-top:8px">${state.saved ? '저장했습니다 ✓' : '평가 저장'}</button>
     </div>
-    <p class="sect">내 정보</p>
-    ${me ? `<div class="callout"><b>${me.email}</b><br>생년월일 ${me.birth_date} · 성별 ${SEX_LABEL[me.sex] || '미입력'}
-      ${state.editProfile ? `<div class="field" style="margin-top:10px"><label>생년월일</label><input id="p-birth" type="date" value="${me.birth_date || ''}" max="${new Date().toISOString().slice(0, 10)}"></div>
-      <div class="field" style="margin-top:8px"><label>성별</label><select id="p-sex"><option value="male" ${me.sex === 'male' ? 'selected' : ''}>남</option><option value="female" ${me.sex === 'female' ? 'selected' : ''}>여</option></select></div>
-      ${state.perr ? `<p class="err" style="margin-top:6px">${state.perr}</p>` : ''}
-      <p class="hint" style="margin:8px 0 0">고쳐도 이미 나온 분석 결과의 나이는 바뀌지 않아요. 새로 분석할 때부터 반영돼요.</p>
-      <div style="display:flex; gap:8px; margin-top:10px"><button type="button" id="p-save" class="ghost">저장</button><button type="button" id="p-cancel" class="ghost">취소</button></div>`
-      : `<button type="button" id="p-edit" class="ghost" style="margin-top:8px">생년월일·성별 수정</button>`}</div>` : ''}
-    <a class="ghost" href="inquiries.html" style="margin:12px 0; text-align:center">💬 1:1 문의 <span id="inq-count" style="color:#e0584a; font-weight:700"></span></a>
-    <div class="tworow">
-      <button type="button" class="opt" data-mp="rec" data-on="${state.mp === 'rec' ? '1' : '0'}">🩺 검진 기록</button>
-      <button type="button" class="opt" data-mp="chal" data-on="${state.mp === 'chal' ? '1' : '0'}">🌱 챌린지 기록</button>
+
+    <div class="foot">
+      <button type="button" id="logout-btn">로그아웃</button>
+      <button type="button" id="delete-btn" class="del">회원 탈퇴</button>
     </div>
-    ${state.mp === 'rec' ? renderInfo() : ''}
-    ${state.mp === 'chal' ? renderChal() : ''}
-    ${state.notice ? `<p class="ok" style="font-weight:700">${state.notice}</p>` : ''}
-    ${!state.consent ? '<div class="callout"><b>건강정보 처리 동의를 철회했습니다</b><br>저장된 건강정보가 삭제되었고 새 입력과 분석이 멈춥니다. 계정은 유지됩니다. 다시 동의하면 처음부터 입력해요.</div>' : ''}
-    <p class="hint">동의 철회는 회원 탈퇴와 다릅니다 — 철회하면 저장된 건강정보는 삭제되고 계정은 유지됩니다.</p>
-    <div style="display:flex; gap:8px; flex-wrap:wrap">
-      <button type="button" id="toggle-consent" class="ghost">${state.consent ? '건강정보 처리 동의 철회' : '건강정보 처리 동의 다시 하기'}</button>
-      <a class="ghost" href="my-data.html" style="text-align:center">내 데이터 PDF로 받기</a>
-      <button type="button" id="download" class="ghost" style="margin-top:6px">원본 데이터 내려받기 (JSON)</button>
-    </div>
-    ${state.err && state.mp !== 'delete' ? `<p class="err">${state.err}</p>` : ''}
-    <button type="button" id="logout-btn" class="ghost" style="margin-top:6px">로그아웃</button>
-    <button type="button" id="delete-btn" class="ghost" style="margin-top:6px">회원 탈퇴</button>
+    <div style="font-size:12px; color:var(--muted); line-height:1.6; margin-top:-12px">회원 탈퇴는 비밀번호를 다시 확인한 뒤 모든 데이터를 바로 지워요.</div>
     ${state.mp === 'delete-notice' ? '<div class="warnbox"><b>회원 탈퇴는 아직 준비 중이에요</b><br>지금은 계정과 건강정보가 삭제되지 않아요. 삭제를 원하시면 서비스 담당자에게 알려 주세요.</div>' : ''}
     ${state.mp === 'delete' ? `<div class="warnbox"><b>회원 탈퇴 — 재인증이 필요합니다</b><br>삭제: 건강정보·설문·분석·챌린지 기록
       <div class="field" style="margin-top:8px"><label>비밀번호 다시 입력</label><input id="pwd" type="password"></div>${state.err ? `<p class="err" style="margin-top:6px">${state.err}</p>` : ''}
@@ -134,9 +175,11 @@ function renderChal() {
 }
 
 function wire() {
+  document.getElementById('back').innerHTML = ICON.back;
+  document.querySelectorAll('#screen [data-icon]').forEach(e => { e.innerHTML = ICON[e.dataset.icon] || ''; });
   inquiryUnread().then((n) => { const c = document.getElementById('inq-count'); if (c && n) c.textContent = `새 답변 ${n}개`; });
   const on = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
-  on('p-edit', () => { state.editProfile = true; state.perr = ''; render(); });
+  ['p-edit', 'p-edit2'].forEach(id => on(id, () => { state.editProfile = true; state.perr = ''; render(); }));
   on('p-cancel', () => { state.editProfile = false; state.perr = ''; render(); });
   on('p-save', async () => {
     const birth = document.getElementById('p-birth').value, sex = document.getElementById('p-sex').value;
@@ -215,11 +258,12 @@ function wire() {
     render();
   });
 }
+if (location.hash === '#withdraw') state.mp = 'delete';
 render();
 apiGetMe().then(m => { me = m; render(); }).catch(() => {});
 apiCall('GET', '/users/me/consents', undefined, '').then(r => {      // 서버에 저장된 건강정보 동의 상태를 불러온다
   const h = r.data.find(c => c.policy_type === 'health_data');
-  if (h) { state.healthPolicyId = h.policy_id; state.consent = h.status === 'agreed'; render(); }
+  if (h) { state.healthPolicyId = h.policy_id; state.consent = h.status === 'agreed'; state.consentAt = (h.consented_at || '').slice(0, 10).replace(/-/g, '.'); render(); }
 }).catch(() => {});
 </script>
 </body>

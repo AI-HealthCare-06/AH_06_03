@@ -62,10 +62,14 @@ function renderHeader(){
   const slot = document.getElementById('header-slot');
   if (!slot) return;
   const page = location.pathname.split('/').pop() || 'index.html';
-  const showRight = loggedIn() && !PIE_PAGES_HIDE_CHIP.includes(page);
+  // 시안: 상단 바에 PAEON·파이·알림이 있는 건 홈뿐이다. 더보기와 챌린지 탭은 제목을 쓰고, 나머지 화면은 화면 안의 제목·뒤로가기 줄을 쓴다.
+  const HEADERS = { 'dashboard.html': { brand: true }, 'menu.html': { title: '더보기' }, 'challenge-progress.html': { title: '챌린지', plain: true }, 'challenges.html': { title: '챌린지 고르기', plain: true } };
+  const hd = HEADERS[page];
+  if (!hd) { slot.innerHTML = ''; return; }
+  const showRight = loggedIn() && !hd.plain && !PIE_PAGES_HIDE_CHIP.includes(page);
   slot.innerHTML = `
     <div class="picker">
-      <a class="brand" href="${loggedIn() ? 'dashboard.html' : 'index.html'}">PAEON</a>
+      ${hd.brand ? `<a class="brand" href="dashboard.html">PAEON</a>` : `<span class="brand" style="font-size:22px; letter-spacing:-.3px">${hd.title}</span>`}
       ${showRight ? `<div class="hdr-right"><a class="hdr-pie" id="hdr-pie" href="pie.html" aria-label="내 파이" hidden>${ICON.pie}<span id="hdr-pie-n"></span></a><a class="hdr-bell" id="hdr-bell" href="inquiries.html" aria-label="문의 답변">${ICON.bell}</a></div>` : ''}
     </div>`;
   if (!showRight) return;
