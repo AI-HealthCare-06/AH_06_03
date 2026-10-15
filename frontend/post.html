@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 글</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .head{display:flex; align-items:center; gap:12px}
+  .av{width:52px; height:52px; border-radius:16px; background:var(--cream); display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--muted); flex:none}
+  .meta{font-size:13px; color:var(--muted)}
+  .cat{height:22px; padding:0 8px; border-radius:11px; border:1px solid #D2C4B4; color:#3B5063; display:inline-flex; align-items:center; font-size:13px; margin-right:6px}
+  h1.ttl2{font-size:20px; line-height:1.4; word-break:break-all}
+  .bodytx{font-size:15px; line-height:1.75; white-space:pre-wrap; word-break:break-all}
+  .attach{display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:12px; padding:8px 12px; align-self:flex-start; font-size:13px}
+  .attach .lb{font-weight:700}
+  .attach .dy{color:var(--muted); font-size:12px}
+  .acts{display:flex; gap:10px; align-items:center}
+  .like{height:44px; padding:0 18px; border-radius:22px; border:1px solid var(--sage); background:#fff; font-weight:700; font-size:14px; display:flex; align-items:center; gap:6px}
+  .like.on{background:var(--notice); border-color:var(--accent)}
+  .lnk{border:0; background:none; font-size:13px; color:var(--muted); text-decoration:underline; min-height:44px}
+  .cm{padding:14px 0; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:4px}
+  .cm .t{display:flex; justify-content:space-between; font-size:13px; color:var(--muted)}
+  .cm .b{font-size:14.5px; line-height:1.6; word-break:break-all; white-space:pre-wrap}
+  .cmbar{display:flex; gap:8px}
+  .cmbar input{flex:1; height:48px; border:0; border-radius:12px; background:var(--cream); padding:0 14px; font:inherit; font-size:15px}
+  .sheet-bg{position:fixed; inset:0; background:rgba(36,55,73,.5); z-index:200; display:flex; align-items:flex-end; justify-content:center}
+  .sheet{background:var(--cream); width:100%; max-width:430px; border-radius:16px 16px 0 0; padding:14px 20px 28px; display:flex; flex-direction:column; gap:10px}
+  .sheet .grab{width:36px; height:4px; border-radius:2px; background:var(--sage); align-self:center}
+  .sheet b{font-size:16px}
+  .rb{height:52px; border:1px solid var(--sage); border-radius:14px; background:#fff; font-size:15px; text-align:left; padding:0 16px}
+  .ph{width:100%; aspect-ratio:4/3; border-radius:14px; background:#F3E3D0 center/cover no-repeat}
+</style>
+</head>
+<body>
+<div id="header-slot"></div>
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" style="gap:16px">
+        <div class="page-bar"><a class="back" href="feed.html" aria-label="뒤로" id="back"></a><span class="ttl">글</span></div>
+        <div id="post"><p class="hint">불러오는 중...</p></div>
+        <div id="cms"></div>
+        <div class="cmbar" id="cmbar" hidden><input id="cm-in" maxlength="300" placeholder="댓글을 남겨 보세요" aria-label="댓글"><button type="button" class="pill-btn" id="cm-go">등록</button></div>
+        <p class="err" id="err" hidden></p>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+document.getElementById('back').innerHTML = ICON.back;
+const id = new URLSearchParams(location.search).get('id');
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const $ = (x) => document.getElementById(x);
+const CAT_LABEL = { diet: '식단', exercise: '운동', challenge: '챌린지 인증', tips: '고민과 꿀팁' };
+const KIND = { fixed: ['고정', 'fixed'], selected: ['선택', 'selected'], common: ['공통', 'common'], party: ['파티', 'party'] };
+const REASONS = [['health_info', '건강정보나 개인정보가 들어 있어요'], ['spam', '광고·스팸이에요'], ['abuse', '욕설·비방이에요'], ['other', '기타']];
+const _avc = {};
+const _avView = (n) => _avc[n] || (_avc[n] = apiCall('GET', '/characters/by-nickname/' + encodeURIComponent(n), undefined, '').then(r => r.data));
+function hydrateAvatars(root, px) {
+  (root || document).querySelectorAll('[data-av]:not([data-done])').forEach(el => {
+    el.dataset.done = '1';
+    _avView(el.dataset.av).then(v => { el.innerHTML = characterSvg(v, px || 40); }).catch(() => {});
+  });
+}
+function ago(iso) {
+  const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + 'Z'), s = (Date.now() - d) / 1000;
+  if (s < 60) return '방금 전'; if (s < 3600) return Math.floor(s / 60) + '분 전'; if (s < 86400) return Math.floor(s / 3600) + '시간 전';
+  if (s < 172800) return '어제'; return Math.floor(s / 86400) + '일 전';
+}
+let post = null;
+function sheet(title, items, onPick) {
+  const bg = document.createElement('div'); bg.className = 'sheet-bg';
+  bg.innerHTML = '<div class="sheet" role="dialog" aria-modal="true"><span class="grab"></span><b>' + esc(title) + '</b>' + items.map(([v, l]) => '<button type="button" class="rb" data-v="' + v + '">' + esc(l) + '</button>').join('') + '<button type="button" class="ghost" data-v="">닫기</button></div>';
+  bg.addEventListener('click', (e) => { if (e.target === bg || e.target.dataset.v === '') bg.remove(); else if (e.target.dataset.v) { bg.remove(); onPick(e.target.dataset.v); } });
+  document.body.appendChild(bg);
+}
+function renderPost() {
+  const p = post, nick = p.author_nickname || '알 수 없음';
+  let att = '';
+  if (p.attach) { const k = KIND[p.attach.kind]; att = '<div class="attach"><span class="ctag ' + k[1] + '">' + k[0] + '</span><span class="lb">' + esc(p.attach.label) + '</span><span class="dy">' + (p.attach.kind === 'party' ? (p.attach.days ? p.attach.days + '일째' : '이제 시작') : '인증 ' + p.attach.days + '일째') + '</span></div>'; }
+  $('post').innerHTML = '<div style="display:flex; flex-direction:column; gap:14px">'
+    + '<div class="head"><span class="av"' + (p.author_nickname ? ' data-av="' + esc(nick) + '"' : '') + '>' + esc(nick.slice(0, 1)) + '</span><div><div class="meta"><span class="cat">' + esc(CAT_LABEL[p.category] || '') + '</span>' + esc(nick) + ' · ' + ago(p.created_at) + '</div></div></div>'
+    + (new URLSearchParams(location.search).get('from') === 'party' ? '' : '<h1 class="ttl2">' + esc(p.title) + '</h1>')
+    + (p.hidden ? '<div class="callout">' + esc(p.notice || '') + '</div>' : '<div class="bodytx">' + esc(p.body) + '</div>') + att
+    + (p.hidden ? '' : Array.from({ length: p.photo_count || 0 }, (_, i) => '<div class="ph" data-ph="' + esc(p.post_id) + '" data-n="' + i + '"></div>').join(''))
+    + '<div class="acts"><button type="button" class="like' + (p.liked_by_me ? ' on' : '') + '" id="like">좋아요 <span id="lc">' + p.like_count + '</span></button>'
+    + (p.mine ? '<button type="button" class="lnk" id="del">삭제</button>' : '<button type="button" class="lnk" id="rep">신고</button>') + '</div></div>';
+  $('like').addEventListener('click', onLike);
+  if ($('del')) $('del').addEventListener('click', onDelete);
+  if ($('rep')) $('rep').addEventListener('click', () => sheet('신고 사유를 골라 주세요', REASONS, (v) => report('posts/' + id, v)));
+  $('cmbar').hidden = !!p.hidden;
+  hydrateAvatars($('post'), 40);
+  document.querySelectorAll('#post [data-ph]').forEach(el => apiPhotoUrl(el.dataset.ph, +el.dataset.n).then(u => { el.style.backgroundImage = `url(${u})`; }).catch(() => {}));
+}
+async function onLike() {
+  try {
+    const d = (await apiCall('POST', '/community/posts/' + id + '/like', undefined, '좋아요를 하지 못했어요')).data;
+    $('lc').textContent = d.like_count; $('like').classList.toggle('on', d.liked); post.liked_by_me = d.liked;
+  } catch (e) { if (e.code === 'NICKNAME_REQUIRED') location.href = 'nickname.html?next=feed.html'; else showErr(friendlyError(e)); }
+}
+async function onDelete() {
+  if (!(await confirmDialog('글을 삭제할까요?', '댓글과 좋아요도 함께 사라져요.', '삭제'))) return;
+  try { await apiCall('DELETE', '/community/posts/' + id, undefined, '삭제하지 못했어요'); location.href = 'feed.html'; } catch (e) { showErr(friendlyError(e)); }
+}
+async function report(path, reason) {
+  try {
+    await apiCall('POST', '/community/' + path + '/report', { reason }, '신고하지 못했어요');
+    await confirmDialog('신고했어요', '운영팀이 확인해요. 알려 주셔서 고마워요.', '확인');
+  } catch (e) { showErr(e.code === 'ALREADY_REPORTED' ? '이미 신고했어요.' : friendlyError(e)); }
+}
+function showErr(m) { $('err').textContent = m; $('err').hidden = false; }
+async function loadComments() {
+  try {
+    const list = (await apiCall('GET', '/community/posts/' + id + '/comments', undefined, '댓글을 불러오지 못했어요')).data;
+    $('cms').innerHTML = '<div class="sect" style="margin:0 0 4px">댓글 ' + list.length + '</div>' + (list.length ? list.map(c =>
+      '<div class="cm"><div class="t"><span style="display:flex; align-items:center; gap:8px"><span class="av" style="width:36px; height:36px; border-radius:12px; font-size:14px" data-av="' + esc(c.author_nickname) + '">' + esc((c.author_nickname || '?').slice(0, 1)) + '</span>' + esc(c.author_nickname) + ' · ' + ago(c.created_at) + '</span>' + (c.mine ? '<button type="button" class="lnk" style="min-height:0" data-del="' + c.comment_id + '">삭제</button>' : '<button type="button" class="lnk" style="min-height:0" data-rep="' + c.comment_id + '">신고</button>') + '</div><div class="b">' + esc(c.body) + '</div></div>').join('') : '<div class="empty" style="padding:20px 0">첫 댓글을 남겨 보세요.</div>');
+    hydrateAvatars($('cms'), 28);
+    document.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+      if (await confirmDialog('댓글을 삭제할까요?', '', '삭제')) { try { await apiCall('DELETE', '/community/comments/' + b.dataset.del, undefined, '삭제하지 못했어요'); loadComments(); } catch (e) { showErr(friendlyError(e)); } }
+    }));
+    document.querySelectorAll('[data-rep]').forEach(b => b.addEventListener('click', () => sheet('신고 사유를 골라 주세요', REASONS, (v) => report('comments/' + b.dataset.rep, v))));
+  } catch (e) { $('cms').innerHTML = ''; }
+}
+$('cm-go').addEventListener('click', async () => {
+  const v = $('cm-in').value.trim(); if (!v) return;
+  try { await apiCall('POST', '/community/posts/' + id + '/comments', { body: v }, '댓글을 남기지 못했어요'); $('cm-in').value = ''; $('err').hidden = true; loadComments(); }
+  catch (e) { if (e.code === 'NICKNAME_REQUIRED') location.href = 'nickname.html?next=feed.html'; else showErr(friendlyError(e)); }
+});
+(async () => {
+  if (!id) { location.replace('feed.html'); return; }
+  try { post = (await apiCall('GET', '/community/posts/' + id, undefined, '글을 불러오지 못했어요')).data; renderPost(); loadComments(); }
+  catch (e) { $('post').innerHTML = '<div class="empty">' + esc(e.code === 'COMMUNITY_NOT_FOUND' ? '글을 찾을 수 없어요. 삭제되었거나 숨김 처리된 글일 수 있어요.' : friendlyError(e)) + '</div>'; }
+})();
+</script>
+<script>
+if (new URLSearchParams(location.search).get('from') === 'party') document.getElementById('back').href = 'party-feed.html';
+</script>
+</body>
+</html>

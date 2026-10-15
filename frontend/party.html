@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 파티</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrapper"><div class="frame"><div class="frame-body"><div class="screen">
+  <p class="lede" id="msg">불러오는 중이에요…</p>
+  <a class="ghost" id="back" href="feed.html" hidden>커뮤니티로 돌아가기</a>
+</div></div></div></div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+apiCall('GET', '/parties/me', undefined, '파티 정보를 불러오지 못했어요').then(
+  () => location.replace('party-home.html'),
+  (e) => {
+    if (e.code === 'PARTY_NOT_JOINED') return location.replace('party-start.html');
+    document.getElementById('msg').textContent = friendlyError(e);
+    document.getElementById('back').hidden = false;
+  });
+</script>
+</body>
+</html>

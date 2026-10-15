@@ -9,69 +9,95 @@
   .modal-backdrop{position:fixed; inset:0; background:rgba(56,64,56,.45); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100}
   .modal-card{background:#fff; border-radius:20px; padding:24px 22px; max-width:340px; width:100%; text-align:center; box-shadow:0 12px 30px rgba(56,64,56,.2)}
   .modal-card b{font-size:15px}
+  body{padding-bottom:290px}
+  #header-slot{display:none}
+  .bar{height:64px; padding:0 8px; display:flex; align-items:center; gap:4px; max-width:430px; margin:0 auto}
+  .bar .back{width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--ink)}
+  .frame-body{padding:0 20px 28px}
+  .screen{gap:0}
+  .h1{font-size:28px; font-weight:800; letter-spacing:-.7px; line-height:1.3}
+  .sub{font-size:14px; color:#4A5C6D; line-height:1.6; margin-top:10px}
+  .fields{display:flex; flex-direction:column; gap:16px; padding-top:28px}
+  .field{gap:8px}
+  .field label{font-weight:500; line-height:1.25}
+  .field input{height:56px; border:2px solid transparent; border-radius:14px; font-size:16px; font-weight:500}
+  .field input:focus{outline:0; border-color:var(--ink)}
+  .agrees{padding-top:28px; display:flex; flex-direction:column}
+  .agrees input[type=checkbox]{width:22px; height:22px; margin:0; flex:none; accent-color:var(--sage-deep)}
+  .ag-all{display:flex; align-items:center; gap:12px; min-height:56px; font-size:16px; font-weight:800; border-bottom:1px solid var(--line)}
+  .ag{display:flex; align-items:center; justify-content:space-between; min-height:52px}
+  .ag label{display:flex; align-items:center; gap:12px; font-size:14px; flex:1}
+  .ag a{min-height:44px; display:flex; align-items:center; font-size:13px; color:var(--muted); text-decoration:underline; white-space:nowrap; padding-left:8px}
+  .agrees .hint{padding-top:6px; font-size:12px}
+  .dock{position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:100%; max-width:430px; padding:12px 20px 28px; background:#fff; border-top:1px solid var(--line); z-index:60; display:flex; flex-direction:column; gap:8px}
+  .dock .cta{height:56px; font-size:17px}
+  .dock a{min-height:44px; display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--muted); text-decoration:none}
+  .dock .note{font-size:12px; color:var(--muted); line-height:1.6; text-align:center}
 </style>
 </head>
 <body>
 
 <div id="header-slot"></div>
+<div class="bar"><a class="back" href="index.html" aria-label="뒤로" data-icon="back"></a></div>
 
 <div class="wrapper">
   <div class="frame">
     <div class="frame-body">
-      <div class="screen" style="max-width:420px; margin:0 auto; width:100%">
-        <h3 style="text-align:center">파이온 PAEON</h3>
+      <div class="screen">
+        <div style="padding-top:16px"><div class="h1">회원가입</div><div class="sub" style="font-size:17px; font-weight:800; color:var(--ink)">만 19세 이상부터 가입할 수 있어요</div></div>
 
         <form id="signup-form">
-          <div class="field">
-            <label for="birth">생년월일</label>
-            <input id="birth" type="date" required>
-          </div>
-          <div class="field" style="margin-top:10px">
-            <label for="email">이메일</label>
-            <input id="email" type="email" placeholder="you@email.com" required>
-          </div>
-          <div class="field" style="margin-top:10px">
-            <label for="pw">비밀번호</label>
-            <input id="pw" type="password" minlength="8" required>
-          </div>
-          <div class="field" style="margin-top:10px">
-            <label for="pw2">비밀번호 확인</label>
-            <input id="pw2" type="password" minlength="8" required>
-          </div>
-
-          <p id="form-err" class="err" style="margin-top:8px; display:none"></p>
-
-          <div class="callout" style="margin-top:14px">
-            <label style="display:flex; gap:8px; align-items:flex-start; font-size:12.5px">
-              <input id="agree-terms" class="agree" type="checkbox" required style="margin-top:2px">
-              <span>[필수] 서비스 이용약관 동의 <a href="#" class="view-terms" data-types="terms_of_service" style="margin-left:6px; text-decoration:underline; color:var(--muted)">내용 보기</a></span>
-            </label>
-            <div style="height:6px"></div>
-            <label style="display:flex; gap:8px; align-items:flex-start; font-size:12.5px">
-              <input id="agree-privacy" class="agree" type="checkbox" required style="margin-top:2px">
-              <span>[필수] 개인정보 수집·이용 동의 <a href="#" class="view-terms" data-types="privacy" style="margin-left:6px; text-decoration:underline; color:var(--muted)">내용 보기</a></span>
-            </label>
-            <div style="height:6px"></div>
-            <label style="display:flex; gap:8px; align-items:flex-start; font-size:12.5px">
-              <input id="agree-health" class="agree" type="checkbox" required style="margin-top:2px">
-              <span>[필수] 건강정보(민감정보) 수집·이용 동의 <a href="#" class="view-terms" data-types="health_data" style="margin-left:6px; text-decoration:underline; color:var(--muted)">내용 보기</a></span>
-            </label>
-            <div style="height:6px"></div>
-            <label style="display:flex; gap:8px; align-items:flex-start; font-size:12.5px">
-              <input id="agree-age" class="agree" type="checkbox" required style="margin-top:2px">
-              <span>[필수] 만 19세 이상입니다.</span>
-            </label>
-            <p class="hint" style="margin-top:8px"><a href="terms.html" target="_blank" style="text-decoration:underline; color:var(--muted)">이용약관 전문 보기</a> · <a href="privacy.html" target="_blank" style="text-decoration:underline; color:var(--muted)">개인정보 처리방침 전체 보기</a></p>
+          <div class="fields">
+            <div class="field">
+              <label for="email">이메일</label>
+              <input id="email" type="email" placeholder="example@email.com" required>
+            </div>
+            <div class="field">
+              <label for="pw">비밀번호</label>
+              <input id="pw" type="password" placeholder="8자 이상" minlength="8" required>
+            </div>
+            <div class="field">
+              <label for="pw2">비밀번호 확인</label>
+              <input id="pw2" type="password" placeholder="한 번 더 입력" minlength="8" required>
+            </div>
+            <div class="field">
+              <label for="birth">생년월일</label>
+              <input id="birth" type="date" required>
+            </div>
           </div>
 
-          <div id="age-box" class="callout" style="margin-top:10px; display:none">
+          <p id="form-err" class="err" style="margin-top:10px; display:none"></p>
+
+          <div class="agrees">
+            <label class="ag-all"><input id="agree-all" type="checkbox">전체 동의</label>
+            <div class="ag">
+              <label><input id="agree-terms" class="agree" type="checkbox" required>[필수] 서비스 이용약관 동의</label>
+              <a href="#" class="view-terms" data-types="terms_of_service">내용 보기</a>
+            </div>
+            <div class="ag">
+              <label><input id="agree-privacy" class="agree" type="checkbox" required>[필수] 개인정보 수집·이용 동의</label>
+              <a href="#" class="view-terms" data-types="privacy">내용 보기</a>
+            </div>
+            <div class="ag">
+              <label><input id="agree-health" class="agree" type="checkbox" required>[필수] 건강정보(민감정보) 수집·이용 동의</label>
+              <a href="#" class="view-terms" data-types="health_data">내용 보기</a>
+            </div>
+            <div class="ag">
+              <label><input id="agree-age" class="agree" type="checkbox" required>[필수] 만 19세 이상입니다.</label>
+            </div>
+            <p class="hint"><a href="terms.html" target="_blank" style="text-decoration:underline; color:var(--muted)">이용약관 전문 보기</a> · <a href="privacy.html" target="_blank" style="text-decoration:underline; color:var(--muted)">개인정보 처리방침 전체 보기</a></p>
+          </div>
+
+          <div id="age-box" class="callout" style="margin-top:12px; display:none">
             <b>만 19세 미만은 가입할 수 없어요 · </b>이 서비스는 만 19세 이상만 이용할 수 있습니다.
           </div>
 
-          <p class="hint" style="margin-top:10px">이름·전화번호는 받지 않습니다. 성별은 건강정보 입력에서 받습니다.</p>
-
-          <button type="submit" id="submit-btn" class="cta" style="margin-top:14px">가입하기</button>
-          <p class="hint" style="text-align:center; margin-top:8px">가입이 안 되나요? <a href="guest-inquiry.html" style="color:var(--muted); font-weight:700; text-decoration:underline">문의하기</a></p>
+          <div class="dock">
+            <button type="submit" id="submit-btn" class="cta">가입하기</button>
+            <a href="login.html">이미 계정이 있어요 · 로그인</a>
+            <div class="note">이름·전화번호는 받지 않아요.</div>
+            <a href="guest-inquiry.html" style="font-size:13px; text-decoration:underline">가입이 안 되나요? 문의하기</a>
+          </div>
         </form>
       </div>
     </div>
@@ -96,6 +122,11 @@
 <script src="assets/common.js"></script>
 <script src="assets/api.js"></script>
 <script src="assets/policies.js"></script>
+<script>
+// 전체 동의: 아래 네 개를 한 번에 켜고 끈다
+document.getElementById('agree-all').addEventListener('change', (e) => document.querySelectorAll('.agree').forEach(c => { c.checked = e.target.checked; }));
+document.querySelectorAll('.agree').forEach(c => c.addEventListener('change', () => { document.getElementById('agree-all').checked = [...document.querySelectorAll('.agree')].every(x => x.checked); }));
+</script>
 <script>
 // 가입할 때 서버에 보내는 동의: 화면에 보여 준 정책(서버의 현재 유효한 정책)의 ID·버전과 체크 값. 서버가 이 값을 검사하고 그대로 기록한다.
 const AGREE_BOX = { terms_of_service: 'agree-terms', privacy: 'agree-privacy', health_data: 'agree-health' };

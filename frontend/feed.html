@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 커뮤니티</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .tabs{display:flex; border-bottom:1px solid var(--line); margin:0 -20px; padding:0 20px}
+  .tabs a,.tabs button,.tabs span{flex:1; height:46px; border:0; border-bottom:3px solid transparent; margin-bottom:-1px; background:none; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--muted); text-decoration:none}
+  .tabs .on{color:var(--ink); font-weight:800; border-bottom-color:var(--ink)}
+  .cats{display:flex; gap:8px; overflow-x:auto; padding:14px 0 6px; margin:0 -20px; padding-left:20px; padding-right:20px; scrollbar-width:none}
+  .cats::-webkit-scrollbar{display:none}
+  .cats .chip{flex:none}
+  .rule{background:var(--cream); border-radius:12px; padding:12px 16px; font-size:13px; color:var(--body); line-height:1.6}
+  .search{display:flex; gap:8px}
+  .search input{flex:1; height:44px; border:0; border-radius:12px; background:var(--cream); padding:0 14px; font:inherit; font-size:15px}
+  .post{display:flex; flex-direction:column; gap:10px; padding:18px 0; border-bottom:1px solid var(--line); text-decoration:none; color:inherit}
+  .post .top{display:flex; align-items:center; gap:12px}
+  .post .av{width:52px; height:52px; border-radius:16px; background:var(--cream); display:flex; align-items:center; justify-content:center; font-size:20px; flex:none; font-weight:800; color:var(--muted)}
+  .post .meta{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted)}
+  .post .cat{height:22px; padding:0 8px; border-radius:11px; border:1px solid #D2C4B4; color:#3B5063; display:inline-flex; align-items:center}
+  .post .ttl{font-size:16px; font-weight:800; line-height:1.4; word-break:break-all}
+  .post .pv{font-size:14px; color:var(--body); line-height:1.6; word-break:break-all}
+  .post .cnt{display:flex; gap:16px; font-size:13px; color:var(--body)}
+  .attach{display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:12px; padding:8px 12px; align-self:flex-start; font-size:13px; max-width:100%}
+  .attach .lb{font-weight:700}
+  .attach .dy{color:var(--muted); font-size:12px}
+  .fab{position:fixed; bottom:100px; right:max(20px, calc(50% - 195px)); height:52px; padding:0 22px; border-radius:26px; background:var(--accent-light); color:#1E3246; font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; text-decoration:none; z-index:55; border:0}
+  .more{display:flex; justify-content:center; padding:14px 0}
+  .feed-head{display:flex; align-items:center; justify-content:space-between; min-height:64px}
+  .feed-head h1{font-size:20px}
+  .icon-btn{width:44px; height:44px; border:0; background:none; display:flex; align-items:center; justify-content:center; color:var(--ink)}
+  .ph{height:150px; border-radius:14px; background:#F3E3D0 center/cover no-repeat; position:relative}
+  .ph i{position:absolute; right:8px; bottom:8px; background:rgba(36,55,73,.75); color:#fff; font-style:normal; font-size:12px; font-weight:700; padding:2px 8px; border-radius:10px}
+</style>
+</head>
+<body>
+<div id="header-slot"></div>
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" id="screen" style="gap:0">
+        <div class="feed-head"><h1>커뮤니티</h1><div style="display:flex"><button type="button" class="icon-btn" id="btn-search" aria-label="검색"></button><a class="icon-btn" href="character.html" id="me-av" aria-label="내 캐릭터"></a></div></div>
+        <div class="tabs" role="tablist">
+          <span class="on" role="tab" aria-selected="true">피드</span>
+          <a href="common-challenges.html" role="tab">챌린지</a>
+          <a href="party.html" role="tab">파티</a>
+        </div>
+        <div class="cats" id="cats"></div>
+        <div class="search" id="search" hidden><input id="q" maxlength="50" placeholder="제목이나 내용으로 찾기" aria-label="검색어"><button type="button" class="pill-btn" id="q-go">찾기</button></div>
+        <div class="rule" style="margin-top:8px">건강정보와 개인정보는 올리지 않아요.</div>
+        <div id="list"></div>
+        <div class="more" id="more" hidden><button type="button" class="pill-btn" id="more-btn">더 보기</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+<a class="fab" href="write.html" id="fab"></a>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const CATS = [['', 'latest', '전체'], ['', 'popular', '인기'], ['diet', 'latest', '식단'], ['exercise', 'latest', '운동'], ['challenge', 'latest', '챌린지 인증'], ['tips', 'latest', '고민과 꿀팁']];
+const CAT_LABEL = { diet: '식단', exercise: '운동', challenge: '챌린지 인증', tips: '고민과 꿀팁' };
+const KIND = { fixed: ['고정', 'fixed'], selected: ['선택', 'selected'], common: ['공통', 'common'] };
+const PAGE = 20;
+const st = { cat: 0, q: '', offset: 0, total: 0, items: [], nickname: undefined };
+
+const _avc = {};
+const _avView = (n) => _avc[n] || (_avc[n] = apiCall('GET', '/characters/by-nickname/' + encodeURIComponent(n), undefined, '').then(r => r.data));
+function hydrateAvatars(root, px) {
+  (root || document).querySelectorAll('[data-av]:not([data-done])').forEach(el => {
+    el.dataset.done = '1';
+    _avView(el.dataset.av).then(v => { el.innerHTML = characterSvg(v, px || 40); }).catch(() => {});
+  });
+}
+function ago(iso) {
+  const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + 'Z'), s = (Date.now() - d) / 1000;
+  if (s < 60) return '방금 전'; if (s < 3600) return Math.floor(s / 60) + '분 전'; if (s < 86400) return Math.floor(s / 3600) + '시간 전';
+  if (s < 172800) return '어제'; return Math.floor(s / 86400) + '일 전';
+}
+function renderCats() {
+  document.getElementById('cats').innerHTML = CATS.map((c, i) => `<button type="button" class="chip${i === st.cat ? ' on' : ''}" data-i="${i}">${c[2]}</button>`).join('');
+  document.querySelectorAll('#cats .chip').forEach(b => b.addEventListener('click', () => { st.cat = +b.dataset.i; reload(); renderCats(); }));
+}
+function attachHtml(a) {
+  if (!a) return '';
+  const [lb, cls] = KIND[a.kind] || ['', ''];
+  return `<div class="attach"><span class="ctag ${cls}">${lb}</span><span class="lb">${esc(a.label)}</span><span class="dy">인증 ${a.days}일째</span></div>`;
+}
+function postHtml(p) {
+  const nick = p.author_nickname || '알 수 없음';
+  return `<a class="post" href="post.html?id=${encodeURIComponent(p.post_id)}">
+    <div class="top"><span class="av" aria-hidden="true"${p.author_nickname ? ` data-av="${esc(nick)}"` : ''}>${esc(nick.slice(0, 1))}</span>
+      <div><div class="meta"><span class="cat">${esc(CAT_LABEL[p.category] || '')}</span><span>${esc(nick)} · ${ago(p.created_at)}</span></div>
+      <div class="ttl">${esc(p.title)}</div></div></div>
+    ${p.hidden ? `<div class="pv" style="color:var(--muted)">${esc(p.notice || '')}</div>` : `<div class="pv">${esc(p.preview)}</div>`}
+    ${attachHtml(p.attach)}
+    ${p.photo_count ? `<div class="ph" data-ph="${esc(p.post_id)}">${p.photo_count > 1 ? `<i>+${p.photo_count - 1}</i>` : ''}</div>` : ''}
+    <div class="cnt"><span>좋아요 ${p.like_count}</span><span>댓글 ${p.comment_count}</span></div></a>`;
+}
+function hydratePhotos(root) {
+  (root || document).querySelectorAll('[data-ph]:not([data-done])').forEach(el => {
+    el.dataset.done = '1';
+    apiPhotoUrl(el.dataset.ph, 0).then(u => { el.style.backgroundImage = `url(${u})`; }).catch(() => {});
+  });
+}
+function renderList() {
+  const el = document.getElementById('list');
+  el.innerHTML = st.items.length ? st.items.map(postHtml).join('') : '<div class="empty">아직 글이 없어요.<br>첫 글을 남겨 보세요.</div>';
+  document.getElementById('more').hidden = st.items.length >= st.total;
+  hydrateAvatars(el, 40); hydratePhotos(el);
+}
+async function load(append) {
+  const [cat, sort] = CATS[st.cat];
+  const qs = new URLSearchParams({ sort, limit: PAGE, offset: append ? st.offset : 0 });
+  if (cat) qs.set('category', cat);
+  if (st.q) qs.set('q', st.q);
+  try {
+    const d = (await apiCall('GET', '/community/posts?' + qs, undefined, '글을 불러오지 못했어요')).data;
+    st.total = d.total; st.items = append ? st.items.concat(d.items) : d.items; st.offset = st.items.length; renderList();
+  } catch (e) { document.getElementById('list').innerHTML = `<div class="empty">${esc(friendlyError(e))}</div>`; }
+}
+function reload() { st.offset = 0; load(false); }
+
+document.getElementById('btn-search').innerHTML = ICON.search;
+document.getElementById('fab').innerHTML = ICON.plus + '글쓰기';
+document.getElementById('btn-search').addEventListener('click', () => { const s = document.getElementById('search'); s.hidden = !s.hidden; if (!s.hidden) document.getElementById('q').focus(); });
+const go = () => { st.q = document.getElementById('q').value.trim(); reload(); };
+document.getElementById('q-go').addEventListener('click', go);
+document.getElementById('q').addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+document.getElementById('more-btn').addEventListener('click', () => load(true));
+// 닉네임이 없으면 글쓰기 전에 정하게 한다
+document.getElementById('fab').addEventListener('click', async (e) => {
+  if (st.nickname === undefined) { try { st.nickname = (await apiCall('GET', '/community/me', undefined, '')).data.nickname; } catch (err) { st.nickname = null; } }
+  if (!st.nickname) { e.preventDefault(); location.href = 'nickname.html?next=write.html'; }
+});
+apiCall('GET', '/characters/me', undefined, '').then(r => { document.getElementById('me-av').innerHTML = characterSvg(r.data, 36); }).catch(() => {});
+renderCats(); load(false);
+</script>
+</body>
+</html>

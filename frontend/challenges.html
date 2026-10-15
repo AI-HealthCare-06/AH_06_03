@@ -6,25 +6,31 @@
 <title>PAEON — 챌린지 선택</title>
 <link rel="stylesheet" href="assets/style.css">
 <style>
-  .cat{background:var(--cream); border:1px solid var(--sage-light); border-radius:18px; overflow:hidden; margin-bottom:10px}
-  .cat>header{display:flex; align-items:center; gap:8px; padding:10px 16px; border-bottom:1px solid var(--sage-light)}
-  .cat>header h3{font-size:14px; margin:0}
-  .slot{display:flex; gap:10px; align-items:flex-start; background:#fff; border:1.5px solid var(--sage-light); border-radius:16px; padding:12px 14px; font-size:13.5px; margin:8px 10px}
-  .slot[data-k="fixed"]{background:var(--cream)}
-  .slot[data-k="out"]{opacity:.6; border-style:dashed; background:transparent}
-  .slot .st{font-weight:700}
-  .slot .sd{font-size:12px; color:var(--muted)}
+  .chips{overflow-x:auto; flex-wrap:nowrap; padding-bottom:2px}
+  .chip{flex:none; font-size:14px; border:1px solid var(--sage); background:#fff; color:var(--ink)}
+  .sect{font-size:18px; font-weight:800; margin-top:6px}
+  .card2{display:flex; align-items:center; gap:14px; border:1px solid var(--line); border-radius:24px; padding:16px; background:#fff}
+  .card2 .ic{width:52px; height:52px; border-radius:16px; background:var(--cream); color:var(--muted); display:flex; align-items:center; justify-content:center; flex:none}
+  .card2 .tx{flex:1; min-width:0; display:flex; flex-direction:column; gap:3px}
+  .card2 .st{font-size:16px; font-weight:800}
+  .card2 .sd{font-size:13px; color:var(--muted)}
+  .card2 .pk{height:40px; padding:0 16px; border-radius:20px; border:1px solid var(--sage); font-size:14px; font-weight:700; display:flex; align-items:center; flex:none; background:#fff}
   .pickable{cursor:pointer}
-  .pickable[data-on="1"]{border-color:var(--sage-deep); background:var(--sage-light)}
-  .lvl{font-size:10.5px; font-weight:700; border-radius:999px; padding:0 8px; border:1px solid currentColor; margin-left:6px; white-space:nowrap}
-  .lvl[data-l="하"]{color:var(--ok)} .lvl[data-l="중"]{color:var(--warn)} .lvl[data-l="상"]{color:var(--risk)}
-  .countbar{font-size:12.5px; color:var(--muted)}
-  .slot .ev{font-size:11.5px; color:var(--muted); margin-top:4px}
-  .slot .src{font-size:10.5px; color:var(--faint); margin-left:4px}
-  .slot .srcbtn{font:inherit; font-size:10.5px; color:var(--muted); background:#fff; border:1px solid var(--sage-light); border-radius:999px; padding:0 8px; margin-left:4px; cursor:pointer}
-  .badge-done{font-size:10.5px; font-weight:700; color:var(--ok); border:1px solid var(--ok); border-radius:999px; padding:0 8px; margin-left:6px}
-  .keep{font-size:12px; color:var(--ok); background:var(--ok-soft); border-radius:12px; padding:8px 12px; margin:4px 10px 0}
-  .notice{font-size:12px; color:var(--muted); margin:0 0 6px}
+  .pickable[data-on="1"]{border-color:var(--accent); background:var(--notice)}
+  .pickable[data-on="1"] .pk{background:var(--accent); border-color:var(--accent); color:#fff}
+  .card2[data-k="fixed"]{background:var(--cream); border-color:var(--cream)}
+  .card2[data-k="out"]{opacity:.65; border-style:dashed}
+  .card2[data-k="fixed"] .ic{background:#fff}
+  .badge-done{font-size:11px; font-weight:700; color:var(--ok); border:1px solid var(--ok); border-radius:999px; padding:0 8px; margin-left:6px}
+  .keep{font-size:12px; color:var(--ok); background:var(--ok-soft); border-radius:12px; padding:8px 12px; margin-top:4px}
+  .ev{font-size:12px; color:var(--muted); margin-top:2px}
+  .src{font-size:11px; color:var(--faint); margin-left:4px}
+  .srcbtn{font:inherit; font-size:11px; color:var(--muted); background:#fff; border:1px solid var(--line); border-radius:999px; padding:0 8px; margin-left:4px; cursor:pointer}
+  .rule{background:var(--notice); border-radius:18px; padding:16px 18px; font-size:16px; font-weight:800; line-height:1.45; color:var(--ink)}
+  .rule small{display:block; margin-top:2px; font-size:13px; font-weight:400; color:#4A5C6D}
+  .notice{font-size:12px; color:var(--muted); margin:0}
+  .countbar{font-size:13px; color:var(--muted)}
+  .foot{font-size:12px; color:var(--muted); line-height:1.6; text-align:center; padding-top:4px}
 </style>
 </head>
 <body>
@@ -35,11 +41,12 @@
   <div class="frame">
     <div class="frame-body">
       <div class="screen">
-        <p class="lede" id="lede">미션은 세 가지예요. 두 가지는 건강정보에 맞춰 정해지고, 한 가지는 직접 골라요.</p>
+        <div class="chips" id="chips"></div>
+        <p class="rule" id="lede" style="margin:0">미션은 세 가지<small>고정 2개 + 직접 고르는 1개</small></p>
         <div id="err" class="callout" style="display:none"></div>
         <p class="sect" id="fixed-title">고정 미션</p>
         <div id="fixed-list"></div>
-        <p class="sect">선택 미션 1개 — 카테고리 제한 없음</p>
+        <p class="sect">선택 미션 1개</p>
         <p class="notice" id="notice"></p>
         <div id="cat-list"></div>
         <div id="survey-needed"></div>
@@ -47,6 +54,7 @@
         <p class="sect" id="out-title" style="display:none"></p>
         <div id="out-list"></div>
         <button type="button" id="start-btn" class="cta" disabled>4주 챌린지 시작</button>
+        <div class="foot">챌린지는 생활습관 참고용이며 치료를 대신하지 않아요.</div>
       </div>
     </div>
   </div>
@@ -57,13 +65,22 @@
 <script>
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 let picked = null;
+let counts = {};
+let catFilter = '';
+const _ic = (p) => `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const CAT_ICON = {
+  SODIUM: _ic('<path d="M3 13h4l2.5-6 4 11 2.5-5H21"/>'),
+  ALCOHOL: _ic('<path d="M4 11h16a8 8 0 0 1-16 0zM9 4c0 2 2 2 2 4"/>'),
+  other: _ic('<path d="M5 19C5 10 10 5 19 5c0 9-5 14-14 14zM5 19l8-8"/>'),
+};
 
 function cardBody(m, keepMsg) {
-  return `<span><div class="st">${esc(m.name)} <span class="lvl" data-l="${LEVEL_LABEL[m.difficulty]}">${LEVEL_LABEL[m.difficulty]}</span>${m.completed_before ? '<span class="badge-done">완료함</span>' : ''}</div>
-    <div class="sd">${esc(m.description)}</div>
+  return `<span class="ic">${CAT_ICON[m.category] || CAT_ICON.other}</span><div class="tx"><span class="st">${esc(m.name)}${m.completed_before ? '<span class="badge-done">완료함</span>' : ''}</span>
+    <span class="sd">${esc(m.category_name || '')} · 4주 · ${esc(m.description)}</span>
+    ${counts[m.code] ? `<span class="sd">${counts[m.code].toLocaleString()}명 참여 중</span>` : ''}
     <div class="ev">${esc(m.evidence)} <button type="button" class="srcbtn" onclick="event.preventDefault(); event.stopPropagation(); this.nextElementSibling.hidden = !this.nextElementSibling.hidden">출처</button><span class="src" hidden>· ${esc(m.source)}</span></div>
-    ${m.notice ? `<div class="sd">${esc(m.notice)}</div>` : ''}
-    ${m.completed_before && keepMsg ? `<div class="keep">${esc(keepMsg)}</div>` : ''}</span>`;
+    ${m.notice ? `<span class="sd">${esc(m.notice)}</span>` : ''}
+    ${m.completed_before && keepMsg ? `<div class="keep">${esc(keepMsg)}</div>` : ''}</div>`;
 }
 
 function showError(msg) {
@@ -78,18 +95,19 @@ async function main() {
     if (await apiGetCurrentCycle()) { location.replace('challenge-progress.html'); return; }
   } catch (e) { showError(friendlyError(e)); return; }
 
+  try { (await apiCall('GET', '/challenges/participants', undefined, '')).data.forEach(x => counts[x.challenge_code] = x.participants); } catch (e) { /* 참여 인원은 없어도 진행 */ }
   let rec;
   try { rec = await apiGetChallengeRecommendations(); }
   catch (e) {
     if (e.code === 'HEALTH_RECORD_REQUIRED' || e.code === 'PREDICTION_SEX_REQUIRED') {
-      document.querySelector('.screen').innerHTML = '<div class="callout"><b>건강정보를 먼저 입력해 주세요</b><br>입력하신 정보로 챌린지를 정해 드려요.</div><a class="cta" style="display:block;text-align:center;text-decoration:none" href="health-info.html">건강정보 입력하기</a>';
+      document.querySelector('.screen').innerHTML = '<div class="callout"><b>건강정보를 먼저 입력해 주세요</b></div><a class="cta" style="display:block;text-align:center;text-decoration:none" href="health-info.html">건강정보 입력하기</a>';
       return;
     }
     showError(friendlyError(e)); return;
   }
 
   if (rec.cycle_number > rec.total_cycles) {
-    document.querySelector('.screen').innerHTML = `<div class="callout"><b>${rec.total_cycles * 4}주 챌린지를 모두 마쳤어요 🎉</b><br>끝까지 해내셨어요.</div>`;
+    document.querySelector('.screen').innerHTML = `<div class="callout"><b>${rec.total_cycles * 4}주 챌린지를 모두 마쳤어요</b></div>`;
     return;
   }
   // 4주가 끝났는데 재입력 전이면 재입력을 먼저 안내 (다음 차수 추천이 재입력 값으로 바뀜, 가이드 §6.2)
@@ -97,41 +115,41 @@ async function main() {
     const last = (await apiListCycles())[0];
     if (last && ['completed', 'incomplete'].includes(last.status) && !last.reassessed) {
       document.getElementById('err').style.display = 'block';
-      document.getElementById('err').innerHTML = `<b>${last.cycle_number}차 4주가 끝났어요</b><br>지금 상태를 입력하면 처음과 비교하고, 다음 4주 미션도 바뀐 값으로 골라 드려요. <a href="reassessment.html?cycle=${encodeURIComponent(last.cycle_id)}" style="color:var(--sage-deep); font-weight:700">4주 재입력하기</a>`;
+      document.getElementById('err').innerHTML = `<b>${last.cycle_number}차 4주가 끝났어요</b><br>지금 상태를 입력하면 다음 4주 미션을 새로 골라 드려요. <a href="reassessment.html?cycle=${encodeURIComponent(last.cycle_id)}" style="color:var(--sage-deep); font-weight:700">4주 재입력하기</a>`;
     }
   } catch (e) { /* 이력이 없어도 진행 */ }
-  document.getElementById('lede').textContent =
-    `${rec.total_cycles * 4}주 동안 4주씩 ${rec.total_cycles}번 도전해요. 지금은 ${rec.cycle_number}차 도전이에요. 미션은 세 가지예요. 두 가지는 건강정보에 맞춰 정해지고, 한 가지는 직접 골라요.`;
+  document.getElementById('lede').innerHTML =
+    `${rec.total_cycles * 4}주 = 4주씩 ${rec.total_cycles}번 · 지금 ${rec.cycle_number}차<small>미션은 세 가지: 고정 2개 + 직접 고르는 1개</small>`;
   document.getElementById('start-btn').textContent = `${rec.cycle_number}차 챌린지 시작 (4주)`;
   document.getElementById('notice').textContent = rec.selectable_notice;
 
   document.getElementById('fixed-list').innerHTML = rec.fixed.map(s => s.mission
-    ? `<div class="slot" data-k="fixed"><span>📌</span>${cardBody(s.mission, rec.keep_going_message)}</div>`
-    : `<div class="slot" data-k="fixed"><span>📌</span><span><div class="st">${esc(s.slot_label)} 칸</div><div class="sd">지금 생활습관이 잘 유지되고 있어요</div></span></div>`
+    ? `<div class="card2" data-k="fixed">${cardBody(s.mission, rec.keep_going_message)}<span class="ctag fixed">고정</span></div>`
+    : `<div class="card2" data-k="fixed"><div class="tx"><span class="st">${esc(s.slot_label)} 칸</span><span class="sd">지금 생활습관이 잘 유지되고 있어요</span></div><span class="ctag fixed">고정</span></div>`
   ).join('');
 
   const catList = document.getElementById('cat-list');
   if (rec.all_good) {
-    catList.insertAdjacentHTML('beforeend', '<p class="hint">모든 생활습관이 잘 유지되고 있어요. 하고 싶은 미션을 하나 골라 보세요</p>');
+    catList.insertAdjacentHTML('beforeend', '<p class="hint">생활습관이 잘 유지되고 있어요. 하나 골라 보세요</p>');
   }
   const groups = {};
   rec.candidates.forEach(m => (groups[m.category] = groups[m.category] || { name: m.category_name, items: [] }).items.push(m));
   Object.values(groups).forEach(g => {
     const cat = document.createElement('div');
-    cat.className = 'cat';
-    cat.innerHTML = `<header><h3>${esc(g.name)}</h3></header>`;
+    cat.style.cssText = 'display:flex; flex-direction:column; gap:12px';
+    cat.dataset.group = g.items[0].category;
     g.items.forEach(m => {
       const slot = document.createElement('div');
-      slot.className = 'slot pickable';
+      slot.className = 'card2 pickable';
       slot.dataset.on = '0';
       slot.dataset.id = m.code;
-      slot.innerHTML = `<span class="mk">⬜</span>${cardBody(m, rec.keep_going_message)}`;
+      slot.innerHTML = `${cardBody(m, rec.keep_going_message)}<span class="pk">선택</span>`;
       slot.addEventListener('click', () => {
         picked = (picked === m.code) ? null : m.code;
         document.querySelectorAll('.pickable').forEach(el => {
           const on = el.dataset.id === picked;
           el.dataset.on = on ? '1' : '0';
-          el.querySelector('.mk').textContent = on ? '✅' : '⬜';
+          el.querySelector('.pk').textContent = on ? '선택됨' : '선택';
         });
         document.getElementById('pick-count').textContent = picked ? '1' : '0';
         document.getElementById('start-btn').disabled = !picked;
@@ -140,6 +158,14 @@ async function main() {
     });
     catList.appendChild(cat);
   });
+  catList.style.cssText = 'display:flex; flex-direction:column; gap:12px';
+  const chips = document.getElementById('chips');
+  const drawChips = () => {
+    chips.innerHTML = `<button type="button" class="chip${catFilter ? '' : ' on'}" data-c="">추천</button>` + Object.entries(groups).map(([k, g]) => `<button type="button" class="chip${catFilter === k ? ' on' : ''}" data-c="${esc(k)}">${esc(g.name)}</button>`).join('');
+    catList.querySelectorAll('[data-group]').forEach(el => { el.hidden = !!catFilter && el.dataset.group !== catFilter; });
+    chips.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => { catFilter = c.dataset.c; drawChips(); }));
+  };
+  drawChips();
 
   if (rec.survey_needed.length) {
     document.getElementById('survey-needed').innerHTML = `<div class="callout">${rec.survey_needed.map(x => esc(x.category_name)).join(' · ')} 미션은 설문을 마치면 추천돼요. <a href="survey.html">설문하러 가기</a></div>`;
@@ -150,11 +176,12 @@ async function main() {
     ['need_info', '이런 미션도 있어요', '+'],
     ['not_advised', '지금은 권하지 않아요', '!'],
   ];
+  document.getElementById('out-list').style.cssText = 'display:flex; flex-direction:column; gap:12px';
   document.getElementById('out-list').innerHTML = OUT_GROUPS.map(([kind, title, mark]) => {
     const items = rec.excluded.filter(x => x.kind === kind);
     if (!items.length) return '';
     return `<p class="sect">${title}</p>` + items.map(x =>
-      `<div class="slot" data-k="out"><span>${mark}</span><span><div class="st">${esc(x.code ? x.name : x.name.replace(/ 미션$/, ''))}</div><div class="sd">${esc(x.reason)}</div></span></div>`).join('');
+      `<div class="card2" data-k="out"><div class="tx"><span class="st">${mark} ${esc(x.code ? x.name : x.name.replace(/ 미션$/, ''))}</span><span class="sd">${esc(x.reason)}</span></div></div>`).join('');
   }).join('');
 
   document.getElementById('start-btn').addEventListener('click', async () => {

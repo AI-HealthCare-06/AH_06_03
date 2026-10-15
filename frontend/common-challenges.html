@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 커뮤니티 챌린지</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .tabs{display:flex; border-bottom:1px solid var(--line); margin:0 -20px; padding:0 20px}
+  .tabs a,.tabs button,.tabs span{flex:1; height:46px; border:0; border-bottom:3px solid transparent; margin-bottom:-1px; background:none; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--muted); text-decoration:none}
+  .tabs .on{color:var(--ink); font-weight:800; border-bottom-color:var(--ink)}
+  .cc{display:flex; flex-direction:column; border-radius:26px; overflow:hidden; background:var(--cream); text-decoration:none; color:inherit}
+  .cc .hd{padding:18px; display:flex; justify-content:space-between; gap:12px}
+  .cc .hd.upcoming,.cc .hd.ended{background:var(--cream-2)}
+  .cc .hd.active{background:var(--notice)}
+  .cc .hd .tg{height:24px; padding:0 10px; border-radius:12px; background:var(--ink); color:#fff; font-size:12px; font-weight:700; display:inline-flex; align-items:center; align-self:flex-start}
+  .cc .t{font-size:20px; font-weight:800; letter-spacing:-.4px; line-height:1.35; word-break:break-all}
+  .cc .p{font-size:13px; color:var(--body)}
+  .cc .ic{width:76px; height:76px; border-radius:24px; background:#fff; color:var(--accent); display:flex; align-items:center; justify-content:center; flex:none}
+  .cc .ic svg{width:44px; height:44px}
+  .cc .f{padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:8px}
+  .cc .f .k{font-size:13px; color:var(--muted)}
+  .cc .f b{font-size:15px; font-weight:700}
+  .cc .f b span{font-weight:500; color:var(--muted)}
+  .cc .mx{height:32px; padding:0 14px; border-radius:16px; background:var(--cream-2); font-size:14px; font-weight:800; display:inline-flex; align-items:center; flex:none}
+</style>
+</head>
+<body>
+<div id="header-slot"></div>
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" style="gap:14px">
+        <div style="display:flex; align-items:center; justify-content:space-between; min-height:64px"><h1 style="font-size:20px">커뮤니티</h1><a id="me-char" href="character.html" aria-label="내 캐릭터" style="width:44px; height:44px; display:flex; align-items:center; justify-content:center"></a></div>
+        <div class="tabs" role="tablist">
+          <a href="feed.html" role="tab">피드</a>
+          <span class="on" role="tab" aria-selected="true">챌린지</span>
+          <a href="party.html" role="tab">파티</a>
+        </div>
+        <div class="chips" id="chips"></div>
+        <div id="list"><p class="hint">불러오는 중...</p></div>
+        <div class="callout" style="background:var(--cream); color:var(--ink); border-radius:16px; font-size:17px; font-weight:800; text-align:center; padding:16px">순위는 인증한 일수로만 정해져요.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const STATES = [['active', '진행중'], ['upcoming', '진행 예정'], ['ended', '종료']];
+const STATE_LABEL = { active: '진행중', upcoming: '진행 예정', ended: '종료' };
+let cur = 'active';
+function dateRange(a, b) {
+  const f = (s) => { const d = new Date(s + 'T00:00:00'); return (d.getMonth() + 1) + '.' + d.getDate() + '(' + '일월화수목금토'[d.getDay()] + ')'; };
+  return f(a) + ' ~ ' + f(b);
+}
+function renderChips() {
+  document.getElementById('chips').innerHTML = STATES.map(([v, l]) => '<button type="button" class="chip' + (v === cur ? ' on' : '') + '" data-v="' + v + '">' + l + '</button>').join('');
+  document.querySelectorAll('#chips .chip').forEach(b => b.addEventListener('click', () => { cur = b.dataset.v; renderChips(); load(); }));
+}
+async function load() {
+  const box = document.getElementById('list');
+  try {
+    const items = (await apiCall('GET', '/common-challenges?state=' + cur, undefined, '챌린지를 불러오지 못했어요')).data.items;
+    box.innerHTML = items.length ? '<div style="display:flex; flex-direction:column; gap:12px">' + items.map(c =>
+      '<a class="cc" href="common-challenge.html?id=' + encodeURIComponent(c.challenge_id) + '"><div class="hd ' + c.state + '"><div style="display:flex; flex-direction:column; gap:8px"><span class="tg">공통 챌린지</span>'
+      + '<span class="t">' + esc(c.title) + '</span><span class="p">' + dateRange(c.starts_on, c.ends_on) + '</span></div><span class="ic">' + ICON.pie + '</span></div>'
+      + '<div class="f"><div style="display:flex; flex-direction:column; gap:4px"><span class="k">' + (c.proof_type === 'steps' ? '걸음 수 인증' : '직접 인증') + '</span><b>' + c.participants.toLocaleString() + '명 <span>· ' + (c.joined ? '참여 중' : '참여가능') + (c.my_rank ? ' · 내 순위 ' + c.my_rank + '위' : '') + '</span></b></div><span class="mx">최대 ' + c.max_reward + '</span></div></a>'
+    ).join('') + '</div>'
+      : '<div class="empty">' + (cur === 'active' ? '지금 진행 중인 챌린지가 없어요.' : cur === 'upcoming' ? '예정된 챌린지가 없어요.' : '종료된 챌린지가 없어요.') + '</div>';
+  } catch (e) { box.innerHTML = '<div class="empty">' + esc(friendlyError(e)) + '</div>'; }
+}
+renderChips(); load();
+</script>
+<script>
+apiCall('GET', '/characters/me', undefined, '').then(r => { document.getElementById('me-char').innerHTML = characterSvg(r.data, 36); }).catch(() => {});
+</script>
+</body>
+</html>

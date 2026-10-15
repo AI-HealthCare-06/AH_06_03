@@ -208,13 +208,13 @@ const N_MAP = {                                    // 문항 → { codes: 서버
 const scoreToServerCode = (q, v) => { const m = N_MAP[q]; return m ? m.codes[m.scores.indexOf(String(v))] : v; };
 const serverCodeToScore = (q, c) => { const m = N_MAP[q]; return m && m.codes.includes(c) ? m.scores[m.codes.indexOf(c)] : c; };
 const EATOUT_V1 = { rare: 'lt_monthly', '1_2_week': '1_2_per_week', '3_4_week': '3_4_per_week', '5_6_week': '5_6_per_week', '1_day': '1_per_day', '2plus_day': '2plus_per_day' };
-async function apiSubmitSurvey(payload) {
+async function apiSubmitSurvey(payload, type = 'initial_lifestyle') {
   if (USE_MOCK_SURVEY) {
     console.log('[MOCK] apiSubmitSurvey', payload);
     await sleep(400);
     return { data: { survey_instance_id: 'mock-survey-1' } };
   }
-  const survey = (await apiCall('GET', '/surveys/initial_lifestyle/active', undefined, '설문을 불러오지 못했습니다')).data;
+  const survey = (await apiCall('GET', `/surveys/${type}/active`, undefined, '설문을 불러오지 못했습니다')).data;
   const isV2 = survey.questions.some(q => q.question_code === 'N0');
   const a = payload.answers || {};
   const want = isV2
@@ -239,7 +239,7 @@ async function apiSubmitSurvey(payload) {
     return { data: { skipped: true } };               // v1은 필수 3문항이라 건너뛴 게 있으면 제출할 수 없음
   }
   if (!responses.length) return { data: { skipped: true } };
-  const recordId = (() => { try { return localStorage.getItem('paeon-health-record-id'); } catch (e) { return null; } })();
+  const recordId = type !== 'initial_lifestyle' ? null : (() => { try { return localStorage.getItem('paeon-health-record-id'); } catch (e) { return null; } })();
   const inst = (await apiCall('POST', '/survey-instances',
     { survey_version_id: survey.survey_version_id, health_record_id: recordId }, '설문을 시작하지 못했습니다')).data;
   const base = `/survey-instances/${inst.survey_instance_id}`;
@@ -538,6 +538,7 @@ async function apiSyncAfterLogin() {
     const me = await apiGetMe();
     const prevUid = localStorage.getItem('paeon-user-id');
     if (prevUid && prevUid !== me.user_id) stashLocalData(prevUid);   // 다른 계정의 데이터가 남아 있으면 그 계정 몫으로 보관
+    else if (!prevUid) LOCAL_DATA_KEYS.forEach(k => localStorage.removeItem(k));   // 누구 것인지 모르는 옛 데이터는 이 계정에 섞이지 않게 비운다
     restoreLocalData(me.user_id);                                      // 이 계정이 보관해 둔 기록을 되돌림
     localStorage.setItem('paeon-user-id', me.user_id);
     localStorage.setItem('paeon-profile', JSON.stringify({ ...(read('paeon-profile') || {}), email: me.email, birth: me.birth_date, sex: me.sex }));
@@ -551,6 +552,7 @@ async function apiSyncAfterLogin() {
   } catch (e) { /* 복원 실패해도 로그인은 진행 */ }
   try {
     const latest = await apiGetLatestPrediction();
+    if (!latest) localStorage.removeItem('paeon-prediction');   // 서버에 이 계정의 분석 결과가 없으면 브라우저에 남은 옛 결과도 지운다
     if (latest) {
       const health = read('paeon-health');
       const prev = read('paeon-prediction') || {};
@@ -692,3 +694,48 @@ async function apiPredictV1Temp(profile, health, survey) {
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+
+// ---- 글 사진: 가로 640px·300KB 이하 JPEG로 다시 그려 올린다 (다시 그리면 촬영 위치 같은 정보가 빠진다)
+const PHOTO_MAX_BYTES = 300 * 1024, PHOTO_MAX_COUNT = 3;
+function shrinkPhotoBlob(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 640 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      let q = 0.8;
+      const step = () => c.toBlob((b) => {
+        if (!b) return reject(new Error('사진을 줄이지 못했어요.'));
+        if (b.size <= PHOTO_MAX_BYTES || q <= 0.3) return b.size <= PHOTO_MAX_BYTES ? resolve(b) : reject(new Error('사진이 너무 커요.'));
+        q -= 0.1; step();
+      }, 'image/jpeg', q);
+      step();
+    };
+    img.onerror = () => reject(new Error('사진을 읽지 못했어요.'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+async function apiUploadPhoto(postId, blob, retried = false) {
+  const res = await fetch(`${API_BASE}/community/posts/${encodeURIComponent(postId)}/photos`, {
+    method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'Authorization': `Bearer ${getAccessToken()}` }, body: blob,
+  });
+  const body = await res.json();
+  if (!res.ok) {
+    const code = body.error?.code;
+    if (code === 'AUTH_TOKEN_EXPIRED' && !retried && await refreshTokens()) return apiUploadPhoto(postId, blob, true);
+    const err = new Error(body.error?.message || '사진을 올리지 못했어요.'); err.code = code; throw err;
+  }
+  return body;
+}
+// 사진은 로그인 값이 있어야 받을 수 있어서 fetch로 받아 임시 주소(blob:)로 바꿔 쓴다. 같은 사진은 한 번만 받는다.
+const _photoCache = {};
+function apiPhotoUrl(postId, n) {
+  const k = postId + ':' + n;
+  return _photoCache[k] || (_photoCache[k] = fetch(`${API_BASE}/community/posts/${encodeURIComponent(postId)}/photos/${n}`, {
+    headers: { 'Authorization': `Bearer ${getAccessToken()}` },
+  }).then(r => { if (!r.ok) throw new Error('photo'); return r.blob(); }).then(b => URL.createObjectURL(b)));
+}

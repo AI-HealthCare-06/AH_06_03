@@ -6,20 +6,42 @@
 <title>PAEON — 분석 결과</title>
 <link rel="stylesheet" href="assets/style.css">
 <style>
-  .riskrow{display:flex; align-items:center; gap:10px; background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px 18px}
-  .chip{font-size:11.5px; font-weight:700; border-radius:999px; padding:3px 11px; border:1.5px solid currentColor; white-space:nowrap}
-  .riskrow .pct{font-size:30px; font-weight:900; margin-left:auto; flex:none; padding-left:6px}
-  .agebox{background:var(--cream); border:1px solid var(--sage-light); border-radius:18px; padding:16px; text-align:center}
-  .agebox .big{font-size:34px; font-weight:900; line-height:1.1}
-  figure{margin:0; background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:14px 18px}
-  figcaption{font-size:12.5px; color:var(--muted); margin-bottom:8px}
-  .bars{display:grid; grid-template-columns:110px 1fr 46px; gap:8px 10px; align-items:center; font-size:13px}
-  .bb{background:var(--track); border-radius:8px; height:9px; overflow:hidden}
-  .bb i{display:block; height:100%; border-radius:8px}
-  .bv{text-align:right; font-weight:700; font-size:12px}
-  .topline{font-size:12.5px; margin-bottom:8px}
-  .linkhint{margin-top:10px; font-size:12px; color:var(--muted); background:var(--cream); border:1px solid var(--sage-light); border-radius:12px; padding:8px 12px}
-  .linkhint a{color:var(--sage-deep); font-weight:700}
+  .screen{gap:16px}
+  #advice-banner{background:var(--notice); border:1px solid var(--sky) !important; border-radius:16px; padding:16px 36px 14px 20px; font-size:14px; line-height:1.6}
+  #advice-banner label{font-size:14px !important; font-weight:700; min-height:44px; align-items:center !important; margin-top:6px !important}
+  #advice-banner input{width:22px; height:22px; margin:0 !important; accent-color:var(--ink)}
+  .rescard{border:1px solid var(--line); border-radius:20px; padding:24px 20px; display:flex; flex-direction:column; gap:16px}
+  .rescard .cap{font-size:14px; color:#4A5C6D}
+  .rescard .big{display:flex; align-items:center; gap:12px; font-size:48px; font-weight:800; letter-spacing:-1.5px; line-height:1}
+  .rescard .seg{display:flex; gap:4px}
+  .rescard .seg i{flex:1; height:8px; border-radius:4px; background:var(--line)}
+  .rescard .seg i.on{background:var(--accent)}
+  .rescard .lv{display:flex; justify-content:space-between; font-size:13px; color:var(--muted)}
+  .rescard .lv .cur{font-weight:800; color:var(--ink)}
+  .rescard .why{font-size:14px; color:var(--body); line-height:1.6}
+  .agebox{background:var(--cream); border-radius:16px; padding:18px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px}
+  .agebox .t{display:flex; flex-direction:column; gap:4px; font-size:14px; font-weight:700}
+  .agebox .t span{font-size:13px; font-weight:500; color:#4A5C6D}
+  .agebox .n{font-size:28px; font-weight:800; letter-spacing:-.5px; flex:none}
+  .blk{display:flex; flex-direction:column; gap:12px; padding-top:8px}
+  .blk .sect{margin:0}
+  .blk .small{font-size:13px; color:var(--muted); line-height:1.6}
+  .blk .desc{font-size:13px; color:#4A5C6D; line-height:1.6}
+  .bars{display:flex; flex-direction:column; gap:14px}
+  .bars .br{display:flex; align-items:center; gap:12px; font-size:14px}
+  .bars .br>span{width:88px; flex:none}
+  .bb{flex:1; height:10px; border-radius:5px; background:var(--track)}
+  .bb i{display:block; height:10px; border-radius:5px; background:var(--accent)}
+  .bb i.neg{background:var(--accent-light)}
+  .three{display:flex; gap:8px}
+  .three span{flex:1; height:48px; border-radius:24px; border:1px solid var(--sage); font-size:13px; color:var(--muted); display:flex; align-items:center; justify-content:center; text-align:center}
+  .three span.on{background:var(--accent-light); border-color:var(--accent-light); color:#1E3246; font-weight:800}
+  .bprow{display:flex; align-items:center; gap:10px; background:var(--cream); border-radius:16px; padding:14px 20px; font-size:13px; color:var(--muted)}
+  .bprow b{font-size:14px; color:var(--ink)}
+  .notes{display:flex; flex-direction:column; gap:8px; padding-top:8px; font-size:13px; color:var(--muted); line-height:1.7}
+  .linkhint{font-size:13px; color:var(--muted); background:var(--cream); border-radius:12px; padding:10px 14px}
+  .linkhint a{color:var(--ink); font-weight:700}
+  .simnow{font-size:15px; font-weight:700; line-height:1.6; word-break:keep-all; margin:2px 0 10px}
 </style>
 </head>
 <body>
@@ -29,6 +51,7 @@
 <div class="wrapper">
   <div class="frame">
     <div class="frame-body">
+      <div class="page-bar" style="margin-bottom:0"><a class="back" href="dashboard.html" aria-label="뒤로" id="back"></a><span class="ttl">분석 결과</span></div>
       <div class="screen" id="screen"></div>
     </div>
   </div>
@@ -36,11 +59,13 @@
 
 <script src="assets/common.js"></script>
 <script>
-const COLOR = { normal: 'var(--ok)', borderline: 'var(--warn)', high: 'var(--risk)', hypertension: 'var(--risk)', prehypertension: 'var(--warn)', elevated: 'var(--warn)' };
+const LV = { normal: 1, borderline: 2, high: 3 };
 const BP_LABEL = { normal: '정상', elevated: '주의혈압', prehypertension: '고혈압전단계', hypertension: '고혈압' };
 const RISK_LABEL = { normal: '양호', borderline: '주의', high: '높음' };
 const A_SKIP_MSG = { age_out_of_range: '만 32~70세가 아니어서 분석할 수 없습니다', cad_diagnosed: '심장 혈관 질환 진단 이력이 있어 분석할 수 없습니다' };
 const B_SKIP_MSG = { age_out_of_range: '19세 미만이어서 분석할 수 없습니다', htn_diagnosed: '고혈압으로 진단·치료 중이라 분석할 수 없습니다' };
+const SIM_LABEL = { similar: '비슷한 편이에요', slightly_different: '조금 달라요', different: '많이 달라요' };
+const TRI = '<svg width="26" height="26" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M8 2l6.5 11.5h-13z"/></svg>';
 
 // 명세 §3: 학습 방향이 상식과 반대인 요인(direction_matches_expectation = false)은 요인 목록에 표시하지 않는다.
 const visible = (factors) => (factors || []).filter(f => f.direction_matches_expectation !== false);
@@ -53,7 +78,7 @@ const withoutMissing = (res) => {
   const top = res.top_modifiable_factor;
   return { ...res, factors: (res.factors || []).filter(f => !miss.includes(f.code)), top_modifiable_factor: top && miss.includes(top.code) ? null : top };
 };
-const fixedNote = (factors) => visible(factors).some(f => !f.modifiable) ? '<div class="topline" style="color:var(--muted); margin:8px 0 0">나이·성별처럼 바꿀 수 없는 요인은 뺐어요</div>' : '';
+const fixedNote = (factors) => visible(factors).some(f => !f.modifiable) ? '<div class="small">나이·성별처럼 바꿀 수 없는 요인은 뺐어요.</div>' : '';
 
 // 개선 가능한 1위 요인 → 그 요인을 관리할 수 있는 챌린지 안내 (명세 §7 요인 → 챌린지 연결표, 가이드 §7). 결과 설명용이고 챌린지 추천에는 쓰지 않는다.
 const LINK = {
@@ -65,39 +90,30 @@ function linkHint(model, res) {
   const to = f && f.direction_matches_expectation !== false && LINK[model][f.code];
   return to ? `<div class="linkhint">'<b>${f.label}</b>' 요인은 ${to}으로 관리할 수 있어요 · <a href="challenges.html">챌린지 보기</a></div>` : '';
 }
-function topLine(res) {
-  const t = res.top_modifiable_factor;
-  return t && t.direction_matches_expectation !== false
-    ? `<div class="topline">바꿀 수 있는 요인 중 가장 영향이 큰 것: <b>${t.label}</b></div>`
-    : '<div class="topline">바꿀 수 있는 요인 중 위험 신호를 높인 것이 없어요</div>';
-}
 
 function bars(factors) {
   const mx = Math.max(0.2, ...factors.map(f => Math.abs(f.contribution)));
-  return factors.map(f => {
-    const col = f.contribution >= 0 ? 'var(--sage-deep)' : 'var(--sage)';
-    const width = Math.abs(f.contribution) / mx * 100;
-    const val = (f.contribution >= 0 ? '+' : '−') + Math.abs(f.contribution * 100).toFixed(1);
-    return `<span>${f.label}</span>
-      <span class="bb"><i style="width:${width}%;background:${col}"></i></span>
-      <span class="bv">${val}</span>`;
-  }).join('');
+  return '<div class="bars">' + factors.map(f => `<div class="br"><span>${f.label}</span><div class="bb"><i class="${f.contribution >= 0 ? '' : 'neg'}" style="width:${Math.abs(f.contribution) / mx * 100}%"></i></div></div>`).join('') + '</div>';
+}
+function factorBlock(model, res, title) {
+  const f = shown(res.factors);
+  return `<div class="blk"><div class="sect">${title}</div>
+    ${f.length ? bars(f) + '<div class="small">막대가 길수록 영향이 커요.</div>' : '<div class="small">표시할 요인이 없어요.</div>'}
+    ${fixedNote(res.factors)}${linkHint(model, res)}</div>`;
 }
 
 function readLocal(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } }
 const pred = readLocal('paeon-prediction');
 const health = readLocal('paeon-health');
 const screen = document.getElementById('screen');
+document.getElementById('back').innerHTML = ICON.back;
 
 if (!pred) {
-  screen.innerHTML = '<div class="callout"><b>분석 결과가 없어요</b><br>입력 검토 화면에서 "위험 신호 분석하기"를 먼저 눌러주세요.</div>';
+  screen.innerHTML = '<div class="callout"><b>분석 결과가 없어요</b><br>입력을 마치고 분석하면 볼 수 있어요.</div>';
 } else {
   let html = adviceBannerHtml(pred, health);   // 혈압 140/90·160/100 이상이면 결과보다 먼저 의료기관 상담 안내
 
-  html += pred.bp_stage ? `<div class="riskrow" style="border-color:${COLOR[pred.bp_stage]}">
-    <span class="chip" style="color:${COLOR[pred.bp_stage]}">${BP_LABEL[pred.bp_stage]}</span>
-    <span style="font-size:12px;color:var(--muted)">입력 혈압 판정</span>
-  </div>` : '';
+  html += pred.bp_stage ? `<div class="bprow"><b>${BP_LABEL[pred.bp_stage]}</b>입력 혈압 판정</div>` : '';
 
   // 모델 A는 만 32~70세만 계산한다. 나이 때문에 못 하면 모델 B를 먼저 보여 주고 아래에 작게 알린다.
   const ageSkipA = pred.model_a.status !== 'completed' && pred.model_a.skip_reason === 'age_out_of_range';
@@ -106,43 +122,38 @@ if (!pred) {
   if (pred.model_a.status !== 'completed') {
     aHtml = ageSkipA ? '' : `<div class="callout"><b>${A_SKIP_MSG[pred.model_a.skip_reason] || '이번엔 분석할 수 없습니다'}</b></div>`;
   } else {
-    const a = withoutMissing(pred.model_a), fa = shown(a.factors);
-    aHtml = `<p class="sect">10년 내 심장 혈관 건강 신호</p>
-      <div class="riskrow" style="border-color:${COLOR[a.risk_level]}">
-        <span class="chip" style="color:${COLOR[a.risk_level]}">${RISK_LABEL[a.risk_level]}</span>
-        <span style="font-size:12px;color:var(--muted)">같은 조건의 사람들과 비교한 범주입니다</span>
+    const a = withoutMissing(pred.model_a), n = LV[a.risk_level] || 0, top = a.top_modifiable_factor;
+    const cur = (i) => n === i ? ' class="cur"' : '';
+    aHtml = `<div class="rescard">
+        <span class="cap">10년 내 심장 혈관 건강 신호</span>
+        <div class="big">${TRI}<span>${RISK_LABEL[a.risk_level]}</span></div>
+        <div class="seg">${[1, 2, 3].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>
+        <div class="lv"><span${cur(1)}>양호</span><span${cur(2)}>주의</span><span${cur(3)}>높음</span></div>
+        ${top && top.direction_matches_expectation !== false ? `<div class="why">바꿀 수 있는 요인 중 <b>${top.label}</b> 쪽이 이 신호에 가장 크게 영향을 주고 있어요.</div>` : ''}
       </div>
-      ${(a.missing_features || []).includes('totChol') ? '<p class="hint" style="margin:6px 2px 8px">총콜레스테롤을 입력하지 않아, 학습 데이터의 중앙값(234)으로 대신해 계산했어요. 이 값은 내 실제 수치가 아니라서 결과에 한계가 있어요.</p>' : ''}
-      ${a.vascular_age != null ? `<div class="agebox"><div class="big">${a.vascular_age}세</div><div class="sub">혈관 나이(추정) · 첫 번째 모델 버전이라 실제 나이와 차이가 클 수 있어요</div></div>` : ''}
-      <figure><figcaption>위험 신호를 올린 요인 · <b>바꿀 수 있는 요인</b></figcaption>
-        ${topLine(a)}
-        ${fa.length ? `<div class="bars">${bars(fa)}</div>` : ''}
-        ${fixedNote(a.factors)}
-        ${linkHint('MODEL_A', a)}
-      </figure>`;
+      ${a.vascular_age != null ? `<div class="agebox"><div class="t">혈관 나이 (추정)<span>실제 나이와 차이가 클 수 있어요</span></div><div class="n">${Math.round(a.vascular_age)}세</div></div>` : ''}
+      ${factorBlock('MODEL_A', a, '바꿀 수 있는 요인')}`;
   }
 
   if (pred.model_b.status !== 'completed') {
     bHtml = `<div class="callout"><b>${B_SKIP_MSG[pred.model_b.skip_reason] || '이번엔 분석할 수 없습니다'}</b></div>`;
   } else {
-    const b = withoutMissing(pred.model_b), fb = shown(b.factors);
-    const now = SIM_NOW[b.similarity_level];
-    bHtml = `<p class="sect">나와 비슷한 사람들과 비교했어요</p>
-      ${now ? `<div class="riskrow" style="border-color:var(--accent); padding:16px 20px"><span style="flex:1; font-size:15.5px; line-height:1.6; font-weight:500; word-break:keep-all; text-wrap:balance">지금 내 몸 상태는 ${now}</span></div>` : ''}
-      <p class="hint" style="margin:6px 2px 10px">혈압이 정상인 사람들의 전체 자료와 비교했어요. 허리둘레, 몸무게, 술은 내가 바꿀 수 있는 부분이에요. 4주 뒤에 다시 비교해 봐요.</p>
-      <figure><figcaption>관련 요인 · <b>바꿀 수 있는 요인</b></figcaption>
-        ${fb.length ? `<div class="bars">${bars(fb)}</div>` : '<div class="topline">표시할 요인이 없어요</div>'}
-        ${fixedNote(b.factors)}
-        ${linkHint('MODEL_B', b)}
-      </figure>`;
+    const b = withoutMissing(pred.model_b);
+    bHtml = `<div class="blk"><div class="sect">나와 비슷한 사람</div>
+      <div class="desc">혈압이 정상인 사람들의 전체 자료와 비교했어요. 허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</div>
+      ${SIM_NOW[b.similarity_level] ? `<div class="simnow">지금 내 몸 상태는 ${SIM_NOW[b.similarity_level]}</div>` : ''}
+      ${SIM_NOW[b.similarity_level] ? `<div class="three">${Object.keys(SIM_LABEL).map(k => `<span class="${k === b.similarity_level ? 'on' : ''}">${SIM_LABEL[k]}</span>`).join('')}</div>` : ''}
+      </div>
+      ${factorBlock('MODEL_B', b, aHtml ? '비교에 쓰인 요인' : '바꿀 수 있는 요인')}`;
   }
 
   html += ageSkipA
-    ? bHtml + '<div class="callout" style="margin-top:12px; text-align:center; font-size:15px; line-height:1.6">10년 내 심장 혈관 건강 신호는 <b>만 32~70세</b>에게만 분석해요</div>'
+    ? bHtml + '<div class="callout" style="text-align:center">10년 내 심장 혈관 건강 신호는 <b>만 32~70세</b>에게만 분석해요</div>'
     : aHtml + bHtml;
 
-  html += `<p class="tip">진단이 아닌 선별 정보입니다. AI가 분석한 참고 정보이며, 정확한 진단은 의사에게 문의하세요.</p>
-    <a class="cta" style="display:block; text-align:center; text-decoration:none" href="challenges.html">맞춤 챌린지 보기</a>`;
+  const miss = (pred.model_a.missing_features || []).includes('totChol');
+  html += `<div class="notes">${miss ? '<div>총콜레스테롤은 입력하지 않아서 학습 데이터의 중앙값(234)으로 대신해 계산했어요. 이 값은 내 실제 수치가 아니에요.</div>' : ''}<div>진단이 아닌 참고 정보입니다. AI가 분석한 참고 정보이며, 정확한 진단은 의사에게 문의하세요.</div></div>
+    <a class="cta" style="height:56px; border-radius:28px; font-size:17px" href="challenges.html">챌린지 시작하기</a>`;
 
   screen.innerHTML = html;
 }

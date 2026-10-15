@@ -6,52 +6,69 @@
 <title>PAEON — 이용 적합성 · 응급 확인</title>
 <link rel="stylesheet" href="assets/style.css">
 <style>
-  .q{display:flex; flex-direction:column; gap:7px; margin-top:12px}
-  .qt{font-size:13.5px; font-weight:700}
+  body{padding-bottom:110px}
+  #header-slot{display:none}
+  .bar{height:64px; padding:0 8px; display:flex; align-items:center; gap:4px; max-width:430px; margin:0 auto}
+  .bar .back{width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--ink)}
+  .frame-body{padding:0 20px 28px}
+  .screen{gap:26px}
+  .h1{font-size:28px; font-weight:800; letter-spacing:-.7px; line-height:1.3}
+  .sub{font-size:14px; color:#4A5C6D; line-height:1.6; margin-top:10px}
+  .q{display:flex; flex-direction:column; gap:12px}
+  .qt{font-size:16px; font-weight:800; line-height:1.45}
+  .qn{font-size:15px; font-weight:800; color:var(--ink); background:var(--notice); border-radius:14px; padding:12px 14px; line-height:1.5}
   .optrow{display:flex; flex-wrap:wrap; gap:8px}
-  .opt{border:1.5px solid var(--sage-light); background:#fff; color:var(--ink); border-radius:16px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer}
+  .opt{position:relative; height:44px; padding:0 18px; border-radius:22px; border:1px solid var(--line); background:#fff; color:var(--ink); font-size:15px; font-weight:500; display:inline-flex; align-items:center; cursor:pointer}
   .opt input{position:absolute; opacity:0; pointer-events:none}
-  .opt[data-on="1"]{border-color:var(--sage-deep); background:var(--sage-light)}
+  .opt[data-on="1"]{border:2px solid var(--sage-deep); background:var(--notice); font-weight:700}
+  .optrow.tiles{flex-wrap:nowrap; gap:10px}
+  .optrow.tiles .opt{flex:1; height:56px; border-radius:16px; justify-content:center; text-align:center; padding:0; white-space:nowrap}
+  .note{background:var(--cream); border-radius:14px; padding:12px 14px; font-size:13px; color:#4A5C6D; line-height:1.6}
   .warnbox{border:1.5px solid var(--danger); background:#FBEAE5; border-radius:18px; padding:14px 18px; font-size:13px}
   .warnbox b{color:var(--risk)}
   .warnbox .acts{display:flex; gap:8px; margin-top:10px; align-items:center; flex-wrap:wrap}
   .call119{display:inline-block; margin-top:8px; background:var(--danger); color:#fff; border-radius:999px; padding:8px 18px; font-weight:700; font-size:13px; text-decoration:none}
+  .dock{position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:100%; max-width:430px; padding:12px 20px 28px; background:#fff; z-index:60}
+  .dock .cta{height:56px; font-size:17px}
 </style>
 </head>
 <body>
 
 <div id="header-slot"></div>
+<div class="bar"><a class="back" href="login.html" aria-label="뒤로" data-icon="back"></a></div>
 
 <div class="wrapper">
   <div class="frame">
     <div class="frame-body">
       <div class="screen">
-        <p class="lede">입력을 받기 전에 대상자인지, 응급 상황이 아닌지 먼저 확인합니다.</p>
+        <div style="padding-top:8px"><div class="h1">먼저 세 가지만<br>확인할게요</div></div>
 
-        <div class="q">
-          <div class="qt">만 나이가 어떻게 되나요? (만 19세 이상 이용할 수 있고, 10년 내 심장 혈관 건강 신호는 만 32~70세에게만 분석해요)</div>
+        <div class="q" style="margin-top:2px">
+          <div class="qt">만 나이가 어떻게 되나요?</div>
           <div class="optrow" id="age-band-row">
             <label class="opt"><input type="radio" name="age-band" value="in">32~70세</label>
             <label class="opt"><input type="radio" name="age-band" value="bOnly">19~31세 또는 71세 이상</label>
             <label class="opt"><input type="radio" name="age-band" value="under19">19세 미만</label>
           </div>
+          <div class="qn">만 19세 이상 이용 가능 · 위험 신호 분석은 만 32~70세만</div>
         </div>
 
         <div class="q">
-          <div class="qt">의사에게 심장 혈관 질환(협심증·심근경색 등)을 진단받은 적이 있나요?</div>
-          <div class="optrow" id="chd-row">
+          <div class="qt">의사에게 심장 혈관 질환(협심증·심근경색 등)을<br>진단받은 적이 있나요?</div>
+          <div class="optrow tiles" id="chd-row">
             <label class="opt"><input type="radio" name="chd" value="no">아니오</label>
             <label class="opt"><input type="radio" name="chd" value="yes">예</label>
           </div>
         </div>
 
         <div class="q">
-          <div class="qt">지금 가슴 통증·심한 두통·한쪽 마비·말이 어눌해짐이 있나요?</div>
-          <div class="optrow" id="emer-row">
+          <div class="qt">지금 가슴 통증·심한 두통·한쪽 마비·<br>말이 어눌해짐이 있나요?</div>
+          <div class="optrow tiles" id="emer-row">
             <label class="opt"><input type="radio" name="emer" value="no">아니오</label>
             <label class="opt"><input type="radio" name="emer" value="yes">예</label>
             <label class="opt"><input type="radio" name="emer" value="unsure">잘 모르겠습니다</label>
           </div>
+          <div class="note">"예"나 "잘 모르겠습니다"를 고르면 지금 바로 119에 연락하라고 안내해요. 이 서비스는 응급 판단을 하지 않아요. 안내를 확인하면 "그래도 진행"으로 이어서 할 수 있어요.</div>
         </div>
 
         <div id="emer-warning" class="warnbox" style="display:none">
@@ -66,7 +83,7 @@
 
         <p id="form-err" class="err" style="display:none"></p>
 
-        <button type="button" id="next-btn" class="cta">건강정보 입력으로</button>
+        <div class="dock"><button type="button" id="next-btn" class="cta">다음</button></div>
       </div>
     </div>
   </div>

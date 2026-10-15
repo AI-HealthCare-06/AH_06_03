@@ -6,11 +6,23 @@
 <title>PAEON — 입력 검토</title>
 <link rel="stylesheet" href="assets/style.css">
 <style>
-  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
-  .kpi{background:#fff; border:1px solid var(--sage-light); border-radius:14px; padding:10px 8px; text-align:center}
-  .kpi .k{font-size:11.5px; color:var(--muted)}
-  .kpi .v{font-size:18px; font-weight:900; margin-top:2px}
-  .confirm-headline{font-size:18px; font-weight:900; color:var(--accent); margin:2px 0 4px}
+  .head h1{margin:0; font-size:28px; font-weight:800; letter-spacing:-.7px; line-height:1.3}
+  .head p{margin:10px 0 0; font-size:14px; color:var(--body); line-height:1.6}
+  .sec .sh{display:flex; align-items:baseline; justify-content:space-between; padding-bottom:8px}
+  .sec .sh b{font-size:18px; font-weight:800}
+  .sec .sh a{min-height:44px; display:flex; align-items:center; font-size:14px; font-weight:700; color:#5C86AC; text-decoration:none}
+  .sec .r{display:flex; justify-content:space-between; align-items:center; gap:16px; min-height:52px; border-top:1px solid var(--line); font-size:15px}
+  .sec .r:last-of-type{border-bottom:1px solid var(--line)}
+  .sec .r span:first-child{color:var(--body)}
+  .sec .r span:last-child{font-weight:700; text-align:right}
+  .cream{background:var(--cream); border-radius:16px; padding:14px 16px; display:flex; flex-direction:column; gap:4px}
+  .cream .t{display:flex; justify-content:space-between; align-items:baseline}
+  .cream .t span:first-child{font-size:14px; color:var(--body)}
+  .cream .t span:last-child{font-size:15px; font-weight:700}
+  .cream p{margin:0; font-size:13px; color:var(--body); line-height:1.6}
+  .bar{position:sticky; bottom:84px; background:#fff; border-top:1px solid var(--line); padding:12px 0; display:flex; flex-direction:column; gap:8px; z-index:5; margin-top:auto}
+  .bar .cta{height:56px; font-size:17px; border-radius:28px}
+  .bar span{text-align:center; font-size:12px; color:var(--muted)}
 </style>
 </head>
 <body>
@@ -21,14 +33,14 @@
   <div class="frame">
     <div class="frame-body">
       <div class="screen">
-        <p class="sect">입력 내용 검토</p>
-        <p class="confirm-headline">아래 내용이 정확한지 확인해주세요</p>
-        <p class="lede">분석에 실제로 쓰이는 값만 보여드려요 — 잘못된 값이 있으면 사이드바의 "건강정보"에서 수정할 수 있어요.</p>
+        <div class="page-bar"><a class="back" href="survey.html" aria-label="뒤로"><span data-icon="back"></span></a></div>
+        <div class="head"><h1>입력한 내용을<br>확인해 주세요</h1><p class="confirm-headline" style="font-size:14px; font-weight:400; color:var(--body); margin:10px 0 0">틀린 곳이 있으면 눌러서 고칠 수 있어요.</p></div>
+        <p class="lede" style="display:none"></p>
         <div id="status-callout" class="callout"></div>
-        <div class="kpis" id="kpis"></div>
+        <div id="kpis" style="display:flex; flex-direction:column; gap:22px"></div>
 
         <p id="form-err" class="err" style="display:none"></p>
-        <button type="button" id="submit-btn" class="cta">이대로 위험 신호 분석하기</button>
+        <div class="bar"><button type="button" id="submit-btn" class="cta">분석하기</button><span>진단이 아닌 참고 정보입니다.</span></div>
       </div>
     </div>
   </div>
@@ -51,7 +63,7 @@ if (!profile || !elig || !health || !survey) {
   const box = document.getElementById('status-callout');
   box.className = '';
   box.innerHTML = `<p class="sect" style="margin-top:0">아직 마치지 않은 단계가 있어요</p>
-    <p class="hint" style="margin:0 0 10px">네 단계를 모두 마치면 입력 내용을 확인하고 위험 신호를 분석할 수 있어요.</p>
+    <p class="hint" style="margin:0 0 10px">네 단계를 마치면 분석할 수 있어요.</p>
     ${sp.html}
     ${go ? `<a class="cta" style="display:block; text-align:center; text-decoration:none; margin-top:14px" href="${go.href}">${go.label}</a>` : ''}`;
   document.getElementById('submit-btn').style.display = 'none';
@@ -62,12 +74,40 @@ if (!profile || !elig || !health || !survey) {
     ? '<b>두 모델 모두 분석 대상이 아닙니다</b><br>분석은 건너뛰고 바로 챌린지로 안내합니다.'
     : '<b>위험 신호 분석 가능</b>';
 
-  const bmi = (health.weight_kg / Math.pow(health.height_cm / 100, 2)).toFixed(1);
+  const L = {
+    sex: { male: '남성', female: '여성' },
+    smoking: { never: '비흡연', former: '과거 흡연', current: '흡연' },
+    drink: { never_lifetime: '안 마심', none_past_year: '안 마심', lt_monthly: '월 1회 미만', monthly: '월 1회', '2_4_per_month': '월 2–4회', '2_3_per_week': '주 2–3회', '4plus_per_week': '주 4회 이상' },
+    parent: { yes: '있음', no: '없음', unknown: '모름' },
+    ex: { none: '거의 안 함', lt60: '1시간 미만', '60_149': '1시간 이상 ~ 2시간 30분 미만', '150plus': '2시간 30분 이상' },
+    eat: { rare: '거의 안 함', '1_2_week': '주 1–2회', '3_4_week': '주 3–4회', '5_6_week': '주 5–6회', '1_day': '하루 1회', '2plus_day': '하루 2회 이상' },
+    bf: { '5_7': '주 5–7회', '3_4': '주 3–4회', '1_2': '주 1–2회', '0': '거의 안 함' },
+    na: { careful_low: '주의 (약간 적음)', very_moderate: '매우 적정', moderate: '적정', careful_high: '주의 (많음)', severe: '심각' },
+  };
+  const age = profile.birth ? Math.floor((Date.now() - new Date(profile.birth)) / 31557600000) : null;
+  const r = (k, v) => `<div class="r"><span>${k}</span><span>${v}</span></div>`;
+  const a = survey.answers || {}, sd = survey.sodium;
+  const steps = survey.baseline_steps != null ? survey.baseline_steps : a.P2;
+  const surveyRows = [
+    a.P1 ? r('운동', L.ex[a.P1] || a.P1) : '',
+    steps != null ? r('하루 평균 걸음 수', `${Number(steps).toLocaleString()}걸음`) : '',
+    sd && sd.status === 'ok' ? r('짠 음식', L.na[sd.grade] || '') : '',
+    a.E1 ? r('외식·배달', L.eat[a.E1] || a.E1) : '',
+    a.B1 ? r('아침 식사', L.bf[a.B1] || a.B1) : '',
+  ].join('');
   document.getElementById('kpis').innerHTML = `
-    <div class="kpi"><div class="k">BMI</div><div class="v">${bmi}</div></div>
-    <div class="kpi"><div class="k">혈압</div><div class="v">${health.sbp}/${health.dbp}</div></div>
-    <div class="kpi"><div class="k">허리둘레</div><div class="v">${health.waist_cm}cm</div></div>
-    <div class="kpi"><div class="k">총콜레스테롤</div><div class="v">${health.total_chol != null ? health.total_chol : '입력 안 함'}</div></div>`;
+    <div class="sec"><div class="sh"><b>건강정보</b><a href="health-info.html">수정</a></div>
+      ${r('성별 · 나이대', `${L.sex[health.sex] || ''}${age != null ? ` · ${Math.floor(age / 10) * 10}대` : ''}`)}
+      ${r('키 · 몸무게', `${health.height_cm}cm · ${health.weight_kg}kg`)}
+      ${r('허리둘레', `${health.waist_cm}cm`)}
+      ${r('혈압', `${health.sbp} / ${health.dbp} mmHg`)}
+      ${r('흡연 · 음주', `${L.smoking[health.smoking] || ''} · ${L.drink[health.drink_freq] || ''}`)}
+      ${r('당뇨 · 고혈압 진단', `${health.diabetes ? '있음' : '없음'} · ${health.htn_status === 'none' ? '없음' : '있음'}`)}
+      ${r('부모 고혈압', L.parent[health.parent_htn] || '')}
+    </div>
+    ${health.total_chol == null ? `<div class="cream"><div class="t"><span>총콜레스테롤</span><span>입력 안 함</span></div><p>비워 두면 중앙값(234)으로 계산해요. 내 실제 수치는 아니에요.</p></div>`
+      : `<div class="cream"><div class="t"><span>총콜레스테롤</span><span>${health.total_chol} mg/dL</span></div></div>`}
+    <div class="sec"><div class="sh"><b>생활습관 설문</b><a href="survey.html">수정</a></div>${surveyRows}</div>`;
 }
 
 document.getElementById('submit-btn').addEventListener('click', async () => {
@@ -84,7 +124,7 @@ document.getElementById('submit-btn').addEventListener('click', async () => {
     errEl.textContent = friendlyError(e);
     errEl.style.display = 'block';
     btn.disabled = false;
-    btn.textContent = '위험 신호 분석하기';
+    btn.textContent = '분석하기';
   }
 });
 </script>

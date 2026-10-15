@@ -6,82 +6,66 @@
 <title>PAEON — 캘린더</title>
 <link rel="stylesheet" href="assets/style.css">
 <style>
-  /* 캘린더 — 대시보드/챌린지 화면과 동일한 모양(.cal-card/.day 구조)에 사진 레이어만 추가 */
-  .cal-card{background:#fff; border:1px solid var(--sage-light); border-radius:20px; padding:16px 18px; min-width:420px}
-  .cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
-  .cal-head .ym{font-family:'Nanum Gothic','Malgun Gothic','Apple SD Gothic Neo',sans-serif; font-size:16px; font-weight:700; cursor:pointer; padding:4px 8px; border-radius:10px}
-  .cal-head .ym:hover{background:var(--cream)}
-  .cal-head .nav{display:flex; gap:6px}
-  .cal-head .nav button{width:30px; height:30px; padding:0; display:flex; align-items:center; justify-content:center; line-height:1; border-radius:999px; border:1px solid var(--sage-light); background:#fff; color:var(--muted); font-size:15px}
-  .jump-pop{display:flex; gap:6px; align-items:center; background:var(--cream); border-radius:14px; padding:8px 10px; margin-bottom:10px}
-  .jump-pop input,.jump-pop select{font:inherit; font-size:13px; padding:6px 8px; border-radius:8px; border:1.5px solid var(--sage-light)}
+  .top{display:flex; align-items:center; justify-content:space-between}
+  .top b{font-size:20px; font-weight:800}
+  .top a{height:36px; padding:0 14px; border-radius:18px; border:1px solid var(--sage); font-size:13px; font-weight:700; display:flex; align-items:center; text-decoration:none}
+  .cal-head{display:flex; align-items:center; justify-content:space-between}
+  .cal-head .ym{font-size:18px; font-weight:800; cursor:pointer; padding:4px 8px; border-radius:10px}
+  .cal-head button{width:44px; height:44px; border:0; background:none; color:var(--ink); padding:0; display:flex; align-items:center; justify-content:center}
+  .jump-pop{display:flex; gap:6px; align-items:center; background:var(--cream); border-radius:14px; padding:8px 10px}
+  .jump-pop input,.jump-pop select{font:inherit; font-size:13px; padding:6px 8px; border-radius:8px; border:1.5px solid var(--line)}
   .jump-pop input{width:70px}
-
-  .dow-row{display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:11px; color:var(--muted); font-weight:700; margin-bottom:4px}
-  .dow-row span:first-child{color:var(--danger)}
-  .day-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px 4px}
-  .day{position:relative; cursor:pointer}
-  .day::before{content:''; display:block; padding-top:100%}
+  .dow-row{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); text-align:center; font-size:13px; color:var(--muted); padding-bottom:6px}
+  .day-grid{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px}
+  .day{position:relative; aspect-ratio:1/1; border-radius:10px; background:var(--cream); cursor:pointer; overflow:hidden; box-sizing:border-box}
   .day.blank{visibility:hidden; cursor:default}
-  .day-inner{position:absolute; inset:0; display:flex; align-items:flex-start; justify-content:center; padding-top:6px; font-size:12.5px; color:var(--ink); overflow:hidden; border-radius:8px}
-  .day .num{position:relative; z-index:2}
-  .day .photo{position:absolute; top:1px; bottom:9px; left:50%; transform:translateX(-50%); aspect-ratio:1/1; background-size:cover; background-position:center; z-index:0; border-radius:6px; border:2px solid var(--sage-deep); box-sizing:border-box}
-  .day.has-photo .num{color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.55)}
-  .day.today .num::before{content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:26px; height:26px; border-radius:999px; background:var(--petal2); z-index:-1}
-  .day.today .num{color:#fff; font-weight:900}
-  .day.picked:not(.today) .num::before{content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:26px; height:26px; border-radius:999px; border:2px solid var(--sage-deep); z-index:-1}
-  .day.sun .num{color:var(--danger)}
-  .day .dots{position:absolute; bottom:4px; left:50%; transform:translateX(-50%); display:flex; gap:3px; z-index:2}
-  .day .dot{width:4px; height:4px; border-radius:999px; background:var(--peach)}
-  .day .dot-bp{width:4px; height:4px; border-radius:999px; background:var(--sage-deep)}
-  .cal-legend{display:flex; gap:14px; margin-top:10px; font-size:11px; color:var(--muted); flex-wrap:wrap}
-  .cal-legend span{display:inline-flex; align-items:center; gap:5px}
-  .dot-sample{width:5px; height:5px; border-radius:999px; background:var(--peach); display:inline-block}
-  .dot-bp-sample{width:5px; height:5px; border-radius:999px; background:var(--sage-deep); display:inline-block}
-  .ring-sample{width:12px; height:12px; border-radius:999px; background:var(--petal2); display:inline-block}
+  .day .num{position:absolute; top:4px; left:6px; font-size:13px; line-height:1; color:#4A5C6D; z-index:1}
+  .day.future .num{color:#8A98A5}
+  .day.has-photo{background:#AACDDC}
+  .day.has-photo .num{color:var(--ink)}
+  .day .photo{position:absolute; inset:0; background-size:cover; background-position:center}
+  .day.picked{border:2px solid var(--ink)}
+  .day.picked .num,.day.today .num{font-weight:800}
+  .day .memo{position:absolute; right:5px; bottom:5px; width:6px; height:6px; border-radius:3px; background:var(--accent); z-index:1}
+  .cal-legend{display:flex; gap:16px; padding-top:12px; font-size:12px; color:var(--muted)}
+  .cal-legend span{display:inline-flex; align-items:center; gap:6px}
+  .cal-legend .a{width:12px; height:12px; border-radius:4px; background:#AACDDC}
+  .cal-legend .b{width:6px; height:6px; border-radius:3px; background:var(--accent)}
 
-  /* 입력칸 — style.css의 .field는 input/select만 스타일링해서 textarea엔 직접 지정 */
-  .field textarea{font:inherit; font-size:13.5px; padding:10px 12px; border-radius:12px; border:1.5px solid var(--sage-light); background:#fff; color:var(--ink); width:100%; resize:vertical}
-
-  .detail2{background:var(--cream); border:1px solid var(--sage-light); border-radius:20px; padding:18px 20px; display:flex; flex-direction:column; gap:14px}
-  .diary-box{display:flex; flex-direction:column; gap:8px}
-  .diary-box textarea{min-height:64px}
-  .diary-box .diary-actions{display:flex; justify-content:flex-end}
-
-  .cat-tabs{display:flex; gap:8px}
-  .cat-tab{flex:1; padding:10px 6px; border-radius:12px; border:1.5px solid var(--sage-light); background:#fff; font-size:12.5px; font-weight:700; color:var(--muted)}
-  .cat-tab.active{background:var(--sage-deep); color:#fff; border-color:var(--sage-deep)}
-
-  .cat-body{background:#fff; border:1px solid var(--sage-light); border-radius:16px; padding:14px 16px; display:flex; flex-direction:column; gap:10px}
-
-  .thumb-big{display:flex; align-items:center; justify-content:center; width:140px; height:140px; margin:0 auto; border-radius:16px; border:1.5px dashed var(--sage); background:var(--cream); background-size:cover; background-position:center; cursor:pointer}
-
-  .small-btn{font-size:11px; padding:4px 10px; border-radius:999px; border:1.5px solid var(--sage); background:#fff; color:var(--ink); font-weight:700}
+  .sel{display:flex; flex-direction:column; gap:12px; border-top:1px solid var(--line); padding-top:18px}
+  .sel h2{font-size:18px}
+  .diary{background:var(--cream); border-radius:20px; padding:16px 18px; display:flex; flex-direction:column; gap:6px}
+  .diary .hd{display:flex; justify-content:space-between; align-items:center}
+  .diary .hd b{font-size:14px}
+  .diary .hd button{min-height:32px; border:0; background:none; font-size:13px; font-weight:700; color:var(--accent)}
+  .diary textarea{font:inherit; font-size:14px; line-height:1.6; color:#4A5C6D; border:0; background:#fff; border-radius:12px; padding:10px 12px; width:100%; min-height:72px; resize:vertical}
+  .photos{display:flex; gap:10px; align-items:flex-start}
+  .photos .ph{width:84px; height:84px; border-radius:16px; background:var(--cream-2) center/cover; flex:none}
+  .photos .add{width:84px; height:84px; box-sizing:border-box; border-radius:16px; border:1.5px dashed var(--sage); color:var(--muted); display:flex; align-items:center; justify-content:center; cursor:pointer}
+  .photos .rm{align-self:center; height:32px; padding:0 12px; border-radius:16px; border:1px solid var(--risk); background:#fff; color:var(--risk); font-size:12px; font-weight:700}
+  .todos h3{font-size:14px; padding:4px 0}
+  .trow{display:flex; align-items:center; gap:12px; min-height:48px}
+  .trow .chk{width:26px; height:26px; border-radius:13px; box-sizing:border-box; border:2px solid var(--accent); flex:none; display:flex; align-items:center; justify-content:center; color:#fff; cursor:pointer; padding:0; background:none}
+  .trow.done .chk{background:var(--accent)}
+  .trow .tx{font-size:15px; flex:1; min-width:0}
+  .trow.done .tx{color:var(--muted); text-decoration:line-through}
+  .tag{height:22px; padding:0 8px; border-radius:11px; font-size:12px; font-weight:700; display:inline-flex; align-items:center; flex:none}
+  .tag.chal{background:var(--notice); color:#234257}
+  .tag.mine{background:var(--cream-2); color:#4A5C6D}
+  .small-btn{height:32px; padding:0 10px; font-size:12px; border-radius:16px; border:1px solid var(--sage); background:#fff; color:var(--ink); font-weight:700}
   .small-btn.danger{border-color:var(--risk); color:var(--risk)}
-
-  .list-row{display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--cream); border-radius:12px; padding:8px 12px}
-  .list-row .lr-main{display:flex; flex-direction:column; gap:2px; min-width:0}
-  .list-row .lr-main b{font-size:13px}
-  .list-row .lr-actions{display:flex; gap:6px; flex:none}
-
-  .todo-row{display:flex; align-items:center; gap:8px; background:var(--cream); border-radius:12px; padding:8px 12px; font-size:13px}
-  .todo-row .chk{width:16px; height:16px; border-radius:999px; border:2px solid var(--sage); flex:none; cursor:pointer}
-  .todo-row.done .chk{background:var(--petal2); border-color:var(--petal2)}
-  .todo-row.done .tx{color:var(--muted); text-decoration:line-through}
-  .todo-row .tx{flex:1}
-  .todo-row .lr-actions{display:flex; gap:6px; flex:none}
-  .todo-edit-row{display:flex; gap:8px; align-items:center}
-  .todo-edit-row input{flex:1}
-
-  .allday-row{display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:var(--muted)}
-  .add-row{display:flex; gap:8px}
-  .add-row input{flex:1; font:inherit; font-size:13.5px; padding:10px 12px; border-radius:12px; border:1.5px solid var(--sage-light); background:#fff; color:var(--ink)}
-  .add-row button{flex:none}
-  .ideas{display:flex; flex-wrap:wrap; gap:6px}
-  .idea-chip{border:1.5px dashed var(--sage); background:#fff; color:var(--ink); border-radius:999px; padding:5px 11px; font-size:11.5px; font-weight:600}
-  .chal-log{background:#fff; border:1px solid var(--sage-light); border-radius:16px; padding:12px 16px; display:flex; flex-direction:column; gap:6px}
-  .chal-log .row{display:flex; justify-content:space-between; gap:8px; font-size:12.5px}
-  .chal-log .row .st{color:var(--muted); font-weight:700}
+  .trow .acts{display:flex; gap:6px; flex:none}
+  .edit-row{display:flex; gap:8px; align-items:center}
+  .edit-row input{flex:1; min-width:0; height:44px; border:0; border-radius:12px; background:var(--cream); padding:0 14px; font:inherit; font-size:15px}
+  .recs{display:flex; flex-direction:column; gap:10px; background:var(--cream); border-radius:20px; padding:16px 16px 18px; margin-top:10px}
+  .recs b{font-size:14px}
+  .recs span.s{font-size:13px; color:#4A5C6D}
+  .recs .chips{display:flex; gap:8px; flex-wrap:wrap}
+  .idea-chip{height:40px; padding:0 14px; border-radius:20px; border:1px solid var(--sage); background:#fff; font-size:14px; display:inline-flex; align-items:center; gap:6px; color:var(--ink)}
+  .add-row{display:flex; gap:8px; margin-top:10px}
+  .add-row input{flex:1; min-width:0; height:52px; border:0; border-radius:14px; background:var(--cream); padding:0 16px; font:inherit; font-size:15px; color:var(--ink)}
+  .add-row button{width:76px; height:52px; border:0; border-radius:14px; background:var(--accent-light); color:#1E3246; font-weight:700; font-size:15px}
+  .note{font-size:12.5px; color:var(--muted)}
 </style>
 </head>
 <body>
@@ -92,8 +76,7 @@
   <div class="frame">
     <div class="frame-body">
       <div class="screen">
-        <a href="dashboard.html" class="hint" style="text-decoration:none">‹ 홈으로</a>
-
+        <div class="top"><b>캘린더</b><a href="trend.html">내 기록으로</a></div>
         <div id="cal-wrap"></div>
         <div id="detail-wrap"></div>
       </div>
@@ -166,17 +149,17 @@ function bpOnDate(dt) { return progress.bpLog.some(l => l.date === localIso(dt))
 
 const today = new Date(); today.setHours(0, 0, 0, 0);
 
-const STATUS_LABEL = { completed: '완료', failed: '오늘은 못 했어요', skipped: '해당 없음' };
+const CHECK = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5l2.5 2.5L11 4.5"/></svg>';
+// 그날의 챌린지 기록은 읽기만 한다 (기록은 챌린지 화면에서)
 function chalLogHtml(key) {
   if (!cycle || !cycleStartedOn) return '';
   const idx = Math.round((new Date(key + 'T00:00:00') - cycleStartedOn) / 86400000);
   const day = progress.logs && progress.logs[idx];
   if (idx < 0 || idx >= 28) return '';
-  const rows = cycle.missions.map(m => {
-    const r = day && day[m.id];
-    return `<div class="row"><span>${escapeHtml(m.t)}</span><span class="st">${r ? STATUS_LABEL[r.status] : '기록 없음'}</span></div>`;
+  return cycle.missions.map(m => {
+    const done = day && day[m.id] && day[m.id].status === 'completed';
+    return `<div class="trow${done ? ' done' : ''}"><span class="chk" role="img" aria-label="${done ? '완료' : '미완료'}">${done ? CHECK : ''}</span><span class="tx">${escapeHtml(m.t)}</span><a class="tag chal" href="challenge-progress.html" style="text-decoration:none">챌린지</a></div>`;
   }).join('');
-  return `<div class="chal-log"><b style="font-size:13px">이 날의 챌린지 기록</b>${rows}<a href="challenge-progress.html" class="hint" style="color:var(--sage-deep); font-weight:700">챌린지 기록하러 가기</a></div>`;
 }
 
 function blankEntry() { return { photo: null, diary: '', todos: [] }; }
@@ -190,7 +173,6 @@ const initialDate = (qDate && /^\d{4}-\d{2}-\d{2}$/.test(qDate)) ? new Date(qDat
 let viewYear = initialDate.getFullYear(), viewMonth = initialDate.getMonth();
 let selectedKey = localIso(initialDate);
 let jumpOpen = false;
-let activeCat = 'photo';
 let editingTodoIndex = null;
 
 async function addTodo(text) {
@@ -208,7 +190,7 @@ async function loadPhoto(key) {
 
 function selectDay(key) {
   loadPhoto(key);
-  selectedKey = key; activeCat = 'photo';
+  selectedKey = key;
   editingTodoIndex = null;
   render();
 }
@@ -224,7 +206,7 @@ function jumpHtml() {
 }
 
 function calendarCellsHtml() {
-  const firstDow = new Date(viewYear, viewMonth, 1).getDay();
+  const firstDow = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;   // 월요일 시작
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   let cells = '';
   for (let i = 0; i < firstDow; i++) cells += `<div class="day blank"></div>`;
@@ -235,69 +217,54 @@ function calendarCellsHtml() {
     const cls = ['day'];
     if (key === localIso(today)) cls.push('today');
     if (key === selectedKey) cls.push('picked');
-    if (dt.getDay() === 0) cls.push('sun');
-    if (entry && (entry.photo || entry.hasPhoto)) cls.push('has-photo');
-    const photoLayer = entry && entry.photo ? `<span class="photo" style="background-image:url('${entry.photo}')"></span>` : (entry && entry.hasPhoto ? '<span class="photo" style="display:flex;align-items:center;justify-content:center;background:var(--sage-light);font-size:14px">📷</span>' : '');
-    const hasChal = chalOnDate(dt);
-    const hasBp = bpOnDate(dt);
-    const dots = (hasChal || hasBp) ? `<span class="dots">${hasChal ? '<span class="dot"></span>' : ''}${hasBp ? '<span class="dot-bp"></span>' : ''}</span>` : '';
-    cells += `<div class="${cls.join(' ')}" data-key="${key}"><div class="day-inner">${photoLayer}<span class="num">${d}</span>${dots}</div></div>`;
+    if (dt > today) cls.push('future');
+    const hasPhoto = entry && (entry.photo || entry.hasPhoto);
+    if (hasPhoto) cls.push('has-photo');
+    const photoLayer = entry && entry.photo ? `<span class="photo" style="background-image:url('${entry.photo}')"></span>` : '';
+    const memo = entry && entry.diary ? '<i class="memo"></i>' : '';
+    cells += `<div class="${cls.join(' ')}" data-key="${key}">${photoLayer}<span class="num">${d}</span>${memo}</div>`;
   }
   return cells;
 }
 
 function photoPanelHtml(entry) {
-  return `<div class="cat-body" style="align-items:center">
-    <label class="thumb-big" id="thumb" style="${entry.photo ? `background-image:url('${entry.photo}')` : ''}">${entry.photo ? '' : '<span class="hint">눌러서 사진 선택</span>'}<input type="file" accept="image/*" id="photo-input" style="display:none"></label>
-    ${entry.photo ? `<button type="button" class="small-btn danger" id="photo-remove">사진 삭제</button>` : ''}
-  </div>`;
+  const add = `<label class="add" aria-label="사진 추가"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><input type="file" accept="image/*" id="photo-input" style="display:none"></label>`;
+  if (entry.photo) return `<div class="photos"><span class="ph" style="background-image:url('${entry.photo}')"></span><button type="button" class="rm" id="photo-remove">사진 삭제</button></div>`;
+  return `<div class="photos">${add}</div>`;
 }
 
 // 혈압에 도움이 되는 걸로 연구된 활동만 (가이드 §4 미션 ACT-1~3). 다른 건 직접 입력한다.
 const HEALTH_IDEAS = ['빠르게 걷기 30분', '벽 스쿼트 2분 × 4번', '평소보다 2,000보 더 걷기'];
 
 function todoListHtml(entry) {
-  const rows = entry.todos.length
-    ? entry.todos.map((t, i) => editingTodoIndex === i
-        ? `<div class="todo-edit-row"><input id="todo-edit-input" value="${escapeHtml(t.text)}"><button type="button" class="small-btn" data-act="save-todo" data-i="${i}">완료</button></div>`
-        : `<div class="todo-row${t.done ? ' done' : ''}">
-            <span class="chk" data-act="toggle-todo" data-i="${i}"></span><span class="tx">${escapeHtml(t.text)}</span>
-            <div class="lr-actions"><button type="button" class="small-btn" data-act="edit-todo" data-i="${i}">수정</button><button type="button" class="small-btn danger" data-act="del-todo" data-i="${i}">삭제</button></div>
-          </div>`).join('')
-    : `<p class="hint">오늘 할 건강 활동을 추가해 보세요</p>`;
-  const chips = HEALTH_IDEAS.map(t => `<button type="button" class="idea-chip" data-idea="${escapeHtml(t)}">+ ${escapeHtml(t)}</button>`).join('');
-  return `<div class="cat-body">
-    ${rows}
-    <div class="ideas">${chips}</div>
-    <div class="add-row">
-      <input id="todo-input" placeholder="예: 스쿼트 20개 3세트">
-      <button type="button" id="todo-add" class="ghost" style="width:auto; padding:10px 18px">추가</button>
-    </div>
-    <p class="hint">구체적인 횟수나 시간을 적으면 해내기 쉬워요</p>
+  const rows = entry.todos.map((t, i) => editingTodoIndex === i
+    ? `<div class="edit-row"><input id="todo-edit-input" value="${escapeHtml(t.text)}"><button type="button" class="small-btn" data-act="save-todo" data-i="${i}">완료</button></div>`
+    : `<div class="trow${t.done ? ' done' : ''}">
+        <button type="button" class="chk" aria-label="${t.done ? '완료 취소' : '완료'}" data-act="toggle-todo" data-i="${i}">${t.done ? CHECK : ''}</button><span class="tx">${escapeHtml(t.text)}</span><span class="tag mine">내가 추가</span>
+        <div class="acts"><button type="button" class="small-btn" data-act="edit-todo" data-i="${i}">수정</button><button type="button" class="small-btn danger" data-act="del-todo" data-i="${i}">삭제</button></div>
+      </div>`).join('');
+  const chips = HEALTH_IDEAS.map(t => `<button type="button" class="idea-chip" data-idea="${escapeHtml(t)}"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#5C86AC" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 2v10M2 7h10"/></svg>${escapeHtml(t)}</button>`).join('');
+  return `<div class="todos">
+    <h3>오늘 할 일</h3>
+    ${chalLogHtml(selectedKey)}${rows}
+    <div class="recs"><div><b>건강 활동을 추천해요</b><br><span class="s">눌러서 추가해요</span></div><div class="chips">${chips}</div></div>
+    <div class="add-row"><label for="todo-input" style="position:absolute; left:-9999px">할 일 직접 추가</label><input id="todo-input" placeholder="내 할 일 직접 적기"><button type="button" id="todo-add">추가</button></div>
   </div>`;
 }
 
 function detailHtml() {
   const entry = entryFor(selectedKey);
   const d = new Date(selectedKey + 'T00:00:00');
-  const label = `${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`;
-  const catBody = activeCat === 'photo' ? photoPanelHtml(entry) : todoListHtml(entry);
-  return `<div class="detail2">
-    <h4>선택한 날 — ${label}</h4>
-
-    ${chalLogHtml(selectedKey)}
-
-    <div class="diary-box">
-      <div class="field"><label>일기</label><textarea id="diary-text" placeholder="오늘 챌린지는 어땠나요?">${escapeHtml(entry.diary)}</textarea></div>
-      <div class="diary-actions"><button type="button" id="diary-save" class="small-btn" style="padding:8px 18px; font-size:12.5px">등록</button></div>
+  const label = `${d.getMonth() + 1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일`;
+  return `<div class="sel">
+    <h2>${label}</h2>
+    <div class="diary">
+      <div class="hd"><b>일기</b><button type="button" id="diary-save">${entry.diary ? "수정" : "등록"}</button></div>
+      <textarea id="diary-text" aria-label="일기" placeholder="오늘 챌린지는 어땠나요?">${escapeHtml(entry.diary)}</textarea>
     </div>
-
-    <div class="cat-tabs">
-      <button type="button" class="cat-tab${activeCat === 'photo' ? ' active' : ''}" data-cat="photo">📷 사진 인증</button>
-        <button type="button" class="cat-tab${activeCat === 'todo' ? ' active' : ''}" data-cat="todo">✅ 건강 할 일</button>
-    </div>
-    ${catBody}
-    ${serverNote ? `<p class="hint" style="color:var(--warn)">${serverNote}</p>` : ''}
+    ${photoPanelHtml(entry)}
+    ${todoListHtml(entry)}
+    ${serverNote ? `<p class="note" style="color:var(--warn)">${serverNote}</p>` : ''}
   </div>`;
 }
 
@@ -313,83 +280,76 @@ function wire() {
   });
   document.querySelectorAll('.day[data-key]').forEach(el => el.addEventListener('click', () => selectDay(el.dataset.key)));
 
-  document.querySelectorAll('.cat-tab[data-cat]').forEach(btn => btn.addEventListener('click', () => {
-    activeCat = btn.dataset.cat;
-    editingTodoIndex = null;
-    render();
-  }));
-
   document.getElementById('diary-save').addEventListener('click', async () => {
     const text = document.getElementById('diary-text').value;
     ensureEntry(selectedKey).diary = text;
     save();
     try { await srv('PUT', `/calendar/entries/${selectedKey}`, { diary: text }); } catch (e) { /* 브라우저에만 저장됨 */ }
     const btn = document.getElementById('diary-save');
-    if (btn) { btn.textContent = serverOn ? '등록됨' : '이 브라우저에 등록됨'; setTimeout(() => { if (document.getElementById('diary-save')) document.getElementById('diary-save').textContent = '등록'; }, 1500); }
+    if (btn) { btn.textContent = serverOn ? '등록됨' : '이 브라우저에 등록됨'; setTimeout(() => { if (document.getElementById('diary-save')) { document.getElementById('diary-save').textContent = '수정'; render(); } }, 1200); }
   });
 
-  if (activeCat === 'photo') {
-    const photoInput = document.getElementById('photo-input');
-    photoInput.addEventListener('change', () => {
-      const file = photoInput.files[0];
-      if (!file) return;
-      shrinkPhoto(file).then(async (data) => {
-        ensureEntry(selectedKey).photo = data; save();
-        try { await srv('PUT', `/calendar/entries/${selectedKey}`, { photo: data }); } catch (e) { /* 브라우저에만 저장됨 */ }
-        render();
-      }).catch(() => {});
-    });
-    const rm = document.getElementById('photo-remove');
-    if (rm) rm.addEventListener('click', async () => {
-      ensureEntry(selectedKey).photo = null; save();
-      try { await srv('PUT', `/calendar/entries/${selectedKey}`, { photo: null }); } catch (e) {}
+  const photoInput = document.getElementById('photo-input');
+  if (photoInput) photoInput.addEventListener('change', () => {
+    const file = photoInput.files[0];
+    if (!file) return;
+    shrinkPhoto(file).then(async (data) => {
+      ensureEntry(selectedKey).photo = data; save();
+      try { await srv('PUT', `/calendar/entries/${selectedKey}`, { photo: data }); } catch (e) { /* 브라우저에만 저장됨 */ }
       render();
-    });
-  }
+    }).catch(() => {});
+  });
+  const rm = document.getElementById('photo-remove');
+  if (rm) rm.addEventListener('click', async () => {
+    ensureEntry(selectedKey).photo = null; save();
+    try { await srv('PUT', `/calendar/entries/${selectedKey}`, { photo: null }); } catch (e) {}
+    render();
+  });
 
-  if (activeCat === 'todo') {
-    document.getElementById('todo-add').addEventListener('click', () => {
-      const input = document.getElementById('todo-input');
-      if (!input.value.trim()) return;
-      addTodo(input.value.trim());
-    });
-    document.querySelectorAll('[data-idea]').forEach(btn => btn.addEventListener('click', () => addTodo(btn.dataset.idea)));
-    document.querySelectorAll('[data-act="toggle-todo"]').forEach(el => el.addEventListener('click', () => {
-      const i = Number(el.dataset.i);
-      const t = entryFor(selectedKey).todos[i];
-      t.done = !t.done; save(); render();
-      if (t.id) srv('PATCH', `/calendar/todos/${t.id}`, { done: t.done }).catch(() => {});
-    }));
-    document.querySelectorAll('[data-act="edit-todo"]').forEach(btn => btn.addEventListener('click', () => {
-      editingTodoIndex = Number(btn.dataset.i); render();
-    }));
-    document.querySelectorAll('[data-act="del-todo"]').forEach(btn => btn.addEventListener('click', () => {
-      const [t] = entryFor(selectedKey).todos.splice(Number(btn.dataset.i), 1);
-      save(); render();
-      if (t && t.id) srv('DELETE', `/calendar/todos/${t.id}`).catch(() => {});
-    }));
-    const saveTodoBtn = document.querySelector('[data-act="save-todo"]');
-    if (saveTodoBtn) saveTodoBtn.addEventListener('click', () => {
-      const i = Number(saveTodoBtn.dataset.i);
-      const val = document.getElementById('todo-edit-input').value.trim();
-      const t = entryFor(selectedKey).todos[i];
-      if (val) { t.text = val; if (t.id) srv('PATCH', `/calendar/todos/${t.id}`, { text: val }).catch(() => {}); }
-      editingTodoIndex = null;
-      save(); render();
-    });
-  }
+  document.getElementById('todo-add').addEventListener('click', () => {
+    const input = document.getElementById('todo-input');
+    if (!input.value.trim()) return;
+    addTodo(input.value.trim());
+  });
+  document.querySelectorAll('[data-idea]').forEach(btn => btn.addEventListener('click', () => addTodo(btn.dataset.idea)));
+  document.querySelectorAll('[data-act="toggle-todo"]').forEach(el => el.addEventListener('click', () => {
+    const i = Number(el.dataset.i);
+    const t = entryFor(selectedKey).todos[i];
+    t.done = !t.done; save(); render();
+    if (t.id) srv('PATCH', `/calendar/todos/${t.id}`, { done: t.done }).catch(() => {});
+  }));
+  document.querySelectorAll('[data-act="edit-todo"]').forEach(btn => btn.addEventListener('click', () => {
+    editingTodoIndex = Number(btn.dataset.i); render();
+  }));
+  document.querySelectorAll('[data-act="del-todo"]').forEach(btn => btn.addEventListener('click', () => {
+    const [t] = entryFor(selectedKey).todos.splice(Number(btn.dataset.i), 1);
+    save(); render();
+    if (t && t.id) srv('DELETE', `/calendar/todos/${t.id}`).catch(() => {});
+  }));
+  const saveTodoBtn = document.querySelector('[data-act="save-todo"]');
+  if (saveTodoBtn) saveTodoBtn.addEventListener('click', () => {
+    const i = Number(saveTodoBtn.dataset.i);
+    const val = document.getElementById('todo-edit-input').value.trim();
+    const t = entryFor(selectedKey).todos[i];
+    if (val) { t.text = val; if (t.id) srv('PATCH', `/calendar/todos/${t.id}`, { text: val }).catch(() => {}); }
+    editingTodoIndex = null;
+    save(); render();
+  });
 }
 
 function render() {
-  document.getElementById('cal-wrap').innerHTML = `<div class="cal-card">
+  document.getElementById('cal-wrap').innerHTML = `<div style="display:flex; flex-direction:column; gap:16px">
     <div class="cal-head">
-      <div class="ym" id="ym-label">${viewYear}년 ${viewMonth + 1}월 ▾</div>
-      <div class="nav"><button type="button" id="cal-prev">‹</button><button type="button" id="cal-next">›</button></div>
+      <button type="button" id="cal-prev" aria-label="이전 달">${ICON.back}</button>
+      <span class="ym" id="ym-label">${viewYear}년 ${viewMonth + 1}월</span>
+      <button type="button" id="cal-next" aria-label="다음 달">${ICON.chevron}</button>
     </div>
     ${jumpHtml()}
-    <div class="dow-row"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
-    <div class="day-grid">${calendarCellsHtml()}</div>
-    <div class="cal-legend"><span><i class="ring-sample"></i>오늘</span><span><i class="dot-sample"></i>챌린지 완료</span><span><i class="dot-bp-sample"></i>혈압 측정</span></div>
+    <div>
+      <div class="dow-row"><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span></div>
+      <div class="day-grid">${calendarCellsHtml()}</div>
+      <div class="cal-legend"><span><i class="a"></i>사진 있는 날</span><span><i class="b"></i>글만 있는 날</span></div>
+    </div>
   </div>`;
   document.getElementById('detail-wrap').innerHTML = detailHtml();
   wire();

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 내 친구 꾸미기</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .pv{height:244px; border-radius:28px; background:var(--cream); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px}
+  .pv i{width:110px; height:7px; border-radius:4px; background:var(--line)}
+  .tabs{display:flex; border-bottom:1px solid var(--line)}
+  .tabs button{flex:1; height:44px; border:0; border-bottom:3px solid transparent; margin-bottom:-1px; background:none; font-size:15px; color:var(--muted)}
+  .tabs button.on{color:var(--ink); font-weight:800; border-bottom-color:var(--ink)}
+  .opts{min-height:218px}
+  .grid4{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px 8px}
+  .it{display:flex; flex-direction:column; align-items:center; gap:6px; padding:8px 0; border-radius:16px; background:var(--cream); border:2px solid transparent; color:var(--ink)}
+  .it.on{background:var(--notice,#E4F0F5); border-color:var(--accent)}
+  .it span.l{font-size:12px; font-weight:700}
+  .tg{height:18px; padding:0 8px; border-radius:9px; font-size:11px; font-weight:800; display:inline-flex; align-items:center; background:var(--ink); color:#fff}
+  .tg.base{background:var(--line); color:var(--muted)}
+  .tg.own{background:var(--accent-light,#CFE3EE); color:#2F5F8A}
+  .sw{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px 0; justify-items:center; padding:8px 0 4px}
+  .sw div{display:flex; flex-direction:column; align-items:center; gap:6px}
+  .sw button{width:52px; height:52px; border-radius:26px; padding:0; border:1px solid var(--sage)}
+  .sw button.on{box-shadow:0 0 0 3px #fff, 0 0 0 5px var(--ink)}
+  .sw span{font-size:12px; color:var(--muted)}
+  .sw .tg{background:none; color:var(--ink); padding:0; height:auto}
+  .sw .tg.base,.sw .tg.own{color:var(--muted)}
+  .bot{border-top:1px solid var(--line); padding-top:12px; display:flex; flex-direction:column; gap:10px}
+  .bot .r{display:flex; align-items:center; justify-content:space-between; font-size:14px}
+  .bot .r b{display:flex; align-items:center; gap:6px; font-weight:800}
+  .bot .r b img{width:16px}
+  .bot .r span{font-size:13px; color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="header-slot"></div>
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" style="gap:14px">
+        <div class="page-bar" style="justify-content:space-between"><div style="display:flex; align-items:center"><a class="back" href="pie.html" aria-label="뒤로" id="back"></a><span class="ttl">내 친구 꾸미기</span></div><button type="button" class="pill-btn" id="rnd">랜덤</button></div>
+        <div class="pv"><div id="pv" role="img" aria-label="내 캐릭터 미리보기"></div><i></i></div>
+        <div class="tabs" id="tabs"></div>
+        <div class="opts" id="opts"><p class="hint">불러오는 중...</p></div>
+        <div class="bot">
+          <div class="r"><b><img src="assets/img/pie-coin.png" alt="">내 파이 <span id="bal" style="font-size:14px; color:inherit">0</span>개</b><span id="note"></span></div>
+          <p class="err" id="err" hidden></p>
+          <button type="button" class="cta" id="save" disabled>저장하기</button>
+          <p class="hint" style="text-align:center">기본 아이템은 무료예요.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+document.getElementById('back').innerHTML = ICON.back;
+const $ = (x) => document.getElementById(x);
+const TAB = { body: '몸체', color: '색', expr: '표정', face: '얼굴', head: '머리' };
+const st = { tab: 'body', slots: null, balance: 0, view: null };
+const slotItems = (s) => st.slots.find(x => x.slot === s).items;
+const find = (s, k) => slotItems(s).find(i => i.key === k);
+const cost = () => Object.keys(TAB).reduce((n, s) => { const i = find(s, st.view[s]); return n + (i && !i.owned ? i.price : 0); }, 0);
+const tag = (i) => i.price === 0 ? ['base', '기본'] : i.owned ? ['own', '보유'] : ['', i.price + '파이'];
+
+function render() {
+  $('pv').innerHTML = characterSvg(st.view, 176);
+  $('tabs').innerHTML = Object.entries(TAB).map(([k, l]) => `<button type="button" class="${k === st.tab ? 'on' : ''}" data-t="${k}">${l}</button>`).join('');
+  const items = slotItems(st.tab);
+  $('opts').innerHTML = st.tab === 'color'
+    ? '<div class="sw">' + items.map(i => `<div><button type="button" class="${st.view.color === i.key ? 'on' : ''}" data-k="${i.key}" aria-label="${i.label}" style="background:${i.key}"></button><span>${i.label}</span><span class="tg ${tag(i)[0]}">${tag(i)[1]}</span></div>`).join('') + '</div>'
+    : '<div class="grid4">' + items.map(i => `<button type="button" class="it${st.view[st.tab] === i.key ? ' on' : ''}" data-k="${i.key}" aria-label="${i.label}">${characterSvg({ ...st.view, [st.tab]: i.key }, 64)}<span class="l">${i.label}</span><span class="tg ${tag(i)[0]}">${tag(i)[1]}</span></button>`).join('') + '</div>';
+  const c = cost(), short = c > st.balance;
+  $('bal').textContent = st.balance;
+  $('note').textContent = c === 0 ? '고른 아이템을 모두 가지고 있어요' : '고른 유료 아이템 ' + c + '파이';
+  $('save').textContent = c === 0 ? '저장하기' : short ? '파이가 ' + (c - st.balance) + '개 모자라요' : c + '파이로 사고 저장하기';
+  $('save').disabled = short;
+}
+$('tabs').addEventListener('click', (e) => { const t = e.target.closest('[data-t]'); if (t) { st.tab = t.dataset.t; render(); } });
+$('opts').addEventListener('click', (e) => { const t = e.target.closest('[data-k]'); if (t) { st.view[st.tab] = t.dataset.k; $('err').hidden = true; render(); } });
+$('rnd').addEventListener('click', () => {
+  Object.keys(TAB).forEach(s => { const l = slotItems(s); st.view[s] = l[Math.floor(Math.random() * l.length)].key; });
+  render();
+});
+$('save').addEventListener('click', async () => {
+  $('save').disabled = true; $('err').hidden = true;
+  try {
+    for (const s of Object.keys(TAB)) {
+      const i = find(s, st.view[s]);
+      if (!i.owned) { const d = (await apiCall('POST', '/characters/items/buy', { item_key: s + ':' + i.key }, '구매하지 못했어요')).data; st.slots = d.slots; st.balance = d.balance; }
+    }
+    await apiCall('PUT', '/characters/me', st.view, '저장하지 못했어요');
+    await confirmDialog('저장했어요', '내 캐릭터를 바꿨어요.', '확인');
+    render();
+  } catch (e) {
+    $('err').textContent = e.code === 'PIE_NOT_ENOUGH' ? '파이가 모자라요.' : friendlyError(e);
+    $('err').hidden = false; render();
+  }
+});
+(async () => {
+  try {
+    const [it, me] = await Promise.all([apiCall('GET', '/characters/items', undefined, '아이템을 불러오지 못했어요'), apiCall('GET', '/characters/me', undefined, '캐릭터를 불러오지 못했어요')]);
+    st.slots = it.data.slots; st.balance = it.data.balance; st.view = { ...me.data }; render();
+  } catch (e) { $('opts').innerHTML = '<div class="empty">' + friendlyError(e) + '</div>'; }
+})();
+</script>
+</body>
+</html>

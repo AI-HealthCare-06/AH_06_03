@@ -26,66 +26,97 @@ const PAEON_LOGO_SVG = `
   <circle cx="50" cy="54" r="2.2" style="fill:var(--dots)"/>
 </svg>`;
 
+// 시안(design/redesign-2026-10)에서 쓰는 선 아이콘. 한 곳에 모아 두고 화면에서는 ICON.이름 으로 쓴다.
+const _svg = (inner, w = 24) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+const ICON = {
+  home: _svg('<path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/>'),
+  record: _svg('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
+  challenge: _svg('<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>'),
+  community: _svg('<path d="M4 5h16v11h-7l-4 4v-4H4z"/>'),
+  more: _svg('<path d="M4 7h16M4 12h16M4 17h16"/>'),
+  bell: _svg('<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/>'),
+  back: _svg('<path d="M15 5l-7 7 7 7"/>'),
+  chevron: _svg('<path d="M9 5l7 7-7 7"/>', 18),
+  search: _svg('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>'),
+  plus: _svg('<path d="M12 5v14M5 12h14"/>', 18),
+  calendar: _svg('<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>', 26),
+  pie: '<img class="pie-coin" src="assets/img/pie-coin.png" alt="">',
+};
+
+function _apiBase() {
+  return typeof API_BASE !== 'undefined' ? API_BASE : (['5500'].includes(location.port) ? 'http://127.0.0.1:8000/v1' : 'https://54-116-113-17.sslip.io/v1');
+}
+// 로그인한 사람의 파이 잔액. 로그인하지 않았거나 서버에 닿지 않으면 null (칩만 빠지고 화면은 그대로 동작한다)
+async function pieBalance() {
+  try {
+    const t = localStorage.getItem('paeon-access-token');
+    if (!t) return null;
+    const r = await fetch(_apiBase() + '/pie', { headers: { Authorization: 'Bearer ' + t } });
+    return r.ok ? (await r.json()).data.balance : null;
+  } catch (e) { return null; }
+}
+
+const PIE_PAGES_HIDE_CHIP = ['index.html', 'signup.html', 'login.html', 'guest-inquiry.html', 'eligibility.html'];
+
 function renderHeader(){
   const slot = document.getElementById('header-slot');
   if (!slot) return;
+  const page = location.pathname.split('/').pop() || 'index.html';
+  // 시안: 상단 바에 PAEON·파이·알림이 있는 건 홈뿐이다. 더보기와 챌린지 탭은 제목을 쓰고, 나머지 화면은 화면 안의 제목·뒤로가기 줄을 쓴다.
+  const HEADERS = { 'dashboard.html': { brand: true }, 'menu.html': { title: '더보기' }, 'challenge-progress.html': { title: '챌린지', plain: true }, 'challenges.html': { title: '챌린지 고르기', plain: true } };
+  const hd = HEADERS[page];
+  if (!hd) { slot.innerHTML = ''; return; }
+  const showRight = loggedIn() && !hd.plain && !PIE_PAGES_HIDE_CHIP.includes(page);
   slot.innerHTML = `
     <div class="picker">
-      <a class="brand" href="index.html">${PAEON_LOGO_SVG} PAEON</a>
-      ${loggedIn() && !['login.html', 'signup.html'].includes(location.pathname.split('/').pop()) ? '<button type="button" id="hdr-logout" class="hdr-logout">로그아웃</button>' : ''}
+      ${hd.brand ? `<a class="brand" href="dashboard.html">PAEON</a>` : `<span class="brand" style="font-size:22px; letter-spacing:-.3px">${hd.title}</span>`}
+      ${showRight ? `<div class="hdr-right"><a class="hdr-pie" id="hdr-pie" href="pie.html" aria-label="내 파이" hidden>${ICON.pie}<span id="hdr-pie-n"></span></a><a class="hdr-bell" id="hdr-bell" href="inquiries.html" aria-label="문의 답변">${ICON.bell}</a></div>` : ''}
     </div>`;
-  const out = document.getElementById('hdr-logout');
-  if (out) out.addEventListener('click', async () => {
-    if (!(await confirmDialog('로그아웃할까요?', '다시 이용하려면 로그인해야 해요.', '로그아웃'))) return;
-    if (typeof apiLogout !== 'function') {   // api.js가 없는 화면(홈·대시보드 등)에서는 필요할 때 불러온다
-      await new Promise((ok) => { const sc = document.createElement('script'); sc.src = 'assets/api.js'; sc.onload = ok; sc.onerror = ok; document.head.appendChild(sc); });
-    }
-    if (typeof apiLogout === 'function') apiLogout();
-    else { ['paeon-access-token', 'paeon-refresh-token', 'paeon-user-id'].forEach(k => localStorage.removeItem(k)); location.href = 'login.html'; }
+  if (!showRight) return;
+  pieBalance().then((n) => {
+    if (n === null) return;
+    document.getElementById('hdr-pie-n').textContent = n;
+    document.getElementById('hdr-pie').hidden = false;
+  });
+  inquiryUnread().then((n) => {   // 1:1 문의에 답변이 오면 종에 숫자
+    if (n) document.getElementById('hdr-bell').insertAdjacentHTML('beforeend', `<span class="badge" aria-label="새 답변 ${n}개">${n}</span>`);
   });
 }
 function loggedIn(){ try { return !!localStorage.getItem('paeon-access-token'); } catch (e) { return false; } }
 
+// 하단 탭 5개. 챌린지는 진행 중인 사이클이 있으면 수행 화면, 없으면 시작 화면으로 간다.
 const NAV_ITEMS = [
-  { icon: '🏠', label: '홈', href: 'dashboard.html', pages: ['dashboard.html'] },
-  { icon: '🩺', label: '건강정보', href: 'health-info.html', pages: ['health-info.html', 'survey.html', 'review.html'] },
-  { icon: '🎯', label: '챌린지', href: localStorage.getItem('paeon-cycle') ? 'challenge-progress.html' : 'challenges.html', pages: ['challenges.html', 'challenge-progress.html'] },
-  { icon: '📝', label: '내 기록', href: 'trend.html', pages: ['trend.html'] },
-  { icon: '👤', label: '마이페이지', href: 'mypage.html', pages: ['mypage.html', 'inquiries.html'] },
+  { icon: ICON.record, label: '내 기록', href: 'trend.html', pages: ['trend.html', 'twelve-weeks.html', 'reassessment.html'] },
+  { icon: ICON.challenge, label: '챌린지', href: localStorage.getItem('paeon-cycle') ? 'challenge-progress.html' : 'challenges.html', pages: ['challenges.html', 'challenge-progress.html', 'badges.html'] },
+  { icon: ICON.home, label: '홈', href: 'dashboard.html', pages: ['dashboard.html', 'health-info.html', 'survey.html', 'review.html', 'result.html', 'calendar-diary.html'] },
+  { icon: ICON.community, label: '커뮤니티', href: 'feed.html', pages: ['feed.html', 'write.html', 'post.html', 'nickname.html', 'common-challenges.html', 'common-challenge.html', 'party.html', 'party-start.html', 'party-create.html', 'party-home.html'] },
+  { icon: ICON.more, label: '더보기', href: 'menu.html', pages: ['menu.html', 'mypage.html', 'inquiries.html', 'guide.html', 'terms.html', 'character.html', 'pie.html'] },
 ];
 // 안 읽은 문의 답변 수. 로그인하지 않았거나 서버에 닿지 않으면 0 (메뉴만 빠지고 화면은 그대로 동작한다)
 async function inquiryUnread() {
   try {
     const t = localStorage.getItem('paeon-access-token');
     if (!t) return 0;
-    const base = typeof API_BASE !== 'undefined' ? API_BASE : (['5500'].includes(location.port) ? 'http://127.0.0.1:8000/v1' : 'https://54-116-113-17.sslip.io/v1');
-    const r = await fetch(base + '/inquiries', { headers: { Authorization: 'Bearer ' + t } });
+    const r = await fetch(_apiBase() + '/inquiries', { headers: { Authorization: 'Bearer ' + t } });
     return r.ok ? ((await r.json()).data.unread || 0) : 0;
   } catch (e) { return 0; }
 }
 
-const NO_NAV_PAGES = ['index.html', 'signup.html', 'login.html', 'guest-inquiry.html', 'eligibility.html', 'privacy.html', 'my-data.html'];
+const NO_NAV_PAGES = ['index.html', 'signup.html', 'login.html', 'guest-inquiry.html', 'eligibility.html', 'privacy.html', 'my-data.html', 'write.html', 'nickname.html'];
 
 function renderNav(){
-  const body = document.querySelector('.frame-body');
-  if (!body || body.querySelector('.app-shell')) return;
+  if (document.querySelector('.tabbar')) return;
   const page = location.pathname.split('/').pop() || 'index.html';
-  if (NO_NAV_PAGES.includes(page)) return;
-  const shell = document.createElement('div');
-  shell.className = 'app-shell';
-  const navCol = document.createElement('div');
-  navCol.className = 'nav-col';
-  navCol.innerHTML = NAV_ITEMS.map(it => `<a class="nav-item${it.pages.includes(page) ? ' active' : ''}" href="${it.href}">${it.icon} ${it.label}</a>`).join('');
-  inquiryUnread().then((n) => {   // 1:1 문의에 답변이 오면 마이페이지 메뉴에 빨간 점
-    const a = navCol.querySelector('a[href="mypage.html"]');
+  if (NO_NAV_PAGES.includes(page) || !loggedIn()) return;
+  const nav = document.createElement('nav');
+  nav.className = 'tabbar';
+  nav.setAttribute('aria-label', '주요 메뉴');
+  nav.innerHTML = NAV_ITEMS.map(it => `<a href="${it.href}"${it.pages.includes(page) ? ' class="active" aria-current="page"' : ''}>${it.icon}${it.label}</a>`).join('');
+  document.body.appendChild(nav);
+  inquiryUnread().then((n) => {   // 더보기(문의 포함)에 점
+    const a = nav.querySelector('a[href="menu.html"]');
     if (n && a) a.insertAdjacentHTML('beforeend', '<span class="nav-dot" aria-label="새 답변"></span>');
   });
-  const contentCol = document.createElement('div');
-  contentCol.className = 'content-col';
-  while (body.firstChild) contentCol.appendChild(body.firstChild);
-  shell.appendChild(navCol);
-  shell.appendChild(contentCol);
-  body.appendChild(shell);
 }
 
 // 처음 시작하는 4단계(대상 확인 → 건강정보 → 설문 → 위험도 분석)의 진행 상태와 다음 할 일. 대시보드와 입력 검토 화면의 안내에 쓴다.
@@ -144,7 +175,7 @@ function addPasswordToggles(root = document) {
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => { renderHeader(); renderNav(); addPasswordToggles(); });
+document.addEventListener('DOMContentLoaded', () => { renderHeader(); renderNav(); addPasswordToggles(); document.querySelectorAll('[data-icon]').forEach(e => { e.innerHTML = ICON[e.dataset.icon] || ''; }); });
 
 // 모델 B: 서버가 주는 similarity_level(similar / slightly_different / different)을 말로만 보여 준다. 화면에서 기준값을 계산하지 않는다.
 // 값이 아직 없으면(서버 미지원) 판정 문장은 빼고 설명만 보인다.
@@ -180,4 +211,87 @@ function modelANoticeHtml(models) {
   const a = (models || []).find(m => m.model_code === 'MODEL_A');
   return a && !a.comparable && a.before_status === 'completed' && a.after_status === 'completed'
     ? '<p class="hint" style="margin:0 0 8px">모델이 업데이트되어 이번에는 비교하지 않아요. 다음 4주부터 비교해요.</p>' : '';
+}
+
+// ---- 캐릭터 그리기: 서버가 주는 조합 {body,color,expr,face,head} → 16x20 픽셀 SVG (시안 CharacterCreate의 그리기 코드)
+const CHARACTER_DEFAULT = { body: 'mongle', color: '#AACDDC', expr: 'basic', face: 'none', head: 'none' };
+function characterSvg(view, px) {
+  const s = { ...CHARACTER_DEFAULT, ...(view || {}) };
+  if (!/^#[0-9A-Fa-f]{6}$/.test(s.color)) s.color = CHARACTER_DEFAULT.color;
+    const BODIES = {
+      mongle: { top: 3, rows: ['................', '...oo......oo...', '..obbo....obbo..', '..obbboooobbbo..', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '..obboooooobbo..', '..oooo....oooo..'] },
+      bobo: { top: 2, rows: ['................', '................', '.....oooooo.....', '...ooobbbbooo...', '..obbbbbbbbbbo..', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '...obbbbbbbbo...', '....oooooooo....'] },
+      rabbit: { top: 3, rows: ['...oooo..oooo...', '...obbo..obbo...', '...obbo..obbo...', '..ooobbbbbbooo..', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '...obbbbbbbbo...', '....oooooooo....'] },
+      bear: { top: 3, rows: ['................', '..ooo......ooo..', '.obbbo....obbbo.', '.obbbboooobbbbo.', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '..obboooooobbo..', '..oooo....oooo..'] },
+      ghost: { top: 2, rows: ['................', '................', '.....oooooo.....', '...ooobbbbooo...', '..obbbbbbbbbbo..', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbobbobbobbobbo', 'ooo.oo.oo.oo.ooo'] },
+      dino: { top: 3, rows: ['................', '...o...o...o....', '..obo.obo.obo...', '.obbbbbbbbbbbbo.', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '..obboooooobbo..', '..oooo....oooo..'] },
+      square: { top: 2, rows: ['................', '................', '..oooooooooooo..', '.obbbbbbbbbbbbo.', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..oooooooooooo..'] },
+      cat: { top: 3, rows: ['................', '..o..........o..', '..oo........oo..', '..obboooooobbo..', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '..obboooooobbo..', '..oooo....oooo..'] }
+    };
+    // 머리 장식이 몸 위로 삐져나와도 잘리지 않게 위에 4줄을 더 둔다 (좌표는 몸 기준 그대로 쓰고 put이 4줄을 더해 준다)
+    const OFF = 4;
+    const g = Array.from({ length: OFF }, () => Array(16).fill('.')).concat(BODIES[s.body].rows.map((r) => r.split('')));
+    const put = (r, c, ch) => { if (r + OFF >= 0 && r + OFF < g.length && c >= 0 && c < 16) g[r + OFF][c] = ch; };
+    const many = (list, ch) => list.forEach(([r, c]) => put(r, c, ch));
+    const cheeks = [[9, 2], [9, 3], [9, 12], [9, 13]];
+    const smile = [[10, 6], [10, 9], [11, 7], [11, 8]];
+    const E = {
+      basic: [[[7, 4], [7, 5], [8, 4], [8, 5], [7, 10], [7, 11], [8, 10], [8, 11], [10, 7], [10, 8]]],
+      smile: [[[8, 4], [7, 5], [8, 6], [8, 9], [7, 10], [8, 11]].concat(smile)],
+      sleepy: [[[8, 4], [8, 5], [8, 10], [8, 11], [10, 7]]],
+      wow: [[[7, 4], [7, 5], [8, 4], [8, 5], [9, 4], [9, 5], [7, 10], [7, 11], [8, 10], [8, 11], [9, 10], [9, 11], [10, 7], [10, 8], [11, 7], [11, 8]]],
+      wink: [[[8, 4], [8, 5], [7, 10], [7, 11], [8, 10], [8, 11]].concat(smile)],
+      heart: [smile],
+      angry: [[[8, 4], [8, 5], [8, 10], [8, 11], [6, 4], [7, 5], [7, 10], [6, 11], [11, 6], [11, 7], [11, 8], [11, 9]]],
+      cry: [[[7, 4], [7, 5], [8, 4], [8, 5], [7, 10], [7, 11], [8, 10], [8, 11], [11, 6], [11, 7], [11, 8], [11, 9]]],
+      sparkle: [smile]
+    };
+    const EXTRA = {
+      heart: [['r', [[7, 4], [7, 6], [8, 4], [8, 5], [8, 6], [9, 5], [7, 9], [7, 11], [8, 9], [8, 10], [8, 11], [9, 10]]]],
+      cry: [['t', [[9, 4], [10, 4], [9, 11], [10, 11]]]],
+      sparkle: [['y', [[7, 5], [8, 4], [8, 5], [8, 6], [9, 5], [7, 10], [8, 9], [8, 10], [8, 11], [9, 10]]]]
+    };
+    many(cheeks, 'c');
+    many(E[s.expr][0], 'e');
+    (EXTRA[s.expr] || []).forEach(([ch, list]) => many(list, ch));
+
+    if (s.face === 'glasses') {
+      for (let c = 3; c <= 6; c++) { put(6, c, 'o'); put(9, c, 'o'); }
+      for (let c = 9; c <= 12; c++) { put(6, c, 'o'); put(9, c, 'o'); }
+      [3, 6, 9, 12].forEach((c) => { put(7, c, 'o'); put(8, c, 'o'); });
+      put(7, 7, 'o'); put(7, 8, 'o');
+    }
+    if (s.face === 'shades') {
+      for (let c = 3; c <= 6; c++) { put(7, c, 'o'); put(8, c, 'o'); }
+      for (let c = 9; c <= 12; c++) { put(7, c, 'o'); put(8, c, 'o'); }
+      put(7, 7, 'o'); put(7, 8, 'o');
+    }
+    if (s.face === 'mask') {
+      for (let c = 4; c <= 11; c++) { put(10, c, 'w'); put(11, c, 'w'); }
+      put(10, 3, 'o'); put(10, 12, 'o');
+    }
+
+    if (s.face === 'whiskers') { many([[10, 1], [10, 2], [11, 1], [10, 13], [10, 14], [11, 14]], 'o'); }
+    if (s.face === 'freckles') { many([[9, 5], [10, 4], [9, 10], [10, 11], [10, 3], [10, 12]], 'k'); }
+    if (s.face === 'mustache') { many([[10, 5], [10, 6], [10, 9], [10, 10], [11, 4], [11, 11]], 'o'); }
+    if (s.face === 'eyepatch') { for (let c = 3; c <= 6; c++) { put(7, c, 'o'); put(8, c, 'o'); } many([[6, 4], [5, 5], [6, 8], [6, 12], [5, 13]], 'o'); }
+    // 머리 장식: b는 머리 맨 위 테두리 줄. 장식은 이 줄과 겹치게(머리 위에 얹은 것처럼) 몸 앞에 그린다
+    const b = BODIES[s.body].top;
+    const H = {
+      sprout: [['g', [[b - 1, 7], [b - 2, 7], [b - 3, 6], [b - 3, 8], [b - 2, 6], [b - 2, 8]]]],
+      crown: [['y', [[b - 2, 5], [b - 2, 7], [b - 2, 8], [b - 2, 10], [b - 1, 5], [b - 1, 6], [b - 1, 7], [b - 1, 8], [b - 1, 9], [b - 1, 10], [b, 5], [b, 6], [b, 7], [b, 8], [b, 9], [b, 10]]]],
+      bow: [['r', [[b - 1, 10], [b - 1, 12], [b, 10], [b, 12], [b + 1, 10], [b + 1, 12]]], ['y', [[b, 11]]]],
+      flower: [['r', [[b - 1, 11], [b, 10], [b, 12], [b + 1, 11]]], ['y', [[b, 11]]]],
+      star: [['y', [[b - 3, 8], [b - 2, 7], [b - 2, 8], [b - 2, 9], [b - 1, 8]]]],
+      halo: [['y', [[b - 3, 6], [b - 3, 7], [b - 3, 8], [b - 3, 9], [b - 2, 5], [b - 2, 10], [b - 1, 6], [b - 1, 7], [b - 1, 8], [b - 1, 9]]]],
+      horns: [['r', [[b, 4], [b - 1, 4], [b - 2, 3], [b, 11], [b - 1, 11], [b - 2, 12]]]],
+      party: [['r', [[b, 5], [b, 6], [b, 7], [b, 8], [b, 9], [b, 10], [b - 1, 6], [b - 1, 7], [b - 1, 8], [b - 1, 9], [b - 2, 7], [b - 2, 8]]], ['y', [[b - 3, 7], [b - 3, 8]]]]
+    };
+    (H[s.head] || []).forEach(([ch, list]) => many(list, ch));
+
+    const fills = { k: '#B5835A', t: '#7FB6E8', o: '#243749', e: '#243749', m: '#243749', b: s.color, h: '#FFFFFF', c: '#E8B9A5', g: '#6FA58A', y: '#F2C94C', r: '#E58F9B', w: '#DCE8EF' };
+  let rects = '';
+  g.forEach((row, y) => row.forEach((ch, x) => { if (fills[ch]) rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${fills[ch]}"/>`; }));
+  const w = px || 40;
+  return `<svg width="${w}" height="${Math.round(w * 1.25)}" viewBox="0 0 16 20" shape-rendering="crispEdges" role="img" aria-label="캐릭터">${rects}</svg>`;
 }

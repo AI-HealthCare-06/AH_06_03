@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 지난 12주 기록</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .it{display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:20px; padding:14px 16px; text-decoration:none; color:inherit}
+  .it.run{background:var(--notice); border-color:var(--notice)}
+  .it .tx{flex:1; display:flex; flex-direction:column; gap:3px}
+  .it .tx b{font-size:15px}
+  .it .tx b em{font-style:normal; font-size:12px; font-weight:700; color:var(--muted)}
+  .it .tx span{font-size:13px; color:var(--muted)}
+  #years .chip{height:40px; padding:0 18px; border-radius:20px; font-size:14px}
+  #years{flex-wrap:nowrap}
+  .months{display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none}
+  .months::-webkit-scrollbar{display:none}
+  .months .chip{flex:none; height:34px; padding:0 14px; font-size:13px; border-radius:17px}
+</style>
+</head>
+<body>
+<div id="header-slot"></div>
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" style="gap:14px">
+        <div class="page-bar"><a class="back" href="trend.html" aria-label="뒤로" id="back"></a><span class="ttl">지난 12주 기록</span></div>
+        <div style="display:flex; align-items:baseline; justify-content:space-between"><span style="font-size:13px; color:var(--muted)">조회 기간</span><b style="font-size:13px" id="range"></b></div>
+        <div class="chips" id="years"></div>
+        <div class="months" id="months" hidden></div>
+        <div style="font-size:13px; color:var(--muted)"><span id="count">0</span>건 · 최근 순</div>
+        <div id="list" style="display:flex; flex-direction:column; gap:8px"><p class="hint">불러오는 중...</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+document.getElementById('back').innerHTML = ICON.back;
+const $ = (id) => document.getElementById(id);
+const st = { year: 'all', month: 'all', programs: [] };
+const ymd = (s) => { const [y, m, d] = s.split('-').map(Number); return [y, m, d]; };
+const ym = (a) => a[0] * 12 + a[1];
+const fmt = (a) => a[0] + '.' + String(a[1]).padStart(2, '0') + '.' + String(a[2]).padStart(2, '0');
+const sel = (on) => on ? ' on' : '';
+
+// 서버가 12주 번호를 주기 전까지는 4주 사이클 번호 3개씩을 한 묶음(12주)으로 본다.
+function group(cycles) {
+  const by = {};
+  cycles.forEach(c => { const n = Math.ceil(c.cycle_number / 3); (by[n] = by[n] || []).push(c); });
+  return Object.keys(by).map(n => {
+    const cs = by[n].sort((a, b) => a.cycle_number - b.cycle_number);
+    const done = cs.length >= 3 && cs.every(c => c.status !== 'active');
+    const rated = cs.filter(c => c.status !== 'active' && c.cycle_rate != null);
+    return {
+      n: +n, start: ymd(cs[0].started_on), end: done ? ymd(cs[cs.length - 1].ended_on) : null, running: !done,
+      rate: rated.length ? Math.round(rated.reduce((s, c) => s + c.cycle_rate, 0) / rated.length * 100) : null,
+      doneCycles: cs.filter(c => c.status !== 'active').length,
+    };
+  }).sort((a, b) => b.n - a.n);
+}
+function filtered() {
+  const now = [new Date().getFullYear(), new Date().getMonth() + 1, 1];
+  let from = 0, to = 99999;
+  if (st.year !== 'all') { from = st.year * 12 + (st.month === 'all' ? 1 : st.month); to = st.year * 12 + (st.month === 'all' ? 12 : st.month); }
+  return st.programs.filter(p => ym(p.start) <= to && ym(p.end || now) >= from);
+}
+function render() {
+  const years = [...new Set(st.programs.flatMap(p => [p.start[0], (p.end || [new Date().getFullYear()])[0]]))].sort((a, b) => b - a);
+  $('years').innerHTML = '<button type="button" class="chip' + sel(st.year === 'all') + '" data-y="all">전체</button>' + years.map(y => '<button type="button" class="chip' + sel(st.year === y) + '" data-y="' + y + '">' + y + '년</button>').join('');
+  document.querySelectorAll('#years .chip').forEach(b => b.addEventListener('click', () => { st.year = b.dataset.y === 'all' ? 'all' : +b.dataset.y; st.month = 'all'; render(); }));
+  $('months').hidden = st.year === 'all';
+  if (st.year !== 'all') {
+    $('months').innerHTML = '<button type="button" class="chip' + sel(st.month === 'all') + '" data-m="all">전체 월</button>' + Array.from({ length: 12 }, (_, i) => '<button type="button" class="chip' + sel(st.month === i + 1) + '" data-m="' + (i + 1) + '">' + (i + 1) + '월</button>').join('');
+    document.querySelectorAll('#months .chip').forEach(b => b.addEventListener('click', () => { st.month = b.dataset.m === 'all' ? 'all' : +b.dataset.m; render(); }));
+  }
+  $('range').textContent = st.year === 'all' ? (st.programs.length ? '전체 (' + fmt(st.programs[st.programs.length - 1].start).slice(0, 7) + ' ~ 지금)' : '전체') : (st.month === 'all' ? st.year + '년' : st.year + '년 ' + st.month + '월');
+  const list = filtered();
+  $('count').textContent = list.length;
+  const chev = ICON.chevron;
+  $('list').innerHTML = list.length ? list.map(p => '<a class="it' + (p.running ? ' run' : '') + '" href="' + (p.running ? 'challenge-progress.html' : 'trend.html') + '"><div class="tx"><b>' + p.n + '번째 12주 <em>· ' + (p.running ? '진행 중' : '완료') + '</em></b><span>' + fmt(p.start) + ' ~ ' + (p.end ? fmt(p.end) : '진행 중') + '</span><span>' + (p.running ? Math.min(3, p.doneCycles + 1) + '차 4주 진행 중' : (p.rate !== null ? '평균 달성률 ' + p.rate + '%' : '')) + '</span></div>' + chev + '</a>').join('')
+    : '<div class="empty">이 기간에는 12주 기록이 없어요.</div>';
+}
+(async () => {
+  try { st.programs = group(await apiListCycles()); render(); }
+  catch (e) { $('list').innerHTML = '<div class="empty">' + friendlyError(e) + '</div>'; }
+})();
+</script>
+</body>
+</html>

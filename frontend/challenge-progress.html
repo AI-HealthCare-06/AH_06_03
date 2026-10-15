@@ -6,69 +6,77 @@
 <title>PAEON — 챌린지 인증</title>
 <link rel="stylesheet" href="assets/style.css">
 <style>
-  .countbar{font-size:12.5px; color:var(--muted)}
+  .screen{gap:14px}
+  .ring{display:flex; flex-direction:column; align-items:center; gap:16px; background:var(--cream); border-radius:28px; padding:22px 20px 20px}
+  .ring .top{display:flex; align-items:baseline; justify-content:space-between; width:100%}
+  .ring .top b{font-size:14px; color:#4A5C6D}
+  .ring .top span{font-size:13px; color:var(--muted)}
+  .ring .t{font-size:17px; font-weight:800; text-align:center; line-height:1.4}
+  .ring svg,.ring img{width:184px; height:184px; image-rendering:pixelated}
+  .ring .cnt{display:flex; flex-direction:column; align-items:center; gap:4px}
+  .ring .cnt b{font-size:20px; font-weight:800; letter-spacing:-.3px}
+  .ring .cnt b small{font-size:15px; color:var(--muted); font-weight:700}
+  .ring .cnt span{font-size:14px; color:#4A5C6D}
+  .ring .prog{width:100%; display:flex; flex-direction:column; gap:8px}
+  .ring .prog div:first-child{display:flex; justify-content:space-between; font-size:13px; color:#4A5C6D}
+  .ring .prog .bar{height:8px; border-radius:4px; background:var(--line)}
+  .ring .prog .bar i{display:block; height:8px; border-radius:4px; background:var(--accent)}
 
-  .cal-card{background:#fff; border:1px solid var(--sage-light); border-radius:20px; padding:16px 18px}
-  .cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:8px}
-  .cal-head .ym{font-family:'Nanum Gothic','Malgun Gothic','Apple SD Gothic Neo',sans-serif; font-size:15px; font-weight:700}
-  .cal-head .nav{display:flex; gap:4px}
-  .cal-head .nav button{width:26px; height:26px; border-radius:999px; border:1px solid var(--sage-light); background:#fff; color:var(--muted); font-size:12px}
-  .cal-head .nav button:disabled{opacity:.35}
-  .dow-row{display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:11px; color:var(--muted); font-weight:700; margin-bottom:4px}
-  .dow-row span:first-child{color:var(--danger)}
-  .day-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px 0}
-  .day{position:relative; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; font-size:12.5px; color:var(--ink)}
-  .day.blank{visibility:hidden}
-  .day .num{position:relative; z-index:1}
-  .day.clickable{cursor:pointer}
-  .day.today .num{color:#fff; font-weight:900}
-  .day.today::before{content:''; position:absolute; width:26px; height:26px; border-radius:999px; background:var(--petal2)}
-  .day.picked:not(.today)::before{content:''; position:absolute; width:26px; height:26px; border-radius:999px; border:2px solid var(--sage-deep)}
-  .day .dots{position:absolute; bottom:4px; left:50%; transform:translateX(-50%); display:flex; gap:3px}
-  .day .dot{width:4px; height:4px; border-radius:999px; background:var(--peach)}
-  .day .dot-bp{width:4px; height:4px; border-radius:999px; background:var(--sage-deep)}
-  .day.sun .num{color:var(--danger)}
-  .cal-legend{display:flex; gap:14px; margin-top:10px; font-size:11px; color:var(--muted); flex-wrap:wrap}
-  .cal-legend span{display:inline-flex; align-items:center; gap:5px}
-  .dot-sample{width:5px; height:5px; border-radius:999px; background:var(--peach); display:inline-block}
-  .dot-bp-sample{width:5px; height:5px; border-radius:999px; background:var(--sage-deep); display:inline-block}
-  .ring-sample{width:12px; height:12px; border-radius:999px; background:var(--petal2); display:inline-block}
+  .wk-head{display:flex; align-items:center; justify-content:space-between}
+  .wk-head b{font-size:15px; font-weight:800}
+  .wk-head .nav{display:flex}
+  .wk-head .nav button{width:44px; height:44px; border:0; background:none; color:var(--ink); padding:0; display:flex; align-items:center; justify-content:center}
+  .wk-head .nav button:disabled{opacity:.3}
+  .week{display:grid; grid-template-columns:repeat(7,1fr); text-align:center}
+  .week .d{display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; min-height:44px}
+  .week .d span{font-size:12px; color:var(--muted)}
+  .week .d.sun span:first-child{color:var(--danger)}
+  .week .d i{width:30px; height:30px; border-radius:15px; box-sizing:border-box; border:1px dashed var(--sage); display:flex; align-items:center; justify-content:center; font-style:normal; font-size:12px; color:var(--muted)}
+  .week .d.on i{background:var(--accent); border:0; color:#fff}
+  .week .d.today span:first-child{font-weight:800; color:var(--ink)}
+  .week .d.today i{border:2px solid var(--accent); background:#fff; color:var(--ink)}
+  .week .d.today.on i{background:var(--accent); color:#fff}
+  .week .d.picked i{box-shadow:0 0 0 3px var(--notice)}
 
-  .today-card{background:var(--cream); border:1px solid var(--sage-light); border-radius:20px; padding:16px 18px; display:flex; flex-direction:column; gap:10px}
-  .today-card .tt{font-size:12px; color:var(--muted); font-weight:700}
-  .today-card .dd{font-family:'Nanum Gothic','Malgun Gothic','Apple SD Gothic Neo',sans-serif; font-size:20px; font-weight:700}
-  .mission{display:flex; align-items:center; gap:8px; background:#fff; border:1.5px solid var(--sage-light); border-radius:14px; padding:9px 12px; font-size:12.5px; font-weight:600}
-  .mission.clickable{cursor:pointer}
-  .mission .mark{width:18px; height:18px; border-radius:999px; border:2px solid var(--sage); flex:none}
-  .mission.done .mark{background:var(--petal2); border-color:var(--petal2)}
-  .mission.done{color:var(--muted); text-decoration:line-through}
-
-  .bplog{display:flex; flex-direction:column}
-  .bplog-row{display:flex; align-items:center; gap:10px; padding:10px 0 10px 16px; border-left:2px solid var(--sage-light); margin-left:5px; position:relative}
-  .bplog-row:last-child{border-left-color:transparent}
-  .bplog-row .bp-dot{position:absolute; left:-6px; top:50%; transform:translateY(-50%); width:10px; height:10px; border-radius:999px; border:2px solid #fff; box-shadow:0 0 0 1.5px var(--sage-light)}
-  .bplog-row .bp-date{font-size:11.5px; color:var(--muted); width:72px; flex:none}
-  .bplog-row .bp-val{font-size:15.5px; font-weight:800; flex:1}
-  .bplog-row .bp-val .unit{font-weight:500; color:var(--muted); font-size:12px}
-  .bp-badge{font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px; flex:none; white-space:nowrap}
-  .bp-badge.ok{background:var(--ok-soft); color:var(--ok)}
-  .bp-badge.high{background:var(--risk-soft); color:var(--risk)}
-  .inline{display:flex; gap:8px; align-items:flex-end}
-  .inline .field{flex:1}
-  .inline button{width:auto; padding:10px 20px}
-  .mission-card{background:#fff; border:1.5px solid var(--sage-light); border-radius:16px; padding:12px 14px; display:flex; flex-direction:column; gap:8px}
-  .mission-card .mt{font-size:13.5px; font-weight:700}
-  .mission-card .mq{font-size:12.5px; color:var(--muted)}
-  .mission-card .bar{height:8px; background:var(--sage-light); border-radius:999px; overflow:hidden}
-  .mission-card .bar i{display:block; height:100%; background:var(--petal2)}
-  .mission-card .meta{display:flex; justify-content:space-between; font-size:11.5px; color:var(--muted)}
-  .answers{display:flex; flex-wrap:wrap; gap:6px}
-  .answers button{width:auto; padding:7px 12px; font-size:12.5px; border-radius:999px; border:1.5px solid var(--sage-light); background:#fff; color:var(--ink)}
-  .answers button.on{border-color:var(--sage-deep); background:var(--sage-light); font-weight:700}
-  .answers input{width:120px}
+  .sec{display:flex; flex-direction:column; gap:8px}
+  .sec-h{display:flex; align-items:baseline; justify-content:space-between}
+  .sec-h b{font-size:18px; font-weight:800}
+  .sec-h span{font-size:13px; color:var(--muted)}
+  .rule{background:var(--notice); border-radius:18px; padding:16px 18px; font-size:16px; font-weight:800; line-height:1.45; color:var(--ink)}
+  .rule small{display:block; margin-top:2px; font-size:13px; font-weight:400; color:#4A5C6D}
+  .mrow{border:1px solid var(--line); border-radius:20px; padding:12px 14px; display:flex; flex-direction:column; gap:10px}
+  .mrow .main{display:flex; align-items:center; gap:14px}
+  .mrow .ic{width:44px; height:44px; border-radius:14px; background:#CFE3EE; color:#2F5F8A; display:flex; align-items:center; justify-content:center; flex:none}
+  .mrow .ic.sel{background:var(--cream-2); color:#6B4A22}
+  .mrow .tx{flex:1; min-width:0; display:flex; flex-direction:column; gap:4px}
+  .mrow .nm{font-size:16px; font-weight:700}
+  .mrow.done .nm{color:var(--muted); text-decoration:line-through}
+  .mrow .ds{font-size:13px; color:var(--muted)}
+  .mrow .ck{width:44px; height:44px; flex:none; display:flex; align-items:center; justify-content:center}
+  .mrow .ck i{width:30px; height:30px; border-radius:15px; box-sizing:border-box; border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; color:#fff}
+  .mrow.done .ck i{background:var(--accent)}
+  .mrow .q{font-size:13px; color:var(--body)}
+  .answers{display:flex; flex-wrap:wrap; gap:8px}
+  .answers button{height:40px; padding:0 14px; border-radius:20px; border:1px solid var(--sage); background:#fff; color:var(--ink); font-size:14px}
+  .answers button.on{border-color:var(--accent-light); background:var(--accent-light); color:#1E3246; font-weight:700}
+  .answers input{width:120px; height:40px; border-radius:20px; border:1px solid var(--sage); padding:0 14px; font:inherit; font-size:14px}
   .logged{font-size:12px; font-weight:700}
   .logged.completed{color:var(--ok)} .logged.failed{color:var(--risk)} .logged.skipped{color:var(--muted)}
   .warn{font-size:12px; color:var(--risk); background:var(--risk-soft); border-radius:10px; padding:6px 10px}
+  .meta{font-size:12px; color:var(--muted)}
+  .hint-day{font-size:12.5px; color:var(--muted)}
+
+  .lrow{display:flex; align-items:center; gap:14px; border:1px solid var(--line); border-radius:20px; padding:12px 14px; text-decoration:none; color:inherit}
+  .lrow .ic{width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; flex:none}
+  .lrow .tx{flex:1; min-width:0; display:flex; flex-direction:column; gap:4px}
+  .lrow .nm{font-size:16px; font-weight:700}
+  .lrow .ds{font-size:13px; color:var(--muted)}
+  .lrow.off{opacity:.6}
+  .lrow .go{height:40px; padding:0 14px; border-radius:20px; background:var(--accent-light); color:#1E3246; font-size:13px; font-weight:700; display:flex; align-items:center; flex:none}
+  .lrow .soon{height:28px; padding:0 10px; border-radius:14px; background:var(--cream); color:var(--muted); font-size:12px; font-weight:700; display:flex; align-items:center; flex:none}
+  .stop{display:flex; flex-direction:column; align-items:center; gap:2px; padding-top:4px}
+  .stop button{min-height:44px; border:0; background:none; font-size:13px; color:var(--muted); text-decoration:underline}
+  .stop span{font-size:12px; color:var(--muted); text-align:center}
 </style>
 </head>
 <body>
@@ -79,13 +87,13 @@
   <div class="frame">
     <div class="frame-body">
       <div class="screen">
-        <p class="lede" id="lede">오늘 미션을 기록하세요. 목표는 하루가 아니라 주 단위 횟수예요. 기록은 오늘만 고칠 수 있어요.</p>
         <div id="err" class="callout" style="display:none"></div>
+        <div id="ring-wrap"></div>
         <div id="week-strip"></div>
         <div id="day-detail"></div>
+        <div id="together"></div>
         <div id="bp-section"></div>
-        <a class="cta" style="display:block; text-align:center; text-decoration:none" href="dashboard.html">대시보드 보기</a>
-        <button type="button" id="stop-btn" class="ghost" style="display:none">챌린지 중단하기</button>
+        <div class="stop" id="stop-wrap" style="display:none"><button type="button" id="stop-btn">챌린지 중단하기</button></div>
       </div>
     </div>
   </div>
@@ -98,52 +106,69 @@ const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 const STATUS_LABEL = { completed: '달성', failed: '미달성', skipped: '해당 없음' };
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+const svg = (inner, w = 24) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+const MISSION_ICON = {
+  SODIUM: svg('<path d="M3 13h4l2.5-6 4 11 2.5-5H21"/>'),
+  ALCOHOL: svg('<path d="M4 11h16a8 8 0 0 1-16 0zM9 4c0 2 2 2 2 4"/>'),
+  other: svg('<path d="M5 19C5 10 10 5 19 5c0 9-5 14-14 14zM5 19l8-8"/>'),
+};
 
 let cycle = null;          // 서버 사이클
 let selectedIdx = 0;       // 0~27
 let weekOffset = 0;
-let partialFor = null;     // 벽 스쿼트 "일부만" 횟수 고르는 중
+let partialFor = null;
+let summary = null, counts = {}, party = undefined, badges = null;   // 서버 값. 못 받으면 null     // 벽 스쿼트 "일부만" 횟수 고르는 중
 
 const startDate = () => new Date(cycle.started_on + 'T00:00:00');
 const dateForIdx = (i) => new Date(startDate().getTime() + i * 86400000);
 const todayIdx = () => cycle.day_number - 1;
 function logOn(m, d) { return m.logs.find(l => l.log_date === d) || null; }
+const doneOn = (m, d) => (logOn(m, d) || {}).status === 'completed';
+const allDoneOn = (d) => cycle.missions.every(m => doneOn(m, d));
 
 function showError(msg) { const el = document.getElementById('err'); el.style.display = msg ? 'block' : 'none'; el.textContent = msg || ''; }
 
-// 주차는 시작한 요일부터 7일이라, 요일 머리글도 그 순서로 맞춘다
-function dowHeader(wStart) {
-  let h = '';
-  for (let i = wStart; i < wStart + 7; i++) {
-    const dw = dateForIdx(i).getDay();
-    h += `<span style="color:var(${dw === 0 ? '--danger' : '--muted'})">${DOW[dw]}</span>`;
-  }
-  return h;
+function pieSvg(n, done) {
+  const k = Math.min(3, Math.round(3 * done / Math.max(1, n)));   // 시안의 파이 그림은 3조각 기준
+  return `<img src="assets/img/pie${k}.png" alt="파이 ${n}조각 중 ${done}조각을 구웠어요">`;
 }
 
+function ringHtml() {
+  let n = cycle.missions.length, t = iso(dateForIdx(todayIdx()));
+  let done = cycle.missions.filter(m => doneOn(m, t)).length;
+  let streak = 0;
+  for (let i = allDoneOn(t) ? todayIdx() : todayIdx() - 1; i >= 0 && allDoneOn(iso(dateForIdx(i))); i--) streak++;
+  if (summary) { n = summary.today_total; done = summary.today_done; streak = summary.streak; }
+  const left = n - done;
+  const sub = left <= 0 ? '오늘 파이를 모두 구웠어요!' : left === 1 ? '하나만 더 구우면 오늘 파이 완성!' : `${left}개 더 구우면 오늘 파이 완성!`;
+  const dayNo = Math.min(28, cycle.day_number);
+  return `<div class="ring">
+    <div class="top"><b>${cycle.cycle_number}차 · ${cycle.week_number}주차</b><span>연속 ${streak}일</span></div>
+    <span class="t">챌린지를 완료해서<br>파이를 구워봐요!</span>
+    ${pieSvg(n, done)}
+    <div class="cnt"><b>${done}개 구웠어요 <small>/ ${n}</small></b><span>${sub}</span></div>
+    <div class="prog"><div><span>4주 진행</span><span><b style="color:var(--ink)">${dayNo}</b> / 28일</span></div><div class="bar"><i style="width:${Math.round(dayNo / 28 * 100)}%"></i></div></div>
+  </div>`;
+}
+
+// 주차는 시작한 요일부터 7일이라, 요일 머리글도 그 순서로 맞춘다
 function weekStripHtml() {
   const wStart = weekOffset * 7;
   const d0 = dateForIdx(wStart), d1 = dateForIdx(wStart + 6);
   let cells = '';
   for (let i = wStart; i < wStart + 7; i++) {
     const dt = dateForIdx(i), d = iso(dt);
-    const cls = ['day', 'clickable'];
+    const cls = ['d'];
     if (i === todayIdx()) cls.push('today');
     if (i === selectedIdx) cls.push('picked');
     if (dt.getDay() === 0) cls.push('sun');
-    const allDone = cycle.missions.every(m => (logOn(m, d) || {}).status === 'completed');
-    const dots = allDone ? '<span class="dots"><span class="dot"></span></span>' : '';
-    cells += `<div class="${cls.join(' ')}" data-idx="${i}"><span class="num">${dt.getDate()}</span>${dots}</div>`;
+    if (allDoneOn(d)) cls.push('on');
+    cells += `<div class="${cls.join(' ')}" data-idx="${i}"><span>${DOW[dt.getDay()]}</span><i>${dt.getDate()}</i></div>`;
   }
-  return `<div class="cal-card">
-    <div class="cal-head">
-      <div class="ym">${weekOffset + 1}주차 · ${d0.getMonth() + 1}/${d0.getDate()} ~ ${d1.getMonth() + 1}/${d1.getDate()}</div>
-      <div class="nav"><button type="button" id="wk-prev" ${weekOffset === 0 ? 'disabled' : ''}>‹</button><button type="button" id="wk-next" ${weekOffset === 3 ? 'disabled' : ''}>›</button></div>
-    </div>
-    <div class="dow-row">${dowHeader(wStart)}</div>
-    <div class="day-grid">${cells}</div>
-    <div class="cal-legend"><span><i class="ring-sample"></i>오늘</span><span><i class="dot-sample"></i>미션 모두 달성</span></div>
-  </div>`;
+  return `<div class="wk-head">
+    <b>${weekOffset + 1}주차 · ${d0.getMonth() + 1}/${d0.getDate()} ~ ${d1.getMonth() + 1}/${d1.getDate()}</b>
+    <div class="nav"><button type="button" id="wk-prev" aria-label="이전 주" ${weekOffset === 0 ? 'disabled' : ''}>${ICON.back}</button><button type="button" id="wk-next" aria-label="다음 주" ${weekOffset === 3 ? 'disabled' : ''}>${ICON.chevron}</button></div>
+  </div><div class="week">${cells}</div>`;
 }
 
 function answerHtml(m, log) {
@@ -151,7 +176,7 @@ function answerHtml(m, log) {
   if (code === 'ACT-1') {
     const target = (m.target_config || {}).steps_target;
     return `<div class="answers"><input type="number" min="0" max="100000" id="steps-${code}" placeholder="걸음 수" value="${log ? log.quantity : ''}">
-      <button type="button" data-save-steps="${code}">저장</button></div>${target ? `<div class="mq">목표 ${target.toLocaleString()}보</div>` : ''}`;
+      <button type="button" data-save-steps="${code}">저장</button></div>${target ? `<div class="meta">목표 ${target.toLocaleString()}보</div>` : ''}`;
   }
   if (code === 'ACT-3' && partialFor === code) {
     return `<div class="answers">${[1, 2, 3].map(n => `<button type="button" data-code="${code}" data-answer="partial" data-qty="${n}">${n}번</button>`).join('')}</div>`;
@@ -163,19 +188,31 @@ function answerHtml(m, log) {
   }).join('')}</div>`;
 }
 
+function tagHtml(m) {
+  const code = m.card.code || '';
+  if (m.selection_type === 'replacement') return '<span class="ctag fixed">고정 · 대체</span>';
+  if (/^SMK/.test(code)) return '<span class="ctag fixed">고정 · 흡연</span>';
+  if (/^ALC/.test(code)) return '<span class="ctag fixed">고정 · 음주</span>';
+  return '<span class="ctag selected">선택</span>';
+}
+
 function missionCardHtml(m, d, editable) {
   const log = logOn(m, d);
   const week = m.weeks[Math.min(3, Math.floor(selectedIdx / 7))];
-  const pct = Math.round(week.rate * 100);
-  return `<div class="mission-card">
-    <div class="mt">${esc(m.card.name)} <span class="lvl" data-l="${LEVEL_LABEL[m.card.difficulty]}">${LEVEL_LABEL[m.card.difficulty]}</span></div>
-    <div class="mq">${esc(m.card.question)}</div>
-    ${editable ? answerHtml(m, log) : `<div class="logged ${log ? log.status : ''}">${log ? STATUS_LABEL[log.status] : '기록 없음'}</div>`}
-    ${editable && log ? `<div class="logged ${log.status}">오늘 기록: ${STATUS_LABEL[log.status]}</div>` : ''}
+  const fixed = m.selection_type !== 'selected';
+  const done = log && log.status === 'completed';
+  return `<div class="mrow${done ? ' done' : ''}">
+    <div class="main">
+      <span class="ic${fixed ? '' : ' sel'}">${MISSION_ICON[m.card.category] || MISSION_ICON.other}</span>
+      <div class="tx"><div>${tagHtml(m)}</div><span class="nm">${esc(m.card.name)}</span><span class="ds">${esc(m.card.description)}</span>${counts[m.card.code] ? `<span class="ds">${counts[m.card.code].toLocaleString()}명 참여 중</span>` : ''}</div>
+      <span class="ck" role="img" aria-label="${done ? '완료됨' : '아직 안 했어요'}"><i>${done ? '<svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5l2.5 2.5L11 4.5"/></svg>' : ''}</i></span>
+    </div>
+    <div class="q">${esc(m.card.question)}</div>
+    ${editable ? answerHtml(m, log) : ''}
+    ${log ? `<div class="logged ${log.status}">${editable ? '오늘 기록' : '이 날 기록'}: ${STATUS_LABEL[log.status]}</div>` : (editable ? '' : '<div class="logged skipped">기록 없음</div>')}
     ${log && log.warning ? `<div class="warn">${esc(log.warning)}</div>` : ''}
-    ${m.card.notice ? `<div class="mq">${esc(m.card.notice)}</div>` : ''}
-    <div class="bar"><i style="width:${pct}%"></i></div>
-    <div class="meta"><span>${week.week}주차 ${week.completed} / ${week.target}회</span><span>연속 ${m.streak}일</span></div>
+    ${m.card.notice ? `<div class="meta">${esc(m.card.notice)}</div>` : ''}
+    <div class="meta">${week.week}주차 ${week.completed} / ${week.target}회 · 연속 ${m.streak}일</div>
   </div>`;
 }
 
@@ -183,19 +220,53 @@ function dayDetailHtml() {
   const dt = dateForIdx(selectedIdx), d = iso(dt);
   const editable = cycle.status === 'active' && selectedIdx === todayIdx();
   let hint = '';
-  if (selectedIdx < todayIdx()) hint = '<p class="hint">지난 날짜는 그날의 기록만 볼 수 있어요</p>';
-  else if (selectedIdx > todayIdx()) hint = '<p class="hint">아직 오지 않은 날짜예요</p>';
-  return `<div class="today-card">
-    <div><div class="tt">${editable ? '오늘' : '선택한 날'}</div><div class="dd">${dt.getMonth() + 1}월 ${dt.getDate()}일 (${DOW[dt.getDay()]})</div></div>
+  if (selectedIdx < todayIdx()) hint = '<p class="hint-day">지난 기록은 볼 수만 있어요</p>';
+  else if (selectedIdx > todayIdx()) hint = '<p class="hint-day">아직 오지 않은 날짜예요</p>';
+  const fixedN = cycle.missions.filter(m => m.selection_type !== 'selected').length;
+  return `<div class="sec">
+    <div class="sec-h"><b>${editable ? '내 챌린지' : `${dt.getMonth() + 1}월 ${dt.getDate()}일 (${DOW[dt.getDay()]})`}</b><span>고정 ${fixedN} · 선택 ${cycle.missions.length - fixedN}</span></div>
+    ${editable ? '<div class="rule">세 가지를 모두 하면 오늘 파이 완성<small>기록은 오늘만 고칠 수 있어요</small></div>' : ''}
     ${selectedIdx > todayIdx() ? '' : cycle.missions.map(m => missionCardHtml(m, d, editable)).join('')}
     ${hint}
+  </div>`;
+}
+
+const CHEV = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#5A6B7A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>';
+const PARTY_ICON = svg('<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M15 14.2c.7-.2 1.4-.3 2-.3 2.2 0 3.8 1.5 3.8 4"/>', 22);
+
+function partyRowHtml() {
+  if (party === undefined) return '';
+  if (party === null) {
+    return `<a class="lrow" href="party-start.html"><span class="ic" style="background:#DCEFE5; color:#1F6B49">${PARTY_ICON}</span>
+      <div class="tx"><div><span class="ctag party">파티</span></div><span class="nm">파티 만들기</span><span class="ds">친구와 함께 인증해요</span></div>${CHEV}</a>`;
+  }
+  const left = party.today_all_done ? '오늘 파티원 모두 인증했어요' : `오늘 ${party.today_remaining}명이 더 인증하면 돼요`;
+  return `<a class="lrow" href="party-home.html"><span class="ic" style="background:#DCEFE5; color:#1F6B49">${PARTY_ICON}</span>
+    <div class="tx"><div><span class="ctag party">파티</span></div><span class="nm">${esc(party.party.name)}</span><span class="ds">${left} · 연속 ${party.streak}일째</span></div>${CHEV}</a>`;
+}
+
+function badgeRowHtml() {
+  if (!badges) return '';
+  const next = badges.next ? ` · 다음은 ${esc(badges.next.label)}` : '';
+  return `<a href="badges.html" style="display:flex; align-items:center; gap:12px; padding:4px 2px; text-decoration:none; color:inherit">
+    <div style="display:flex"><span style="width:32px;height:32px;border-radius:16px;background:#AACDDC;border:2px solid #fff"></span><span style="width:32px;height:32px;border-radius:16px;background:#F3E3D0;border:2px solid #fff;margin-left:-10px"></span><span style="width:32px;height:32px;border-radius:16px;background:#81A6C6;border:2px solid #fff;margin-left:-10px"></span></div>
+    <span style="flex:1; font-size:14px; font-weight:700">모은 배지 ${badges.earned_count}개<span style="font-weight:400; color:var(--muted)"> / ${badges.total}${next}</span></span>${CHEV}</a>`;
+}
+
+function togetherHtml() {
+  return `<div class="sec">
+    <div class="sec-h"><b>함께 하는 챌린지</b><span>파이 조각과는 별개예요</span></div>
+    ${partyRowHtml()}
+    <a class="lrow" href="common-challenges.html"><span class="ic" style="background:#DDE2E8; color:#243749">${svg('<circle cx="12" cy="12" r="9"/><path d="M3.5 12h17M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/>', 22)}</span>
+      <div class="tx"><div><span class="ctag common">공통</span></div><span class="nm">공통 챌린지</span><span class="ds">모두 함께 하는 챌린지</span></div><span class="go">보러 가기</span></a>
+    ${badgeRowHtml()}
   </div>`;
 }
 
 // 혈압은 미션이 아니라 시작·4주 재입력 때만 재요 (가이드 §5.3). 주간 혈압 기록은 없음
 function bpSectionHtml() {
   const end = new Date(cycle.ended_on + 'T00:00:00');
-  return `<div class="callout"><b>혈압은 4주마다 재요</b><br>${end.getMonth() + 1}월 ${end.getDate()}일에 이번 4주가 끝나면 재입력 화면에서 다시 입력해요</div>`;
+  return `<div class="callout"><b>혈압은 4주마다 재요</b><br>이번 4주는 <b>${end.getMonth() + 1}월 ${end.getDate()}일</b>에 끝나요</div>`;
 }
 
 async function record(code, answer, quantity) {
@@ -209,7 +280,7 @@ async function record(code, answer, quantity) {
 }
 
 function wireEvents() {
-  document.querySelectorAll('.day[data-idx]').forEach(el => el.addEventListener('click', () => { selectedIdx = Number(el.dataset.idx); render(); }));
+  document.querySelectorAll('.week .d[data-idx]').forEach(el => el.addEventListener('click', () => { selectedIdx = Number(el.dataset.idx); render(); }));
   const prev = document.getElementById('wk-prev');
   if (prev) prev.addEventListener('click', () => { weekOffset = Math.max(0, weekOffset - 1); render(); });
   const next = document.getElementById('wk-next');
@@ -227,10 +298,10 @@ function wireEvents() {
 }
 
 function render() {
-  document.getElementById('lede').textContent =
-    `12주 중 ${cycle.cycle_number}차 · ${cycle.day_number}일째. 오늘 한 일을 미션별로 기록하세요. 목표는 하루가 아니라 일주일에 몇 번 했는지이고, 오늘 기록은 언제든 고칠 수 있어요.`;
+  document.getElementById('ring-wrap').innerHTML = ringHtml();
   document.getElementById('week-strip').innerHTML = weekStripHtml();
   document.getElementById('day-detail').innerHTML = dayDetailHtml();
+  document.getElementById('together').innerHTML = togetherHtml();
   document.getElementById('bp-section').innerHTML = bpSectionHtml();
   wireEvents();
 }
@@ -244,8 +315,8 @@ async function main() {
     try { last = (await apiListCycles())[0] || null; } catch (e) { /* 이력이 없어도 진행 */ }
     if (last && (last.status === 'completed' || last.status === 'incomplete')) {
       const msg = last.status === 'completed'
-        ? '4주 목표를 모두 달성했어요! 다음 4주도 이어서 해 볼까요?'
-        : '4주가 끝났어요. 이번 기록을 바탕으로 다음 4주 미션을 다시 골라 볼까요?';
+        ? '4주 목표를 모두 달성했어요!'
+        : '다음 4주 미션을 다시 골라요.';
       // 4주 재입력 전이면 재입력 먼저 (다음 사이클 추천이 재입력 값으로 바뀜, 가이드 §6.2)
       const next = last.reassessed
         ? `<a class="cta" style="display:block; text-align:center; text-decoration:none" href="challenges.html">다음 4주 시작하기</a>
@@ -261,10 +332,16 @@ async function main() {
   selectedIdx = todayIdx();
   weekOffset = Math.floor(selectedIdx / 7);
   render();
-  const stop = document.getElementById('stop-btn');
-  stop.style.display = 'block';
-  stop.addEventListener('click', async () => {
-    if (!confirm('진행 중인 챌린지를 중단할까요? 지금까지 기록은 남아요.')) return;
+  const get = (path) => apiCall('GET', path, undefined, '').then(r => r.data);
+  Promise.all([
+    get('/home/summary').then(v => summary = v).catch(() => {}),
+    get('/challenges/participants').then(v => v.forEach(x => counts[x.challenge_code] = x.participants)).catch(() => {}),
+    get('/parties/me').then(v => party = v).catch(e => { if (e.code === 'PARTY_NOT_JOINED') party = null; }),
+    get('/badges').then(v => badges = v).catch(() => {}),
+  ]).then(render);
+  document.getElementById('stop-wrap').style.display = 'flex';
+  document.getElementById('stop-btn').addEventListener('click', async () => {
+    if (!(await confirmDialog('챌린지를 중단할까요?', '지금까지 기록은 남아요. 중단하면 새 챌린지를 다시 고를 수 있어요.', '중단하기'))) return;
     try { await apiStopCycle(); location.replace('challenges.html'); } catch (e) { showError(friendlyError(e)); }
   });
 }

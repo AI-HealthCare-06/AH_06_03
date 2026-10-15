@@ -5,34 +5,59 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PAEON — 로그인</title>
 <link rel="stylesheet" href="assets/style.css">
+<style>
+  body{padding-bottom:110px}
+  #header-slot{display:none}
+  .bar{height:64px; padding:0 8px; display:flex; align-items:center; gap:4px; max-width:430px; margin:0 auto}
+  .bar .back{width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--ink)}
+  .bar .ttl{font-size:17px; font-weight:800}
+  .frame-body{padding:0 20px 28px}
+  .screen{gap:0}
+  .h1{font-size:28px; font-weight:800; letter-spacing:-.7px; line-height:1.3}
+  .sub{font-size:14px; color:#4A5C6D; line-height:1.6; margin-top:10px}
+  .fields{display:flex; flex-direction:column; gap:16px}
+  .field{gap:8px}
+  .field label{font-weight:500; line-height:1.25}
+  .field input{height:56px; border:2px solid transparent; border-radius:14px; font-size:16px; font-weight:500}
+  .field input:focus{outline:0; border-color:var(--ink)}
+  .keep{display:flex; align-items:center; gap:10px; min-height:44px; font-size:14px; color:#4A5C6D}
+  .keep input{width:22px; height:22px; margin:0; accent-color:var(--sage-deep)}
+  .links{padding-top:8px; display:flex; justify-content:center; gap:20px; font-size:14px; color:var(--muted)}
+  .links a{min-height:44px; display:flex; align-items:center; text-decoration:underline}
+  .dock{position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:100%; max-width:430px; padding:12px 20px 28px; background:#fff; z-index:60}
+  .dock .cta{height:56px; font-size:17px}
+</style>
 </head>
 <body>
 
 <div id="header-slot"></div>
+<div class="bar"><a class="back" href="index.html" aria-label="뒤로" data-icon="back"></a></div>
 
 <div class="wrapper">
   <div class="frame">
     <div class="frame-body">
-      <div class="screen" style="max-width:420px; margin:0 auto; width:100%">
-        <h3 style="text-align:center">파이온 PAEON</h3>
+      <div class="screen">
+        <div style="padding-top:24px"><div class="h1">다시 만나서<br>반가워요</div><div class="sub">가입한 이메일로 로그인해 주세요.</div></div>
 
-        <form id="login-form">
-          <div class="field">
-            <label for="email">이메일</label>
-            <input id="email" type="email" placeholder="you@email.com" required>
+        <form id="login-form" style="padding-top:36px">
+          <div class="fields">
+            <div class="field">
+              <label for="email">이메일</label>
+              <input id="email" type="email" placeholder="example@email.com" required>
+            </div>
+            <div class="field">
+              <label for="pw">비밀번호</label>
+              <input id="pw" type="password" placeholder="비밀번호" required>
+            </div>
+            <label class="keep"><input type="checkbox" checked onclick="return false">로그인 상태 유지</label>
           </div>
-          <div class="field" style="margin-top:10px">
-            <label for="pw">비밀번호</label>
-            <input id="pw" type="password" required>
-          </div>
 
-          <p id="form-err" class="err" style="margin-top:8px; display:none"></p>
+          <p id="form-err" class="err" style="margin-top:4px; display:none"></p>
 
-          <button type="submit" id="submit-btn" class="cta" style="margin-top:14px">로그인</button>
+          <div class="dock"><button type="submit" id="submit-btn" class="cta">로그인</button></div>
         </form>
 
-        <p class="hint" style="text-align:center; margin-top:10px">계정이 없으신가요? <a href="signup.html" style="color:var(--muted); font-weight:700; text-decoration:underline">회원가입</a></p>
-        <p class="hint" style="text-align:center; margin-top:4px">로그인이 안 되나요? <a href="guest-inquiry.html" style="color:var(--muted); font-weight:700; text-decoration:underline">문의하기</a></p>
+        <div class="links"><a href="signup.html">회원가입</a><a href="guest-inquiry.html">문의하기</a></div>
       </div>
     </div>
   </div>

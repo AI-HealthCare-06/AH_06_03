@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 챌린지 순위</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .hero{display:flex; flex-direction:column; gap:8px; background:var(--notice); border-radius:28px; padding:20px}
+  .hero .tg{height:24px; padding:0 10px; border-radius:12px; background:var(--ink); color:#fff; font-size:12px; font-weight:700; display:inline-flex; align-items:center; align-self:flex-start}
+  .hero .t{font-size:24px; font-weight:800; letter-spacing:-.5px; line-height:1.35; word-break:break-all}
+  .hero .p{font-size:13px; color:var(--body)}
+  .rew{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px}
+  .rew div{background:var(--cream); border-radius:16px; padding:12px 6px; display:flex; flex-direction:column; align-items:center; gap:6px; font-size:13px; font-weight:800}
+  .rew svg{width:30px; height:30px}
+  .rew b{font-size:14px; font-weight:800}
+  .me{display:flex; align-items:center; gap:14px; border:2px solid var(--accent); background:var(--notice); border-radius:22px; padding:16px 18px}
+  .me .l{font-size:13px; color:var(--body)}
+  .me .v{font-size:22px; font-weight:800; letter-spacing:-.4px}
+  .rk{display:flex; align-items:center; gap:12px; min-height:64px; border-top:1px solid var(--line)}
+  .rk:last-child{border-bottom:1px solid var(--line)}
+  .rk .n{width:28px; height:28px; border-radius:14px; border:1px solid var(--sage); box-sizing:border-box; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none}
+  .rk .n.r1{background:#F2C94C; border:0; font-weight:800}
+  .rk .n.r2{background:#CBD2D9; border:0; font-weight:800}
+  .rk .n.r3{background:#E7B260; border:0; font-weight:800}
+  .rk .av{width:44px; height:44px; border-radius:14px; background:var(--cream); display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--muted); flex:none}
+  .rk .nm{flex:1; display:flex; flex-direction:column; font-size:15px; font-weight:700}
+  .rk .dy{font-size:13px; font-weight:500; color:var(--muted)}
+  .rk .rw{display:flex; align-items:center; gap:4px; font-size:14px; font-weight:800}
+  .rk .rw svg{width:22px; height:22px}
+  .rk.me2{background:var(--notice); margin:0 -8px; padding:0 8px; border-radius:14px}
+  .rk.me2 .n{background:var(--accent); color:#fff; border:0; font-weight:800}
+  .rk.me2 .av{background:#fff}
+  .bar{position:fixed; left:50%; transform:translateX(-50%); bottom:84px; width:100%; max-width:430px; padding:12px 20px; background:#fff; border-top:1px solid var(--line); z-index:55}
+  .stepbox{display:flex; gap:8px; margin-bottom:8px}
+  .stepbox input{flex:1; height:48px; border:0; border-radius:12px; background:var(--cream); padding:0 14px; font:inherit; font-size:15px}
+  .rules{display:flex; flex-direction:column; gap:10px}
+  .rules > div{background:var(--notice); border-radius:18px; padding:16px 18px; display:flex; flex-direction:column; gap:4px}
+  .rules span{font-size:13px; font-weight:700; color:#234257}
+  .rules b{font-size:20px; font-weight:800; letter-spacing:-.4px; line-height:1.35}
+</style>
+</head>
+<body style="padding-bottom:180px">
+<div id="header-slot"></div>
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" style="gap:18px" id="screen">
+        <div class="page-bar"><a class="back" href="common-challenges.html" aria-label="뒤로" id="back"></a><span class="ttl">챌린지</span></div>
+        <div id="main"><p class="hint">불러오는 중...</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="bar" id="bar" hidden></div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+document.getElementById('back').innerHTML = ICON.back;
+const id = new URLSearchParams(location.search).get('id');
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const ERR = { NICKNAME_REQUIRED: '닉네임을 먼저 정해 주세요.', ALREADY_CERTIFIED: '오늘은 이미 인증했어요.', STEPS_NOT_ENOUGH: '목표 걸음 수에 아직 못 미쳤어요.', STEPS_REQUIRED: '걸음 수를 적어 주세요.', NOT_JOINED: '먼저 챌린지에 참여해 주세요.', COMMON_CHALLENGE_ENDED: '이미 끝난 챌린지예요.', COMMON_CHALLENGE_NOT_ACTIVE: '아직 시작하지 않았거나 끝난 챌린지예요.', ALREADY_JOINED: '이미 참여하고 있어요.' };
+const _avc = {};
+const _avView = (n) => _avc[n] || (_avc[n] = apiCall('GET', '/characters/by-nickname/' + encodeURIComponent(n), undefined, '').then(r => r.data));
+function hydrateAvatars(root, px) {
+  (root || document).querySelectorAll('[data-av]:not([data-done])').forEach(el => {
+    el.dataset.done = '1';
+    _avView(el.dataset.av).then(v => { el.innerHTML = characterSvg(v, px || 40); }).catch(() => {});
+  });
+}
+function dateRange(a, b) {
+  const f = (s) => { const d = new Date(s + 'T00:00:00'); return (d.getMonth() + 1) + '.' + d.getDate() + '(' + '일월화수목금토'[d.getDay()] + ')'; };
+  return f(a) + ' ~ ' + f(b);
+}
+let c = null;
+function render() {
+  const r = c.rewards, rw = [r.first, r.second, r.third], rows = c.top.map(t => '<div class="rk' + (t.is_me ? ' me2' : '') + '"><span class="n' + (t.rank <= 3 ? ' r' + t.rank : '') + '">' + t.rank + '</span><span class="av">' + esc(t.nickname.slice(0, 1)) + '</span><span class="nm"><span' + (t.is_me ? ' style="font-weight:800"' : '') + '>' + esc(t.nickname) + (t.is_me ? ' <span style="font-size:12px; font-weight:700; color:var(--body)">나</span>' : '') + '</span><span class="dy">인증 ' + t.days + '일</span></span>' + (t.rank <= 3 ? '<span class="rw">' + ICON.pie + '+' + rw[t.rank - 1] + '</span>' : '') + '</div>');
+  document.getElementById('main').innerHTML = '<div style="display:flex; flex-direction:column; gap:18px">'
+    + '<div class="hero"><span class="tg">공통 챌린지</span><div class="t">' + esc(c.title) + '</div><div class="p">' + dateRange(c.starts_on, c.ends_on) + ' · ' + c.participants.toLocaleString() + '명 참여 중' + (c.proof_type === 'steps' ? ' · 하루 ' + c.target_steps.toLocaleString() + '걸음' : ' · 직접 인증') + '</div></div>'
+    + '<div class="rules"><div><span>완주</span><b>' + c.total_days + '일 중 ' + c.complete_min_days + '일 이상 인증</b></div><div><span>순위</span><b>인증한 일수가 많은 순서</b></div></div>'
+    + '<div><div class="sect" style="margin:0 0 8px">순위 보상</div><div class="rew"><div>1위'+ICON.pie+'<b>+' + r.first + '</b></div><div>2위'+ICON.pie+'<b>+' + r.second + '</b></div><div>3위'+ICON.pie+'<b>+' + r.third + '</b></div><div>완주'+ICON.pie+'<b>+' + r.complete + '</b></div></div></div>'
+    + (c.joined ? '<div class="me"><span style="width:48px; height:48px; border-radius:16px; background:#fff; display:flex; align-items:center; justify-content:center; flex:none">' + ICON.pie + '</span><div style="flex:1"><div class="l">내 순위</div><div class="v">' + (c.my_rank ? c.my_rank + '위' : '아직 없어요') + '</div></div><div style="text-align:right"><div style="font-size:15px; font-weight:800">인증 ' + c.my_days + '일</div></div></div>' : '')
+    + '<div><div style="display:flex; align-items:baseline; justify-content:space-between; padding-bottom:8px"><span class="sect" style="margin:0">순위</span><span style="font-size:12px; color:var(--muted)">인증한 일수 기준</span></div>' + (rows.length ? rows.join('') : '<div class="empty" style="padding:20px 0">아직 인증한 사람이 없어요.</div>') + '</div>'
+    + '<div class="hint">보상 파이는 끝난 뒤 한꺼번에 들어와요.</div></div>';
+  hydrateAvatars(document.getElementById('main'), 34);
+  const bar = document.getElementById('bar'); bar.hidden = false;
+  if (c.state === 'ended') { bar.innerHTML = '<button type="button" class="cta" disabled>' + (c.finalized ? '순위가 확정되었어요' : '종료된 챌린지예요') + '</button>'; return; }
+  if (!c.joined) { bar.innerHTML = '<button type="button" class="cta" id="join">참여하기</button>'; document.getElementById('join').addEventListener('click', join); return; }
+  if (c.state === 'upcoming') { bar.innerHTML = '<button type="button" class="cta" disabled>시작 전이에요</button>'; return; }
+  if (c.certified_today) { bar.innerHTML = '<button type="button" class="cta" disabled>오늘 인증했어요</button>'; return; }
+  bar.innerHTML = (c.proof_type === 'steps' ? '<div class="stepbox"><input id="steps" inputmode="numeric" placeholder="오늘 걸음 수 (목표 ' + c.target_steps.toLocaleString() + ')" aria-label="오늘 걸음 수"></div>' : '') + '<button type="button" class="cta" id="cert">오늘 인증하기</button><p class="err" id="e" hidden style="margin-top:6px"></p>';
+  document.getElementById('cert').addEventListener('click', certify);
+}
+function fail(e) {
+  const el = document.getElementById('e');
+  if (e.code === 'NICKNAME_REQUIRED') { location.href = 'nickname.html?next=common-challenges.html'; return; }
+  const m = ERR[e.code] || friendlyError(e);
+  if (el) { el.textContent = m; el.hidden = false; } else confirmDialog('안내', m, '확인');
+}
+async function join() { try { await apiCall('POST', '/common-challenges/' + id + '/join', undefined, '참여하지 못했어요'); await load(); } catch (e) { fail(e); } }
+async function certify() {
+  const body = {}; const s = document.getElementById('steps');
+  if (s) { const n = parseInt(s.value.replace(/,/g, ''), 10); if (!n) { fail({ code: 'STEPS_REQUIRED' }); return; } body.steps = n; }
+  try { await apiCall('POST', '/common-challenges/' + id + '/certify', body, '인증하지 못했어요'); await load(); } catch (e) { fail(e); }
+}
+async function load() {
+  try { c = (await apiCall('GET', '/common-challenges/' + id, undefined, '챌린지를 불러오지 못했어요')).data; render(); }
+  catch (e) { document.getElementById('main').innerHTML = '<div class="empty">' + esc(e.code === 'COMMON_CHALLENGE_NOT_FOUND' ? '챌린지를 찾을 수 없어요.' : friendlyError(e)) + '</div>'; }
+}
+if (!id) location.replace('common-challenges.html'); else load();
+</script>
+</body>
+</html>

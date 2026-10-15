@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 파티 현황</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .tabs{display:flex; border-bottom:1px solid var(--line); margin:0 -20px; padding:0 20px}
+  .tabs a,.tabs span{flex:1; height:46px; border-bottom:3px solid transparent; margin-bottom:-1px; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--muted); text-decoration:none}
+  .tabs .on{color:var(--ink); font-weight:800; border-bottom-color:var(--ink)}
+  .feed-head{display:flex; align-items:center; justify-content:space-between; min-height:64px}
+  .feed-head h1{font-size:20px}
+  .me-char{width:44px; height:44px; display:flex; align-items:center; justify-content:center}
+  .pill{height:28px; padding:0 12px; border-radius:14px; background:var(--notice); color:#234257; font-size:13px; font-weight:800; display:inline-flex; align-items:center}
+  .sub{display:flex; gap:8px}
+  .sub button,.sub a{display:inline-flex; align-items:center; box-sizing:border-box; height:40px; padding:0 18px; border-radius:20px; border:1px solid #D2C4B4; background:#fff; font:400 14px inherit; color:var(--ink); cursor:pointer}
+  .sub .on{background:var(--accent-light); border-color:var(--accent-light); color:#1E3246; font-weight:700}
+  .box{background:var(--cream); border-radius:22px; padding:16px 18px; display:flex; align-items:center; justify-content:space-between}
+  .box small{font-size:13px; color:var(--muted)}
+  .copy{height:38px; padding:0 16px; border-radius:19px; background:#fff; border:1px solid #D2C4B4; font:700 14px inherit; color:var(--ink); cursor:pointer}
+  .mrow{display:flex; align-items:center; gap:12px; min-height:68px; border-top:1px solid var(--line)}
+  .mrow.me{background:var(--notice); margin:0 -8px; padding:0 8px; border-radius:14px}
+  .mrow .face{width:44px; height:44px; border-radius:14px; background:var(--cream); display:flex; align-items:center; justify-content:center; flex:none}
+  .mrow.me .face{background:#fff}
+  .mrow .info{flex:1; display:flex; flex-direction:column; gap:6px; min-width:0}
+  .mrow .nm{font-size:15px; font-weight:700}
+  .mrow .nm small{font-size:12px; font-weight:500; color:var(--muted)}
+  .bar{height:6px; border-radius:3px; background:var(--line)}
+  .mrow.me .bar{background:#fff}
+  .bar i{display:block; height:6px; border-radius:3px; background:#5C86AC}
+  .ck{width:28px; height:28px; box-sizing:border-box; border-radius:14px; border:2px solid #D2C4B4; display:flex; align-items:center; justify-content:center; color:#fff; flex:none}
+  .ck.me{border-color:#5C86AC}
+  .ck.done{background:#5C86AC; border-color:#5C86AC}
+  .vacant .face{background:none; border:1.5px dashed #D2C4B4; box-sizing:border-box; color:var(--muted)}
+  .legend{display:flex; align-items:center; gap:14px; font-size:12px; color:var(--muted); padding:2px 2px 6px}
+  .legend span{display:inline-flex; align-items:center; gap:5px}
+  .legend i{width:12px; height:12px; box-sizing:border-box; border-radius:6px; display:inline-block}
+  #body{display:flex; flex-direction:column; gap:16px}
+  #body[hidden]{display:none}
+  .leave{align-self:center; min-height:44px; background:none; border:0; font:400 13px inherit; color:var(--muted); text-decoration:underline; cursor:pointer}
+</style>
+</head>
+<body>
+<div id="header-slot"></div>
+<div class="wrapper"><div class="frame"><div class="frame-body"><div class="screen" style="gap:16px">
+  <div class="feed-head"><h1>커뮤니티</h1><a class="me-char" id="me-char" href="character.html" aria-label="내 캐릭터"></a></div>
+  <div class="tabs" role="tablist" style="margin-bottom:2px">
+    <a href="feed.html" role="tab">피드</a>
+    <a href="common-challenges.html" role="tab">챌린지</a>
+    <span class="on" role="tab" aria-selected="true">파티</span>
+  </div>
+  <p class="lede" id="loading">불러오는 중이에요…</p>
+  <p class="err" id="err" hidden></p>
+  <div id="body" hidden>
+    <div style="display:flex; align-items:center; justify-content:space-between">
+      <div style="display:flex; flex-direction:column; gap:2px; min-width:0"><span id="pname" style="font-size:22px; font-weight:800; letter-spacing:-.5px; word-break:break-all"></span><span id="pintro" style="font-size:13px; color:var(--muted)"></span></div>
+      <span class="pill" id="pcount"></span>
+    </div>
+    <div class="sub"><button type="button" class="on">현황</button><a id="feedtab" href="party-feed.html" style="text-decoration:none">파티 피드</a></div>
+    <div class="box">
+      <div style="display:flex; flex-direction:column; gap:4px"><small id="codehint"></small><span id="pcode" style="font-size:22px; font-weight:800; letter-spacing:2px"></span></div>
+      <button type="button" class="copy" id="copy">복사</button>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:6px">
+      <div style="display:flex; align-items:baseline; justify-content:space-between"><span style="font-size:18px; font-weight:800">파티원 인증 현황</span><span id="day" style="font-size:13px; color:var(--muted)"></span></div>
+      <div style="display:flex; align-items:center; gap:8px; background:var(--cream); border-radius:14px; padding:12px 14px"><span class="ctag" style="background:#A9D6C2; color:#0F2E20">파티</span><span id="cname" style="font-size:14px; font-weight:700"></span></div>
+      <div class="legend"><span><i style="background:#5C86AC"></i>오늘 완료</span><span><i style="border:2px solid #D2C4B4"></i>오늘 미완료</span></div>
+      <div id="members" style="border-bottom:1px solid var(--line)"></div>
+    </div>
+    <div class="box">
+      <div style="display:flex; flex-direction:column; gap:2px"><small>파티 연속 인증</small><span id="streak" style="font-size:20px; font-weight:800"></span></div>
+      <span id="remain" style="font-size:13px; color:#4A5C6D; text-align:right; line-height:1.6"></span>
+    </div>
+    <p class="err" id="err2" hidden></p>
+    <div style="font-size:17px; font-weight:800; text-align:center">인증은 하루 한 번</div>
+    <button type="button" class="cta" id="checkin">오늘 완료</button>
+    <button type="button" class="leave" id="leave">파티 나가기</button>
+  </div>
+</div></div></div></div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const CHECK = '<svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5l2.5 2.5L11 4.5"/></svg>';
+$('me-char').innerHTML = characterSvg(null, 36);
+let code = '';
+
+function render(h) {
+  const p = h.party; code = p.invite_code;
+  $('pname').textContent = p.name;
+  $('pintro').textContent = p.intro || '';
+  $('pcount').textContent = p.member_count + ' / ' + p.max_members + '명';
+  const left = p.max_members - p.member_count;
+  $('codehint').textContent = '초대 코드 · ' + (left ? left + '자리 남았어요' : '자리가 다 찼어요');
+  $('pcode').textContent = p.invite_code;
+  $('day').textContent = '시작 ' + h.day_number + '일째';
+  $('cname').textContent = p.challenge_name;
+  $('members').innerHTML = h.members.map(m => {
+    const pct = m.days_total ? Math.round(m.days_done / m.days_total * 100) : 0;
+    const tag = [m.is_me ? '나' : '', m.is_leader ? '파티장' : ''].filter(Boolean).join(' · ');
+    return `<div class="mrow${m.is_me ? ' me' : ''}"><span class="face">${characterSvg(m.character, 36)}</span>
+      <div class="info"><span class="nm" style="${m.is_me ? 'font-weight:800' : ''}">${esc(m.nickname)} <small>${tag ? tag + ' · ' : ''}${m.days_total}일 중 ${m.days_done}일</small></span><div class="bar"><i style="width:${pct}%"></i></div></div>
+      <span class="ck${m.done_today ? ' done' : (m.is_me ? ' me' : '')}" aria-label="${m.done_today ? '오늘 완료' : '오늘 미완료'}">${m.done_today ? CHECK : ''}</span></div>`;
+  }).join('') + Array.from({ length: left }, () =>
+    `<div class="mrow vacant"><span class="face"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span style="flex:1; font-size:15px; color:var(--muted)">빈자리</span></div>`).join('');
+  $('streak').textContent = h.streak + '일째';
+  $('remain').innerHTML = h.today_all_done ? '오늘은 모두 인증했어요' : '오늘 ' + h.today_remaining + '명 남았어요';
+  const me = h.members.find(m => m.is_me);
+  if (me) $('me-char').innerHTML = characterSvg(me.character, 36);
+  const done = !!(me && me.done_today);
+  $('checkin').disabled = done;
+  $('checkin').textContent = done ? '오늘 완료했어요' : '오늘 완료';
+  $('loading').hidden = true; $('body').hidden = false;
+}
+
+const MSG = { PARTY_NOT_JOINED: '들어가 있는 파티가 없어요.' };
+function fail(el, e) {
+  if (e.code === 'PARTY_NOT_JOINED') return location.replace('party-start.html');
+  el.textContent = MSG[e.code] || friendlyError(e); el.hidden = false;
+}
+
+apiCall('GET', '/parties/me', undefined, '파티 정보를 불러오지 못했어요').then(r => render(r.data), e => { $('loading').hidden = true; fail($('err'), e); });
+
+$('copy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(code); $('copy').textContent = '복사했어요'; }
+  catch (e) { $('copy').textContent = '길게 눌러 복사'; }
+  setTimeout(() => { $('copy').textContent = '복사'; }, 1800);
+});
+$('checkin').addEventListener('click', async () => {
+  $('checkin').disabled = true; $('err2').hidden = true;
+  try { render((await apiCall('POST', '/parties/me/checkin', undefined, '인증하지 못했어요')).data); }
+  catch (e) { fail($('err2'), e); $('checkin').disabled = false; }
+});
+$('leave').addEventListener('click', async () => {
+  if (!await confirmDialog('파티를 나갈까요?', '나가면 이 파티의 인증 기록이 지워져요. 마지막 한 명이 나가면 파티가 없어져요.', '나가기')) return;
+  try { await apiCall('POST', '/parties/me/leave', undefined, '파티에서 나가지 못했어요'); location.href = 'party-start.html'; }
+  catch (e) { fail($('err2'), e); }
+});
+</script>
+</body>
+</html>

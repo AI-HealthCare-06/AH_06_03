@@ -6,29 +6,47 @@
 <title>PAEON — 개인정보 처리방침</title>
 <link rel="stylesheet" href="assets/style.css">
 <style>
-  .policy h4{margin:20px 0 6px; font-size:14px}
-  .policy p, .policy li{font-size:13px; line-height:1.7}
-  .policy p{margin:4px 0}
+  body{padding-bottom:40px}
+  #header-slot,.tabbar{display:none !important}
+  .bar{height:64px; padding:0 8px; display:flex; align-items:center; gap:4px; max-width:430px; margin:0 auto}
+  .bar .back{width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--ink)}
+  .bar .ttl{font-size:17px; font-weight:800}
+  .frame-body{padding:0 20px 28px}
+  .policy{gap:0 !important}
+  .policy-head,.policy-links,.notice{margin-bottom:16px}
+  .policy-head h1{font-size:24px; letter-spacing:-.5px}
+  .policy-head .hint{font-size:13px; margin-top:6px}
+  .policy-links{font-size:12.5px}
+  .policy-links a{color:var(--muted); text-decoration:underline}
+  .notice{background:var(--cream); border-radius:16px; padding:12px 14px; font-size:13px; color:#4A5C6D; line-height:1.65}
+  .acc{border-top:1px solid var(--line)}
+  .acc:last-of-type{border-bottom:1px solid var(--line)}
+  .acc summary{list-style:none; display:flex; align-items:center; justify-content:space-between; min-height:56px; font-size:15px; font-weight:700; cursor:pointer}
+  .acc summary::-webkit-details-marker{display:none}
+  .acc summary::after{content:""; width:16px; height:16px; flex:none; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%235A6B7A' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6l5 5 5-5'/%3E%3C/svg%3E") center/16px no-repeat}
+  .acc[open]{background:var(--cream); border-radius:16px; margin:0 -8px; padding:0 8px 14px}
+  .acc[open] summary{font-weight:800}
+  .acc[open] summary::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%23243749' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 10l5-5 5 5'/%3E%3C/svg%3E")}
+  .acc-body{display:flex; flex-direction:column; gap:6px}
+  .policy .acc-body p, .policy .acc-body li{font-size:14px; line-height:1.75; color:#4A5C6D; margin:0}
   .policy ul{margin:4px 0 0; padding-left:18px}
   .todo{color:#b4552d; font-weight:700}
   .chg-wrap{overflow-x:auto; margin-top:8px}
   .chg{border-collapse:collapse; width:100%; font-size:12.5px; line-height:1.6}
   .chg th,.chg td{border:1px solid var(--sage-light); padding:7px 9px; text-align:left; vertical-align:top}
-  .chg th{background:var(--cream); font-weight:700; white-space:nowrap}
-  .policy-links{text-align:center; font-size:12.5px; margin:6px 0 4px}
-  .policy-links a{color:inherit; text-decoration:underline; margin:0 8px}
+  .chg th{background:#fff; font-weight:700; white-space:nowrap}
 </style>
 </head>
 <body>
 
 <div id="header-slot"></div>
+<div class="bar"><a class="back" id="back" href="menu.html" aria-label="뒤로" data-icon="back"></a><span class="ttl">개인정보 처리방침</span></div>
 
 <div class="wrapper">
   <div class="frame">
     <div class="frame-body">
-      <div class="screen policy" style="max-width:640px; margin:0 auto; width:100%; text-align:left">
-        <h3 style="text-align:center">개인정보 처리방침</h3>
-        <p class="hint" style="text-align:center">버전 v4 · 시행일 <span class="todo">[시행일]</span></p>
+      <div class="screen policy" style="text-align:left">
+        <div class="policy-head"><h1>개인정보 처리방침</h1><p class="hint">버전 v4 · 시행일 <span class="todo">[시행일]</span></p></div>
         <p class="policy-links"><a href="terms.html">이용약관 보기</a></p>
 
         <h4>제1조 (개인정보의 처리 목적)</h4>
@@ -84,7 +102,7 @@
         <p class="hint">가입할 때 동의하시는 항목의 원문입니다. 이용약관 전문은 <a href="terms.html" style="color:inherit; text-decoration:underline">이용약관</a>에서 볼 수 있습니다.</p>
         <div id="dyn"><p>불러오는 중...</p></div>
 
-        <p class="hint" style="text-align:center; margin-top:18px">진단이 아닌 참고 정보입니다 · 걱정되는 경우 의료기관에 상담하세요</p>
+        <p class="hint" style="text-align:center; margin-top:18px">진단이 아닌 참고 정보입니다 · 정확한 판단은 의료진과 상담하세요</p>
       </div>
     </div>
   </div>
@@ -110,6 +128,22 @@ const esc = (t) => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;'
       <p><b>동의 거부·철회 방법</b><br>${esc(p.withdrawal_method)}</p>
       <p><b>제3자 제공</b><br>${esc(p.third_party_notice)}</p>`).join('') || '<p>내용을 찾지 못했어요.</p>';
   } catch (err) { dyn.innerHTML = '<p>내용을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>'; }
+})();
+</script>
+<script>
+// 조항(h4)마다 접고 펴는 칸으로 묶는다. 본문은 그대로 두고 감싸기만 한다
+(() => {
+  const root = document.querySelector('.policy');
+  const isEnd = (el) => el.matches('p.hint[style*="text-align:center"]');
+  [...root.querySelectorAll(':scope > h4')].forEach(h => {
+    const d = document.createElement('details'); d.className = 'acc';
+    const s = document.createElement('summary'); s.textContent = h.textContent;
+    const body = document.createElement('div'); body.className = 'acc-body';
+    let n = h.nextElementSibling;
+    while (n && n.tagName !== 'H4' && !isEnd(n)) { const nx = n.nextElementSibling; body.appendChild(n); n = nx; }
+    d.append(s, body); h.replaceWith(d);
+  });
+  const back = document.getElementById('back'); if (!loggedIn()) back.href = 'index.html';
 })();
 </script>
 </body>

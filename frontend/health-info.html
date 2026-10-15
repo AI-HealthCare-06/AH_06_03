@@ -6,17 +6,30 @@
 <title>PAEON — 건강정보 입력</title>
 <link rel="stylesheet" href="assets/style.css">
 <style>
-  .sum-card{background:#fff; border:1px solid var(--sage-light); border-radius:18px; padding:6px 18px}
-  .sumrow{display:flex; justify-content:space-between; gap:10px; padding:9px 0; font-size:13.5px; border-bottom:1px solid var(--track)}
-  .sumrow:last-child{border-bottom:none}
-  .sumrow .lb{color:var(--muted)}
+  .sum-card{border:1px solid var(--line); border-radius:20px; padding:2px 16px}
+  .sumrow{display:flex; justify-content:space-between; gap:16px; padding:11px 0; font-size:14px; border-top:1px solid var(--line)}
+  .sumrow:first-child{border-top:0}
+  .sumrow .lb{color:var(--muted); flex:none}
   .sumrow .vv{font-weight:700; text-align:right}
   .modal-backdrop{position:fixed; inset:0; background:rgba(56,64,56,.45); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100}
   .modal-card{background:#fff; border-radius:20px; padding:24px 22px; max-width:340px; width:100%; text-align:center; box-shadow:0 12px 30px rgba(56,64,56,.2)}
   .modal-card b{font-size:15px}
-  #ocr-card{background:var(--cream); border:1.5px solid var(--sage-light); border-radius:18px; padding:16px 18px; display:flex; flex-direction:column; gap:8px; margin-bottom:14px}
-  #ocr-card .sect{margin:0}
+  #ocr-card{background:var(--cream); border-radius:24px; padding:22px 20px; display:flex; flex-direction:column; gap:14px; border:0}
+  #ocr-card .hd{display:flex; align-items:center; gap:14px}
+  #ocr-card .ic{width:56px; height:56px; border-radius:18px; background:#fff; color:var(--muted); display:flex; align-items:center; justify-content:center; flex:none}
+  #ocr-card .soon{height:20px; padding:0 8px; border-radius:10px; background:var(--line); color:var(--body); font-size:11px; font-weight:800; display:inline-flex; align-items:center; align-self:flex-start}
+  #ocr-card .tt{font-size:16px; font-weight:800; line-height:1.35}
+  #ocr-card .hint{margin:0; font-size:13px; color:var(--body); line-height:1.6}
+  #ocr-card label.ghost{background:var(--line); border:0; height:48px; color:var(--muted); cursor:not-allowed}
   #ocr-result .callout{margin-top:4px}
+  .grid2{grid-template-columns:1fr; gap:16px}
+  .grid2 > .field:empty{display:none}
+  .or{display:flex; align-items:center; gap:12px; color:var(--muted); font-size:13px}
+  .or i{flex:1; height:1px; background:var(--line)}
+  .head h1{margin:0; font-size:28px; font-weight:800; letter-spacing:-.7px; line-height:1.3}
+  .head p{margin:10px 0 0; font-size:14px; color:var(--body); line-height:1.6}
+  .bar{position:sticky; bottom:84px; background:#fff; padding:12px 0; display:flex; flex-direction:column; gap:10px; z-index:5}
+  .bar .cta,.bar .ghost{height:56px; font-size:17px; border-radius:28px; margin:0}
 </style>
 <style>
   .cupguide{width:100%; border-collapse:collapse; margin-top:6px; font-size:11.5px; color:var(--muted)}
@@ -32,23 +45,29 @@
   <div class="frame">
     <div class="frame-body">
           <div id="summary-view" class="screen" style="display:none">
-            <p class="sect">입력한 건강정보</p>
+            <div class="page-bar"><a class="back" href="dashboard.html" aria-label="뒤로"><span data-icon="back"></span></a></div>
+            <div class="head"><h1>입력한 건강정보</h1></div>
             <div class="sum-card" id="summary-rows"></div>
-            <button type="button" id="edit-btn" class="ghost">정보 수정하기</button>
-            <a class="cta" id="summary-cta" style="display:block; text-align:center; text-decoration:none"></a>
+            <div class="bar"><button type="button" id="edit-btn" class="ghost">정보 수정하기</button>
+            <a class="cta" id="summary-cta" style="text-decoration:none"></a></div>
           </div>
 
           <form id="health-form" class="screen">
-            <div class="card plain" id="ocr-card">
-              <p class="sect" style="margin-top:0">검진 결과지 사진으로 빠르게 입력</p>
-              <p class="hint">이번 체험 버전에서는 사진 자동 입력을 제공하지 않아요. 아래에서 직접 입력해 주세요.</p>
-              <label class="ghost" style="display:block; text-align:center; cursor:not-allowed; opacity:.5">
-                <span id="ocr-label-text">📷 준비 중이에요</span>
+            <div class="page-bar"><a class="back" href="dashboard.html" aria-label="뒤로"><span data-icon="back"></span></a></div>
+            <div class="head"><h1>건강정보를<br>입력해 볼까요</h1></div>
+            <div id="ocr-card">
+              <div class="hd">
+                <span class="ic"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg></span>
+                <div style="display:flex; flex-direction:column; gap:6px"><span class="soon">준비 중</span><span class="tt">검진 결과지 사진으로<br>빠르게 입력</span></div>
+              </div>
+              <p class="hint">사진 자동 입력은 제공하지 않아요. 아래에서 직접 입력해 주세요.</p>
+              <label class="ghost">
+                <span id="ocr-label-text">사진 올리기 (준비 중)</span>
                 <input type="file" accept="image/*" id="ocr-input" style="display:none" disabled>
               </label>
               <div id="ocr-result"></div>
             </div>
-            <p class="hint" style="text-align:center; margin-bottom:6px">또는 아래에서 직접 입력</p>
+            <div class="or"><i></i>또는 아래에서 직접 입력<i></i></div>
 
             <p class="sect">기본 정보</p>
             <div class="grid2">
@@ -130,7 +149,7 @@
                   <option value="7_9">7–9잔</option>
                   <option value="10plus">10잔 이상</option>
                 </select>
-                <p class="hint" style="margin-top:6px">소주·양주 구분 없이 각각의 술잔으로 세어 주세요.</p>
+                <p class="hint" style="margin-top:6px">술잔 수로 세어 주세요.</p>
                 <table class="cupguide">
                   <thead><tr><th>술</th><th>1잔</th><th>병·캔으로 셀 때</th></tr></thead>
                   <tbody>
@@ -163,7 +182,7 @@
               <div class="field">
                 <label for="total-chol">총콜레스테롤 (mg/dL) · 선택</label>
                 <input id="total-chol" type="number">
-                <p class="hint" style="margin:4px 0 0">모르면 비워 두세요. 학습 데이터의 중앙값(234)으로 대신해 분석하고, 결과에 한계를 알려 드려요.</p>
+                <p class="hint" style="margin:4px 0 0">모르면 비워 두세요. 중앙값(234)으로 대신해 분석해요.</p>
               </div>
               <div class="field">
                 <label for="parent-htn">부모 고혈압 가족력</label>
@@ -184,7 +203,7 @@
               </div>
             </div>
 
-            <p class="tip">허리둘레·한 번 음주량은 나와 비슷한 사람들과 비교할 때 쓰는 항목이에요. 한 번 음주량은 음주 빈도가 "최근 1년간 전혀 마시지 않음" 이하면 묻지 않습니다.</p>
+            <p class="tip">허리둘레·한 번 음주량은 나와 비슷한 사람들과 비교할 때 써요.</p>
 
             <p id="form-err" class="err" style="display:none"></p>
 
@@ -193,7 +212,7 @@
               <span>입력하신 건강정보는 위험 신호 분석과 챌린지 추천에만 씁니다. 다른 용도로 쓰거나 제3자에게 제공하지 않습니다.</span>
             </div>
 
-            <button type="submit" id="submit-btn" class="cta">생활습관 설문으로</button>
+            <div class="bar"><button type="submit" id="submit-btn" class="cta">생활습관 설문으로</button></div>
           </form>
     </div>
   </div>
@@ -259,7 +278,7 @@ ocrInput.addEventListener('change', async () => {
   } catch (e) {
     ocrResult.innerHTML = `<div class="callout" style="border-color:var(--danger)"><b>⚠️ 인식할 수 없는 서식입니다</b><br>글자가 흐리거나 잘린 것 같아요. 아래에서 직접 입력해주세요</div>`;
   } finally {
-    ocrLabelText.textContent = '📷 준비 중이에요';
+    ocrLabelText.textContent = '사진 올리기 (준비 중)';
     ocrInput.value = '';
   }
 });

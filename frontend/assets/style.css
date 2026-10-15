@@ -3,66 +3,102 @@
 @font-face{font-family:'Nanum Gothic'; font-weight:600 700; font-style:normal; font-display:swap; src:url('fonts/NanumGothic-Bold.woff2') format('woff2')}
 @font-face{font-family:'Nanum Gothic'; font-weight:800 900; font-style:normal; font-display:swap; src:url('fonts/NanumGothic-ExtraBold.woff2') format('woff2')}
 :root{
-  --cream:#F5EBEB; --sage-light:#E8C9C9; --sage:#CB9F9F; --sage-deep:#BD8484; --track:#F0E0E0;
-  --petal1:#F2A6BE; --petal2:#E8879F; --center:#FCE8B8; --dots:#E0A836; --stem:#BD8484;
-  --shadow-btn:rgba(189,132,132,.45);
+  /* 리디자인 팔레트 (design/redesign-2026-10/Main.dc.html). 예전 이름(--sage-*)은 그대로 두고 값만 바꿨다 */
+  --cream:#F8F1E7; --sage-light:#E6DBCD; --sage:#D2C4B4; --sage-deep:#5C86AC; --track:#E6DBCD;
+  --petal1:#81A6C6; --petal2:#5C86AC; --center:#F3E3D0; --dots:#5C86AC; --stem:#5C86AC;
+  --shadow-btn:transparent;
+  --sky:#AACDDC; --accent-light:#81A6C6; --notice:#E4F0F5; --cream-2:#F3E3D0;
 }
 :root{
-  --ink:#384038; --muted:#5C665C; --faint:#8A928A;
+  --ink:#243749; --muted:#5A6B7A; --faint:#7A8A98; --body:#3B5063;
   --surface:#FFFFFF; --surface-2:var(--cream);
   --line:var(--sage-light); --line-soft:var(--track);
-  --accent:var(--sage-deep); --accent-soft:var(--sage-light);
+  --accent:var(--sage-deep); --accent-soft:var(--notice);
   --ok:#3E7A55; --ok-soft:#E4EFE5;
   --warn:#8C6014; --warn-soft:#F7EDD9;
   --risk:#B0543F; --risk-soft:#FBEAE5;
-  --danger:#D97362; --peach:#F6C6A5;
-  --shadow:0 8px 24px rgba(56,64,56,.08), 0 2px 6px rgba(56,64,56,.06);
+  --danger:#C0503E; --peach:#F3E3D0;
+  --shadow:none;
 }
 *{box-sizing:border-box}
-body{margin:0; background:#F1ECE4; color:var(--ink); font-family:'Nanum Gothic','Malgun Gothic','Apple SD Gothic Neo',sans-serif; font-size:14px; line-height:1.6; padding-bottom:70px}
+body{margin:0; background:#fff; color:var(--ink); font-family:'Nanum Gothic','Malgun Gothic','Apple SD Gothic Neo',sans-serif; font-size:14px; line-height:1.6; padding-bottom:84px; -webkit-font-smoothing:antialiased}
 h1,h2,h3,.heading-font{font-family:'Nanum Gothic','Malgun Gothic','Apple SD Gothic Neo',sans-serif}
-h1,h2,h3{margin:0; font-weight:700}
+h1,h2,h3{margin:0; font-weight:800; letter-spacing:-.3px}
 p{margin:0}
+a{color:inherit}
 button{font:inherit; cursor:pointer}
 .num{font-variant-numeric:tabular-nums}
-:focus-visible{outline:2px solid var(--sage-deep); outline-offset:2px; border-radius:6px}
+[hidden]{display:none !important}
+input::placeholder,textarea::placeholder{color:#A9B3BC; font-weight:500; opacity:1}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
 
-.picker{position:sticky; top:0; z-index:50; background:rgba(245,235,235,.95); backdrop-filter:blur(6px);
-  border-bottom:1px solid var(--sage); padding:12px 20px; display:flex; gap:8px; flex-wrap:wrap; align-items:center}
-.picker .hdr-logout{margin-left:auto; border:1.5px solid var(--sage); background:#fff; color:var(--ink); border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer}
-.picker .brand{font-weight:900; font-size:18px; margin-right:10px; color:var(--sage-deep); display:flex; align-items:center; gap:4px; text-decoration:none}
-
-.wrapper{max-width:900px; margin:34px auto 0; padding:0 20px}
-.frame{background:#fff; border-radius:28px; box-shadow:var(--shadow); border:1px solid #EDE3D6; overflow:hidden}
-.frame-body{padding:28px 30px; position:relative}
-.app-shell{display:flex; gap:22px}
-.nav-col{width:150px; flex:none}
-.nav-item{display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:14px; font-size:13.5px; color:var(--muted); margin-bottom:6px; font-weight:500; cursor:pointer; text-decoration:none}
-.nav-item.active{background:var(--sage-light); color:var(--ink); font-weight:700; box-shadow:0 3px 10px rgba(56,64,56,.07)}
-.content-col{flex:1; min-width:0}
+/* 모바일 틀: 390~430px 한 칸. 넓은 화면에서도 가운데에 좁게 보인다 */
+.wrapper{max-width:430px; margin:0 auto; padding:0; min-height:100vh; background:#fff}
+.frame{background:#fff; border:0; border-radius:0; box-shadow:none; overflow:visible}
+.frame-body{padding:4px 20px 28px; position:relative}
+.content-col{min-width:0}
 .screen{display:flex; flex-direction:column; gap:14px}
-@media (max-width:760px){ .app-shell{flex-direction:column} .nav-col{width:auto; display:flex; gap:6px; flex-wrap:wrap} .frame-body{padding:20px 16px} }
 
-.lede{font-size:12.5px; color:var(--muted)}
-.sect{font-size:13px; font-weight:700; margin-top:4px}
-.field{display:flex; flex-direction:column; gap:4px}
-.field label{font-size:12.5px; font-weight:700; color:var(--muted)}
-.field input,.field select{font:inherit; font-size:13.5px; padding:10px 12px; border-radius:12px; border:1.5px solid var(--sage-light); background:#fff; color:var(--ink); width:100%}
-.grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px 14px}
-.cta{width:100%; border:0; border-radius:999px; padding:13px 22px; font-weight:700; font-size:14.5px; background:var(--sage-deep); color:#fff; box-shadow:0 6px 14px var(--shadow-btn)}
-.cta:disabled{opacity:.4; cursor:not-allowed; box-shadow:none}
-.ghost{width:100%; border:1.5px solid var(--sage); border-radius:999px; padding:11px 18px; font-weight:700; background:#fff; color:var(--ink); font-size:13.5px; text-decoration:none; display:block; text-align:center}
-.tip,.hint{font-size:11.5px; color:var(--muted)}
-.err{font-size:12.5px; color:var(--risk)}
+/* 상단 바 */
+.picker{position:sticky; top:0; z-index:50; background:#fff; max-width:430px; margin:0 auto; height:64px; padding:0 8px 0 20px; display:flex; align-items:center; gap:8px}
+.picker .brand{font-weight:800; font-size:20px; letter-spacing:3px; color:var(--ink); display:flex; align-items:center; gap:6px; text-decoration:none}
+.picker .brand svg{display:none}
+.hdr-right{margin-left:auto; display:flex; align-items:center; gap:2px}
+.picker .hdr-logout{border:1px solid var(--sage); background:#fff; color:var(--ink); border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer; margin-right:8px}
+.hdr-pie{height:32px; padding:0 12px; border-radius:16px; background:var(--cream); display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:800; text-decoration:none; color:var(--ink)}
+.hdr-pie .pie-coin{width:26px; height:auto}
+.hdr-bell{position:relative; width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--ink); text-decoration:none}
+.hdr-bell .badge{position:absolute; top:6px; right:5px; min-width:16px; height:16px; border-radius:8px; background:var(--accent); color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; padding:0 4px}
+.page-bar{display:flex; align-items:center; gap:4px; min-height:56px; margin:0 -12px 4px}
+.page-bar .back{width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--ink)}
+.page-bar .ttl{font-size:17px; font-weight:800}
 
-.callout{background:var(--cream); border:1px solid var(--sage-light); border-radius:18px; padding:14px 18px; font-size:12.5px; color:var(--muted)}
+/* 하단 탭 */
+.tabbar{position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:100%; max-width:430px; height:84px; background:#fff; border-top:1px solid var(--line); display:flex; padding:8px 4px 0; z-index:60}
+.tabbar a{flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding-top:6px; color:var(--muted); font-size:12px; text-decoration:none; position:relative}
+.tabbar a.active{color:var(--ink); font-weight:800}
+.tabbar a svg{width:24px; height:24px}
+.tabbar .nav-dot{position:absolute; top:4px; left:calc(50% + 8px); margin:0}
+
+.lede{font-size:14px; color:var(--body); line-height:1.6}
+.sect{font-size:18px; font-weight:800; margin-top:6px}
+.field{display:flex; flex-direction:column; gap:6px}
+.field label{font-size:13px; font-weight:700; color:var(--muted)}
+.field input,.field select,.field textarea{font:inherit; font-size:15px; padding:0 16px; height:52px; border-radius:12px; border:0; background:var(--cream); color:var(--ink); width:100%}
+.field textarea{height:auto; padding:14px 16px}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--ink); outline-offset:0}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px 12px}
+.cta{width:100%; border:0; border-radius:999px; height:52px; padding:0 22px; font-weight:700; font-size:16px; background:var(--accent-light); color:#1E3246; box-shadow:none; display:flex !important; align-items:center; justify-content:center; text-decoration:none}
+.cta:disabled{background:var(--sage-light); color:var(--muted); cursor:not-allowed}
+.ghost{width:100%; border:1px solid var(--sage); border-radius:999px; min-height:48px; padding:0 18px; font-weight:700; background:#fff; color:var(--ink); font-size:15px; text-decoration:none; display:flex !important; align-items:center; justify-content:center; text-align:center}
+.tip,.hint{font-size:12.5px; color:var(--muted); line-height:1.6}
+.err{font-size:13px; color:var(--risk)}
+
+.callout{background:var(--notice); border:0; border-radius:16px; padding:14px 18px; font-size:13.5px; color:#234257; line-height:1.6}
 .callout b{color:var(--ink)}
 
 .hero-w01{text-align:center; padding:26px 8px 8px}
-.hero-w01 h2{font-size:24px; margin:6px 0 4px}
-.hero-w01 .headline{font-size:19px; font-weight:700; margin:16px 0 4px}
+.hero-w01 h2{font-size:26px; margin:6px 0 4px}
+.hero-w01 .headline{font-size:19px; font-weight:800; margin:16px 0 4px}
 .trio{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; text-align:left; margin-top:6px}
-.trio .opt{display:flex; align-items:center; gap:8px; border-radius:16px; border:1.5px solid var(--sage-light); background:#fff; padding:8px 14px; font-size:13px; font-weight:600}
+.trio .opt{display:flex; align-items:center; gap:8px; border-radius:16px; border:1px solid var(--sage); background:#fff; padding:8px 14px; font-size:13px; font-weight:600}
+
+/* 공통 조각: 카드, 칩, 목록 줄, 태그 */
+.card{border:1px solid var(--line); border-radius:20px; padding:18px; background:#fff}
+.card.soft{background:var(--cream); border-color:var(--cream)}
+.chips{display:flex; gap:8px; flex-wrap:wrap}
+.chip{height:36px; padding:0 16px; border-radius:18px; border:1px solid var(--sage); background:#fff; color:var(--body); font-size:13px; display:inline-flex; align-items:center; text-decoration:none; cursor:pointer}
+.chip.on{background:var(--accent-light); border-color:var(--accent-light); color:#1E3246; font-weight:700}
+.row{display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:56px; border-top:1px solid var(--line); text-decoration:none; color:inherit}
+.row:last-child{border-bottom:1px solid var(--line)}
+.ctag{height:18px; padding:0 7px; border-radius:9px; font-size:11px; font-weight:800; display:inline-flex; align-items:center; flex:none}
+.ctag.fixed{background:#5C86AC; color:#fff}
+.ctag.selected{background:var(--cream-2); color:#6B4A22}
+.ctag.party{background:#A9D6C2; color:#0F2E20}
+.ctag.common{background:#243749; color:#fff}
+.pill-btn{height:44px; padding:0 22px; border-radius:22px; border:1px solid var(--sage); background:#fff; font-weight:700; font-size:14px; display:inline-flex; align-items:center; text-decoration:none; color:var(--ink)}
+.pie-coin{width:22px; height:auto; display:inline-block; vertical-align:-5px; image-rendering:pixelated}
+.empty{padding:40px 0; text-align:center; font-size:14px; color:var(--muted); line-height:1.7}
 
 /* 숫자 칸의 위아래 화살표(스피너)는 쓰지 않는다 */
 input[type=number]{-moz-appearance:textfield; appearance:textfield}
@@ -86,11 +122,11 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .setup-steps li.now em{color:var(--accent)}
 
 /* 확인 창 (confirmDialog) */
-.confirm-backdrop{position:fixed; inset:0; background:rgba(56,64,56,.45); display:flex; align-items:center; justify-content:center; padding:20px; z-index:200}
-.confirm-card{background:#fff; border-radius:20px; padding:24px 22px; max-width:360px; width:100%; text-align:center; box-shadow:0 12px 30px rgba(56,64,56,.2)}
+.confirm-backdrop{position:fixed; inset:0; background:rgba(36,55,73,.5); display:flex; align-items:center; justify-content:center; padding:20px; z-index:200}
+.confirm-card{background:#fff; border-radius:20px; padding:24px 22px; max-width:360px; width:100%; text-align:center; box-shadow:none}
 .confirm-card b{font-size:16px}
 .confirm-card p{font-size:13.5px; line-height:1.6; color:var(--muted); margin:10px 0 18px}
 .confirm-actions{display:flex; gap:10px}
 .confirm-actions button{flex:1; margin:0}
 
-.nav-dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:#e0584a; margin-left:6px; vertical-align:middle}
+.nav-dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:#5C86AC; margin-left:6px; vertical-align:middle}
