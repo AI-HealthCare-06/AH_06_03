@@ -222,7 +222,7 @@ form.addEventListener('submit', async (event) => {
     ['paeon-eligibility', 'paeon-health', 'paeon-survey', 'paeon-prediction', 'paeon-cycle', 'paeon-cycle-history', 'paeon-progress'].forEach(k => localStorage.removeItem(k));
     localStorage.setItem('paeon-profile', JSON.stringify({ email, birth }));
     // 가입 후 자동 로그인하지 않고 홈에서 다시 로그인하게 한다
-    ['paeon-access-token', 'paeon-refresh-token'].forEach(k => localStorage.removeItem(k));
+    PaeonTokens.clear();
     document.getElementById('success-modal').style.display = 'flex';
   } catch (e) {
     showError(friendlyError(e));

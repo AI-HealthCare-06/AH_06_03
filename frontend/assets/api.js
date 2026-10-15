@@ -1,3 +1,37 @@
+// 로그인 토큰 보관. '로그인 상태 유지'를 켜면 localStorage(브라우저를 닫아도 유지),
+// 끄면 sessionStorage(이 탭을 닫으면 로그아웃). common.js와 api.js에 같은 내용이 있으니 고칠 때는 둘 다 고친다.
+var PaeonTokens = window.PaeonTokens || (window.PaeonTokens = (function () {
+  var KEYS = ['paeon-access-token', 'paeon-refresh-token'];
+  function stores() {
+    var s = [];
+    try { s.push(window.sessionStorage); } catch (e) {}
+    try { s.push(window.localStorage); } catch (e) {}
+    return s;
+  }
+  function holder() {   // 토큰이 들어 있는 곳 (없으면 null)
+    var all = stores();
+    for (var i = 0; i < all.length; i++) {
+      try { if (all[i].getItem(KEYS[1]) || all[i].getItem(KEYS[0])) return all[i]; } catch (e) {}
+    }
+    return null;
+  }
+  function read(k) { var h = holder(); try { return h ? (h.getItem(k) || '') : ''; } catch (e) { return ''; } }
+  function clear() { stores().forEach(function (s) { KEYS.forEach(function (k) { try { s.removeItem(k); } catch (e) {} }); }); }
+  return {
+    access: function () { return read(KEYS[0]); },
+    refresh: function () { return read(KEYS[1]); },
+    // keep: 새로 로그인할 때 true(유지)/false(이 탭만). 재발급처럼 비워 두면 지금 들어 있는 곳에 그대로 둔다.
+    save: function (access, refresh, keep) {
+      var h = holder();
+      var target = keep === undefined ? (h || window.localStorage) : (keep ? window.localStorage : window.sessionStorage);
+      clear();
+      target.setItem(KEYS[0], access);
+      target.setItem(KEYS[1], refresh);
+    },
+    clear: clear,
+  };
+})());
+
 // 로컬(5500 포트)에서 열면 내 컴퓨터 서버, 아니면 배포 서버
 const API_BASE = ['5500'].includes(location.port) ? 'http://127.0.0.1:8000/v1' : 'https://54-116-113-17.sslip.io/v1';
 const USE_MOCK = true;
@@ -47,7 +81,7 @@ async function apiLogin(email, password) {
 let refreshing = null; // 동시에 여러 요청이 만료돼도 재발급은 한 번만 (쓴 쿠폰은 버려지므로)
 
 function goLogin() {
-  try { localStorage.removeItem('paeon-access-token'); localStorage.removeItem('paeon-refresh-token'); } catch (e) {}
+  PaeonTokens.clear();
   location.href = 'login.html';
   return new Promise(() => {}); // 이동 중에는 호출한 쪽이 에러를 띄우지 않게 멈춰 둔다
 }
@@ -55,7 +89,7 @@ function goLogin() {
 function refreshTokens() {
   if (!refreshing) {
     refreshing = (async () => {
-      const refresh_token = localStorage.getItem('paeon-refresh-token') || '';
+      const refresh_token = PaeonTokens.refresh();
       const res = await fetch(`${API_BASE}/auth/token/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -63,8 +97,7 @@ function refreshTokens() {
       });
       if (!res.ok) return false;
       const { data } = await res.json();
-      localStorage.setItem('paeon-access-token', data.access_token);
-      localStorage.setItem('paeon-refresh-token', data.refresh_token); // 쿠폰도 새로 오므로 꼭 교체
+      PaeonTokens.save(data.access_token, data.refresh_token); // 쿠폰도 새로 오므로 꼭 교체 (보관 위치는 그대로)
       return true;
     })().catch(() => false).finally(() => { refreshing = null; });
   }
@@ -189,7 +222,7 @@ async function apiOcrHealthRecord(file) {
 }
 
 function getAccessToken() {
-  try { return localStorage.getItem('paeon-access-token') || ''; } catch (e) { return ''; }
+  return PaeonTokens.access();
 }
 
 // 설문 제출: 설문지 조회 → 답안지 시작 → 답 저장 → 내기.
@@ -651,9 +684,10 @@ async function apiLogout() {
   let uid = localStorage.getItem('paeon-user-id');
   if (!uid) { try { uid = (await apiGetMe()).user_id; } catch (e) {} }
   stashLocalData(uid);                                 // 서버 호출이 실패해도 기록은 먼저 보관
-  const refresh_token = localStorage.getItem('paeon-refresh-token') || '';
+  const refresh_token = PaeonTokens.refresh();
   try { await apiCall('POST', '/auth/logout', { refresh_token }, '로그아웃에 실패했습니다'); } catch (e) { /* 서버 실패여도 이 기기에서는 로그아웃 */ }
-  ['paeon-access-token', 'paeon-refresh-token', 'paeon-user-id'].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+  PaeonTokens.clear();
+  try { localStorage.removeItem('paeon-user-id'); } catch (e) {}
   location.href = 'login.html';
 }
 
