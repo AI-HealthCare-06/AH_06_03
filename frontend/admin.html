@@ -560,7 +560,7 @@ async function loadReports() {
   try {
     const { data } = await apiCall('GET', `/admin/reports?limit=50&status=${status}`, undefined, '신고를 불러오지 못했어요');
     box.replaceChildren(...(data.items.length ? data.items.map((r) => el('div', { class: 'detail', style: 'margin-bottom:8px' },
-      el('b', {}, `${r.target_type === 'post' ? '글' : '댓글'} · ${r.title}`), el('br'),
+      el('b', {}, `${r.target_type === 'post' ? '글' : '댓글'} · ${r.title}`), r.auto_hidden ? el('span', { class: 'st wait', style: 'margin-left:6px' }, '자동 숨김') : '', el('br'),
       `${r.author_nickname} · 신고 ${r.report_count}건 (${Object.entries(r.reasons).map(([k, v]) => `${REASON[k] || k} ${v}`).join(', ')}) · ${kst(r.last_reported_at)}`,
       el('div', { style: 'white-space:pre-wrap; word-break:break-all; margin:8px 0' }, r.preview),
       status === 'pending'
