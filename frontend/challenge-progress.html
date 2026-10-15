@@ -340,7 +340,7 @@ async function main() {
   ]).then(render);
   document.getElementById('stop-wrap').style.display = 'flex';
   document.getElementById('stop-btn').addEventListener('click', async () => {
-    if (!confirm('진행 중인 챌린지를 중단할까요? 지금까지 기록은 남아요.')) return;
+    if (!(await confirmDialog('챌린지를 중단할까요?', '지금까지 기록은 남아요. 중단하면 새 챌린지를 다시 고를 수 있어요.', '중단하기'))) return;
     try { await apiStopCycle(); location.replace('challenges.html'); } catch (e) { showError(friendlyError(e)); }
   });
 }
