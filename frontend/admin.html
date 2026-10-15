@@ -76,6 +76,8 @@
           <button type="button" data-t="logs">열람 기록</button>
           <button type="button" data-t="inquiries">문의</button>
           <button type="button" data-t="guest">비회원 문의</button>
+          <button type="button" data-t="reports">신고</button>
+          <button type="button" data-t="cc">공통 챌린지</button>
           <button type="button" data-t="purge">테스트 계정 삭제</button>
         </div>
         <div id="msg" role="status" aria-live="polite"></div>
@@ -133,6 +135,28 @@
           </div>
           <div id="g-list"></div>
           <div id="g-detail"></div>
+        </section>
+
+        <section id="sec-reports" hidden>
+          <p class="meta">회원이 신고한 글·댓글이에요. 숨기면 목록에 "신고로 숨김"으로 보이고, 삭제하면 사라져요. 문제없음은 신고만 닫아요.</p>
+          <div class="filters">
+            <select id="r-status"><option value="pending">처리 대기</option><option value="done">처리 완료</option></select>
+            <button type="button" class="btn" id="r-load">불러오기</button>
+          </div>
+          <div id="r-list"></div>
+        </section>
+
+        <section id="sec-cc" hidden>
+          <p class="meta">공통 챌린지를 열고 순위를 확정해요. 시작한 뒤에는 기간·인증 방식을 바꿀 수 없어요. 확정하면 보상 파이가 한 번에 들어가요.</p>
+          <div class="detail" id="cc-form" style="display:grid; gap:6px">
+            <input id="cc-title" maxlength="60" placeholder="제목 (2~60자)">
+            <select id="cc-proof"><option value="steps">걸음 수 인증</option><option value="self">직접 인증</option></select>
+            <input id="cc-steps" type="number" placeholder="하루 목표 걸음 수 (걸음 수 인증일 때)">
+            <label>시작 <input id="cc-from" type="date"></label>
+            <label>끝 <input id="cc-to" type="date"></label>
+            <button type="button" class="btn" id="cc-add">챌린지 열기</button>
+          </div>
+          <div id="cc-list" style="margin-top:12px"></div>
         </section>
 
         <section id="sec-purge" hidden>
@@ -253,7 +277,7 @@ async function load(keepMessage) {
 }
 
 // ---- 탭 ----
-const sections = { mission: document.getElementById('sec-mission'), users: document.getElementById('sec-users'), stats: document.getElementById('sec-stats'), logs: document.getElementById('sec-logs'), inquiries: document.getElementById('sec-inquiries'), guest: document.getElementById('sec-guest'), purge: document.getElementById('sec-purge') };
+const sections = { mission: document.getElementById('sec-mission'), users: document.getElementById('sec-users'), stats: document.getElementById('sec-stats'), logs: document.getElementById('sec-logs'), inquiries: document.getElementById('sec-inquiries'), guest: document.getElementById('sec-guest'), reports: document.getElementById('sec-reports'), cc: document.getElementById('sec-cc'), purge: document.getElementById('sec-purge') };
 document.getElementById('tabs').addEventListener('click', (ev) => {
   const t = ev.target.dataset && ev.target.dataset.t;
   if (!t) return;
@@ -265,6 +289,8 @@ document.getElementById('tabs').addEventListener('click', (ev) => {
   if (t === 'logs') loadAudit();
   if (t === 'inquiries') loadInquiries();
   if (t === 'guest') loadGuest();
+  if (t === 'reports') loadReports();
+  if (t === 'cc') loadCc();
 });
 
 // ---- 가입자 ----
@@ -466,6 +492,52 @@ async function showGuest(id) {
   } catch (e) { say(friendlyError(e), 'err'); }
 }
 document.getElementById('g-load').addEventListener('click', loadGuest);
+// ---- 신고 ----
+const REASON = { health_info: '건강정보 노출', spam: '광고·도배', abuse: '욕설·비방', other: '기타' };
+const ACT = { hide: '숨김', delete: '삭제', dismiss: '문제없음' };
+async function loadReports() {
+  const status = document.getElementById('r-status').value, box = document.getElementById('r-list');
+  try {
+    const { data } = await apiCall('GET', `/admin/reports?limit=50&status=${status}`, undefined, '신고를 불러오지 못했어요');
+    box.replaceChildren(...(data.items.length ? data.items.map((r) => el('div', { class: 'detail', style: 'margin-bottom:8px' },
+      el('b', {}, `${r.target_type === 'post' ? '글' : '댓글'} · ${r.title}`), el('br'),
+      `${r.author_nickname} · 신고 ${r.report_count}건 (${Object.entries(r.reasons).map(([k, v]) => `${REASON[k] || k} ${v}`).join(', ')}) · ${kst(r.last_reported_at)}`,
+      el('div', { style: 'white-space:pre-wrap; word-break:break-all; margin:8px 0' }, r.preview),
+      status === 'pending'
+        ? el('div', {}, ...['hide', 'delete', 'dismiss'].map((a) => el('button', { type: 'button', class: 'btn', style: 'margin-right:6px', onclick: async () => {
+            try { await apiCall('POST', `/admin/reports/${r.target_type}/${encodeURIComponent(r.target_id)}/action`, { action: a }, '처리하지 못했어요'); say(`${ACT[a]} 처리했어요`, 'ok'); loadReports(); }
+            catch (e) { say(friendlyError(e), 'err'); } } }, ACT[a])))
+        : el('div', { class: 'meta' }, `처리: ${ACT[r.action] || r.action || ''}`)))
+      : [el('p', { class: 'meta' }, '신고가 없어요.')]));
+  } catch (e) { box.replaceChildren(el('p', { class: 'meta' }, friendlyError(e))); }
+}
+document.getElementById('r-load').addEventListener('click', loadReports);
+
+// ---- 공통 챌린지 ----
+const CC_STATE = { active: '진행중', upcoming: '진행 예정', ended: '종료' };
+async function loadCc() {
+  const box = document.getElementById('cc-list');
+  try {
+    const { data } = await apiCall('GET', '/admin/common-challenges', undefined, '챌린지를 불러오지 못했어요');
+    box.replaceChildren(...(data.items.length ? data.items.map((c) => el('div', { class: 'detail', style: 'margin-bottom:8px' },
+      el('b', {}, c.title), el('br'),
+      `${CC_STATE[c.state]} · ${c.starts_on} ~ ${c.ends_on} · ${c.proof_type === 'steps' ? c.target_steps + '걸음' : '직접 인증'} · 참여 ${c.participants}명`, el('br'),
+      `보상 1위 ${c.rewards.first} · 2위 ${c.rewards.second} · 3위 ${c.rewards.third} · 완주 ${c.rewards.complete} (${c.complete_min_days}일 이상)`, el('br'),
+      c.finalized_at ? el('span', { class: 'meta' }, `순위 확정 ${kst(c.finalized_at)}`)
+        : c.state === 'ended' ? el('button', { type: 'button', class: 'btn', onclick: async () => {
+            if (!confirm('순위를 확정하고 보상 파이를 지급할까요? 되돌릴 수 없어요.')) return;
+            try { const { data: f } = await apiCall('POST', `/admin/common-challenges/${encodeURIComponent(c.challenge_id)}/finalize`, undefined, '확정하지 못했어요'); say(`확정했어요 · 순위권 ${f.ranked}명, 완주 ${f.completed}명, 파이 ${f.total_pie}`, 'ok'); loadCc(); }
+            catch (e) { say(friendlyError(e), 'err'); } } }, '순위 확정하고 보상 주기')
+        : el('span', { class: 'meta' }, '끝난 뒤에 확정할 수 있어요'))) : [el('p', { class: 'meta' }, '열린 챌린지가 없어요.')]));
+  } catch (e) { box.replaceChildren(el('p', { class: 'meta' }, friendlyError(e))); }
+}
+document.getElementById('cc-add').addEventListener('click', async () => {
+  const v = (id) => document.getElementById(id).value, proof = v('cc-proof');
+  const body = { title: v('cc-title').trim(), proof_type: proof, starts_on: v('cc-from'), ends_on: v('cc-to') };
+  if (proof === 'steps') body.target_steps = parseInt(v('cc-steps'), 10) || null;
+  try { await apiCall('POST', '/admin/common-challenges', body, '열지 못했어요'); say('챌린지를 열었어요', 'ok'); loadCc(); }
+  catch (e) { say(friendlyError(e), 'err'); }
+});
 </script>
 </body>
 </html>

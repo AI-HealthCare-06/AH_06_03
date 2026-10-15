@@ -171,7 +171,7 @@ function addPasswordToggles(root = document) {
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => { renderHeader(); renderNav(); addPasswordToggles(); });
+document.addEventListener('DOMContentLoaded', () => { renderHeader(); renderNav(); addPasswordToggles(); document.querySelectorAll('[data-icon]').forEach(e => { e.innerHTML = ICON[e.dataset.icon] || ''; }); });
 
 // 모델 B: 서버가 주는 similarity_level(similar / slightly_different / different)을 말로만 보여 준다. 화면에서 기준값을 계산하지 않는다.
 // 값이 아직 없으면(서버 미지원) 판정 문장은 빼고 설명만 보인다.
