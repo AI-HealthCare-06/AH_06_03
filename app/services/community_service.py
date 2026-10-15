@@ -127,10 +127,13 @@ async def attach_options(db: AsyncSession, user_id: str) -> list[AttachOption]:
     return await post_attach_service.options(db, user_id)
 
 
-async def create_post(db: AsyncSession, user_id: str, req: PostCreate, party_id: str | None = None) -> PostCreated:
+async def create_post(db: AsyncSession, user_id: str, req: PostCreate, party_id: str | None = None,
+                      party_card: tuple[str, int] | None = None) -> PostCreated:
     nickname = await require_nickname(db, user_id)
     kind = label = days = None
-    if req.attach is not None:
+    if party_card is not None:                     # 파티 글에 붙이는 "파티 연속 인증" 카드
+        kind, (label, days) = "party", party_card
+    elif req.attach is not None:
         kind, label, days = await post_attach_service.resolve(db, user_id, req.attach)
     post = CommunityPost(user_id=user_id, category=req.category, title=req.title, body=req.body,
                          status="visible", created_at=utcnow(), attach_kind=kind, attach_label=label, attach_days=days, party_id=party_id)

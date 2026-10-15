@@ -41,16 +41,17 @@ class AttachRequest(BaseModel):
 
     mission_code: str | None = Field(default=None, max_length=50)
     common_challenge_id: str | None = Field(default=None, max_length=36)
+    party_card: bool = False          # 파티 글에서만: "파티 연속 인증 N일째" 카드를 붙인다
 
     @model_validator(mode="after")
     def one_of(self):
-        if bool(self.mission_code) == bool(self.common_challenge_id):
-            raise ValueError("미션과 공통 챌린지 중 하나만 골라 주세요.")
+        if bool(self.mission_code) + bool(self.common_challenge_id) + bool(self.party_card) != 1:
+            raise ValueError("미션, 공통 챌린지, 파티 카드 중 하나만 골라 주세요.")
         return self
 
 
 class PostAttach(BaseModel):
-    kind: Literal["fixed", "selected", "common"]   # 고정 / 선택 / 공통
+    kind: Literal["fixed", "selected", "common", "party"]   # 고정 / 선택 / 공통 / 파티
     label: str                                     # 미션·챌린지 이름
     days: int                                      # 인증한 일수
 

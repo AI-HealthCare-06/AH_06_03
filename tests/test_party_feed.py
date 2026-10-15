@@ -80,3 +80,20 @@ async def test_파티가_없으면_파티_글을_못_쓴다(client, db_session):
     _, _, (c, hc) = await _setup(client, db_session)
     r = await client.post("/v1/parties/me/posts", json=POST, headers=hc)
     assert r.status_code == 404 and r.json()["error"]["code"] == "PARTY_NOT_JOINED"
+
+
+async def test_파티_글에_파티_연속_인증_카드를_붙이고_검색한다(client, db_session):
+    (a, ha), (b, hb), _ = await _setup(client, db_session)
+    r = await client.post("/v1/parties/me/posts", json={**POST, "attach": {"party_card": True}}, headers=ha)
+    assert r.status_code == 201
+    att = r.json()["data"]["attach"]
+    assert att["kind"] == "party" and att["label"] == "아침걷기 연속 인증" and att["days"] == 0
+    await client.post("/v1/parties/me/posts", json={**POST, "title": "다른 글", "body": "계단 오르기"}, headers=ha)
+    found = (await client.get("/v1/parties/me/posts?q=계단", headers=hb)).json()["data"]
+    assert found["total"] == 1 and found["items"][0]["title"] == "다른 글"
+
+
+async def test_파티_카드는_파티_글에서만_붙일_수_있다(client, db_session):
+    (a, ha), _, _ = await _setup(client, db_session)
+    r = await client.post("/v1/community/posts", json={**POST, "attach": {"party_card": True}}, headers=ha)
+    assert r.status_code == 409 and r.json()["error"]["code"] == "ATTACH_NOT_ALLOWED"
