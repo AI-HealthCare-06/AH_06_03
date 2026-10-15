@@ -16,7 +16,8 @@ from app.schemas.challenge import (
     MissionResult, ModelChange, RecommendationResult, ReviewResult, Snapshot, SodiumResult, SurveyNeeded,
     WeekProgress,
 )
-from app.services import challenge_rules as rules
+
+from app.services import challenge_reward_service, challenge_rules as rules
 from app.services import health_service, prediction_job_service
 from app.services.challenge_catalog import (
     CATEGORY_NAMES, CYCLE_DAYS, KEEP_GOING_MESSAGE, MISSION_COMPLETE_RATE, MISSIONS, PROGRAM_CYCLES,
@@ -158,8 +159,11 @@ async def _finalize_if_ended(db: AsyncSession, cycle: ChallengeCycle, today: dat
         rate = rules.progress(cycle.started_on, cc.weekly_target, mine)["cycle_rate"]
         cc.status = "completed" if rate >= MISSION_COMPLETE_RATE else "incomplete"
         all_done = all_done and cc.status == "completed"
+
     cycle.status = "completed" if all_done else "incomplete"
     cycle.updated_at = utcnow()
+    if cycle.status == "completed":
+        await challenge_reward_service.reward_cycle_complete(db, cycle.user_id, cycle.cycle_id)   # 4주 완주 +50
     await db.commit()
 
 
@@ -326,8 +330,9 @@ async def record_log(
     except IntegrityError:
         await db.rollback()
         raise AppError(409, "CHALLENGE_LOG_DUPLICATED", "오늘 기록이 이미 있습니다. 다시 시도해 주세요.")
+    await challenge_reward_service.reward_after_log(db, user_id, today)   # 오늘 모두 완료 +5, 5일마다 +10
+    await db.commit()
     return _log_result(log)
-
 
 async def stop_cycle(db: AsyncSession, user_id: str, reason_code: str | None, note: str | None) -> CycleResult:
     """진행 중인 사이클 중단 (REQ-CHAL-007). 중단한 사이클은 사이클 번호를 쓰지 않는다."""
