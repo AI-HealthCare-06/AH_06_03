@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 더보기</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .me{display:flex; align-items:center; gap:14px; background:var(--cream); border-radius:20px; padding:18px 20px; text-decoration:none; color:inherit}
+  .me .av{width:48px; height:48px; border-radius:24px; background:#fff; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; flex:none; color:var(--muted)}
+  .me .tx{flex:1; min-width:0}
+  .me .tx b{display:block; font-size:16px; word-break:break-all}
+  .me .tx span{font-size:13px; color:var(--body)}
+  .grp{display:flex; flex-direction:column}
+  .grp .gt{font-size:13px; color:var(--muted); padding-bottom:6px}
+  .row{font-size:16px}
+  .row .badge{height:22px; padding:0 9px; border-radius:11px; background:var(--accent-light); color:#1E3246; font-size:13px; font-weight:700; display:inline-flex; align-items:center}
+  .row .rt{display:flex; align-items:center; gap:10px; color:var(--muted)}
+  .foot{display:flex; justify-content:space-between; align-items:center; padding-top:4px}
+  .foot button{border:0; background:none; min-height:44px; padding:0; font-size:15px; font-weight:700; color:var(--ink)}
+  .foot a{min-height:44px; display:flex; align-items:center; font-size:13px; color:var(--muted); text-decoration:underline}
+</style>
+</head>
+<body>
+<div id="header-slot"></div>
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" id="screen" style="gap:24px">
+        <a class="me" href="mypage.html">
+          <span class="av"><script>document.write(ICON.pie.replace('pie-coin','pie-coin" style="width:24px;height:24px'))</script></span>
+          <span class="tx"><b id="me-email">&nbsp;</b><span>마이페이지 · 정보 수정</span></span>
+          <script>document.write(ICON.chevron)</script>
+        </a>
+
+        <div class="grp">
+          <div class="gt">내 정보</div>
+          <a class="row" href="my-data.html" style="border-bottom:1px solid var(--line)"><span>내 데이터 보기 · 내려받기</span><script>document.write(ICON.chevron)</script></a>
+        </div>
+
+        <div class="grp">
+          <div class="gt">문의 · 안내</div>
+          <a class="row" href="inquiries.html"><span>1:1 문의</span><span class="rt"><span class="badge" id="inq-badge" hidden></span><script>document.write(ICON.chevron)</script></span></a>
+          <a class="row" href="guide.html"><span>검사 · 상담 안내</span><script>document.write(ICON.chevron)</script></a>
+        </div>
+
+        <div class="grp">
+          <div class="gt">약관</div>
+          <a class="row" href="terms.html"><span>이용약관</span><script>document.write(ICON.chevron)</script></a>
+          <a class="row" href="privacy.html"><span>개인정보 처리방침</span><script>document.write(ICON.chevron)</script></a>
+        </div>
+
+        <div class="foot">
+          <button type="button" id="logout">로그아웃</button>
+          <a href="mypage.html#withdraw">회원 탈퇴</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+apiGetMe().then(me => { document.getElementById('me-email').textContent = me.email; }).catch(() => {});
+inquiryUnread().then(n => { const b = document.getElementById('inq-badge'); if (n) { b.textContent = '새 답변 ' + n; b.hidden = false; } });
+document.getElementById('logout').addEventListener('click', async () => {
+  if (await confirmDialog('로그아웃할까요?', '다시 이용하려면 로그인해야 해요.', '로그아웃')) apiLogout();
+});
+</script>
+</body>
+</html>

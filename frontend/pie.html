@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 내 파이</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .bal{display:flex; flex-direction:column; align-items:center; gap:10px; background:var(--cream); border-radius:28px; padding:28px 20px 24px}
+  .bal .big{display:flex; align-items:baseline; gap:6px}
+  .bal .big b{font-size:44px; font-weight:800; letter-spacing:-1px; line-height:1}
+  .bal .big span{font-size:18px; font-weight:700; color:var(--body)}
+  .bal .coin svg{width:96px; height:96px}
+  .how .r{display:flex; align-items:center; justify-content:space-between; min-height:60px; border-top:1px solid var(--line)}
+  .how .r:last-child{border-bottom:1px solid var(--line)}
+  .how .r b{display:block; font-size:15px}
+  .how .r span.sub{font-size:13px; color:var(--muted)}
+  .how .r em{font-style:normal; font-size:16px; font-weight:800}
+  .hist .r{display:flex; align-items:center; justify-content:space-between; min-height:56px; border-top:1px solid var(--line)}
+  .hist .r:last-child{border-bottom:1px solid var(--line)}
+  .hist .r .d{font-size:12px; color:var(--muted)}
+  .hist .r .pl{font-size:16px; font-weight:800}
+  .hist .r .mi{font-size:16px; font-weight:800; color:var(--body)}
+</style>
+</head>
+<body>
+<div id="header-slot"></div>
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" style="gap:22px">
+        <div class="page-bar"><a class="back" href="menu.html" aria-label="뒤로" id="back"></a><span class="ttl">내 파이</span></div>
+        <div class="bal"><span class="coin" id="coin"></span><div class="big"><b id="bal">0</b><span>파이</span></div></div>
+        <button type="button" class="cta" id="shop" style="background:var(--ink); color:#fff">파이로 캐릭터 꾸미기 (준비 중)</button>
+
+        <div class="how"><div class="sect" style="margin:0 0 8px">이렇게 모아요</div>
+          <div class="r"><div><b>닉네임 정하기</b><span class="sub">처음 한 번</span></div><em>+10</em></div>
+          <div class="r"><div><b>커뮤니티 글 쓰기</b><span class="sub">하루 최대 3번</span></div><em>+2</em></div>
+          <div class="r"><div><b>공통 챌린지 순위</b><span class="sub">1위 300 · 2위 200 · 3위 100 · 완주 20</span></div><em>최대 +300</em></div>
+          <div class="r"><div><b>오늘 미션 모두 완료</b><span class="sub">하루 한 번 · 곧 열려요</span></div><em style="color:var(--muted)">+5</em></div>
+          <div class="r"><div><b>5일 연속 달성</b><span class="sub">5일마다 · 곧 열려요</span></div><em style="color:var(--muted)">+10</em></div>
+          <div class="r"><div><b>4주 챌린지 완주</b><span class="sub">곧 열려요</span></div><em style="color:var(--muted)">+50</em></div>
+        </div>
+
+        <div class="hist"><div class="sect" style="margin:0 0 8px">최근 내역</div><div id="hist"><p class="hint">불러오는 중...</p></div>
+          <div style="display:flex; justify-content:center; padding-top:10px"><button type="button" class="pill-btn" id="more" hidden>더 보기</button></div></div>
+
+        <div class="callout">파이는 습관을 이어 간 기록에 대해서만 받고, 현금으로 바꿀 수 없어요. 건강정보 동의를 철회하면 파이는 지워져요.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+document.getElementById('back').innerHTML = ICON.back;
+document.getElementById('coin').innerHTML = ICON.pie;
+const LABEL = { welcome: '닉네임 시작 선물', post_write: '커뮤니티 글 쓰기', common_challenge_rank: '공통 챌린지 순위 보상', common_challenge_complete: '공통 챌린지 완주 보상', shop_buy: '캐릭터 아이템 구매' };
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+function kstDate(iso) {
+  const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + 'Z');
+  return d.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric' });
+}
+const st = { offset: 0, total: 0 };
+async function load(append) {
+  try {
+    const d = (await apiCall('GET', '/pie/history?limit=20&offset=' + (append ? st.offset : 0), undefined, '파이 내역을 불러오지 못했어요')).data;
+    document.getElementById('bal').textContent = d.balance; st.total = d.total;
+    const rows = d.items.map(i => '<div class="r"><div><div>' + esc(LABEL[i.reason] || '파이') + '</div><div class="d">' + kstDate(i.created_at) + '</div></div><span class="' + (i.delta >= 0 ? 'pl' : 'mi') + '">' + (i.delta >= 0 ? '+' : '−') + Math.abs(i.delta) + '</span></div>').join('');
+    const box = document.getElementById('hist');
+    box.innerHTML = append ? box.innerHTML + rows : (rows || '<div class="empty" style="padding:20px 0">아직 내역이 없어요.</div>');
+    st.offset = (append ? st.offset : 0) + d.items.length;
+    document.getElementById('more').hidden = st.offset >= st.total;
+  } catch (e) { document.getElementById('hist').innerHTML = '<div class="empty">' + esc(friendlyError(e)) + '</div>'; }
+}
+document.getElementById('more').addEventListener('click', () => load(true));
+document.getElementById('shop').addEventListener('click', () => confirmDialog('캐릭터 꾸미기는 준비 중이에요', '모은 파이로 내 캐릭터를 꾸미는 기능은 곧 열려요.', '확인'));
+load(false);
+</script>
+</body>
+</html>

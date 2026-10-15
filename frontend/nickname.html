@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 닉네임 정하기</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div id="header-slot"></div>
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" style="gap:20px">
+        <div class="page-bar"><a class="back" href="feed.html" aria-label="뒤로" id="back"></a><span class="ttl">닉네임</span></div>
+        <div>
+          <h1 style="font-size:26px; line-height:1.35">커뮤니티에서 쓸<br>닉네임을 정해요</h1>
+          <p class="lede" style="margin-top:8px">글과 댓글에는 닉네임만 보여요. 이름이나 연락처는 쓰지 마세요.</p>
+        </div>
+        <div class="field"><label for="nick">닉네임 (한글·영문·숫자·밑줄 2~10자)</label><input id="nick" maxlength="10" autocomplete="off" placeholder="예: 걷는고양이"></div>
+        <p class="err" id="err" hidden></p>
+        <div class="callout" id="gift">처음 정하면 시작 선물로 파이 10개를 드려요.</div>
+        <p class="hint">캐릭터 꾸미기는 준비 중이에요.</p>
+        <button type="button" class="cta" id="save" disabled>저장하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+document.getElementById('back').innerHTML = ICON.back;
+const next = new URLSearchParams(location.search).get('next');
+const NEXT_OK = ['write.html', 'feed.html', 'common-challenges.html'];
+const dest = NEXT_OK.includes(next) ? next : 'feed.html';
+const input = document.getElementById('nick'), btn = document.getElementById('save'), err = document.getElementById('err');
+const valid = (v) => /^[0-9A-Za-z가-힣_]{2,10}$/.test(v);
+input.addEventListener('input', () => { btn.disabled = !valid(input.value.trim()); err.hidden = true; });
+apiCall('GET', '/community/me', undefined, '').then(r => {
+  if (r.data.nickname) { input.value = r.data.nickname; btn.disabled = false; document.getElementById('gift').hidden = true; }
+}).catch(() => {});
+btn.addEventListener('click', async () => {
+  btn.disabled = true;
+  try {
+    const d = (await apiCall('PUT', '/community/me', { nickname: input.value.trim() }, '닉네임을 저장하지 못했어요')).data;
+    if (d.pie_gift) await confirmDialog('환영해요!', '시작 선물로 파이 ' + d.pie_gift + '개를 드렸어요.', '확인');
+    location.href = dest;
+  } catch (e) {
+    err.textContent = e.code === 'NICKNAME_TAKEN' ? '이미 쓰고 있는 닉네임이에요. 다른 닉네임을 적어 주세요.' : friendlyError(e);
+    err.hidden = false; btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

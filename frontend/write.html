@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 글쓰기</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .sec{display:flex; flex-direction:column; gap:10px}
+  .sec .lb{font-size:13px; color:var(--muted)}
+  .tt{width:100%; height:56px; border:0; border-bottom:1px solid var(--line); padding:0; font:800 20px 'Nanum Gothic',sans-serif; color:var(--ink); background:transparent}
+  .tt:focus{outline:none; border-bottom-color:var(--ink)}
+  .bd{width:100%; min-height:200px; border:0; padding:16px 0 0; resize:none; font:500 15px 'Nanum Gothic',sans-serif; line-height:1.7; color:var(--ink); background:transparent}
+  .bd:focus{outline:none}
+  .att-card{display:flex; align-items:center; gap:10px; border:1px solid var(--line); border-radius:16px; padding:12px 14px}
+  .att-card .nm{flex:1; display:flex; flex-direction:column; gap:2px}
+  .att-card .nm b{font-size:14px}
+  .att-card .nm span{font-size:12px; color:var(--muted)}
+  .att-card button{border:0; background:none; font-size:13px; color:var(--muted); text-decoration:underline}
+  .photo{display:flex; align-items:center; gap:12px; opacity:.7}
+  .photo .box{width:72px; height:72px; border:1px dashed var(--sage); border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:12px; color:var(--muted); text-align:center}
+  .bar{position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:100%; max-width:430px; padding:12px 20px 28px; background:#fff; border-top:1px solid var(--line); z-index:60}
+</style>
+</head>
+<body style="padding-bottom:110px">
+<div id="header-slot"></div>
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" style="gap:20px">
+        <div class="page-bar"><a class="back" href="feed.html" aria-label="뒤로" id="back"></a><span class="ttl">글쓰기</span></div>
+        <div style="background:var(--cream); border-radius:14px; padding:14px 16px; font-size:13px; color:var(--body); line-height:1.6"><b>건강정보(혈압, 진단명 등)와 개인정보는 쓰지 마세요.</b><br>쓴 글은 다른 이용자에게 보여요.</div>
+
+        <div class="sec"><span class="lb">올릴 곳</span>
+          <div class="chips"><span class="chip on">전체 커뮤니티</span><button type="button" class="chip" id="party">파티</button></div>
+          <span class="hint">글은 고른 한 곳에만 올라가요. 파티 글은 파티원에게만 보여요. 양쪽에 모두 올리고 싶으면 한 번 더 써 주세요.</span></div>
+
+        <div class="sec"><span class="lb">오늘 인증한 챌린지 붙이기 (선택)</span>
+          <div class="chips" id="att-chips"></div>
+          <div id="att-card"></div>
+          <span class="hint">미션 이름과 인증한 일수만 붙어요. 혈압이나 걸음 수 같은 수치는 붙지 않아요.</span></div>
+
+        <div class="sec"><span class="lb">카테고리</span><div class="chips" id="cats"></div></div>
+
+        <div>
+          <input class="tt" id="title" maxlength="100" placeholder="제목" aria-label="제목">
+          <textarea class="bd" id="body" maxlength="1000" placeholder="오늘의 챌린지 이야기를 남겨 보세요" aria-label="내용"></textarea>
+          <div style="text-align:right; font-size:13px; color:var(--muted)"><span id="cnt">0</span> / 1000</div>
+        </div>
+        <div class="photo"><div class="box">사진<br>준비 중</div><span class="hint">사진 올리기는 준비 중이에요.<br>얼굴과 이름이 보이는 사진은 올리지 않아요.</span></div>
+        <p class="err" id="err" hidden></p>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="bar"><button type="button" class="cta" id="submit" disabled>등록하기</button></div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+document.getElementById('back').innerHTML = ICON.back;
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const CATS = [['diet', '식단'], ['exercise', '운동'], ['challenge', '챌린지 인증'], ['tips', '고민과 꿀팁']];
+const KIND = { fixed: ['고정', 'fixed'], selected: ['선택', 'selected'], common: ['공통', 'common'] };
+const st = { cat: 'challenge', options: [], pick: null };
+const $ = (id) => document.getElementById(id);
+
+function renderCats() {
+  $('cats').innerHTML = CATS.map(([v, l]) => '<button type="button" class="chip' + (v === st.cat ? ' on' : '') + '" data-v="' + v + '">' + l + '</button>').join('');
+  document.querySelectorAll('#cats .chip').forEach(b => b.addEventListener('click', () => { st.cat = b.dataset.v; renderCats(); }));
+}
+function renderAttach() {
+  const opts = st.options;
+  $('att-chips').innerHTML = opts.length ? opts.map((o, i) => {
+    const k = KIND[o.kind];
+    return '<button type="button" class="chip' + (st.pick === i ? ' on' : '') + '" data-i="' + i + '"><span class="ctag ' + k[1] + '" style="margin-right:6px">' + k[0] + '</span>' + esc(o.label) + '</button>';
+  }).join('') : '<span class="hint">오늘 인증한 챌린지가 아직 없어요. 챌린지를 인증하면 여기에 나타나요.</span>';
+  document.querySelectorAll('#att-chips .chip').forEach(b => b.addEventListener('click', () => { const i = +b.dataset.i; st.pick = st.pick === i ? null : i; renderAttach(); }));
+  const o = st.pick === null ? null : opts[st.pick];
+  $('att-card').innerHTML = o ? '<div class="att-card"><span class="ctag ' + KIND[o.kind][1] + '">' + KIND[o.kind][0] + '</span><div class="nm"><b>' + esc(o.label) + '</b><span>인증 ' + o.days + '일째</span></div><button type="button" id="att-del">빼기</button></div>' : '';
+  const del = $('att-del'); if (del) del.addEventListener('click', () => { st.pick = null; renderAttach(); });
+}
+function check() { $('submit').disabled = !($('title').value.trim() && $('body').value.trim()); $('cnt').textContent = $('body').value.length; }
+['title', 'body'].forEach(id => $(id).addEventListener('input', check));
+$('party').addEventListener('click', () => confirmDialog('파티는 준비 중이에요', '친구와 함께 챌린지를 하는 파티는 곧 열려요.', '확인'));
+$('submit').addEventListener('click', async () => {
+  $('submit').disabled = true; $('err').hidden = true;
+  const payload = { category: st.cat, title: $('title').value.trim(), body: $('body').value.trim() };
+  const o = st.pick === null ? null : st.options[st.pick];
+  if (o) payload.attach = o.mission_code ? { mission_code: o.mission_code } : { common_challenge_id: o.common_challenge_id };
+  try {
+    const d = (await apiCall('POST', '/community/posts', payload, '글을 올리지 못했어요')).data;
+    if (d.pie_gain) await confirmDialog('글을 올렸어요', '파이 ' + d.pie_gain + '개를 받았어요.', '확인');
+    location.href = 'post.html?id=' + encodeURIComponent(d.post_id);
+  } catch (e) {
+    if (e.code === 'NICKNAME_REQUIRED') { location.href = 'nickname.html?next=write.html'; return; }
+    $('err').textContent = e.code === 'ATTACH_NOT_ALLOWED' ? '오늘 인증한 챌린지만 붙일 수 있어요.' : friendlyError(e);
+    $('err').hidden = false; $('submit').disabled = false;
+  }
+});
+renderCats(); renderAttach(); check();
+apiCall('GET', '/community/me', undefined, '').then(r => { if (!r.data.nickname) location.replace('nickname.html?next=write.html'); }).catch(() => {});
+apiCall('GET', '/community/attachable', undefined, '').then(r => { st.options = r.data; renderAttach(); }).catch(() => {});
+</script>
+</body>
+</html>

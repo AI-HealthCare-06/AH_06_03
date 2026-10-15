@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 커뮤니티 챌린지</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .tabs{display:flex; border-bottom:1px solid var(--line); margin:0 -20px; padding:0 20px}
+  .tabs a,.tabs button,.tabs span{flex:1; height:46px; border:0; border-bottom:3px solid transparent; margin-bottom:-1px; background:none; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--muted); text-decoration:none}
+  .tabs .on{color:var(--ink); font-weight:800; border-bottom-color:var(--ink)}
+  .cc{display:flex; flex-direction:column; gap:10px; border:1px solid var(--line); border-radius:22px; padding:18px; text-decoration:none; color:inherit}
+  .cc .t{font-size:18px; font-weight:800; line-height:1.35; word-break:break-all}
+  .cc .p{font-size:13px; color:var(--muted)}
+  .cc .f{display:flex; align-items:center; justify-content:space-between; font-size:13px; color:var(--body)}
+  .cc .f b{font-weight:800}
+  .state{height:22px; padding:0 9px; border-radius:11px; font-size:12px; font-weight:700; display:inline-flex; align-items:center}
+  .state.active{background:var(--notice); color:#234257}
+  .state.upcoming{background:var(--cream-2); color:#6B4A22}
+  .state.ended{background:var(--sage-light); color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="header-slot"></div>
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" style="gap:14px">
+        <div style="display:flex; align-items:center; min-height:44px"><h1 style="font-size:20px">커뮤니티</h1></div>
+        <div class="tabs" role="tablist">
+          <a href="feed.html" role="tab">피드</a>
+          <span class="on" role="tab" aria-selected="true">챌린지</span>
+          <button type="button" role="tab" id="tab-party">파티</button>
+        </div>
+        <div class="chips" id="chips"></div>
+        <div id="list"><p class="hint">불러오는 중...</p></div>
+        <div class="callout">챌린지는 운영팀이 열어요. 순위는 인증한 일수로만 정해지고, 혈압 같은 건강 수치는 서로 비교하지 않아요.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const STATES = [['active', '진행중'], ['upcoming', '진행 예정'], ['ended', '종료']];
+const STATE_LABEL = { active: '진행중', upcoming: '진행 예정', ended: '종료' };
+let cur = 'active';
+function dateRange(a, b) {
+  const f = (s) => { const d = new Date(s + 'T00:00:00'); return (d.getMonth() + 1) + '.' + d.getDate() + '(' + '일월화수목금토'[d.getDay()] + ')'; };
+  return f(a) + ' ~ ' + f(b);
+}
+function renderChips() {
+  document.getElementById('chips').innerHTML = STATES.map(([v, l]) => '<button type="button" class="chip' + (v === cur ? ' on' : '') + '" data-v="' + v + '">' + l + '</button>').join('');
+  document.querySelectorAll('#chips .chip').forEach(b => b.addEventListener('click', () => { cur = b.dataset.v; renderChips(); load(); }));
+}
+async function load() {
+  const box = document.getElementById('list');
+  try {
+    const items = (await apiCall('GET', '/common-challenges?state=' + cur, undefined, '챌린지를 불러오지 못했어요')).data.items;
+    box.innerHTML = items.length ? '<div style="display:flex; flex-direction:column; gap:12px">' + items.map(c =>
+      '<a class="cc" href="common-challenge.html?id=' + encodeURIComponent(c.challenge_id) + '"><div style="display:flex; gap:6px; align-items:center"><span class="ctag common">공통</span><span class="state ' + c.state + '">' + STATE_LABEL[c.state] + '</span></div>'
+      + '<div class="t">' + esc(c.title) + '</div><div class="p">' + dateRange(c.starts_on, c.ends_on) + (c.proof_type === 'steps' ? ' · 걸음 수 인증' : ' · 직접 인증') + '</div>'
+      + '<div class="f"><span><b>' + c.participants.toLocaleString() + '명</b> ' + (c.joined ? '참여 중' : '참여가능') + (c.my_rank ? ' · 내 순위 ' + c.my_rank + '위' : '') + '</span><span>최대 ' + c.max_reward + '</span></div></a>').join('') + '</div>'
+      : '<div class="empty">' + (cur === 'active' ? '지금 진행 중인 챌린지가 없어요.' : cur === 'upcoming' ? '예정된 챌린지가 없어요.' : '종료된 챌린지가 없어요.') + '</div>';
+  } catch (e) { box.innerHTML = '<div class="empty">' + esc(friendlyError(e)) + '</div>'; }
+}
+document.getElementById('tab-party').addEventListener('click', () => confirmDialog('파티는 준비 중이에요', '친구와 함께 챌린지를 하는 파티는 곧 열려요.', '확인'));
+renderChips(); load();
+</script>
+</body>
+</html>

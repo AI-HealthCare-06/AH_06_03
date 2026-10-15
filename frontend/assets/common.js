@@ -26,66 +26,93 @@ const PAEON_LOGO_SVG = `
   <circle cx="50" cy="54" r="2.2" style="fill:var(--dots)"/>
 </svg>`;
 
+// 시안(design/redesign-2026-10)에서 쓰는 선 아이콘. 한 곳에 모아 두고 화면에서는 ICON.이름 으로 쓴다.
+const _svg = (inner, w = 24) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+const ICON = {
+  home: _svg('<path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/>'),
+  record: _svg('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
+  challenge: _svg('<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>'),
+  community: _svg('<path d="M4 5h16v11h-7l-4 4v-4H4z"/>'),
+  more: _svg('<path d="M4 7h16M4 12h16M4 17h16"/>'),
+  bell: _svg('<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/>'),
+  back: _svg('<path d="M15 5l-7 7 7 7"/>'),
+  chevron: _svg('<path d="M9 5l7 7-7 7"/>', 18),
+  search: _svg('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>'),
+  plus: _svg('<path d="M12 5v14M5 12h14"/>', 18),
+  calendar: _svg('<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>', 26),
+  pie: '<svg class="pie-coin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#F3E3D0" stroke="#243749" stroke-width="1.6"/><path d="M12 12V2a10 10 0 0 1 8.5 4.8z" fill="#F2C94C" stroke="#243749" stroke-width="1.6" stroke-linejoin="round"/><circle cx="8" cy="14" r="1.2" fill="#243749"/></svg>',
+};
+
+function _apiBase() {
+  return typeof API_BASE !== 'undefined' ? API_BASE : (['5500'].includes(location.port) ? 'http://127.0.0.1:8000/v1' : 'https://54-116-113-17.sslip.io/v1');
+}
+// 로그인한 사람의 파이 잔액. 로그인하지 않았거나 서버에 닿지 않으면 null (칩만 빠지고 화면은 그대로 동작한다)
+async function pieBalance() {
+  try {
+    const t = localStorage.getItem('paeon-access-token');
+    if (!t) return null;
+    const r = await fetch(_apiBase() + '/pie', { headers: { Authorization: 'Bearer ' + t } });
+    return r.ok ? (await r.json()).data.balance : null;
+  } catch (e) { return null; }
+}
+
+const PIE_PAGES_HIDE_CHIP = ['index.html', 'signup.html', 'login.html', 'guest-inquiry.html', 'eligibility.html'];
+
 function renderHeader(){
   const slot = document.getElementById('header-slot');
   if (!slot) return;
+  const page = location.pathname.split('/').pop() || 'index.html';
+  const showRight = loggedIn() && !PIE_PAGES_HIDE_CHIP.includes(page);
   slot.innerHTML = `
     <div class="picker">
-      <a class="brand" href="index.html">${PAEON_LOGO_SVG} PAEON</a>
-      ${loggedIn() && !['login.html', 'signup.html'].includes(location.pathname.split('/').pop()) ? '<button type="button" id="hdr-logout" class="hdr-logout">로그아웃</button>' : ''}
+      <a class="brand" href="${loggedIn() ? 'dashboard.html' : 'index.html'}">PAEON</a>
+      ${showRight ? `<div class="hdr-right"><a class="hdr-pie" id="hdr-pie" href="pie.html" aria-label="내 파이" hidden>${ICON.pie}<span id="hdr-pie-n"></span></a><a class="hdr-bell" id="hdr-bell" href="inquiries.html" aria-label="문의 답변">${ICON.bell}</a></div>` : ''}
     </div>`;
-  const out = document.getElementById('hdr-logout');
-  if (out) out.addEventListener('click', async () => {
-    if (!(await confirmDialog('로그아웃할까요?', '다시 이용하려면 로그인해야 해요.', '로그아웃'))) return;
-    if (typeof apiLogout !== 'function') {   // api.js가 없는 화면(홈·대시보드 등)에서는 필요할 때 불러온다
-      await new Promise((ok) => { const sc = document.createElement('script'); sc.src = 'assets/api.js'; sc.onload = ok; sc.onerror = ok; document.head.appendChild(sc); });
-    }
-    if (typeof apiLogout === 'function') apiLogout();
-    else { ['paeon-access-token', 'paeon-refresh-token', 'paeon-user-id'].forEach(k => localStorage.removeItem(k)); location.href = 'login.html'; }
+  if (!showRight) return;
+  pieBalance().then((n) => {
+    if (n === null) return;
+    document.getElementById('hdr-pie-n').textContent = n;
+    document.getElementById('hdr-pie').hidden = false;
+  });
+  inquiryUnread().then((n) => {   // 1:1 문의에 답변이 오면 종에 숫자
+    if (n) document.getElementById('hdr-bell').insertAdjacentHTML('beforeend', `<span class="badge" aria-label="새 답변 ${n}개">${n}</span>`);
   });
 }
 function loggedIn(){ try { return !!localStorage.getItem('paeon-access-token'); } catch (e) { return false; } }
 
+// 하단 탭 5개. 챌린지는 진행 중인 사이클이 있으면 수행 화면, 없으면 시작 화면으로 간다.
 const NAV_ITEMS = [
-  { icon: '🏠', label: '홈', href: 'dashboard.html', pages: ['dashboard.html'] },
-  { icon: '🩺', label: '건강정보', href: 'health-info.html', pages: ['health-info.html', 'survey.html', 'review.html'] },
-  { icon: '🎯', label: '챌린지', href: localStorage.getItem('paeon-cycle') ? 'challenge-progress.html' : 'challenges.html', pages: ['challenges.html', 'challenge-progress.html'] },
-  { icon: '📝', label: '내 기록', href: 'trend.html', pages: ['trend.html'] },
-  { icon: '👤', label: '마이페이지', href: 'mypage.html', pages: ['mypage.html', 'inquiries.html'] },
+  { icon: ICON.record, label: '내 기록', href: 'trend.html', pages: ['trend.html', 'twelve-weeks.html', 'reassessment.html'] },
+  { icon: ICON.challenge, label: '챌린지', href: localStorage.getItem('paeon-cycle') ? 'challenge-progress.html' : 'challenges.html', pages: ['challenges.html', 'challenge-progress.html'] },
+  { icon: ICON.home, label: '홈', href: 'dashboard.html', pages: ['dashboard.html', 'health-info.html', 'survey.html', 'review.html', 'result.html', 'calendar-diary.html'] },
+  { icon: ICON.community, label: '커뮤니티', href: 'feed.html', pages: ['feed.html', 'write.html', 'post.html', 'nickname.html', 'common-challenges.html', 'common-challenge.html'] },
+  { icon: ICON.more, label: '더보기', href: 'menu.html', pages: ['menu.html', 'mypage.html', 'inquiries.html', 'guide.html', 'terms.html', 'pie.html'] },
 ];
 // 안 읽은 문의 답변 수. 로그인하지 않았거나 서버에 닿지 않으면 0 (메뉴만 빠지고 화면은 그대로 동작한다)
 async function inquiryUnread() {
   try {
     const t = localStorage.getItem('paeon-access-token');
     if (!t) return 0;
-    const base = typeof API_BASE !== 'undefined' ? API_BASE : (['5500'].includes(location.port) ? 'http://127.0.0.1:8000/v1' : 'https://54-116-113-17.sslip.io/v1');
-    const r = await fetch(base + '/inquiries', { headers: { Authorization: 'Bearer ' + t } });
+    const r = await fetch(_apiBase() + '/inquiries', { headers: { Authorization: 'Bearer ' + t } });
     return r.ok ? ((await r.json()).data.unread || 0) : 0;
   } catch (e) { return 0; }
 }
 
-const NO_NAV_PAGES = ['index.html', 'signup.html', 'login.html', 'guest-inquiry.html', 'eligibility.html', 'privacy.html', 'my-data.html'];
+const NO_NAV_PAGES = ['index.html', 'signup.html', 'login.html', 'guest-inquiry.html', 'eligibility.html', 'privacy.html', 'my-data.html', 'write.html', 'nickname.html'];
 
 function renderNav(){
-  const body = document.querySelector('.frame-body');
-  if (!body || body.querySelector('.app-shell')) return;
+  if (document.querySelector('.tabbar')) return;
   const page = location.pathname.split('/').pop() || 'index.html';
-  if (NO_NAV_PAGES.includes(page)) return;
-  const shell = document.createElement('div');
-  shell.className = 'app-shell';
-  const navCol = document.createElement('div');
-  navCol.className = 'nav-col';
-  navCol.innerHTML = NAV_ITEMS.map(it => `<a class="nav-item${it.pages.includes(page) ? ' active' : ''}" href="${it.href}">${it.icon} ${it.label}</a>`).join('');
-  inquiryUnread().then((n) => {   // 1:1 문의에 답변이 오면 마이페이지 메뉴에 빨간 점
-    const a = navCol.querySelector('a[href="mypage.html"]');
+  if (NO_NAV_PAGES.includes(page) || !loggedIn()) return;
+  const nav = document.createElement('nav');
+  nav.className = 'tabbar';
+  nav.setAttribute('aria-label', '주요 메뉴');
+  nav.innerHTML = NAV_ITEMS.map(it => `<a href="${it.href}"${it.pages.includes(page) ? ' class="active" aria-current="page"' : ''}>${it.icon}${it.label}</a>`).join('');
+  document.body.appendChild(nav);
+  inquiryUnread().then((n) => {   // 더보기(문의 포함)에 점
+    const a = nav.querySelector('a[href="menu.html"]');
     if (n && a) a.insertAdjacentHTML('beforeend', '<span class="nav-dot" aria-label="새 답변"></span>');
   });
-  const contentCol = document.createElement('div');
-  contentCol.className = 'content-col';
-  while (body.firstChild) contentCol.appendChild(body.firstChild);
-  shell.appendChild(navCol);
-  shell.appendChild(contentCol);
-  body.appendChild(shell);
 }
 
 // 처음 시작하는 4단계(대상 확인 → 건강정보 → 설문 → 위험도 분석)의 진행 상태와 다음 할 일. 대시보드와 입력 검토 화면의 안내에 쓴다.
