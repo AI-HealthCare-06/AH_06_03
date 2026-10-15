@@ -35,6 +35,7 @@
           <div class="chips"><button type="button" class="chip on" id="to-all">전체 커뮤니티</button><button type="button" class="chip" id="party">파티</button></div>
           <span class="hint">글은 고른 한 곳에만 올라가요. 파티 글은 파티원에게만 보여요. 양쪽에 모두 올리고 싶으면 한 번 더 써 주세요.</span></div>
 
+        <div class="sec" id="card-sec" hidden><span class="lb">파티 연속 인증 카드 붙이기 (선택)</span><div class="chips"><button type="button" class="chip" id="card-chip">파티 연속 인증 카드</button></div><span class="hint">우리 파티가 며칠째 이어 가고 있는지 글에 보여 줘요.</span></div>
         <div class="sec" id="cat-sec"><span class="lb">카테고리</span><div class="chips" id="cats"></div></div>
 
         <div class="sec"><span class="lb">오늘 인증한 챌린지 붙이기 (선택)</span>
@@ -62,7 +63,7 @@ document.getElementById('back').innerHTML = ICON.back;
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const CATS = [['diet', '식단'], ['exercise', '운동'], ['challenge', '챌린지 인증'], ['tips', '고민과 꿀팁']];
 const KIND = { fixed: ['고정', 'fixed'], selected: ['선택', 'selected'], common: ['공통', 'common'] };
-const st = { cat: 'challenge', options: [], pick: null, to: 'all', inParty: false };
+const st = { cat: 'challenge', options: [], pick: null, to: 'all', inParty: false, card: false };
 const $ = (id) => document.getElementById(id);
 
 function renderCats() {
@@ -85,9 +86,10 @@ function check() { $('submit').disabled = !(($('title').value.trim() || st.to ==
 // 올릴 곳: 전체 커뮤니티 / 내 파티 (파티 글은 파티원에게만 보이고 카테고리가 없다)
 function renderTo() {
   $('to-all').classList.toggle('on', st.to === 'all'); $('party').classList.toggle('on', st.to === 'party');
-  $('cat-sec').hidden = st.to === 'party'; $('title').hidden = st.to === 'party'; check();
+  $('cat-sec').hidden = st.to === 'party'; $('title').hidden = st.to === 'party'; $('card-sec').hidden = st.to !== 'party'; $('card-chip').classList.toggle('on', st.card); check();
 }
 $('to-all').addEventListener('click', () => { st.to = 'all'; renderTo(); });
+$('card-chip').addEventListener('click', () => { st.card = !st.card; renderTo(); });
 $('party').addEventListener('click', async () => {
   if (st.inParty) { st.to = 'party'; renderTo(); return; }
   if (await confirmDialog('들어가 있는 파티가 없어요', '파티를 만들거나 초대 코드로 들어가면 파티 글을 쓸 수 있어요.', '파티로 가기')) location.href = 'party.html';
@@ -98,7 +100,8 @@ $('submit').addEventListener('click', async () => {
   $('submit').disabled = true; $('err').hidden = true;
   const payload = { category: st.to === 'party' ? 'tips' : st.cat, title: st.to === 'party' ? $('body').value.trim().slice(0, 30) : $('title').value.trim(), body: $('body').value.trim() };
   const o = st.pick === null ? null : st.options[st.pick];
-  if (o) payload.attach = o.mission_code ? { mission_code: o.mission_code } : { common_challenge_id: o.common_challenge_id };
+  if (st.to === 'party' && st.card) payload.attach = { party_card: true };
+  else if (o) payload.attach = o.mission_code ? { mission_code: o.mission_code } : { common_challenge_id: o.common_challenge_id };
   try {
     const d = (await apiCall('POST', st.to === 'party' ? '/parties/me/posts' : '/community/posts', payload, '글을 올리지 못했어요')).data;
     if (d.pie_gain) await confirmDialog('글을 올렸어요', '파이 ' + d.pie_gain + '개를 받았어요.', '확인');

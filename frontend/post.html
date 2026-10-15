@@ -55,7 +55,7 @@ const id = new URLSearchParams(location.search).get('id');
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const $ = (x) => document.getElementById(x);
 const CAT_LABEL = { diet: '식단', exercise: '운동', challenge: '챌린지 인증', tips: '고민과 꿀팁' };
-const KIND = { fixed: ['고정', 'fixed'], selected: ['선택', 'selected'], common: ['공통', 'common'] };
+const KIND = { fixed: ['고정', 'fixed'], selected: ['선택', 'selected'], common: ['공통', 'common'], party: ['파티', 'party'] };
 const REASONS = [['health_info', '건강정보나 개인정보가 들어 있어요'], ['spam', '광고·스팸이에요'], ['abuse', '욕설·비방이에요'], ['other', '기타']];
 const _avc = {};
 const _avView = (n) => _avc[n] || (_avc[n] = apiCall('GET', '/characters/by-nickname/' + encodeURIComponent(n), undefined, '').then(r => r.data));
@@ -80,7 +80,7 @@ function sheet(title, items, onPick) {
 function renderPost() {
   const p = post, nick = p.author_nickname || '알 수 없음';
   let att = '';
-  if (p.attach) { const k = KIND[p.attach.kind]; att = '<div class="attach"><span class="ctag ' + k[1] + '">' + k[0] + '</span><span class="lb">' + esc(p.attach.label) + '</span><span class="dy">인증 ' + p.attach.days + '일째</span></div>'; }
+  if (p.attach) { const k = KIND[p.attach.kind]; att = '<div class="attach"><span class="ctag ' + k[1] + '">' + k[0] + '</span><span class="lb">' + esc(p.attach.label) + '</span>' + (p.attach.kind === 'party' ? (p.attach.days ? p.attach.days + '일째' : '이제 시작') : '인증 ' + p.attach.days + '일째</span></div>'; }
   $('post').innerHTML = '<div style="display:flex; flex-direction:column; gap:14px">'
     + '<div class="head"><span class="av"' + (p.author_nickname ? ' data-av="' + esc(nick) + '"' : '') + '>' + esc(nick.slice(0, 1)) + '</span><div><div class="meta"><span class="cat">' + esc(CAT_LABEL[p.category] || '') + '</span>' + esc(nick) + ' · ' + ago(p.created_at) + '</div></div></div>'
     + (new URLSearchParams(location.search).get('from') === 'party' ? '' : '<h1 class="ttl2">' + esc(p.title) + '</h1>')

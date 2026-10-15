@@ -50,7 +50,7 @@
   <div class="frame">
     <div class="frame-body">
       <div class="screen" id="screen" style="gap:0">
-        <div class="feed-head"><h1>커뮤니티</h1><a class="icon-btn" id="me-char" href="character.html" aria-label="내 캐릭터"></a></div>
+        <div class="feed-head"><h1>커뮤니티</h1><div style="display:flex; align-items:center"><button type="button" class="icon-btn" id="btn-search" aria-label="검색"></button><a class="icon-btn" id="me-char" href="character.html" aria-label="내 캐릭터"></a></div></div>
         <div class="tabs" role="tablist">
           <a href="feed.html" role="tab">피드</a>
           <a href="common-challenges.html" role="tab">챌린지</a>
@@ -63,6 +63,7 @@
             <span class="pill" id="pcount"></span>
           </div>
           <div class="sub"><a href="party-home.html">현황</a><span class="on">파티 피드</span></div>
+          <div class="search" id="search" hidden style="padding-top:12px"><input id="q" maxlength="50" placeholder="파티 글에서 찾기" aria-label="검색어"><button type="button" class="pill-btn" id="q-go">찾기</button></div>
           <div id="list"></div>
           <div class="more" id="more" hidden><button type="button" class="pill-btn" id="more-btn">더 보기</button></div>
         </div>
@@ -78,7 +79,7 @@ if (!loggedIn()) location.replace('login.html');
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const CATS = [['', 'latest', '전체'], ['', 'popular', '인기'], ['diet', 'latest', '식단'], ['exercise', 'latest', '운동'], ['challenge', 'latest', '챌린지 인증'], ['tips', 'latest', '고민과 꿀팁']];
 const CAT_LABEL = { diet: '식단', exercise: '운동', challenge: '챌린지 인증', tips: '고민과 꿀팁' };
-const KIND = { fixed: ['고정', 'fixed'], selected: ['선택', 'selected'], common: ['공통', 'common'] };
+const KIND = { fixed: ['고정', 'fixed'], selected: ['선택', 'selected'], common: ['공통', 'common'], party: ['파티', 'party'] };
 const PAGE = 20;
 const LEADERS = new Set();
 const st = { cat: 0, q: '', offset: 0, total: 0, items: [], nickname: undefined };
@@ -99,7 +100,7 @@ function ago(iso) {
 function attachHtml(a) {
   if (!a) return '';
   const [lb, cls] = KIND[a.kind] || ['', ''];
-  return `<div class="attach"><span class="ctag ${cls}">${lb}</span><span class="lb">${esc(a.label)}</span><span class="dy">인증 ${a.days}일째</span></div>`;
+  return `<div class="attach"><span class="ctag ${cls}">${lb}</span><span class="lb">${esc(a.label)}</span><span class="dy">${a.kind === 'party' ? (a.days ? a.days + '일째' : '이제 시작') : '인증 ' + a.days + '일째'}</span></div>`;
 }
 function postHtml(p) {
   const nick = p.author_nickname || '알 수 없음';
@@ -113,15 +114,20 @@ function postHtml(p) {
 }
 function renderList() {
   const el = document.getElementById('list');
-  el.innerHTML = st.items.length ? st.items.map(postHtml).join('') : '<div class="empty">아직 글이 없어요.<br>파티원에게 첫 글을 남겨 보세요.</div>';
+  el.innerHTML = st.items.length ? st.items.map(postHtml).join('') : (st.q ? '<div class="empty">찾는 글이 없어요.</div>' : '<div class="empty">아직 글이 없어요.<br>파티원에게 첫 글을 남겨 보세요.</div>');
   document.getElementById('more').hidden = st.items.length >= st.total;
   hydrateAvatars(el, 40);
 }
 async function load(append) {
-  const d = (await apiCall('GET', `/parties/me/posts?limit=${PAGE}&offset=${append ? st.offset : 0}`, undefined, '글을 불러오지 못했어요')).data;
+  const d = (await apiCall('GET', `/parties/me/posts?limit=${PAGE}&offset=${append ? st.offset : 0}${st.q ? '&q=' + encodeURIComponent(st.q) : ''}`, undefined, '글을 불러오지 못했어요')).data;
   st.total = d.total; st.items = append ? st.items.concat(d.items) : d.items; st.offset = st.items.length; renderList();
 }
 document.getElementById('fab').innerHTML = ICON.plus + '파티 글쓰기';
+document.getElementById('btn-search').innerHTML = ICON.search;
+document.getElementById('btn-search').addEventListener('click', () => { const b = document.getElementById('search'); b.hidden = !b.hidden; if (!b.hidden) document.getElementById('q').focus(); });
+const goSearch = () => { st.q = document.getElementById('q').value.trim(); st.offset = 0; load(false).catch(() => {}); };
+document.getElementById('q-go').addEventListener('click', goSearch);
+document.getElementById('q').addEventListener('keydown', (e) => { if (e.key === 'Enter') goSearch(); });
 document.getElementById('more-btn').addEventListener('click', () => load(true).catch(() => {}));
 apiCall('GET', '/characters/me', undefined, '').then(r => { document.getElementById('me-char').innerHTML = characterSvg(r.data, 36); }).catch(() => {});
 (async () => {
