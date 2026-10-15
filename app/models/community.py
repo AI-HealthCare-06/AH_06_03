@@ -5,7 +5,7 @@
 """
 from datetime import datetime
 
-from sqlalchemy import CHAR, DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import CHAR, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db.databases import Base
@@ -38,6 +38,10 @@ class CommunityPost(Base):
     body: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(10), nullable=False, default="visible")   # visible / hidden / deleted
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)   # UTC
+    # 글에 붙인 챌린지 카드 (미션 이름과 인증 일수만, 올릴 때의 값을 그대로 저장한다. 혈압·걸음 수 같은 수치는 담지 않는다)
+    attach_kind: Mapped[str | None] = mapped_column(String(10), nullable=True)           # fixed / selected / common
+    attach_label: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    attach_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class CommunityComment(Base):

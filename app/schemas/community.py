@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Category = Literal["diet", "exercise", "challenge", "tips"]
 Reason = Literal["health_info", "spam", "abuse", "other"]
@@ -35,8 +35,39 @@ class MyCommunity(BaseModel):
     pie_gift: int = 0             # 방금 닉네임을 처음 정해서 받은 시작 선물 (그 밖에는 0)
 
 
+class AttachRequest(BaseModel):
+    """글에 붙일 챌린지. 내 4주 챌린지의 미션(mission_code)이나 참여 중인 공통 챌린지(common_challenge_id) 중 하나."""
+    model_config = ConfigDict(extra="forbid")
+
+    mission_code: str | None = Field(default=None, max_length=50)
+    common_challenge_id: str | None = Field(default=None, max_length=36)
+
+    @model_validator(mode="after")
+    def one_of(self):
+        if bool(self.mission_code) == bool(self.common_challenge_id):
+            raise ValueError("미션과 공통 챌린지 중 하나만 골라 주세요.")
+        return self
+
+
+class PostAttach(BaseModel):
+    kind: Literal["fixed", "selected", "common"]   # 고정 / 선택 / 공통
+    label: str                                     # 미션·챌린지 이름
+    days: int                                      # 인증한 일수
+
+
+class AttachOption(BaseModel):
+    """글쓰기 화면에서 붙일 수 있는 "오늘 인증한 챌린지"."""
+    mission_code: str | None
+    common_challenge_id: str | None
+    kind: Literal["fixed", "selected", "common"]
+    label: str
+    days: int
+
+
 class PostCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+    attach: AttachRequest | None = None
 
     category: Category
     title: str = Field(min_length=1, max_length=100)
@@ -60,6 +91,7 @@ class PostItem(BaseModel):
     liked_by_me: bool
     mine: bool
     hidden: bool                  # 운영 정책으로 숨김 처리된 내 글 (다른 사람에게는 목록에 나오지 않는다)
+    attach: PostAttach | None = None   # 붙인 챌린지 카드 (숨김 글에는 없다)
     notice: str | None = None     # hidden일 때 보여 줄 안내
 
 

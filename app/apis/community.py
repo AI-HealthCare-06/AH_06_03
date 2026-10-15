@@ -8,7 +8,7 @@ from app.apis.deps import get_current_user_id
 from app.core.db.databases import async_get_db
 from app.schemas.common import DataResponse
 from app.schemas.community import (
-    CommentCreate, CommentItem, LikeResult, MyCommunity, NicknameRequest, PostCreate, PostCreated, PostDetail, PostList,
+    AttachOption, CommentCreate, CommentItem, LikeResult, MyCommunity, NicknameRequest, PostCreate, PostCreated, PostDetail, PostList,
     ReportRequest, ReportResult,
 )
 from app.services import community_service
@@ -24,6 +24,12 @@ async def my_community(user_id: str = Depends(get_current_user_id), db: AsyncSes
 @router.put("/me", response_model=DataResponse[MyCommunity])
 async def set_nickname(req: NicknameRequest, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)):
     return DataResponse(data=await community_service.set_nickname(db, user_id, req.nickname))
+
+
+@router.get("/attachable", response_model=DataResponse[list[AttachOption]])
+async def attachable(user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)):
+    """글쓰기에서 붙일 수 있는 "오늘 인증한 챌린지" (내 4주 챌린지 미션, 참여 중인 공통 챌린지)."""
+    return DataResponse(data=await community_service.attach_options(db, user_id))
 
 
 @router.get("/posts", response_model=DataResponse[PostList])

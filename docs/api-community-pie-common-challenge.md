@@ -27,6 +27,12 @@
 글 항목: `post_id, category, title, preview, author_nickname, created_at, like_count, comment_count, liked_by_me, mine, hidden, notice`.
 운영팀이 숨긴 글은 **작성자에게만** `hidden: true`, `notice: "운영 정책에 따라 숨김 처리됐어요"`로 보이고(본문은 비어 있음) 다른 사람 목록·상세에는 나오지 않는다. 삭제된 글은 아무에게도 안 보인다.
 
+### 글에 챌린지 붙이기
+- `GET /community/attachable` → 글쓰기 화면에서 고를 "오늘 인증한 챌린지" 목록. 항목 `{mission_code, common_challenge_id, kind, label, days}`
+  - `kind`: `fixed`(고정: 흡연·음주 칸과 그 대체 미션) · `selected`(선택) · `common`(공통). 내 4주 챌린지 미션과 오늘 인증한 공통 챌린지가 나온다
+- `POST /community/posts`에 `attach: {mission_code}` 또는 `attach: {common_challenge_id}` 중 **하나**를 더하면 글에 카드가 붙는다. 서버가 오늘 인증했는지와 내 챌린지인지를 확인하고, 이름과 인증 일수만 저장한다(혈압·걸음 수는 저장하지 않음). 아니면 `ATTACH_NOT_ALLOWED`(409), 둘 다 보내거나 비우면 422
+- 글 항목·상세에 `attach: {kind, label, days} | null`이 나온다(숨김 처리된 글에는 없음). 파티 챌린지는 파티가 만들어진 뒤에 더한다
+
 ### 신고
 `POST /community/posts/{id}/report`, `POST /community/comments/{id}/report` `{reason}` → 201 `{reported: true}`
 `reason`: `health_info`(건강정보 포함) · `spam`(광고·스팸) · `abuse`(욕설·비방) · `other`(기타).
