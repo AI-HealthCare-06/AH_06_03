@@ -128,7 +128,7 @@ document.getElementById('fab').addEventListener('click', async (e) => {
   if (st.nickname === undefined) { try { st.nickname = (await apiCall('GET', '/community/me', undefined, '')).data.nickname; } catch (err) { st.nickname = null; } }
   if (!st.nickname) { e.preventDefault(); location.href = 'nickname.html?next=write.html'; }
 });
-apiCall('GET', '/characters/me', undefined, '').then(r => { document.getElementById('me-av').innerHTML = characterSvg(r.data, 32); }).catch(() => {});
+apiCall('GET', '/characters/me', undefined, '').then(r => { document.getElementById('me-av').innerHTML = characterSvg(r.data, 36); }).catch(() => {});
 renderCats(); load(false);
 </script>
 </body>

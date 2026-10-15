@@ -23,6 +23,8 @@
   .b.off .c{border:1.5px dashed #D2C4B4; color:var(--muted)}
   .b .nm{font-size:13px; font-weight:700}
   .b.off .nm{font-weight:400; color:var(--muted)}
+  .b.part .nm{font-weight:700; color:var(--ink)}
+  .b .pg{font-size:12px; font-weight:800; color:#5C86AC}
   .b .ht{font-size:11px; color:var(--muted); line-height:1.4}
   .foot{font-size:12px; color:var(--muted); line-height:1.6; text-align:center}
 </style>
@@ -60,7 +62,11 @@ const GLYPH = {
 function badgeHtml(b) {
   const bg = b.group === 'record' ? '#F3E3D0' : (b.code === 'first' || b.code === 'streak_3' ? '#AACDDC' : '#81A6C6');
   const inner = GLYPH[b.code] || b.code.split('_')[1];
-  return `<div class="b${b.earned ? '' : ' off'}"><span class="c"${b.earned ? ` style="background:${bg}"` : ''}>${inner}</span><span class="nm">${esc(b.label)}</span>${b.earned ? '' : `<span class="ht">${esc(b.hint)}</span>`}</div>`;
+  const part = !b.earned && b.progress > 0 && b.target > 0;
+  // 못 받은 배지는 한 만큼을 파이 조각처럼 채워서 보여 준다
+  const style = b.earned ? ` style="background:${bg}"` : part ? ` style="background:conic-gradient(${bg} ${Math.round(b.progress / b.target * 360)}deg, #FBF7F1 0); border:1.5px solid ${bg}"` : '';
+  const prog = !b.earned && b.target > 0 ? `<span class="pg">${b.progress} / ${b.target}</span>` : '';
+  return `<div class="b${b.earned ? '' : part ? ' part' : ' off'}"><span class="c"${style}>${inner}</span><span class="nm">${esc(b.label)}</span>${b.earned ? '' : `<span class="ht">${esc(b.hint)}</span>${prog}`}</div>`;
 }
 
 function render(d) {

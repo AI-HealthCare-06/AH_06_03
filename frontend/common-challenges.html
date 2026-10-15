@@ -31,7 +31,7 @@
   <div class="frame">
     <div class="frame-body">
       <div class="screen" style="gap:14px">
-        <div style="display:flex; align-items:center; min-height:64px"><h1 style="font-size:20px">커뮤니티</h1></div>
+        <div style="display:flex; align-items:center; justify-content:space-between; min-height:64px"><h1 style="font-size:20px">커뮤니티</h1><a id="me-char" href="character.html" aria-label="내 캐릭터" style="width:44px; height:44px; display:flex; align-items:center; justify-content:center"></a></div>
         <div class="tabs" role="tablist">
           <a href="feed.html" role="tab">피드</a>
           <span class="on" role="tab" aria-selected="true">챌린지</span>
@@ -73,6 +73,9 @@ async function load() {
   } catch (e) { box.innerHTML = '<div class="empty">' + esc(friendlyError(e)) + '</div>'; }
 }
 renderChips(); load();
+</script>
+<script>
+apiCall('GET', '/characters/me', undefined, '').then(r => { document.getElementById('me-char').innerHTML = characterSvg(r.data, 36); }).catch(() => {});
 </script>
 </body>
 </html>

@@ -75,7 +75,7 @@ function renderAttach() {
   $('att-chips').innerHTML = opts.length ? opts.map((o, i) => {
     const k = KIND[o.kind];
     return '<button type="button" class="chip' + (st.pick === i ? ' on' : '') + '" data-i="' + i + '"><span class="ctag ' + k[1] + '" style="margin-right:6px">' + k[0] + '</span>' + esc(o.label) + '</button>';
-  }).join('') : '<span class="hint">오늘 인증한 챌린지가 아직 없어요. 챌린지를 인증하면 여기에 나타나요.</span>';
+  }).join('') : '<span class="hint">오늘 인증을 <b>완료</b>한 챌린지만 붙일 수 있어요. 아직 없다면 <a href="challenge-progress.html" style="text-decoration:underline">챌린지 화면</a>에서 오늘 기록을 남기고 오세요. (목표를 못 지킨 기록은 붙일 수 없어요)</span>';
   document.querySelectorAll('#att-chips .chip').forEach(b => b.addEventListener('click', () => { const i = +b.dataset.i; st.pick = st.pick === i ? null : i; renderAttach(); }));
   const o = st.pick === null ? null : opts[st.pick];
   $('att-card').innerHTML = o ? '<div class="att-card"><span class="ctag ' + KIND[o.kind][1] + '">' + KIND[o.kind][0] + '</span><div class="nm"><b>' + esc(o.label) + '</b><span>인증 ' + o.days + '일째</span></div><button type="button" id="att-del">빼기</button></div>' : '';

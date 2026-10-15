@@ -54,8 +54,8 @@
 <script>
 if (!loggedIn()) location.replace('login.html');
 const meChar = document.getElementById('me-char');
-meChar.innerHTML = characterSvg(null, 30);
-apiCall('GET', '/characters/me', undefined, '').then(r => { meChar.innerHTML = characterSvg(r.data, 30); }).catch(() => {});
+meChar.innerHTML = characterSvg(null, 36);
+apiCall('GET', '/characters/me', undefined, '').then(r => { meChar.innerHTML = characterSvg(r.data, 36); }).catch(() => {});
 const code = document.getElementById('code'), btn = document.getElementById('join'), err = document.getElementById('err');
 const MSG = {
   PARTY_NOT_FOUND: '없는 초대 코드예요. 코드를 다시 확인해 주세요.',
