@@ -96,7 +96,7 @@ function formHtml() {
       <option value="5_6">5–6잔</option><option value="7_9">7–9잔</option><option value="10plus">10잔 이상</option></select>
     <div class="note">소주·양주 구분 없이 각각의 술잔으로 세어 주세요.</div></div>
   <p class="hint" style="font-size:13px">키·콜레스테롤·당뇨·고혈압 진단·가족력은 처음 입력한 값을 그대로 써요.</p>
-  <button type="button" id="submit" class="cta" style="height:56px; font-size:17px">저장하고 변화 보기</button>`;
+  <button type="button" id="submit" class="cta" style="height:56px; font-size:17px">다음 · 생활습관 설문</button>`;
 }
 
 function avg(a, b) { return b ? Math.round((a + b) / 2 * 10) / 10 : a; }
@@ -192,23 +192,36 @@ async function main() {
   dfreq.addEventListener('change', () => {
     document.getElementById('damount-box').style.display = ['', 'never_lifetime', 'none_past_year'].includes(dfreq.value) ? 'none' : 'flex';
   });
-  document.getElementById('submit').addEventListener('click', async () => {
+  document.getElementById('submit').addEventListener('click', () => {
     showError('');
     let measurements;
     try { measurements = collect(); } catch (e) { showError(e.message); return; }
-    const btn = document.getElementById('submit');
-    btn.disabled = true; btn.textContent = '저장하는 중...';
-    try {
-      const res = (await apiCall('POST', `/challenges/cycles/${encodeURIComponent(cycleId)}/reassessment`, { measurements }, '저장하지 못했습니다')).data;
-      lede.textContent = `${res.cycle_number}차 4주 동안의 변화예요.`;
-      document.getElementById('sub').hidden = true;
-      body.innerHTML = reviewHtml(res);
-      window.scrollTo(0, 0);
-    } catch (e) {
-      showError(friendlyError(e));
-      btn.disabled = false; btn.textContent = '저장하고 변화 보기';
-    }
+    // 몸 상태 값은 잠시 보관하고, 최근 4주 생활습관 설문을 한 뒤 돌아와서 함께 저장한다
+    try { sessionStorage.setItem('paeon-reassess-draft', JSON.stringify({ cycleId, measurements })); } catch (e) { showError('이 브라우저에서는 저장할 수 없어요.'); return; }
+    location.href = `survey.html?type=interim&next=${encodeURIComponent(`reassessment.html?cycle=${cycleId}&done=1`)}`;
   });
+  // 설문을 마치고 돌아왔으면 보관해 둔 값을 저장하고 변화를 보여 준다
+  if (new URLSearchParams(location.search).get('done') === '1') {
+    let draft = null;
+    try { draft = JSON.parse(sessionStorage.getItem('paeon-reassess-draft') || 'null'); } catch (e) { /* 없으면 아래에서 폼으로 */ }
+    if (draft && draft.cycleId === cycleId) {
+      lede.textContent = '변화를 정리하고 있어요...';
+      document.getElementById('sub').hidden = true; body.innerHTML = '';
+      try {
+        const res = (await apiCall('POST', `/challenges/cycles/${encodeURIComponent(cycleId)}/reassessment`, { measurements: draft.measurements }, '저장하지 못했습니다')).data;
+        try { sessionStorage.removeItem('paeon-reassess-draft'); } catch (e) {}
+        lede.textContent = `${res.cycle_number}차 4주 동안의 변화예요.`;
+        body.innerHTML = reviewHtml(res);
+        history.replaceState(null, '', `reassessment.html?cycle=${encodeURIComponent(cycleId)}`);
+        window.scrollTo(0, 0);
+      } catch (e) {
+        lede.textContent = `${rv.cycle_number}차 4주가 끝났어요.
+지금 상태를 적어 주세요`;
+        document.getElementById('sub').hidden = false; body.innerHTML = formHtml();
+        showError(friendlyError(e));
+      }
+    }
+  }
 }
 
 main();

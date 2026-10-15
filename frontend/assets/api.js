@@ -208,13 +208,13 @@ const N_MAP = {                                    // 문항 → { codes: 서버
 const scoreToServerCode = (q, v) => { const m = N_MAP[q]; return m ? m.codes[m.scores.indexOf(String(v))] : v; };
 const serverCodeToScore = (q, c) => { const m = N_MAP[q]; return m && m.codes.includes(c) ? m.scores[m.codes.indexOf(c)] : c; };
 const EATOUT_V1 = { rare: 'lt_monthly', '1_2_week': '1_2_per_week', '3_4_week': '3_4_per_week', '5_6_week': '5_6_per_week', '1_day': '1_per_day', '2plus_day': '2plus_per_day' };
-async function apiSubmitSurvey(payload) {
+async function apiSubmitSurvey(payload, type = 'initial_lifestyle') {
   if (USE_MOCK_SURVEY) {
     console.log('[MOCK] apiSubmitSurvey', payload);
     await sleep(400);
     return { data: { survey_instance_id: 'mock-survey-1' } };
   }
-  const survey = (await apiCall('GET', '/surveys/initial_lifestyle/active', undefined, '설문을 불러오지 못했습니다')).data;
+  const survey = (await apiCall('GET', `/surveys/${type}/active`, undefined, '설문을 불러오지 못했습니다')).data;
   const isV2 = survey.questions.some(q => q.question_code === 'N0');
   const a = payload.answers || {};
   const want = isV2
@@ -239,7 +239,7 @@ async function apiSubmitSurvey(payload) {
     return { data: { skipped: true } };               // v1은 필수 3문항이라 건너뛴 게 있으면 제출할 수 없음
   }
   if (!responses.length) return { data: { skipped: true } };
-  const recordId = (() => { try { return localStorage.getItem('paeon-health-record-id'); } catch (e) { return null; } })();
+  const recordId = type !== 'initial_lifestyle' ? null : (() => { try { return localStorage.getItem('paeon-health-record-id'); } catch (e) { return null; } })();
   const inst = (await apiCall('POST', '/survey-instances',
     { survey_version_id: survey.survey_version_id, health_record_id: recordId }, '설문을 시작하지 못했습니다')).data;
   const base = `/survey-instances/${inst.survey_instance_id}`;

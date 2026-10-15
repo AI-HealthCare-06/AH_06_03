@@ -101,6 +101,11 @@ const QUESTIONS = [
   { step: 3, code: 'B1', text: '평소 일주일에 아침 식사를 몇 번 하시나요?', hint: '(밥·빵·시리얼·떡 등 식사로 먹은 것. 커피·음료만 마신 경우는 제외)',
     opts: [['주 5–7회', '5_7'], ['주 3–4회', '3_4'], ['주 1–2회', '1_2'], ['거의 안 함', '0']] },
 ];
+// 4주 재입력용 설문(?type=interim): 같은 문항을 "최근 4주 동안"으로 묻고, 끝나면 재입력 화면으로 돌아간다
+const QS = new URLSearchParams(location.search);
+const INTERIM = QS.get('type') === 'interim';
+const NEXT_URL = (() => { const n = QS.get('next') || ''; return /^reassessment\.html(\?|$)/.test(n) ? n : 'reassessment.html'; })();
+if (INTERIM) QUESTIONS.forEach(q => { q.text = (['N1', 'N2', 'N3', 'N4', 'N5'].includes(q.code) ? '최근 4주 동안, ' : '최근 4주 동안 ') + q.text; });
 const N_CODES = ['N0', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10'];
 const answers = {};   // 문항 코드 → 고른 값 (건너뛰면 키 없음)
 const skipped = new Set();
@@ -198,11 +203,11 @@ function renderStep() {
   document.querySelectorAll('.step').forEach(el => el.dataset.active = Number(el.dataset.step) === step ? '1' : '0');
   if (step === SUB.length - 1) renderFinal();
   document.getElementById('prev-btn').style.visibility = step === 0 ? 'hidden' : 'visible';
-  document.getElementById('next-btn').textContent = step < SUB.length - 1 ? '다음' : '입력 검토로';
+  document.getElementById('next-btn').textContent = step < SUB.length - 1 ? '다음' : (INTERIM ? '변화 보기' : '입력 검토로');
   renderSubsteps();
 }
 document.getElementById('prev-btn').addEventListener('click', () => { if (step > 0) { step--; renderStep(); } });
-document.getElementById('back').addEventListener('click', (e) => { if (step > 0) { e.preventDefault(); step--; renderStep(); } });
+document.getElementById('back').addEventListener('click', (e) => { if (step > 0) { e.preventDefault(); step--; renderStep(); } else if (INTERIM) { e.preventDefault(); location.href = NEXT_URL.replace(/&?done=1/, ''); } });
 document.getElementById('next-btn').addEventListener('click', async () => {
   if (step < SUB.length - 1) { step++; renderStep(); return; }
   const errEl = document.getElementById('form-err');
@@ -211,12 +216,13 @@ document.getElementById('next-btn').addEventListener('click', async () => {
   btn.disabled = true; btn.textContent = '제출하는 중...';
   const payload = buildPayload();
   try {
-    await apiSubmitSurvey(payload);
+    await apiSubmitSurvey(payload, INTERIM ? 'interim_lifestyle' : 'initial_lifestyle');
     localStorage.setItem('paeon-survey', JSON.stringify(payload));
+    if (INTERIM) { location.href = NEXT_URL; return; }
     document.getElementById('success-modal').style.display = 'flex';
   } catch (e) {
     errEl.textContent = friendlyError(e); errEl.style.display = 'block';
-    btn.disabled = false; btn.textContent = '입력 검토로';
+    btn.disabled = false; btn.textContent = INTERIM ? '변화 보기' : '입력 검토로';
   }
 });
 buildSteps();

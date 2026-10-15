@@ -28,7 +28,7 @@
 <body>
 
 <div id="header-slot"></div>
-<div class="bar"><a class="back" href="result.html" aria-label="뒤로" data-icon="back"></a><span class="ttl">검사 · 상담 안내</span></div>
+<div class="bar"><a class="back" id="back" href="menu.html" aria-label="뒤로" data-icon="back"></a><span class="ttl">검사 · 상담 안내</span></div>
 
 <div class="wrapper">
   <div class="frame">
@@ -55,5 +55,11 @@
 </div>
 
 <script src="assets/common.js"></script>
+<script>
+// 더보기에서 왔으면 더보기로, 결과 화면의 상담 안내 링크로 왔으면 결과로 돌아간다
+document.getElementById('back').addEventListener('click', (e) => {
+  if (document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1) { e.preventDefault(); history.back(); }
+});
+</script>
 </body>
 </html>

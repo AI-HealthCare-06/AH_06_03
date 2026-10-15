@@ -99,7 +99,7 @@ function render() {
 
     <div class="grp">
       <div class="gt">내 기록</div>
-      <button type="button" class="ln big" data-mp="rec"><span>검진 기록</span>${chev}</button>
+      <button type="button" class="ln big" data-mp="rec"><span>건강 기록</span>${chev}</button>
       ${state.mp === 'rec' ? renderInfo() : ''}
       <button type="button" class="ln big" data-mp="chal"><span>챌린지 기록</span>${chev}</button>
       ${state.mp === 'chal' ? renderChal() : ''}
@@ -146,7 +146,7 @@ function renderInfo() {
   const row = (k, v) => `<div class="sumrow"><span class="lb">${k}</span><span class="vv">${v}</span></div>`;
   const smoke = h.smoking === 'current' ? (h.smoking_freq === 'sometimes' ? '가끔 피움' : '매일 피움') : (L.smoking[h.smoking] || '-');
   return `<div class="sum-card">
-    ${row('검진일', h.recorded_at || '-')}
+    ${row('기록일', h.recorded_at || '-')}
     ${row('혈압', `${h.sbp}/${h.dbp} mmHg`)}
     ${row('키 / 몸무게', `${h.height_cm}cm / ${h.weight_kg}kg`)}
     ${row('허리둘레', `${h.waist_cm}cm`)}
