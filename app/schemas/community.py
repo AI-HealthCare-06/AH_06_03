@@ -93,6 +93,7 @@ class PostItem(BaseModel):
     mine: bool
     hidden: bool                  # 운영 정책으로 숨김 처리된 내 글 (다른 사람에게는 목록에 나오지 않는다)
     attach: PostAttach | None = None   # 붙인 챌린지 카드 (숨김 글에는 없다)
+    photo_count: int = 0          # 붙은 사진 수 (사진 자체는 따로 받는다)
     notice: str | None = None     # hidden일 때 보여 줄 안내
 
 
@@ -176,3 +177,7 @@ class ReportActionResult(BaseModel):
     target_id: str
     action: str
     handled: int                  # 처리된 신고 수
+
+
+class PhotoResult(BaseModel):
+    position: int                 # 몇 번째 사진인지 (0부터)

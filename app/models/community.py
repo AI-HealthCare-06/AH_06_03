@@ -5,7 +5,8 @@
 """
 from datetime import datetime
 
-from sqlalchemy import CHAR, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import CHAR, DateTime, ForeignKey, Integer, LargeBinary, String, Text, UniqueConstraint
+from sqlalchemy.dialects import mysql
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db.databases import Base
@@ -46,6 +47,21 @@ class CommunityPost(Base):
     party_id: Mapped[str | None] = mapped_column(
         CHAR(36), ForeignKey("parties.party_id", ondelete="CASCADE"), nullable=True, index=True
     )
+
+
+class CommunityPostPhoto(Base):
+    """글에 붙인 사진 (한 글에 최대 3장). 파일이 아니라 DB에 둬서 글·회원이 지워지면 함께 지워진다.
+    화면이 가로 640px·300KB 이하 JPEG로 줄여서 올리고, 서버가 JPEG·크기·위치 정보를 다시 확인한다."""
+    __tablename__ = "community_post_photos"
+    __table_args__ = (UniqueConstraint("post_id", "position"),)
+
+    photo_id: Mapped[str] = mapped_column(CHAR(36), primary_key=True, default=new_id)
+    post_id: Mapped[str] = mapped_column(
+        CHAR(36), ForeignKey("community_posts.post_id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)            # 0, 1, 2 (올린 순서)
+    data: Mapped[bytes] = mapped_column(LargeBinary().with_variant(mysql.MEDIUMBLOB(), "mysql"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
 
 class CommunityComment(Base):

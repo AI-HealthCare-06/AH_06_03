@@ -14,14 +14,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import AppError
 from app.core.security import utcnow
 from app.models.community import (
-    CommunityComment, CommunityLike, CommunityPost, CommunityProfile, CommunityReport,
+    CommunityComment, CommunityLike, CommunityPost, CommunityPostPhoto, CommunityProfile, CommunityReport,
 )
 from app.schemas.community import (
     AttachOption, CommentCreate, CommentItem, LikeResult, MyCommunity, PostAttach, PostCreate, PostCreated, PostDetail,
-    PostItem, PostList, ReportRequest, ReportResult,
+    PhotoResult, PostItem, PostList, ReportRequest, ReportResult,
 )
 from app.models.party import PartyMember
-from app.services import pie_service, post_attach_service
+from app.services import photo_check, pie_service, post_attach_service
 
 WELCOME_PIE = 10
 POST_PIE = 2
@@ -81,17 +81,23 @@ def _comment_count():
             .correlate(CommunityPost).scalar_subquery())
 
 
+def _photo_count():
+    return (select(func.count()).select_from(CommunityPostPhoto)
+            .where(CommunityPostPhoto.post_id == CommunityPost.post_id).correlate(CommunityPost).scalar_subquery())
+
+
 def _liked_by(user_id: str):
     return exists().where(CommunityLike.post_id == CommunityPost.post_id, CommunityLike.user_id == user_id)
 
 
-def _item(p: CommunityPost, nickname: str | None, likes: int, comments: int, liked: bool, me: str) -> dict:
+def _item(p: CommunityPost, nickname: str | None, likes: int, comments: int, liked: bool, me: str, photos: int = 0) -> dict:
     hidden = p.status == "hidden"
     return dict(
         post_id=p.post_id, category=p.category, title=p.title, preview="" if hidden else p.body[:PREVIEW_LEN],
         author_nickname=nickname or "알 수 없음", created_at=p.created_at, like_count=likes, comment_count=comments,
         liked_by_me=bool(liked), mine=p.user_id == me, hidden=hidden, notice=HIDDEN_NOTICE if hidden else None,
         attach=PostAttach(kind=p.attach_kind, label=p.attach_label, days=p.attach_days or 0) if p.attach_kind and not hidden else None,
+        photo_count=0 if hidden else int(photos or 0),
     )
 
 
@@ -114,7 +120,7 @@ async def _can_see_party(db: AsyncSession, user_id: str, p: CommunityPost) -> bo
 
 async def _load_post(db: AsyncSession, user_id: str, post_id: str):
     row = (await db.execute(
-        select(CommunityPost, CommunityProfile.nickname, _like_count(), _comment_count(), _liked_by(user_id))
+        select(CommunityPost, CommunityProfile.nickname, _like_count(), _comment_count(), _liked_by(user_id), _photo_count())
         .outerjoin(CommunityProfile, CommunityProfile.user_id == CommunityPost.user_id)
         .where(CommunityPost.post_id == post_id, _visible_to(user_id))
     )).first()
@@ -161,18 +167,18 @@ async def list_posts(db: AsyncSession, user_id: str, category: str | None, sort:
                               CommunityPost.body.contains(like, autoescape=True)))
     total = int((await db.execute(select(func.count()).select_from(base.subquery()))).scalar_one())
     likes = _like_count()
-    stmt = (select(CommunityPost, CommunityProfile.nickname, likes, _comment_count(), _liked_by(user_id))
+    stmt = (select(CommunityPost, CommunityProfile.nickname, likes, _comment_count(), _liked_by(user_id), _photo_count())
             .outerjoin(CommunityProfile, CommunityProfile.user_id == CommunityPost.user_id)
             .where(CommunityPost.post_id.in_(select(base.subquery().c.post_id))))
     stmt = stmt.order_by(likes.desc(), CommunityPost.created_at.desc()) if sort == "popular" \
         else stmt.order_by(CommunityPost.created_at.desc(), CommunityPost.post_id)
     rows = (await db.execute(stmt.limit(limit).offset(offset))).all()
-    return PostList(total=total, items=[PostItem(**_item(p, n, lk, cm, ld, user_id)) for p, n, lk, cm, ld in rows])
+    return PostList(total=total, items=[PostItem(**_item(p, n, lk, cm, ld, user_id, ph)) for p, n, lk, cm, ld, ph in rows])
 
 
 async def get_post(db: AsyncSession, user_id: str, post_id: str) -> PostDetail:
-    p, n, lk, cm, ld = await _load_post(db, user_id, post_id)
-    return PostDetail(**_item(p, n, lk, cm, ld, user_id), body="" if p.status == "hidden" else p.body)
+    p, n, lk, cm, ld, ph = await _load_post(db, user_id, post_id)
+    return PostDetail(**_item(p, n, lk, cm, ld, user_id, ph), body="" if p.status == "hidden" else p.body)
 
 
 async def _remove_post_rows(db: AsyncSession, post_id: str) -> None:
@@ -182,6 +188,7 @@ async def _remove_post_rows(db: AsyncSession, post_id: str) -> None:
         or_(CommunityReport.post_id == post_id, CommunityReport.comment_id.in_(comment_ids))))
     await db.execute(delete(CommunityLike).where(CommunityLike.post_id == post_id))
     await db.execute(delete(CommunityComment).where(CommunityComment.post_id == post_id))
+    await db.execute(delete(CommunityPostPhoto).where(CommunityPostPhoto.post_id == post_id))
 
 
 async def delete_post(db: AsyncSession, user_id: str, post_id: str) -> None:
@@ -278,3 +285,38 @@ async def report_comment(db: AsyncSession, user_id: str, comment_id: str, req: R
     if post is None or post.status != "visible" or not await _can_see_party(db, user_id, post):
         raise not_found("댓글")
     return await _report(db, user_id, f"comment:{comment_id}", req, comment_id=comment_id)
+
+
+# ---------------------------------------------------------------- 사진
+async def add_photo(db: AsyncSession, user_id: str, post_id: str, data: bytes) -> PhotoResult:
+    """내 글에 사진 한 장 올리기. JPEG만, 300KB 이하, 글당 3장, 촬영 위치 정보가 있으면 거절."""
+    p = await db.get(CommunityPost, post_id)
+    if p is None or p.user_id != user_id or p.status != "visible":
+        raise not_found()
+    if not photo_check.is_jpeg(data):
+        raise AppError(415, "PHOTO_NOT_JPEG", "JPEG 사진만 올릴 수 있어요.")
+    if len(data) > photo_check.MAX_BYTES:
+        raise AppError(413, "PHOTO_TOO_LARGE", "사진은 한 장에 300KB 이하만 올릴 수 있어요.")
+    if photo_check.has_location(data):
+        raise AppError(400, "PHOTO_HAS_LOCATION", "촬영 위치가 담긴 사진은 올릴 수 없어요.")
+    count = int((await db.execute(select(func.count()).select_from(CommunityPostPhoto)
+                                  .where(CommunityPostPhoto.post_id == post_id))).scalar_one())
+    if count >= photo_check.MAX_PHOTOS:
+        raise AppError(409, "PHOTO_LIMIT", "사진은 한 글에 3장까지 올릴 수 있어요.")
+    db.add(CommunityPostPhoto(post_id=post_id, position=count, data=data, created_at=utcnow()))
+    try:
+        await db.commit()
+    except IntegrityError:                       # 같은 순간에 두 장이 같은 번호를 잡은 경우
+        await db.rollback()
+        raise AppError(409, "PHOTO_LIMIT", "사진을 다시 올려 주세요.")
+    return PhotoResult(position=count)
+
+
+async def get_photo(db: AsyncSession, user_id: str, post_id: str, position: int) -> bytes:
+    """사진 한 장. 글을 볼 수 있는 사람만 받는다 (숨김 처리된 글은 작성자만, 파티 글은 파티원만)."""
+    await _load_post(db, user_id, post_id)
+    row = (await db.execute(select(CommunityPostPhoto.data).where(
+        CommunityPostPhoto.post_id == post_id, CommunityPostPhoto.position == position))).first()
+    if row is None:
+        raise not_found("사진")
+    return row[0]

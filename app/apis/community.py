@@ -1,14 +1,14 @@
 """커뮤니티 (이용자). 건강정보 동의와 상관없이 로그인한 회원이면 쓸 수 있다. 닉네임을 정해야 글·댓글·좋아요를 쓸 수 있다."""
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apis.deps import get_current_user_id
 from app.core.db.databases import async_get_db
 from app.schemas.common import DataResponse
 from app.schemas.community import (
-    AttachOption, CommentCreate, CommentItem, LikeResult, MyCommunity, NicknameRequest, PostCreate, PostCreated, PostDetail, PostList,
+    AttachOption, CommentCreate, PhotoResult, CommentItem, LikeResult, MyCommunity, NicknameRequest, PostCreate, PostCreated, PostDetail, PostList,
     ReportRequest, ReportResult,
 )
 from app.services import community_service
@@ -93,3 +93,15 @@ async def report_comment(
     comment_id: str, req: ReportRequest, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)
 ):
     return DataResponse(data=await community_service.report_comment(db, user_id, comment_id, req))
+
+
+@router.post("/posts/{post_id}/photos", status_code=status.HTTP_201_CREATED, response_model=DataResponse[PhotoResult])
+async def add_photo(post_id: str, request: Request, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)):
+    """내 글에 사진 한 장 (본문이 곧 JPEG 파일, Content-Type: image/jpeg). 가로 640px·300KB 이하."""
+    return DataResponse(data=await community_service.add_photo(db, user_id, post_id, await request.body()))
+
+
+@router.get("/posts/{post_id}/photos/{position}")
+async def get_photo(post_id: str, position: int, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)):
+    data = await community_service.get_photo(db, user_id, post_id, position)
+    return Response(content=data, media_type="image/jpeg", headers={"Cache-Control": "private, max-age=3600"})
