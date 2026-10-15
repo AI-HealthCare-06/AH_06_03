@@ -162,8 +162,10 @@ function tilesHtml() {
   const a = pred && pred.model_a && pred.model_a.status === 'completed' ? pred.model_a : null;
   let html = '';
   if (!a) {
-    const age = pred.model_a && pred.model_a.skip_reason === 'age_out_of_range';
-    html += stateCard(STATE_ICON.info, '이번엔 분석할 수 없어요',
+    const ma = pred && pred.model_a;
+    const age = ma && ma.skip_reason === 'age_out_of_range';
+    if (!ma || ma.status !== 'skipped') html += stateCard(STATE_ICON.doc, '아직 분석 결과가 없어요', '건강정보와 설문을 입력하면<br>10년 내 심장 혈관 건강 신호를<br>볼 수 있어요.', '', btn('health-info.html', '입력 시작하기'));
+    else html += stateCard(STATE_ICON.info, '이번엔 분석할 수 없어요',
       (age ? '만 32~70세가 아니어서<br>10년 내 심장 혈관 건강 신호는<br>분석하지 않아요.' : '심장 혈관 질환 진단 이력이 있거나<br>고혈압으로 진단·치료 중이면<br>분석하지 않아요.<br>담당 의사와 상의해 주세요.')
       + '<br>챌린지는 그대로 할 수 있어요.');
   }
