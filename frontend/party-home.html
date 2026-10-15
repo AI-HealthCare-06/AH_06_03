@@ -14,7 +14,7 @@
   .me-char{width:44px; height:44px; display:flex; align-items:center; justify-content:center}
   .pill{height:28px; padding:0 12px; border-radius:14px; background:var(--notice); color:#234257; font-size:13px; font-weight:800; display:inline-flex; align-items:center}
   .sub{display:flex; gap:8px}
-  .sub button{height:40px; padding:0 18px; border-radius:20px; border:1px solid #D2C4B4; background:#fff; font:400 14px inherit; color:var(--ink); cursor:pointer}
+  .sub button,.sub a{display:inline-flex; align-items:center; box-sizing:border-box; height:40px; padding:0 18px; border-radius:20px; border:1px solid #D2C4B4; background:#fff; font:400 14px inherit; color:var(--ink); cursor:pointer}
   .sub .on{background:var(--accent-light); border-color:var(--accent-light); color:#1E3246; font-weight:700}
   .box{background:var(--cream); border-radius:22px; padding:16px 18px; display:flex; align-items:center; justify-content:space-between}
   .box small{font-size:13px; color:var(--muted)}
@@ -57,8 +57,7 @@
       <div style="display:flex; flex-direction:column; gap:2px; min-width:0"><span id="pname" style="font-size:22px; font-weight:800; letter-spacing:-.5px; word-break:break-all"></span><span id="pintro" style="font-size:13px; color:var(--muted)"></span></div>
       <span class="pill" id="pcount"></span>
     </div>
-    <div class="sub"><button type="button" class="on">현황</button><button type="button" id="feedtab">파티 피드</button></div>
-    <p class="hint" id="soon" hidden>파티 피드는 준비 중이에요.</p>
+    <div class="sub"><button type="button" class="on">현황</button><a id="feedtab" href="party-feed.html" style="text-decoration:none">파티 피드</a></div>
     <div class="box">
       <div style="display:flex; flex-direction:column; gap:4px"><small id="codehint"></small><span id="pcode" style="font-size:22px; font-weight:800; letter-spacing:2px"></span></div>
       <button type="button" class="copy" id="copy">복사</button>
@@ -124,7 +123,6 @@ function fail(el, e) {
 
 apiCall('GET', '/parties/me', undefined, '파티 정보를 불러오지 못했어요').then(r => render(r.data), e => { $('loading').hidden = true; fail($('err'), e); });
 
-$('feedtab').addEventListener('click', () => { $('soon').hidden = false; });
 $('copy').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(code); $('copy').textContent = '복사했어요'; }
   catch (e) { $('copy').textContent = '길게 눌러 복사'; }

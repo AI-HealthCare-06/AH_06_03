@@ -32,10 +32,10 @@
         <div style="background:var(--cream); border-radius:14px; padding:14px 16px; font-size:13px; color:var(--body); line-height:1.6"><b>건강정보(혈압, 진단명 등)와 개인정보는 쓰지 마세요.</b><br>쓴 글은 다른 이용자에게 보여요.</div>
 
         <div class="sec"><span class="lb">올릴 곳</span>
-          <div class="chips"><span class="chip on">전체 커뮤니티</span><button type="button" class="chip" id="party">파티</button></div>
+          <div class="chips"><button type="button" class="chip on" id="to-all">전체 커뮤니티</button><button type="button" class="chip" id="party">파티</button></div>
           <span class="hint">글은 고른 한 곳에만 올라가요. 파티 글은 파티원에게만 보여요. 양쪽에 모두 올리고 싶으면 한 번 더 써 주세요.</span></div>
 
-        <div class="sec"><span class="lb">카테고리</span><div class="chips" id="cats"></div></div>
+        <div class="sec" id="cat-sec"><span class="lb">카테고리</span><div class="chips" id="cats"></div></div>
 
         <div class="sec"><span class="lb">오늘 인증한 챌린지 붙이기 (선택)</span>
           <div class="chips" id="att-chips"></div>
@@ -62,7 +62,7 @@ document.getElementById('back').innerHTML = ICON.back;
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const CATS = [['diet', '식단'], ['exercise', '운동'], ['challenge', '챌린지 인증'], ['tips', '고민과 꿀팁']];
 const KIND = { fixed: ['고정', 'fixed'], selected: ['선택', 'selected'], common: ['공통', 'common'] };
-const st = { cat: 'challenge', options: [], pick: null };
+const st = { cat: 'challenge', options: [], pick: null, to: 'all', inParty: false };
 const $ = (id) => document.getElementById(id);
 
 function renderCats() {
@@ -82,23 +82,34 @@ function renderAttach() {
 }
 function check() { $('submit').disabled = !($('title').value.trim() && $('body').value.trim()); $('cnt').textContent = $('body').value.length; }
 ['title', 'body'].forEach(id => $(id).addEventListener('input', check));
-$('party').addEventListener('click', () => confirmDialog('파티는 준비 중이에요', '친구와 함께 챌린지를 하는 파티는 곧 열려요.', '확인'));
+// 올릴 곳: 전체 커뮤니티 / 내 파티 (파티 글은 파티원에게만 보이고 카테고리가 없다)
+function renderTo() {
+  $('to-all').classList.toggle('on', st.to === 'all'); $('party').classList.toggle('on', st.to === 'party');
+  $('cat-sec').hidden = st.to === 'party';
+}
+$('to-all').addEventListener('click', () => { st.to = 'all'; renderTo(); });
+$('party').addEventListener('click', async () => {
+  if (st.inParty) { st.to = 'party'; renderTo(); return; }
+  if (await confirmDialog('들어가 있는 파티가 없어요', '파티를 만들거나 초대 코드로 들어가면 파티 글을 쓸 수 있어요.', '파티로 가기')) location.href = 'party.html';
+});
+if (new URLSearchParams(location.search).get('to') === 'party') st.to = 'party';
+apiCall('GET', '/parties/me', undefined, '').then(() => { st.inParty = true; renderTo(); }).catch(() => { if (st.to === 'party') { st.to = 'all'; renderTo(); } });
 $('submit').addEventListener('click', async () => {
   $('submit').disabled = true; $('err').hidden = true;
-  const payload = { category: st.cat, title: $('title').value.trim(), body: $('body').value.trim() };
+  const payload = { category: st.to === 'party' ? 'tips' : st.cat, title: $('title').value.trim(), body: $('body').value.trim() };
   const o = st.pick === null ? null : st.options[st.pick];
   if (o) payload.attach = o.mission_code ? { mission_code: o.mission_code } : { common_challenge_id: o.common_challenge_id };
   try {
-    const d = (await apiCall('POST', '/community/posts', payload, '글을 올리지 못했어요')).data;
+    const d = (await apiCall('POST', st.to === 'party' ? '/parties/me/posts' : '/community/posts', payload, '글을 올리지 못했어요')).data;
     if (d.pie_gain) await confirmDialog('글을 올렸어요', '파이 ' + d.pie_gain + '개를 받았어요.', '확인');
-    location.href = 'post.html?id=' + encodeURIComponent(d.post_id);
+    location.href = st.to === 'party' ? 'party-feed.html' : 'post.html?id=' + encodeURIComponent(d.post_id);
   } catch (e) {
     if (e.code === 'NICKNAME_REQUIRED') { location.href = 'nickname.html?next=write.html'; return; }
     $('err').textContent = e.code === 'ATTACH_NOT_ALLOWED' ? '오늘 인증한 챌린지만 붙일 수 있어요.' : friendlyError(e);
     $('err').hidden = false; $('submit').disabled = false;
   }
 });
-renderCats(); renderAttach(); check();
+renderCats(); renderAttach(); renderTo(); check();
 apiCall('GET', '/community/me', undefined, '').then(r => { if (!r.data.nickname) location.replace('nickname.html?next=write.html'); }).catch(() => {});
 apiCall('GET', '/community/attachable', undefined, '').then(r => { st.options = r.data; renderAttach(); }).catch(() => {});
 </script>

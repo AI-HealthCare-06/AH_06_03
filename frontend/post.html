@@ -133,5 +133,8 @@ $('cm-go').addEventListener('click', async () => {
   catch (e) { $('post').innerHTML = '<div class="empty">' + esc(e.code === 'COMMUNITY_NOT_FOUND' ? '글을 찾을 수 없어요. 삭제되었거나 숨김 처리된 글일 수 있어요.' : friendlyError(e)) + '</div>'; }
 })();
 </script>
+<script>
+if (new URLSearchParams(location.search).get('from') === 'party') document.getElementById('back').href = 'party-feed.html';
+</script>
 </body>
 </html>
