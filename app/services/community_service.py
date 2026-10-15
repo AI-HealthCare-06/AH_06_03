@@ -112,6 +112,12 @@ def _visible_to(user_id: str):
     )
 
 
+def _reported_by(user_id: str, target):
+    """내가 신고한 글·댓글인지. 신고하면 다른 사람에게는 그대로여도 나의 목록에서는 바로 빠진다
+    (관리자가 '문제 없음'으로 처리해도 신고한 사람에게는 계속 안 보인다). 글 자체를 여는 것은 막지 않는다."""
+    return exists(select(CommunityReport.report_id).where(CommunityReport.user_id == user_id, target))
+
+
 async def _can_see_party(db: AsyncSession, user_id: str, p: CommunityPost) -> bool:
     """파티 글이 아니면 누구나, 파티 글이면 그 파티원만."""
     if p.party_id is None:
@@ -157,7 +163,7 @@ async def create_post(db: AsyncSession, user_id: str, req: PostCreate, party_id:
 
 async def list_posts(db: AsyncSession, user_id: str, category: str | None, sort: str, q: str | None,
                      limit: int, offset: int, party_id: str | None = None) -> PostList:
-    base = select(CommunityPost).where(_visible_to(user_id))
+    base = select(CommunityPost).where(_visible_to(user_id), ~_reported_by(user_id, CommunityReport.post_id == CommunityPost.post_id))
     base = base.where(CommunityPost.party_id == party_id) if party_id else base.where(CommunityPost.party_id.is_(None))
     if category:
         base = base.where(CommunityPost.category == category)
@@ -227,7 +233,8 @@ async def list_comments(db: AsyncSession, user_id: str, post_id: str) -> list[Co
     rows = (await db.execute(
         select(CommunityComment, CommunityProfile.nickname)
         .outerjoin(CommunityProfile, CommunityProfile.user_id == CommunityComment.user_id)
-        .where(CommunityComment.post_id == post_id, CommunityComment.status == "visible")
+        .where(CommunityComment.post_id == post_id, CommunityComment.status == "visible",
+               ~_reported_by(user_id, CommunityReport.comment_id == CommunityComment.comment_id))
         .order_by(CommunityComment.created_at, CommunityComment.comment_id))).all()
     return [CommentItem(comment_id=c.comment_id, body=c.body, author_nickname=n or "알 수 없음",
                         created_at=c.created_at, mine=c.user_id == user_id) for c, n in rows]
