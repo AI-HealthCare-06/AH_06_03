@@ -49,7 +49,7 @@
               <label for="pw">비밀번호</label>
               <input id="pw" type="password" placeholder="비밀번호" required>
             </div>
-            <label class="keep"><input type="checkbox" checked onclick="return false">로그인 상태 유지</label>
+            <label class="keep"><input type="checkbox" id="keep" checked>로그인 상태 유지</label>
           </div>
 
           <p id="form-err" class="err" style="margin-top:4px; display:none"></p>
@@ -81,8 +81,8 @@ form.addEventListener('submit', async (event) => {
   submitBtn.textContent = '로그인하는 중...';
   try {
     const res = await apiLogin(email, pw);
-    localStorage.setItem('paeon-access-token', res.data.access_token);
-    localStorage.setItem('paeon-refresh-token', res.data.refresh_token);
+    // 체크하면 브라우저를 닫아도 유지, 끄면 이 탭을 닫을 때 로그아웃
+    PaeonTokens.save(res.data.access_token, res.data.refresh_token, document.getElementById('keep').checked);
     if (!localStorage.getItem('paeon-profile')) {
       localStorage.setItem('paeon-profile', JSON.stringify({ email }));
     }
