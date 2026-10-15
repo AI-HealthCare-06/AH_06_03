@@ -225,3 +225,56 @@ async def test_동의_철회는_참여와_인증과_파이를_지우고_탈퇴�
         assert (await s.execute(select(CommonChallengeCert).where(CommonChallengeCert.user_id == other_id))).scalars().all() != []
     top = (await client.get(f"/v1/common-challenges/{cid}", headers=o)).json()["data"]
     assert [r["nickname"] for r in top["top"]] == ["남는사람"] and top["participants"] == 1
+
+
+async def test_시작_전에는_기간과_걸음_수까지_고치고_시작한_뒤에는_제목과_보상만_고친다(client, db_session):
+    _, admin = await make(client, db_session, ADMIN)
+    today = today_kst()
+    ahead = await open_challenge(client, admin, start=3, end=12)                  # 3일 뒤 시작
+    r = await client.patch(f"/v1/admin/common-challenges/{ahead['challenge_id']}", headers=admin, json={
+        "title": "고친 제목", "target_steps": 9000, "starts_on": str(today + timedelta(days=5)),
+        "ends_on": str(today + timedelta(days=14)), "reward_first": 400})
+    assert r.status_code == 200
+    d = r.json()["data"]
+    assert d["title"] == "고친 제목" and d["target_steps"] == 9000 and d["starts_on"] == str(today + timedelta(days=5))
+    assert d["rewards"]["first"] == 400
+    r = await client.patch(f"/v1/admin/common-challenges/{ahead['challenge_id']}", headers=admin,
+                           json={"starts_on": str(today + timedelta(days=20))})           # 끝나는 날보다 늦다
+    assert r.status_code == 422
+    running = await open_challenge(client, admin, start=-2, end=7)                # 이미 시작
+    r = await client.patch(f"/v1/admin/common-challenges/{running['challenge_id']}", headers=admin, json={"title": "진행 중에 고침"})
+    assert r.status_code == 200
+    r = await client.patch(f"/v1/admin/common-challenges/{running['challenge_id']}", headers=admin, json={"ends_on": str(today + timedelta(days=30))})
+    assert r.status_code == 409 and r.json()["error"]["code"] == "COMMON_CHALLENGE_STARTED"
+
+
+async def test_챌린지를_지우면_참여와_인증_기록도_함께_지워지고_확정한_것은_못_지운다(client, db_session):
+    _, admin = await make(client, db_session, ADMIN)
+    _, u = await make(client, db_session, "u@t.kr", "유저")
+    c = await open_challenge(client, admin, start=-1, end=8)
+    cid = c["challenge_id"]
+    await client.post(f"/v1/common-challenges/{cid}/join", headers=u)
+    await client.post(f"/v1/common-challenges/{cid}/certify", json={"steps": 8000}, headers=u)
+    assert (await client.delete(f"/v1/admin/common-challenges/{cid}", headers=u)).status_code == 403    # 관리자만
+    assert (await client.delete(f"/v1/admin/common-challenges/{cid}", headers=admin)).status_code == 204
+    async with db_session() as s:
+        assert (await s.execute(select(CommonChallengeCert))).scalars().all() == []
+        assert (await s.execute(select(CommonChallengeParticipant))).scalars().all() == []
+    assert (await client.get(f"/v1/common-challenges/{cid}", headers=u)).status_code == 404
+    done = await open_challenge(client, admin, start=-9, end=-1)
+    assert (await client.post(f"/v1/admin/common-challenges/{done['challenge_id']}/finalize", headers=admin)).status_code == 200
+    r = await client.delete(f"/v1/admin/common-challenges/{done['challenge_id']}", headers=admin)
+    assert r.status_code == 409 and r.json()["error"]["code"] == "COMMON_CHALLENGE_FINALIZED"
+
+
+async def test_관리자가_문의를_지울_수_있다(client, db_session):
+    from app.models.inquiry import Inquiry
+    _, admin = await make(client, db_session, ADMIN)
+    uid, u = await make(client, db_session, "u@t.kr", "유저")
+    r = await client.post("/v1/inquiries", json={"title": "지울 문의", "body": "내용"}, headers=u)
+    iid = r.json()["data"]["inquiry_id"]
+    assert (await client.delete(f"/v1/admin/inquiries/{iid}", headers=u)).status_code == 403
+    assert (await client.delete(f"/v1/admin/inquiries/{iid}", headers=admin)).status_code == 204
+    assert (await client.delete(f"/v1/admin/inquiries/{iid}", headers=admin)).status_code == 404
+    async with db_session() as s:
+        assert (await s.execute(select(Inquiry))).scalars().all() == []

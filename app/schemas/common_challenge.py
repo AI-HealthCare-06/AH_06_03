@@ -92,9 +92,13 @@ class ChallengeCreate(BaseModel):
 
 
 class ChallengePatch(BaseModel):
-    """시작한 뒤에는 기간·인증 방식을 바꾸지 않는다 (이미 쌓인 인증과 순위가 흔들리지 않게)."""
+    """제목·완주 기준·보상은 순위를 확정하기 전까지 고칠 수 있다. 기간과 하루 목표 걸음 수는 시작하기 전에만 고친다
+    (이미 쌓인 인증과 순위가 흔들리지 않게). 인증 방식(걸음 수/직접)은 바꾸지 않는다."""
     model_config = ConfigDict(extra="forbid")
 
+    starts_on: date | None = None
+    ends_on: date | None = None
+    target_steps: int | None = Field(default=None, ge=1000, le=100000)
     title: str | None = Field(default=None, min_length=2, max_length=60)
     complete_min_days: int | None = Field(default=None, ge=1)
     reward_first: int | None = Field(default=None, ge=0, le=100000)

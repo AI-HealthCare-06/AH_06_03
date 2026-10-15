@@ -92,3 +92,13 @@ async def admin_answer(db: AsyncSession, admin: str, inquiry_id: str, answer: st
     await audit_service.record(db, admin, "inquiry_answer", target=inq.inquiry_id[-8:])
     await db.commit()
     return _admin_detail(inq)
+
+
+async def admin_delete(db: AsyncSession, admin: str, inquiry_id: str) -> None:
+    """관리자가 문의 하나를 지운다 (이용자 목록에서도 사라진다)."""
+    inq = await db.get(Inquiry, inquiry_id)
+    if inq is None:
+        raise _not_found()
+    await db.delete(inq)
+    await audit_service.record(db, admin, "inquiry_delete", target=inquiry_id[-8:])
+    await db.commit()

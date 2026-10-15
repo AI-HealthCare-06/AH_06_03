@@ -8,7 +8,7 @@
 import math
 from datetime import date
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
@@ -199,15 +199,35 @@ async def admin_patch(db: AsyncSession, admin: str, challenge_id: str, req: Chal
     c = await _get(db, challenge_id)
     if c.finalized_at is not None:
         raise AppError(409, "COMMON_CHALLENGE_FINALIZED", "이미 순위를 확정한 챌린지라 고칠 수 없어요.")
-    data = req.model_dump(exclude_unset=True)
-    if data.get("complete_min_days") is not None:
-        _check_min_days(data["complete_min_days"], total_days(c))
+    data = {k: v for k, v in req.model_dump(exclude_unset=True).items() if v is not None}
+    if state_of(c, today_kst()) != "upcoming" and {"starts_on", "ends_on", "target_steps"} & data.keys():
+        raise AppError(409, "COMMON_CHALLENGE_STARTED", "시작한 챌린지는 기간과 목표 걸음 수를 바꿀 수 없어요.")
+    if "target_steps" in data and c.proof_type != "steps":
+        raise AppError(422, "VALIDATION_ERROR", "직접 인증 챌린지에는 목표 걸음 수가 없어요.")
+    starts, ends = data.get("starts_on", c.starts_on), data.get("ends_on", c.ends_on)
+    if "starts_on" in data and starts < today_kst():
+        raise AppError(422, "VALIDATION_ERROR", "시작하는 날은 오늘이나 그 뒤여야 해요.")
+    if ends < starts:
+        raise AppError(422, "VALIDATION_ERROR", "끝나는 날은 시작하는 날보다 빠를 수 없어요.")
+    days = (ends - starts).days + 1
+    _check_min_days(data.get("complete_min_days", c.complete_min_days), days)
     for k, v in data.items():
-        if v is not None:
-            setattr(c, k, v)
+        setattr(c, k, v)
     await audit_service.record(db, admin, "common_challenge_update", target=c.challenge_id[-8:])
     await db.commit()
     return await _admin_item(db, c, today_kst())
+
+
+async def admin_delete(db: AsyncSession, admin: str, challenge_id: str) -> None:
+    """순위를 확정하기 전의 챌린지를 지운다. 참여자와 인증 기록도 함께 지워진다 (확정하면 보상이 나간 뒤라 지울 수 없다)."""
+    c = await _get(db, challenge_id)
+    if c.finalized_at is not None:
+        raise AppError(409, "COMMON_CHALLENGE_FINALIZED", "순위를 확정한 챌린지는 지울 수 없어요.")
+    await db.execute(delete(CommonChallengeCert).where(CommonChallengeCert.challenge_id == challenge_id))
+    await db.execute(delete(CommonChallengeParticipant).where(CommonChallengeParticipant.challenge_id == challenge_id))
+    await db.delete(c)
+    await audit_service.record(db, admin, "common_challenge_delete", target=challenge_id[-8:])
+    await db.commit()
 
 
 async def admin_finalize(db: AsyncSession, admin: str, challenge_id: str) -> FinalizeResult:

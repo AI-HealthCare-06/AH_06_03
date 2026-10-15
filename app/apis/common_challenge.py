@@ -4,7 +4,7 @@
 """
 from typing import Literal
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apis.admin import require_admin
@@ -62,6 +62,12 @@ async def admin_patch(
     challenge_id: str, req: ChallengePatch, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)
 ):
     return DataResponse(data=await svc.admin_patch(db, admin, challenge_id, req))
+
+
+@admin_router.delete("/{challenge_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def admin_delete(challenge_id: str, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
+    await svc.admin_delete(db, admin, challenge_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @admin_router.post("/{challenge_id}/finalize", response_model=DataResponse[FinalizeResult])

@@ -3,7 +3,7 @@
 관리자는 서버 설정(.env)의 ADMIN_EMAILS 목록에 있는 계정으로, 평소와 같은 로그인으로 들어온다.
 목록이 비어 있으면 아무도 쓸 수 없다.
 """
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apis.deps import get_current_user_id
@@ -108,6 +108,18 @@ async def inquiry_detail(inquiry_id: str, admin: str = Depends(require_admin), d
 @router.put("/inquiries/{inquiry_id}/answer", response_model=DataResponse[AdminInquiryDetail])
 async def answer_inquiry(inquiry_id: str, req: AnswerRequest, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
     return DataResponse(data=await inquiry_service.admin_answer(db, admin, inquiry_id, req.answer))
+
+
+@router.delete("/inquiries/{inquiry_id}", status_code=204)
+async def delete_inquiry(inquiry_id: str, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
+    await inquiry_service.admin_delete(db, admin, inquiry_id)
+    return Response(status_code=204)
+
+
+@router.delete("/guest-inquiries/{inquiry_id}", status_code=204)
+async def delete_guest_inquiry(inquiry_id: str, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
+    await guest_inquiry_service.admin_delete(db, admin, inquiry_id)
+    return Response(status_code=204)
 
 
 @router.get("/guest-inquiries", response_model=DataResponse[AdminGuestList])

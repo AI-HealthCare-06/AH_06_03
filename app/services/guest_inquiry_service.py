@@ -112,3 +112,13 @@ async def admin_answer(db: AsyncSession, admin: str, inquiry_id: str, answer: st
     await audit_service.record(db, admin, "guest_inquiry_answer", target=inq.guest_inquiry_id[-8:])
     await db.commit()
     return _detail(inq)
+
+
+async def admin_delete(db: AsyncSession, admin: str, inquiry_id: str) -> None:
+    """관리자가 비회원 문의 하나를 지운다 (조회 번호로도 더 이상 볼 수 없다)."""
+    inq = await db.get(GuestInquiry, inquiry_id)
+    if inq is None:
+        raise _not_found()
+    await db.delete(inq)
+    await audit_service.record(db, admin, "guest_inquiry_delete", target=inquiry_id[-8:])
+    await db.commit()
