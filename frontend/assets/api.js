@@ -538,6 +538,7 @@ async function apiSyncAfterLogin() {
     const me = await apiGetMe();
     const prevUid = localStorage.getItem('paeon-user-id');
     if (prevUid && prevUid !== me.user_id) stashLocalData(prevUid);   // 다른 계정의 데이터가 남아 있으면 그 계정 몫으로 보관
+    else if (!prevUid) LOCAL_DATA_KEYS.forEach(k => localStorage.removeItem(k));   // 누구 것인지 모르는 옛 데이터는 이 계정에 섞이지 않게 비운다
     restoreLocalData(me.user_id);                                      // 이 계정이 보관해 둔 기록을 되돌림
     localStorage.setItem('paeon-user-id', me.user_id);
     localStorage.setItem('paeon-profile', JSON.stringify({ ...(read('paeon-profile') || {}), email: me.email, birth: me.birth_date, sex: me.sex }));
@@ -551,6 +552,7 @@ async function apiSyncAfterLogin() {
   } catch (e) { /* 복원 실패해도 로그인은 진행 */ }
   try {
     const latest = await apiGetLatestPrediction();
+    if (!latest) localStorage.removeItem('paeon-prediction');   // 서버에 이 계정의 분석 결과가 없으면 브라우저에 남은 옛 결과도 지운다
     if (latest) {
       const health = read('paeon-health');
       const prev = read('paeon-prediction') || {};
