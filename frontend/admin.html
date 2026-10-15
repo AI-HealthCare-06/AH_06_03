@@ -96,6 +96,19 @@
   .picker{max-width:760px}
   .rw{display:grid; grid-template-columns:repeat(4,1fr); gap:6px}
   .rw input{width:100%}
+  .thread{background:#fff; border:1px solid var(--line); border-radius:18px; margin-bottom:8px; overflow:hidden}
+  .thread.open{border-color:var(--accent-light)}
+  .thread .th{width:100%; display:flex; align-items:center; gap:10px; flex-wrap:wrap; text-align:left; background:none; border:0; padding:14px 16px; cursor:pointer; font:inherit}
+  .thread .th b{font-size:15px; flex:1; min-width:0; word-break:break-all}
+  .thread .when{font-size:12px; color:var(--muted)}
+  .thread .tb{padding:0 16px 16px; border-top:1px solid var(--line); padding-top:14px}
+  .thread .acts{display:flex; gap:8px; margin-top:10px}
+  .st{height:24px; padding:0 10px; border-radius:12px; font-size:12px; font-weight:800; display:inline-flex; align-items:center; flex:none}
+  .st.wait{background:#F7EDD9; color:#8C6014}
+  .st.done{background:#E4EFE5; color:#3E7A55}
+  .btn.danger{border-color:#E0B3A8; color:#B0543F; background:#fff}
+  .acct{margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; align-items:center}
+  .acct .btn{height:36px; padding:0 14px; margin:0 !important}
 </style>
 </head>
 <body>
@@ -158,7 +171,6 @@
             <button type="button" class="btn" id="i-load">불러오기</button>
           </div>
           <div id="i-list"></div>
-          <div id="i-detail"></div>
         </section>
 
         <section id="sec-guest" hidden>
@@ -168,7 +180,6 @@
             <button type="button" class="btn" id="g-load">불러오기</button>
           </div>
           <div id="g-list"></div>
-          <div id="g-detail"></div>
         </section>
 
         <section id="sec-reports" hidden>
@@ -373,7 +384,9 @@ async function showUser(id) {
       el('b', {}, `${d.email_masked} (${d.user_id_short})`), el('br'),
       `상태 ${d.status === 'active' ? '이용 중' : '탈퇴'} · 가입 ${d.joined_at}`, el('br'),
       `진행 단계: ${d.stages_done.map((s) => STAGE_LABEL[s] || s).join(' → ')}`, el('br'),
+      d.suspended_until ? el('b', { style: 'color:#B0543F' }, `이용 정지 중 · ${d.suspended_until.startsWith('9999') ? '무기한' : d.suspended_until.slice(0, 10) + '까지'}`) : '', d.suspended_until ? el('br') : '',
       `챌린지 사이클 ${d.cycles}번 시작`, el('br'), '동의 기록:', ...consents.flatMap((t) => [el('br'), '· ' + t]));
+    if (d.status === 'active') box.append(el('br'), acctActions(d.user_id, d.email_masked, () => showUser(id)));
     $uDetail.replaceChildren(box);
   } catch (e) { say(friendlyError(e), 'err'); }
 }
@@ -471,70 +484,77 @@ async function loadAudit() {
 }
 
 
-// ---- 문의 ----
-const $iList = document.getElementById('i-list'), $iDetail = document.getElementById('i-detail');
-async function loadInquiries() {
-  const status = document.getElementById('i-status').value;
+// ---- 문의 · 비회원 문의: 제목을 누르면 펴지고 다시 누르면 접힌다 ----
+const THREAD = {
+  inq: { list: 'i-list', status: 'i-status', base: '/admin/inquiries', who: (i) => ` · 계정 ${i.user_id_short}` },
+  guest: { list: 'g-list', status: 'g-status', base: '/admin/guest-inquiries', who: () => '' },
+};
+async function loadThreads(kind) {
+  const c = THREAD[kind], box = document.getElementById(c.list), status = document.getElementById(c.status).value;
   try {
-    const { data } = await apiCall('GET', `/admin/inquiries?limit=50${status ? '&status=' + status : ''}`, undefined, '문의를 불러오지 못했어요');
-    $iList.replaceChildren(...(data.items.length
-      ? data.items.map((i) => el('button', { type: 'button', class: 'btn', style: 'display:block; width:100%; text-align:left; margin:0 0 6px', onclick: () => showInquiry(i.inquiry_id) },
-          `${kst(i.created_at)} · ${i.title} · ${i.answered ? '답변 완료' : '답변 대기'} (${i.user_id_short})`))
-      : [el('p', { class: 'meta' }, '문의가 없어요.')]));
-    $iDetail.replaceChildren();
-  } catch (e) { $iList.replaceChildren(el('p', { class: 'meta' }, friendlyError(e))); }
+    const { data } = await apiCall('GET', `${c.base}?limit=50${status ? '&status=' + status : ''}`, undefined, '문의를 불러오지 못했어요');
+    box.replaceChildren(...(data.items.length ? data.items.map((i) => threadRow(kind, i)) : [el('p', { class: 'meta' }, '문의가 없어요.')]));
+  } catch (e) { box.replaceChildren(el('p', { class: 'meta' }, friendlyError(e))); }
 }
-async function showInquiry(id) {
+function badge(answered) { return el('span', { class: 'st ' + (answered ? 'done' : 'wait') }, answered ? '답변 완료' : '답변 대기'); }
+function threadRow(kind, it) {
+  const c = THREAD[kind], id = it.inquiry_id;
+  const head = el('button', { type: 'button', class: 'th', 'aria-expanded': 'false' }, badge(it.answered), el('b', {}, it.title), el('span', { class: 'when' }, kst(it.created_at) + c.who(it)));
+  const body = el('div', { class: 'tb' }); body.hidden = true;
+  const row = el('div', { class: 'thread' }, head, body);
+  let loaded = false;
+  head.addEventListener('click', async () => {
+    const open = body.hidden;
+    body.hidden = !open; head.setAttribute('aria-expanded', String(open)); row.classList.toggle('open', open);
+    if (open && !loaded) { loaded = true; await fillThread(kind, id, body, head, row); }
+  });
+  return row;
+}
+async function fillThread(kind, id, body, head, row) {
+  const c = THREAD[kind];
   try {
-    const { data: d } = await apiCall('GET', `/admin/inquiries/${encodeURIComponent(id)}`, undefined, '문의를 불러오지 못했어요');
-    const ta = el('textarea', { rows: '5', maxlength: '2000', placeholder: '답변을 적어 주세요' });
-    ta.value = d.answer || '';
+    const { data: d } = await apiCall('GET', `${c.base}/${encodeURIComponent(id)}`, undefined, '문의를 불러오지 못했어요');
+    const ta = el('textarea', { rows: '5', maxlength: '2000', placeholder: '답변을 적어 주세요' }); ta.value = d.answer || '';
     const save = el('button', { type: 'button', class: 'btn', onclick: async () => {
       if (!ta.value.trim()) return say('답변을 입력해 주세요', 'err');
-      try { await apiCall('PUT', `/admin/inquiries/${encodeURIComponent(id)}/answer`, { answer: ta.value }, '답변을 저장하지 못했어요'); say('답변을 저장했어요', 'ok'); await showInquiry(id); }
+      try {
+        await apiCall('PUT', `${c.base}/${encodeURIComponent(id)}/answer`, { answer: ta.value }, '답변을 저장하지 못했어요');
+        say('답변을 저장했어요', 'ok'); head.firstChild.replaceWith(badge(true)); save.textContent = '답변 수정';
+      } catch (e) { say(friendlyError(e), 'err'); }
+    } }, d.answer ? '답변 수정' : '답변 보내기');
+    const del = el('button', { type: 'button', class: 'btn danger', onclick: async () => {
+      if (!window.confirm('이 문의를 지울까요? 되돌릴 수 없어요.')) return;
+      try { await apiCall('DELETE', `${c.base}/${encodeURIComponent(id)}`, undefined, '지우지 못했어요'); say('문의를 지웠어요', 'ok'); row.remove(); }
       catch (e) { say(friendlyError(e), 'err'); }
-    } }, d.answer ? '답변 고치기' : '답변 보내기');
-    $iDetail.replaceChildren(el('div', { class: 'detail' },
-      el('b', {}, d.title), el('br'), `${kst(d.created_at)} · 계정 ${d.user_id_short}`, el('br'),
-      el('div', { style: 'white-space:pre-wrap; word-break:break-all; margin:8px 0' }, d.body),
-      d.answered_at ? el('div', { class: 'meta' }, `답변 ${kst(d.answered_at)} · ${d.answered_by}`) : '', ta, el('br'), save));
-  } catch (e) { say(friendlyError(e), 'err'); }
+    } }, '삭제');
+    body.replaceChildren(
+      el('div', { style: 'white-space:pre-wrap; word-break:break-all; margin:0 0 10px' }, d.body),
+      d.answered_at ? el('div', { class: 'meta' }, `답변 ${kst(d.answered_at)} · ${d.answered_by}`) : '', ta,
+      el('div', { class: 'acts' }, save, del));
+  } catch (e) { body.replaceChildren(el('p', { class: 'meta' }, friendlyError(e))); }
 }
-document.getElementById('i-load').addEventListener('click', loadInquiries);
-
-// ---- 비회원 문의 ----
-const $gList = document.getElementById('g-list'), $gDetail = document.getElementById('g-detail');
-async function loadGuest() {
-  const status = document.getElementById('g-status').value;
-  try {
-    const { data } = await apiCall('GET', `/admin/guest-inquiries?limit=50${status ? '&status=' + status : ''}`, undefined, '문의를 불러오지 못했어요');
-    $gList.replaceChildren(...(data.items.length
-      ? data.items.map((i) => el('button', { type: 'button', class: 'btn', style: 'display:block; width:100%; text-align:left; margin:0 0 6px', onclick: () => showGuest(i.inquiry_id) },
-          `${kst(i.created_at)} · ${i.title} · ${i.answered ? '답변 완료' : '답변 대기'}`))
-      : [el('p', { class: 'meta' }, '문의가 없어요.')]));
-    $gDetail.replaceChildren();
-  } catch (e) { $gList.replaceChildren(el('p', { class: 'meta' }, friendlyError(e))); }
-}
-async function showGuest(id) {
-  try {
-    const { data: d } = await apiCall('GET', `/admin/guest-inquiries/${encodeURIComponent(id)}`, undefined, '문의를 불러오지 못했어요');
-    const ta = el('textarea', { rows: '5', maxlength: '2000', placeholder: '답변을 적어 주세요' });
-    ta.value = d.answer || '';
-    const save = el('button', { type: 'button', class: 'btn', onclick: async () => {
-      if (!ta.value.trim()) return say('답변을 입력해 주세요', 'err');
-      try { await apiCall('PUT', `/admin/guest-inquiries/${encodeURIComponent(id)}/answer`, { answer: ta.value }, '답변을 저장하지 못했어요'); say('답변을 저장했어요', 'ok'); await showGuest(id); }
-      catch (e) { say(friendlyError(e), 'err'); }
-    } }, d.answer ? '답변 고치기' : '답변 보내기');
-    $gDetail.replaceChildren(el('div', { class: 'detail' },
-      el('b', {}, d.title), el('br'), kst(d.created_at), el('br'),
-      el('div', { style: 'white-space:pre-wrap; word-break:break-all; margin:8px 0' }, d.body),
-      d.answered_at ? el('div', { class: 'meta' }, `답변 ${kst(d.answered_at)} · ${d.answered_by}`) : '', ta, el('br'), save));
-  } catch (e) { say(friendlyError(e), 'err'); }
-}
-document.getElementById('g-load').addEventListener('click', loadGuest);
+document.getElementById('i-load').addEventListener('click', () => loadThreads('inq'));
+document.getElementById('g-load').addEventListener('click', () => loadThreads('guest'));
+function loadInquiries() { return loadThreads('inq'); }
+function loadGuest() { return loadThreads('guest'); }
 // ---- 신고 ----
 const REASON = { health_info: '건강정보 노출', spam: '광고·도배', abuse: '욕설·비방', other: '기타' };
 const ACT = { hide: '숨김', delete: '삭제', dismiss: '문제없음' };
+// ---- 회원 조치 (신고 처리·가입자 상세에서 같이 쓴다) ----
+function acctActions(userId, name, after) {
+  const run = (label, ask, call) => el('button', { type: 'button', class: 'btn' + (label === '계정 삭제' ? ' danger' : ''), style: 'margin-right:6px', onclick: async () => {
+    if (!window.confirm(ask)) return;
+    try { await call(); say(`${name}: ${label} 처리했어요`, 'ok'); if (after) after(); }
+    catch (e) { say(friendlyError(e), 'err'); }
+  } }, label);
+  const suspend = (days) => () => apiCall('POST', `/admin/users/${encodeURIComponent(userId)}/suspend`, days ? { days } : {}, '정지하지 못했어요');
+  return el('div', { class: 'acct' }, el('span', { class: 'meta' }, `${name} 계정 조치: `),
+    run('7일 정지', `${name}님을 7일 동안 정지할까요? 정지하면 로그인과 이용이 막혀요.`, suspend(7)),
+    run('30일 정지', `${name}님을 30일 동안 정지할까요?`, suspend(30)),
+    run('무기한 정지', `${name}님을 무기한 정지할까요? 해제하기 전까지 이용할 수 없어요.`, suspend(null)),
+    run('정지 해제', `${name}님의 정지를 풀까요?`, () => apiCall('POST', `/admin/users/${encodeURIComponent(userId)}/unsuspend`, undefined, '풀지 못했어요')),
+    run('계정 삭제', `${name}님의 계정을 삭제할까요? 건강정보와 글 등 모든 데이터가 지워지고 되돌릴 수 없어요.`, () => apiCall('DELETE', `/admin/users/${encodeURIComponent(userId)}`, undefined, '삭제하지 못했어요')));
+}
 async function loadReports() {
   const status = document.getElementById('r-status').value, box = document.getElementById('r-list');
   try {
@@ -547,7 +567,8 @@ async function loadReports() {
         ? el('div', {}, ...['hide', 'delete', 'dismiss'].map((a) => el('button', { type: 'button', class: 'btn', style: 'margin-right:6px', onclick: async () => {
             try { await apiCall('POST', `/admin/reports/${r.target_type}/${encodeURIComponent(r.target_id)}/action`, { action: a }, '처리하지 못했어요'); say(`${ACT[a]} 처리했어요`, 'ok'); loadReports(); }
             catch (e) { say(friendlyError(e), 'err'); } } }, ACT[a])))
-        : el('div', { class: 'meta' }, `처리: ${ACT[r.action] || r.action || ''}`)))
+        : el('div', { class: 'meta' }, `처리: ${ACT[r.action] || r.action || ''}`),
+      r.author_user_id ? acctActions(r.author_user_id, r.author_nickname, loadReports) : ''))
       : [el('p', { class: 'meta' }, '신고가 없어요.')]));
   } catch (e) { box.replaceChildren(el('p', { class: 'meta' }, friendlyError(e))); }
 }
@@ -555,20 +576,58 @@ document.getElementById('r-load').addEventListener('click', loadReports);
 
 // ---- 공통 챌린지 ----
 const CC_STATE = { active: '진행중', upcoming: '진행 예정', ended: '종료' };
+function ccField(label, id, value, attrs = {}) {
+  return el('label', {}, label + ' ', el('input', { id, value: String(value ?? ''), ...attrs }));
+}
+function ccEditForm(c, card) {
+  const f = (k) => document.getElementById(`${k}-${c.challenge_id}`);
+  const upcoming = c.state === 'upcoming';
+  const form = el('div', { class: 'detail', style: 'display:grid; gap:6px; margin-top:8px' },
+    ccField('제목', `t-${c.challenge_id}`, c.title, { maxlength: '60' }),
+    el('div', { class: 'rw' }, ccField('1위 파이', `r1-${c.challenge_id}`, c.rewards.first, { type: 'number', min: '0' }),
+      ccField('2위 파이', `r2-${c.challenge_id}`, c.rewards.second, { type: 'number', min: '0' }),
+      ccField('3위 파이', `r3-${c.challenge_id}`, c.rewards.third, { type: 'number', min: '0' }),
+      ccField('완주 파이', `r4-${c.challenge_id}`, c.rewards.complete, { type: 'number', min: '0' })),
+    ccField('완주 기준 일수', `m-${c.challenge_id}`, c.complete_min_days, { type: 'number', min: '1' }),
+    ...(upcoming ? [ccField('시작', `s-${c.challenge_id}`, c.starts_on, { type: 'date' }), ccField('끝', `e-${c.challenge_id}`, c.ends_on, { type: 'date' }),
+      ...(c.proof_type === 'steps' ? [ccField('하루 목표 걸음 수', `st-${c.challenge_id}`, c.target_steps, { type: 'number' })] : [])]
+      : [el('p', { class: 'meta' }, '시작한 챌린지는 기간과 목표 걸음 수를 바꿀 수 없어요.')]),
+    el('div', { class: 'acts' }, el('button', { type: 'button', class: 'btn', onclick: async () => {
+      const n = (k) => { const x = parseInt(f(k).value, 10); return Number.isNaN(x) ? undefined : x; };
+      const body = { title: f('t').value.trim(), reward_first: n('r1'), reward_second: n('r2'), reward_third: n('r3'), reward_complete: n('r4'), complete_min_days: n('m') };
+      if (upcoming) { body.starts_on = f('s').value; body.ends_on = f('e').value; if (f('st')) body.target_steps = n('st'); }
+      try { await apiCall('PATCH', `/admin/common-challenges/${encodeURIComponent(c.challenge_id)}`, body, '고치지 못했어요'); say('챌린지를 고쳤어요', 'ok'); loadCc(); }
+      catch (e) { say(friendlyError(e), 'err'); }
+    } }, '저장'), el('button', { type: 'button', class: 'btn', onclick: () => form.remove() }, '취소')));
+  return form;
+}
+function ccCard(c) {
+  const card = el('div', { class: 'detail', style: 'margin-bottom:8px' },
+    el('b', {}, c.title), el('br'),
+    `${CC_STATE[c.state]} · ${c.starts_on} ~ ${c.ends_on} · ${c.proof_type === 'steps' ? c.target_steps + '걸음' : '직접 인증'} · 참여 ${c.participants}명`, el('br'),
+    `보상 1위 ${c.rewards.first} · 2위 ${c.rewards.second} · 3위 ${c.rewards.third} · 완주 ${c.rewards.complete} (${c.complete_min_days}일 이상)`, el('br'));
+  if (c.finalized_at) { card.append(el('span', { class: 'meta' }, `순위 확정 ${kst(c.finalized_at)} · 보상이 나가서 고치거나 지울 수 없어요`)); return card; }
+  const acts = el('div', { class: 'acts' });
+  acts.append(el('button', { type: 'button', class: 'btn', onclick: () => { const old = card.querySelector('.detail'); if (old) old.remove(); else card.append(ccEditForm(c, card)); } }, '수정'));
+  acts.append(el('button', { type: 'button', class: 'btn danger', onclick: async () => {
+    if (!confirm(`"${c.title}" 챌린지를 지울까요?` + (c.participants ? ` 참여 ${c.participants}명의 인증 기록도 함께 지워져요.` : '') + ' 되돌릴 수 없어요.')) return;
+    try { await apiCall('DELETE', `/admin/common-challenges/${encodeURIComponent(c.challenge_id)}`, undefined, '지우지 못했어요'); say('챌린지를 지웠어요', 'ok'); loadCc(); }
+    catch (e) { say(friendlyError(e), 'err'); }
+  } }, '삭제'));
+  if (c.state === 'ended') acts.append(el('button', { type: 'button', class: 'btn', onclick: async () => {
+    if (!confirm('순위를 확정하고 보상 파이를 지급할까요? 되돌릴 수 없어요.')) return;
+    try { const { data: f } = await apiCall('POST', `/admin/common-challenges/${encodeURIComponent(c.challenge_id)}/finalize`, undefined, '확정하지 못했어요'); say(`확정했어요 · 순위권 ${f.ranked}명, 완주 ${f.completed}명, 파이 ${f.total_pie}`, 'ok'); loadCc(); }
+    catch (e) { say(friendlyError(e), 'err'); }
+  } }, '순위 확정하고 보상 주기'));
+  else acts.append(el('span', { class: 'meta' }, '끝난 뒤에 순위를 확정할 수 있어요'));
+  card.append(acts);
+  return card;
+}
 async function loadCc() {
   const box = document.getElementById('cc-list');
   try {
     const { data } = await apiCall('GET', '/admin/common-challenges', undefined, '챌린지를 불러오지 못했어요');
-    box.replaceChildren(...(data.items.length ? data.items.map((c) => el('div', { class: 'detail', style: 'margin-bottom:8px' },
-      el('b', {}, c.title), el('br'),
-      `${CC_STATE[c.state]} · ${c.starts_on} ~ ${c.ends_on} · ${c.proof_type === 'steps' ? c.target_steps + '걸음' : '직접 인증'} · 참여 ${c.participants}명`, el('br'),
-      `보상 1위 ${c.rewards.first} · 2위 ${c.rewards.second} · 3위 ${c.rewards.third} · 완주 ${c.rewards.complete} (${c.complete_min_days}일 이상)`, el('br'),
-      c.finalized_at ? el('span', { class: 'meta' }, `순위 확정 ${kst(c.finalized_at)}`)
-        : c.state === 'ended' ? el('button', { type: 'button', class: 'btn', onclick: async () => {
-            if (!confirm('순위를 확정하고 보상 파이를 지급할까요? 되돌릴 수 없어요.')) return;
-            try { const { data: f } = await apiCall('POST', `/admin/common-challenges/${encodeURIComponent(c.challenge_id)}/finalize`, undefined, '확정하지 못했어요'); say(`확정했어요 · 순위권 ${f.ranked}명, 완주 ${f.completed}명, 파이 ${f.total_pie}`, 'ok'); loadCc(); }
-            catch (e) { say(friendlyError(e), 'err'); } } }, '순위 확정하고 보상 주기')
-        : el('span', { class: 'meta' }, '끝난 뒤에 확정할 수 있어요'))) : [el('p', { class: 'meta' }, '열린 챌린지가 없어요.')]));
+    box.replaceChildren(...(data.items.length ? data.items.map(ccCard) : [el('p', { class: 'meta' }, '열린 챌린지가 없어요.')]));
   } catch (e) { box.replaceChildren(el('p', { class: 'meta' }, friendlyError(e))); }
 }
 document.getElementById('cc-add').addEventListener('click', async () => {
