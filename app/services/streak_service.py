@@ -2,10 +2,11 @@
 홈 연속 달성·이번 주 7칸·파이 조각, 연속 배지, 5일마다 파이, 파티 연속 인증이 같이 쓴다."""
 from datetime import date, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import select,func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.challenge import ChallengeCycle, ChallengeLog, CycleChallenge
+from app.models.challenge import Challenge, ChallengeCycle, ChallengeLog, CycleChallenge
 
 DONE_STATUSES = {"completed", "skipped"}   # 외식 안 한 날(skipped)도 마친 걸로. 팀 확정 전 임시
 
@@ -88,3 +89,16 @@ async def home_summary(db: AsyncSession, user_id: str, today: date) -> dict:
         "today_done": today_done,
         "today_total": today_total,
     }
+
+async def participant_counts(db: AsyncSession) -> list[dict]:
+    """미션별로 '지금 진행 중인 사이클'에 그 미션이 있는 사람 수. 0명인 미션도 넣는다."""
+    counts = dict((await db.execute(
+        select(Challenge.challenge_code, func.count(func.distinct(ChallengeCycle.user_id)))
+        .join(CycleChallenge, CycleChallenge.challenge_id == Challenge.challenge_id)
+        .join(ChallengeCycle, ChallengeCycle.cycle_id == CycleChallenge.cycle_id)
+        .where(ChallengeCycle.status == "active")
+        .group_by(Challenge.challenge_code)
+    )).all())
+    codes = (await db.execute(select(Challenge.challenge_code).where(Challenge.active.is_(True))
+                              .order_by(Challenge.challenge_code))).scalars().all()
+    return [{"challenge_code": c, "participants": counts.get(c, 0)} for c in codes]

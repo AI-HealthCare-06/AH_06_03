@@ -31,3 +31,15 @@ async def home_summary(
     db: AsyncSession = Depends(async_get_db),
 ):
     return DataResponse(data=await streak_service.home_summary(db, user_id, today_kst()))
+
+class Participants(BaseModel):
+    challenge_code: str
+    participants: int
+
+
+@router.get("/challenges/participants", response_model=DataResponse[list[Participants]])
+async def participants(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(async_get_db),
+):
+    return DataResponse(data=await streak_service.participant_counts(db))
