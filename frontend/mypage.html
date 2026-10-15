@@ -72,7 +72,7 @@ function render() {
         <div class="field"><label>생년월일</label><input id="p-birth" type="date" value="${me.birth_date || ''}" max="${new Date().toISOString().slice(0, 10)}"></div>
         <div class="field"><label>성별</label><select id="p-sex"><option value="male" ${me.sex === 'male' ? 'selected' : ''}>남성</option><option value="female" ${me.sex === 'female' ? 'selected' : ''}>여성</option></select></div>
         ${state.perr ? `<p class="err">${state.perr}</p>` : ''}
-        <p class="hint" style="margin:0">고쳐도 이미 나온 분석 결과의 나이는 바뀌지 않아요. 새로 분석할 때부터 반영돼요.</p>
+        <p class="hint" style="margin:0">저장하면 새 정보로 바로 다시 분석하고, 분석 결과 화면으로 이동해요.</p>
         <div style="display:flex; gap:8px"><button type="button" id="p-save" class="ghost">저장</button><button type="button" id="p-cancel" class="ghost">취소</button></div></div>`
       : `<button type="button" id="p-edit" class="ln"><span class="k">생년월일</span><span class="v">${(me.birth_date || '').replace(/-/g, '.')}${chev}</span></button>
       <button type="button" id="p-edit2" class="ln last"><span class="k">성별</span><span class="v">${SEX_LABEL[me.sex] || '미입력'}${chev}</span></button>
@@ -189,11 +189,13 @@ function wire() {
     try { me = (await apiCall('PATCH', '/users/me', { birth_date: birth, sex }, '내 정보를 고치지 못했습니다')).data; state.editProfile = false; state.perr = ''; saved = true; }
     catch (e) { state.perr = friendlyError(e); }
     render();
-    // 나이·성별이 바뀌면 이전 분석 결과는 옛 값 기준이므로, 새 값으로 다시 분석할지 묻는다
-    if (saved && changed && localStorage.getItem('paeon-health-record-id')) {
-      if (await confirmDialog('새 정보로 다시 분석할까요?', '고친 생년월일·성별로 위험 신호를 다시 분석해요. 지금 하지 않으면 이전 결과가 그대로 남아요.', '다시 분석하기')) {
+    // 나이·성별이 바뀌면 저장 직후 새 값으로 바로 다시 분석하고 결과 화면으로 간다
+    if (saved && changed) {
+      const L = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+      localStorage.setItem('paeon-profile', JSON.stringify({ ...(L('paeon-profile') || {}), birth: me.birth_date, sex: me.sex }));
+      if (localStorage.getItem('paeon-health-record-id')) {
         try {
-          const L = (k) => JSON.parse(localStorage.getItem(k) || 'null');
+          await restoreEligibilityFromServer();                 // 나이대를 새 생년월일로 다시 계산
           const r = await apiRequestPrediction(L('paeon-profile'), L('paeon-eligibility'), L('paeon-health'), L('paeon-survey'));
           localStorage.setItem('paeon-prediction', JSON.stringify(r.data));
           location.href = 'result.html';
