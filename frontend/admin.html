@@ -94,6 +94,8 @@
   #cc-form input,#cc-form select{height:44px; box-sizing:border-box; border:1px solid var(--sage); border-radius:12px; font:inherit; font-size:14px; padding:0 14px; background:#fff}
   .wrapper{max-width:760px}
   .picker{max-width:760px}
+  .rw{display:grid; grid-template-columns:repeat(4,1fr); gap:6px}
+  .rw input{width:100%}
 </style>
 </head>
 <body>
@@ -186,6 +188,13 @@
             <input id="cc-steps" type="number" placeholder="하루 목표 걸음 수 (걸음 수 인증일 때)">
             <label>시작 <input id="cc-from" type="date"></label>
             <label>끝 <input id="cc-to" type="date"></label>
+            <div class="rw">
+              <label>1위 파이 <input id="cc-r1" type="number" min="0" value="300"></label>
+              <label>2위 파이 <input id="cc-r2" type="number" min="0" value="200"></label>
+              <label>3위 파이 <input id="cc-r3" type="number" min="0" value="100"></label>
+              <label>완주 파이 <input id="cc-r4" type="number" min="0" value="20"></label>
+            </div>
+            <label>완주 기준 일수 <input id="cc-min" type="number" min="1" placeholder="비우면 전체 일수의 70%"></label>
             <button type="button" class="btn" id="cc-add">챌린지 열기</button>
           </div>
           <div id="cc-list" style="margin-top:12px"></div>
@@ -566,6 +575,9 @@ document.getElementById('cc-add').addEventListener('click', async () => {
   const v = (id) => document.getElementById(id).value, proof = v('cc-proof');
   const body = { title: v('cc-title').trim(), proof_type: proof, starts_on: v('cc-from'), ends_on: v('cc-to') };
   if (proof === 'steps') body.target_steps = parseInt(v('cc-steps'), 10) || null;
+  const num = (id) => { const x = parseInt(v(id), 10); return Number.isNaN(x) ? undefined : x; };
+  Object.assign(body, { reward_first: num('cc-r1'), reward_second: num('cc-r2'), reward_third: num('cc-r3'), reward_complete: num('cc-r4') });
+  if (num('cc-min')) body.complete_min_days = num('cc-min');
   try { await apiCall('POST', '/admin/common-challenges', body, '열지 못했어요'); say('챌린지를 열었어요', 'ok'); loadCc(); }
   catch (e) { say(friendlyError(e), 'err'); }
 });
