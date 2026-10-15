@@ -159,6 +159,7 @@ class AdminReportItem(BaseModel):
     status: Literal["pending", "done"]
     action: str | None            # 마지막 처리 (hide / delete / dismiss)
     last_reported_at: datetime
+    auto_hidden: bool = False     # 신고가 기준(서로 다른 3명)에 닿아 관리자 확인 전까지 자동으로 숨겨진 상태
 
 
 class AdminReportList(BaseModel):

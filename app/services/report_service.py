@@ -3,12 +3,12 @@
 관리자 행위 기록에는 대상의 번호 끝 8자만 남기고 글·댓글 내용은 담지 않는다. 신고된 글·댓글의 본문 미리보기는 처리를 위해
 관리자 화면에만 내려가고, 목록을 연 것은 기록에 남는다 (같은 화면을 새로고침해도 10분 안에는 한 번만).
 """
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
 from app.core.security import utcnow
-from app.models.community import CommunityComment, CommunityPost, CommunityProfile, CommunityReport
+from app.models.community import CommunityComment, CommunityPost, CommunityPostPhoto, CommunityProfile, CommunityReport
 from app.schemas.community import AdminReportItem, AdminReportList, ReportActionResult
 from app.services import audit_service, community_service
 
@@ -44,14 +44,14 @@ async def _item(db: AsyncSession, key: str, rs: list[CommunityReport], pending: 
         post = await db.get(CommunityPost, target_id)
         if post is None:
             return None
-        text, author_id = post.body, post.user_id
+        text, author_id, target_status = post.body, post.user_id, post.status
         title, category = post.title, post.category
     else:
         c = await db.get(CommunityComment, target_id)
         post = await db.get(CommunityPost, c.post_id) if c is not None else None
         if c is None or post is None:
             return None
-        text, author_id = c.body, c.user_id
+        text, author_id, target_status = c.body, c.user_id, c.status
         title, category = post.title, post.category
     nick = (await db.execute(select(CommunityProfile.nickname).where(CommunityProfile.user_id == author_id))).scalar_one_or_none()
     reasons: dict[str, int] = {}
@@ -63,6 +63,7 @@ async def _item(db: AsyncSession, key: str, rs: list[CommunityReport], pending: 
         target_type=kind, target_id=target_id, title=title, author_nickname=nick or "알 수 없음", author_user_id=author_id, category=category,
         report_count=len(rs), pending_count=pending, reasons=reasons, preview=text[:PREVIEW_LEN], status=state,
         action=last_action, last_reported_at=max(r.created_at for r in rs),
+        auto_hidden=state == "pending" and target_status == "hidden",
     )
 
 
@@ -84,8 +85,13 @@ async def act(db: AsyncSession, admin: str, target_type: str, target_id: str, ac
         obj.status = "deleted"            # 내용은 비운다 (글은 제목도 가린다). 처리 기록을 보이기 위해 행은 남긴다
         if target_type == "post":
             obj.title, obj.body = DELETED_TITLE, ""
+            await db.execute(delete(CommunityPostPhoto).where(CommunityPostPhoto.post_id == target_id))   # 사진도 지운다
         else:
             obj.body = ""
+    elif action == "dismiss" and obj.status == "hidden":
+        # 처리 대기 신고가 남아 있는 숨김은 신고 누적으로 자동 숨김된 것뿐이다
+        # (신고는 보이는 글에만 할 수 있고, 관리자가 숨기면 대기 신고가 모두 처리되므로). 문제 없으면 다시 보이게 한다.
+        obj.status = "visible"
     now = utcnow()
     for r in reports:
         r.action, r.handled_by, r.handled_at = action, admin, now
