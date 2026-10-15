@@ -53,7 +53,7 @@ function render() {
       <div class="field" style="margin-top:10px"><label>내용</label><textarea id="q-body" maxlength="2000" placeholder="문의 내용을 적어 주세요">${esc(state.draft.body)}</textarea><div class="cnt"><span id="q-cnt">${state.draft.body.length}</span> / 2000</div></div>
       ${state.err ? `<p class="err" style="margin-top:6px">${esc(state.err)}</p>` : ''}
       <div style="display:flex; gap:8px; margin-top:12px"><button type="button" class="cta" id="q-send" ${state.busy ? 'disabled' : ''}>${state.busy ? '보내는 중...' : '문의 보내기'}</button><button type="button" class="ghost" id="q-cancel" style="width:auto; padding:11px 22px">취소</button></div>
-      <p class="hint" style="margin-top:14px">로그인이 안 되거나 가입이 안 될 때는 <a href="mailto:ppaeonn@gmail.com" style="color:inherit; text-decoration:underline">ppaeonn@gmail.com</a>으로 보내 주세요. 이메일에는 건강정보를 적지 마세요.</p>`;
+      <p class="hint" style="margin-top:14px">로그인이 안 되거나 가입이 안 될 때는 로그인 화면의 <a href="guest-inquiry.html" style="color:inherit; text-decoration:underline">비회원 문의</a>를 써 주세요.</p>`;
     const body = document.getElementById('q-body');
     body.addEventListener('input', () => { document.getElementById('q-cnt').textContent = body.value.length; });
     document.getElementById('q-cancel').addEventListener('click', () => { state.view = 'list'; state.err = ''; render(); });

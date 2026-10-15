@@ -15,7 +15,7 @@ a{color:inherit;text-decoration:none}
 input,textarea{outline:none}
 </style>
 </helmet>
-<div style="position: relative; width: 390px; height: 844px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+<div style="position: relative; width: 390px; height: 1130px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
   <div style="height: 64px; padding: 0 8px 0 4px; display: flex; align-items: center; justify-content: space-between">
     <a href="Feed.dc.html" style="min-width: 56px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #4A5C6D">취소</a>
     <span style="font-size: 17px; font-weight: 800">글쓰기</span>
@@ -26,6 +26,16 @@ input,textarea{outline:none}
     <!-- 안내 -->
     <div style="background: #F8F1E7; border-radius: 14px; padding: 14px 16px; font-size: 13px; color: #3B5063; line-height: 1.6"><b>건강정보(혈압, 진단명 등)와 개인정보는 쓰지 마세요.</b><br>쓴 글은 다른 이용자에게 보여요.</div>
 
+    <!-- 올릴 곳: 글은 한 곳에만 올라가요 -->
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 13px; color: #5A6B7A">올릴 곳</span>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <span style="height: 40px; box-sizing: border-box; padding: 0 16px; border-radius: 20px; background: #81A6C6; color: #1E3246; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px">전체 커뮤니티</span>
+        <span style="height: 40px; box-sizing: border-box; padding: 0 16px; border-radius: 20px; border: 1px solid #D2C4B4; color: #3B5063; font-size: 14px; display: inline-flex; align-items: center; gap: 6px"><span style="height: 18px; padding: 0 7px; border-radius: 9px; background: #A9D6C2; color: #0F2E20; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center">파티</span> 아침 걷기단</span>
+      </div>
+      <span style="font-size: 12px; color: #5A6B7A; line-height: 1.6">글은 고른 한 곳에만 올라가요. 파티 글은 파티원에게만 보여요. 양쪽에 모두 올리고 싶으면 한 번 더 써 주세요.</span>
+    </div>
+
     <!-- 카테고리 -->
     <div style="display: flex; flex-direction: column; gap: 10px">
       <span style="font-size: 13px; color: #5A6B7A">카테고리</span>
@@ -35,6 +45,23 @@ input,textarea{outline:none}
         <span style="height: 40px; box-sizing: border-box; padding: 0 16px; border-radius: 20px; background: #81A6C6; color: #1E3246; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center">챌린지 인증</span>
         <span style="height: 40px; box-sizing: border-box; padding: 0 16px; border-radius: 20px; border: 1px solid #D2C4B4; color: #3B5063; font-size: 14px; display: inline-flex; align-items: center">고민과 꿀팁</span>
       </div>
+    </div>
+
+    <!-- 오늘 인증한 챌린지 붙이기 -->
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 13px; color: #5A6B7A">오늘 인증한 챌린지 붙이기 <span style="color: #5A6B7A">(선택)</span></span>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <span style="height: 40px; box-sizing: border-box; padding: 0 16px; border-radius: 20px; border: 1px solid #D2C4B4; color: #3B5063; font-size: 14px; display: inline-flex; align-items: center; gap: 6px"><span style="height: 18px; padding: 0 7px; border-radius: 9px; background: #5C86AC; color: #FFFFFF; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center">고정</span> 절주</span>
+        <span style="height: 40px; box-sizing: border-box; padding: 0 16px; border-radius: 20px; background: #81A6C6; color: #1E3246; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px"><span style="height: 18px; padding: 0 7px; border-radius: 9px; background: #5C86AC; color: #FFFFFF; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center">고정</span> 국물 남기기</span>
+        <span style="height: 40px; box-sizing: border-box; padding: 0 16px; border-radius: 20px; border: 1px solid #D2C4B4; color: #3B5063; font-size: 14px; display: inline-flex; align-items: center; gap: 6px"><span style="height: 18px; padding: 0 7px; border-radius: 9px; background: #A9D6C2; color: #0F2E20; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center">파티</span> 아침 걷기단 연속 인증</span>
+        <span style="height: 40px; box-sizing: border-box; padding: 0 16px; border-radius: 20px; border: 1px solid #D2C4B4; color: #3B5063; font-size: 14px; display: inline-flex; align-items: center; gap: 6px"><span style="height: 18px; padding: 0 7px; border-radius: 9px; background: #243749; color: #FFFFFF; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center">공통</span> 하루 7천 걸음</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; border: 1px solid #E6DBCD; border-radius: 16px; padding: 12px 14px">
+        <span style="height: 18px; padding: 0 7px; border-radius: 9px; background: #5C86AC; color: #FFFFFF; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center">고정</span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 700">국물 남기기</span><span style="font-size: 12px; color: #5A6B7A">1차 · 3주차 · 인증 12일째</span></div>
+        <span style="font-size: 13px; color: #5A6B7A; text-decoration: underline">빼기</span>
+      </div>
+      <span style="font-size: 12px; color: #5A6B7A; line-height: 1.6">미션 이름과 인증한 일수만 붙어요. 혈압이나 걸음 수 같은 수치는 붙지 않아요. 파티 챌린지는 어느 곳에 올리든 붙일 수 있어요.</span>
     </div>
 
     <!-- 제목 · 본문 -->
@@ -58,7 +85,7 @@ input,textarea{outline:none}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1130}}'>
 class Component extends DCLogic {
   renderVals() { return {}; }
 }

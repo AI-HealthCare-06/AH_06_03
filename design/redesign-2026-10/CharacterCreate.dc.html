@@ -16,7 +16,7 @@ input{outline:none}
 button{cursor:pointer}
 </style>
 </helmet>
-<div style="position: relative; width: 390px; height: 844px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
+<div style="position: relative; width: 390px; height: 970px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
   <div style="height: 56px; padding: 0 8px; display: flex; align-items: center; justify-content: space-between">
     <a href="Feed.dc.html" aria-label="뒤로" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#243749" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
     <span style="font-size: 17px; font-weight: 800">내 친구 만들기</span>
@@ -24,7 +24,7 @@ button{cursor:pointer}
   </div>
 
   <!-- 미리보기 -->
-  <div style="margin: 6px 20px 0; height: 214px; border-radius: 28px; background: #F8F1E7; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+  <div style="margin: 6px 20px 0; height: 244px; border-radius: 28px; background: #F8F1E7; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
     <div style="display: grid; grid-template-columns: repeat(16, 11px); grid-auto-rows: 11px" role="img" aria-label="내 캐릭터 미리보기">
       <sc-for list="{{cells}}" as="c" hint-placeholder-count="256">
         <div style="width: 11px; height: 11px; background: {{c.fill}}"></div>
@@ -48,6 +48,7 @@ button{cursor:pointer}
           <div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
             <button aria-label="{{s.label}}" onClick="{{s.pick}}" style="width: 52px; height: 52px; border-radius: 26px; padding: 0; background: {{s.hex}}; border: 1px solid #D2C4B4; box-shadow: {{s.ring}}"></button>
             <span style="font-size: 12px; color: #5A6B7A">{{s.label}}</span>
+            <span style="font-size: 11px; font-weight: 800; color: {{s.tagFg}}">{{s.tag}}</span>
           </div>
         </sc-for>
       </div>
@@ -62,6 +63,7 @@ button{cursor:pointer}
               </sc-for>
             </div>
             <span style="font-size: 12px; font-weight: 700; color: #243749">{{it.label}}</span>
+            <span style="height: 18px; padding: 0 8px; border-radius: 9px; background: {{it.tagBg}}; color: {{it.tagFg}}; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center">{{it.tag}}</span>
           </button>
         </sc-for>
       </div>
@@ -69,26 +71,49 @@ button{cursor:pointer}
   </div>
 
   <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 20px 28px; background: #FFFFFF; border-top: 1px solid #E6DBCD; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 14px">
+      <span style="display: flex; align-items: center; gap: 6px; font-weight: 800"><img src="/_blob/601e43b50a6822e0d7cf01755ff11887" alt="파이" width="16" style="display: block">내 파이 {{pie}}개</span>
+      <span style="font-size: 13px; color: #5A6B7A">{{costNote}}</span>
+    </div>
+    <button onClick="{{buy}}" style="height: 48px; border-radius: 24px; border: 1px solid {{buyBorder}}; background: {{buyBg}}; color: {{buyFg}}; font: 700 15px 'Nanum Gothic', sans-serif">{{buyLabel}}</button>
     <label for="nick" style="position: absolute; left: -9999px">닉네임</label>
-    <input id="nick" value="몽글이" placeholder="닉네임 (2~8자)" style="height: 48px; box-sizing: border-box; border: 0; border-radius: 14px; background: #F8F1E7; padding: 0 16px; font: 700 16px 'Nanum Gothic', sans-serif; color: #243749">
+    <input id="nick" value="몽글이" placeholder="닉네임 (2~10자)" style="height: 48px; box-sizing: border-box; border: 0; border-radius: 14px; background: #F8F1E7; padding: 0 16px; font: 700 16px 'Nanum Gothic', sans-serif; color: #243749">
     <a href="Feed.dc.html" style="height: 54px; border-radius: 27px; background: #81A6C6; color: #1E3246; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center">커뮤니티 시작하기</a>
-    <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; color: #5A6B7A"><img src="/_blob/601e43b50a6822e0d7cf01755ff11887" alt="" width="20" style="display: block">시작 선물로 파이 10개를 드려요</div>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; color: #5A6B7A"><img src="/_blob/601e43b50a6822e0d7cf01755ff11887" alt="파이" width="20" style="display: block">기본 아이템은 무료예요. 파이는 챌린지와 글쓰기로 모아요</div>
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":970}}'>
 class Component extends DCLogic {
-  state = { tab: 'body', body: 'mongle', color: '#AACDDC', expr: 'basic', face: 'none', head: 'none' };
+  state = { tab: 'body', body: 'mongle', color: '#AACDDC', expr: 'basic', face: 'none', head: 'none', pie: 120, owned: {} };
+  // 가격(파이). 0은 기본 아이템. 파이는 하루 미션 +5, 5일마다 +10, 글쓰기 +2, 4주 완주 +50, 공통 챌린지 순위 최대 +300
+  priceOf(field, key) {
+    const P = {
+      body: { mongle: 0, bobo: 0, rabbit: 0, cat: 0, square: 30, bear: 40, dino: 50, ghost: 60 },
+      expr: { basic: 0, smile: 0, sleepy: 0, wow: 0, wink: 0, cry: 20, angry: 20, heart: 30, sparkle: 40 },
+      face: { none: 0, glasses: 0, shades: 0, mask: 0, whiskers: 20, freckles: 20, mustache: 30, eyepatch: 40 },
+      head: { none: 0, sprout: 0, crown: 0, bow: 0, flower: 30, star: 40, halo: 50, horns: 40, party: 30 }
+    };
+    if (field === 'color') return { '#F28B82': 20, '#4FB3B3': 20, '#9B8AD6': 20, '#3E5C8A': 20, '#E8C14A': 40 }[key] || 0;
+    return P[field][key];
+  }
+  isOwned(field, key) { return this.priceOf(field, key) === 0 || !!this.state.owned[field + ':' + key]; }
 
   build(s) {
     const BODIES = {
       mongle: { top: 3, rows: ['................', '...oo......oo...', '..obbo....obbo..', '..obbboooobbbo..', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '..obboooooobbo..', '..oooo....oooo..'] },
       bobo: { top: 2, rows: ['................', '................', '.....oooooo.....', '...ooobbbbooo...', '..obbbbbbbbbbo..', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '...obbbbbbbbo...', '....oooooooo....'] },
       rabbit: { top: 3, rows: ['...oooo..oooo...', '...obbo..obbo...', '...obbo..obbo...', '..ooobbbbbbooo..', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '...obbbbbbbbo...', '....oooooooo....'] },
+      bear: { top: 3, rows: ['................', '..ooo......ooo..', '.obbbo....obbbo.', '.obbbboooobbbbo.', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '..obboooooobbo..', '..oooo....oooo..'] },
+      ghost: { top: 2, rows: ['................', '................', '.....oooooo.....', '...ooobbbbooo...', '..obbbbbbbbbbo..', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbobbobbobbobbo', 'ooo.oo.oo.oo.ooo'] },
+      dino: { top: 3, rows: ['................', '...o...o...o....', '..obo.obo.obo...', '.obbbbbbbbbbbbo.', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '..obboooooobbo..', '..oooo....oooo..'] },
+      square: { top: 2, rows: ['................', '................', '..oooooooooooo..', '.obbbbbbbbbbbbo.', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..oooooooooooo..'] },
       cat: { top: 3, rows: ['................', '..o..........o..', '..oo........oo..', '..obboooooobbo..', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '..obboooooobbo..', '..oooo....oooo..'] }
     };
-    const g = BODIES[s.body].rows.map((r) => r.split(''));
-    const put = (r, c, ch) => { if (r >= 0 && r < 16 && c >= 0 && c < 16) g[r][c] = ch; };
+    // 머리 장식이 몸 위로 삐져나와도 잘리지 않게 위에 4줄을 더 둔다 (좌표는 몸 기준 그대로 쓰고 put이 4줄을 더해 준다)
+    const OFF = 4;
+    const g = Array.from({ length: OFF }, () => Array(16).fill('.')).concat(BODIES[s.body].rows.map((r) => r.split('')));
+    const put = (r, c, ch) => { if (r + OFF >= 0 && r + OFF < g.length && c >= 0 && c < 16) g[r + OFF][c] = ch; };
     const many = (list, ch) => list.forEach(([r, c]) => put(r, c, ch));
     const cheeks = [[9, 2], [9, 3], [9, 12], [9, 13]];
     const smile = [[10, 6], [10, 9], [11, 7], [11, 8]];
@@ -97,10 +122,20 @@ class Component extends DCLogic {
       smile: [[[8, 4], [7, 5], [8, 6], [8, 9], [7, 10], [8, 11]].concat(smile)],
       sleepy: [[[8, 4], [8, 5], [8, 10], [8, 11], [10, 7]]],
       wow: [[[7, 4], [7, 5], [8, 4], [8, 5], [9, 4], [9, 5], [7, 10], [7, 11], [8, 10], [8, 11], [9, 10], [9, 11], [10, 7], [10, 8], [11, 7], [11, 8]]],
-      wink: [[[8, 4], [8, 5], [7, 10], [7, 11], [8, 10], [8, 11]].concat(smile)]
+      wink: [[[8, 4], [8, 5], [7, 10], [7, 11], [8, 10], [8, 11]].concat(smile)],
+      heart: [smile],
+      angry: [[[8, 4], [8, 5], [8, 10], [8, 11], [6, 4], [7, 5], [7, 10], [6, 11], [11, 6], [11, 7], [11, 8], [11, 9]]],
+      cry: [[[7, 4], [7, 5], [8, 4], [8, 5], [7, 10], [7, 11], [8, 10], [8, 11], [11, 6], [11, 7], [11, 8], [11, 9]]],
+      sparkle: [smile]
+    };
+    const EXTRA = {
+      heart: [['r', [[7, 4], [7, 6], [8, 4], [8, 5], [8, 6], [9, 5], [7, 9], [7, 11], [8, 9], [8, 10], [8, 11], [9, 10]]]],
+      cry: [['t', [[9, 4], [10, 4], [9, 11], [10, 11]]]],
+      sparkle: [['y', [[7, 5], [8, 4], [8, 5], [8, 6], [9, 5], [7, 10], [8, 9], [8, 10], [8, 11], [9, 10]]]]
     };
     many(cheeks, 'c');
     many(E[s.expr][0], 'e');
+    (EXTRA[s.expr] || []).forEach(([ch, list]) => many(list, ch));
 
     if (s.face === 'glasses') {
       for (let c = 3; c <= 6; c++) { put(6, c, 'o'); put(9, c, 'o'); }
@@ -118,34 +153,61 @@ class Component extends DCLogic {
       put(10, 3, 'o'); put(10, 12, 'o');
     }
 
-    const a = BODIES[s.body].top;
-    if (s.head === 'sprout') { put(a - 1, 7, 'g'); put(a - 2, 6, 'g'); put(a - 2, 8, 'g'); }
-    if (s.head === 'crown') {
-      for (let c = 6; c <= 9; c++) put(a - 1, c, 'y');
-      put(a - 2, 6, 'y'); put(a - 2, 9, 'y');
-    }
-    if (s.head === 'bow') {
-      many([[4, 10], [4, 12], [5, 10], [5, 11], [5, 12], [6, 10], [6, 12]], 'r');
-    }
+    if (s.face === 'whiskers') { many([[10, 1], [10, 2], [11, 1], [10, 13], [10, 14], [11, 14]], 'o'); }
+    if (s.face === 'freckles') { many([[9, 5], [10, 4], [9, 10], [10, 11], [10, 3], [10, 12]], 'k'); }
+    if (s.face === 'mustache') { many([[10, 5], [10, 6], [10, 9], [10, 10], [11, 4], [11, 11]], 'o'); }
+    if (s.face === 'eyepatch') { for (let c = 3; c <= 6; c++) { put(7, c, 'o'); put(8, c, 'o'); } many([[6, 4], [5, 5], [6, 8], [6, 12], [5, 13]], 'o'); }
+    // 머리 장식: b는 머리 맨 위 테두리 줄. 장식은 이 줄과 겹치게(머리 위에 얹은 것처럼) 몸 앞에 그린다
+    const b = BODIES[s.body].top;
+    const H = {
+      sprout: [['g', [[b - 1, 7], [b - 2, 7], [b - 3, 6], [b - 3, 8], [b - 2, 6], [b - 2, 8]]]],
+      crown: [['y', [[b - 2, 5], [b - 2, 7], [b - 2, 8], [b - 2, 10], [b - 1, 5], [b - 1, 6], [b - 1, 7], [b - 1, 8], [b - 1, 9], [b - 1, 10], [b, 5], [b, 6], [b, 7], [b, 8], [b, 9], [b, 10]]]],
+      bow: [['r', [[b - 1, 10], [b - 1, 12], [b, 10], [b, 12], [b + 1, 10], [b + 1, 12]]], ['y', [[b, 11]]]],
+      flower: [['r', [[b - 1, 11], [b, 10], [b, 12], [b + 1, 11]]], ['y', [[b, 11]]]],
+      star: [['y', [[b - 3, 8], [b - 2, 7], [b - 2, 8], [b - 2, 9], [b - 1, 8]]]],
+      halo: [['y', [[b - 3, 6], [b - 3, 7], [b - 3, 8], [b - 3, 9], [b - 2, 5], [b - 2, 10], [b - 1, 6], [b - 1, 7], [b - 1, 8], [b - 1, 9]]]],
+      horns: [['r', [[b, 4], [b - 1, 4], [b - 2, 3], [b, 11], [b - 1, 11], [b - 2, 12]]]],
+      party: [['r', [[b, 5], [b, 6], [b, 7], [b, 8], [b, 9], [b, 10], [b - 1, 6], [b - 1, 7], [b - 1, 8], [b - 1, 9], [b - 2, 7], [b - 2, 8]]], ['y', [[b - 3, 7], [b - 3, 8]]]]
+    };
+    (H[s.head] || []).forEach(([ch, list]) => many(list, ch));
 
-    const fills = { o: '#243749', e: '#243749', m: '#243749', b: s.color, h: '#FFFFFF', c: '#E8B9A5', g: '#6FA58A', y: '#F2C94C', r: '#E58F9B', w: '#DCE8EF', '.': 'transparent' };
+    const fills = { k: '#B5835A', t: '#7FB6E8', o: '#243749', e: '#243749', m: '#243749', b: s.color, h: '#FFFFFF', c: '#E8B9A5', g: '#6FA58A', y: '#F2C94C', r: '#E58F9B', w: '#DCE8EF', '.': 'transparent' };
     const cells = [];
     g.forEach((r) => r.forEach((ch) => cells.push({ fill: fills[ch] })));
     return cells;
   }
 
+  tagOf(field, key) {
+    const price = this.priceOf(field, key);
+    if (price === 0) return { tag: '기본', tagBg: '#E6DBCD', tagFg: '#5A6B7A' };
+    if (this.isOwned(field, key)) return { tag: '보유', tagBg: '#CFE3EE', tagFg: '#2F5F8A' };
+    return { tag: price + '파이', tagBg: '#243749', tagFg: '#FFFFFF' };
+  }
+  cost() {
+    const s = this.state;
+    return ['body', 'color', 'expr', 'face', 'head'].reduce((n, f) => n + (this.isOwned(f, s[f]) ? 0 : this.priceOf(f, s[f])), 0);
+  }
   renderVals() {
     const s = this.state;
+    const cost = this.cost();
+    const short = cost > s.pie;
+    const buy = () => {
+      if (cost === 0 || short) return;
+      const owned = { ...s.owned };
+      ['body', 'color', 'expr', 'face', 'head'].forEach((f) => { owned[f + ':' + s[f]] = true; });
+      this.setState({ owned, pie: s.pie - cost });
+    };
     const COLORS = [
       ['#AACDDC', '하늘'], ['#81A6C6', '파랑'], ['#C9BEE6', '라벤더'], ['#F0B8C4', '분홍'],
       ['#F2C6A8', '살구'], ['#F5DE8F', '노랑'], ['#CFE3A0', '연두'], ['#A9D6C2', '민트'],
-      ['#F3E3D0', '크림'], ['#D2C4B4', '베이지'], ['#CBD2D9', '회색'], ['#FFFFFF', '흰색']
+      ['#F3E3D0', '크림'], ['#D2C4B4', '베이지'], ['#CBD2D9', '회색'], ['#FFFFFF', '흰색'],
+      ['#F28B82', '코랄'], ['#4FB3B3', '청록'], ['#9B8AD6', '보라'], ['#3E5C8A', '남색'], ['#E8C14A', '골드']
     ];
     const SETS = {
-      body: { field: 'body', list: [['mongle', '몽글이'], ['bobo', '동글이'], ['rabbit', '말랑이'], ['cat', '뾰족이']] },
-      expr: { field: 'expr', list: [['basic', '기본'], ['smile', '웃음'], ['sleepy', '졸림'], ['wow', '놀람'], ['wink', '윙크']] },
-      face: { field: 'face', list: [['none', '없음'], ['glasses', '안경'], ['shades', '선글라스'], ['mask', '마스크']] },
-      head: { field: 'head', list: [['none', '없음'], ['sprout', '새싹'], ['crown', '왕관'], ['bow', '리본']] }
+      body: { field: 'body', list: [['mongle', '몽글이'], ['bobo', '동글이'], ['rabbit', '말랑이'], ['cat', '뾰족이'], ['square', '네모'], ['bear', '곰돌이'], ['dino', '공룡이'], ['ghost', '유령이']] },
+      expr: { field: 'expr', list: [['basic', '기본'], ['smile', '웃음'], ['sleepy', '졸림'], ['wow', '놀람'], ['wink', '윙크'], ['cry', '눈물'], ['angry', '화남'], ['heart', '하트'], ['sparkle', '반짝']] },
+      face: { field: 'face', list: [['none', '없음'], ['glasses', '안경'], ['shades', '선글라스'], ['mask', '마스크'], ['whiskers', '고양이수염'], ['freckles', '주근깨'], ['mustache', '콧수염'], ['eyepatch', '안대']] },
+      head: { field: 'head', list: [['none', '없음'], ['sprout', '새싹'], ['crown', '왕관'], ['bow', '리본'], ['flower', '꽃'], ['star', '별'], ['halo', '천사링'], ['horns', '뿔'], ['party', '고깔']] }
     };
     const TABS = [['body', '몸체'], ['color', '색'], ['expr', '표정'], ['face', '얼굴'], ['head', '머리']];
     const setSel = (patch) => this.setState(patch);
@@ -161,6 +223,7 @@ class Component extends DCLogic {
         const on = s[set.field] === key;
         return {
           label,
+          ...this.tagOf(set.field, key),
           cells: this.build({ ...s, [set.field]: key }),
           bg: on ? '#E4F0F5' : '#F8F1E7',
           border: on ? '2px solid #5C86AC' : '2px solid transparent',
@@ -169,13 +232,16 @@ class Component extends DCLogic {
       });
     }
     const swatches = COLORS.map(([hex, label]) => ({
-      hex, label,
+      hex, label, tag: this.tagOf('color', hex).tag, tagFg: this.tagOf('color', hex).tagFg,
       ring: s.color === hex ? '0 0 0 3px #FFFFFF, 0 0 0 5px #243749' : 'none',
       pick: () => setSel({ color: hex })
     }));
     const rnd = (arr) => arr[Math.floor(Math.random() * arr.length)];
     return {
-      cells: this.build(s),
+      cells: this.build(s), pie: s.pie, buy,
+      costNote: cost === 0 ? '고른 아이템을 모두 가지고 있어요' : '고른 유료 아이템 ' + cost + '파이',
+      buyLabel: cost === 0 ? '모두 보유 중이에요' : (short ? '파이가 ' + (cost - s.pie) + '개 모자라요' : cost + '파이로 사기'),
+      buyBg: cost === 0 || short ? '#F8F1E7' : '#243749', buyFg: cost === 0 || short ? '#5A6B7A' : '#FFFFFF', buyBorder: cost === 0 || short ? '#E6DBCD' : '#243749',
       tabs, isColor, notColor: !isColor, items, swatches,
       random: () => setSel({
         body: rnd(SETS.body.list)[0], color: rnd(COLORS)[0], expr: rnd(SETS.expr.list)[0],
