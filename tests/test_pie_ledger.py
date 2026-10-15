@@ -73,3 +73,27 @@ async def test_하루_횟수는_한국_날짜가_바뀌는_시각에_맞춰_센�
         row.created_at = row.created_at - timedelta(days=2)          # 이틀 전 적립은 오늘 횟수에 들어가지 않는다
         await s.commit()
         assert await pie_service.count_today(s, uid, pie_service.POST_WRITE) == 0
+
+
+async def test_동시에_같은_적립이_들어와도_부르는_쪽의_작업은_살아남는다(db_session, monkeypatch):
+    uid = await new_user(db_session)
+    async with db_session() as s:
+        s.add(PieLedger(user_id=uid, delta=5, reason="r", ref_key="k", created_at=datetime(2026, 10, 14)))
+        await s.commit()
+    async with db_session() as s:
+        async def blind(*a, **k):            # "이미 있나?" 확인이 놓친 상황 (다른 요청이 그 사이에 넣음)
+            class R:
+                def first(self): return None
+            return R()
+        real = s.execute
+        calls = {"n": 0}
+        async def fake(stmt, *a, **k):
+            calls["n"] += 1
+            return await blind() if calls["n"] == 1 else await real(stmt, *a, **k)
+        monkeypatch.setattr(s, "execute", fake)
+        s.add(User(email="keep@test.kr", password_hash="x", status="active"))     # 부르는 쪽이 이미 해 둔 작업
+        assert await pie_service.add(s, uid, 5, "r", "k") is False
+        await s.commit()
+    async with db_session() as s:
+        assert (await s.execute(select(User).where(User.email == "keep@test.kr"))).scalar_one_or_none() is not None
+        assert len((await s.execute(select(PieLedger))).scalars().all()) == 1

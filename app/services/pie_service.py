@@ -6,6 +6,7 @@
 from datetime import datetime, timedelta
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import utcnow
@@ -32,8 +33,12 @@ async def add(db: AsyncSession, user_id: str, delta: int, reason: str, ref_key: 
         PieLedger.user_id == user_id, PieLedger.reason == reason, PieLedger.ref_key == ref_key))).first()
     if exists is not None or delta == 0:
         return False
-    db.add(PieLedger(user_id=user_id, delta=delta, reason=reason, ref_key=ref_key, created_at=utcnow()))
-    await db.flush()
+    try:
+        async with db.begin_nested():       # 동시에 같은 적립이 들어와도 이 줄만 취소하고, 부르는 쪽의 작업은 살린다
+            db.add(PieLedger(user_id=user_id, delta=delta, reason=reason, ref_key=ref_key, created_at=utcnow()))
+            await db.flush()
+    except IntegrityError:
+        return False
     return True
 
 
