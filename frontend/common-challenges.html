@@ -35,7 +35,7 @@
         <div class="tabs" role="tablist">
           <a href="feed.html" role="tab">피드</a>
           <span class="on" role="tab" aria-selected="true">챌린지</span>
-          <button type="button" role="tab" id="tab-party">파티</button>
+          <a href="party.html" role="tab">파티</a>
         </div>
         <div class="chips" id="chips"></div>
         <div id="list"><p class="hint">불러오는 중...</p></div>
@@ -72,7 +72,6 @@ async function load() {
       : '<div class="empty">' + (cur === 'active' ? '지금 진행 중인 챌린지가 없어요.' : cur === 'upcoming' ? '예정된 챌린지가 없어요.' : '종료된 챌린지가 없어요.') + '</div>';
   } catch (e) { box.innerHTML = '<div class="empty">' + esc(friendlyError(e)) + '</div>'; }
 }
-document.getElementById('tab-party').addEventListener('click', () => confirmDialog('파티는 준비 중이에요', '친구와 함께 챌린지를 하는 파티는 곧 열려요.', '확인'));
 renderChips(); load();
 </script>
 </body>

@@ -63,6 +63,7 @@
 <script>
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 let picked = null;
+let counts = {};
 let catFilter = '';
 const _ic = (p) => `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 const CAT_ICON = {
@@ -74,6 +75,7 @@ const CAT_ICON = {
 function cardBody(m, keepMsg) {
   return `<span class="ic">${CAT_ICON[m.category] || CAT_ICON.other}</span><div class="tx"><span class="st">${esc(m.name)}${m.completed_before ? '<span class="badge-done">완료함</span>' : ''}</span>
     <span class="sd">${esc(m.category_name || '')} · 4주 · ${esc(m.description)}</span>
+    ${counts[m.code] ? `<span class="sd">${counts[m.code].toLocaleString()}명 참여 중</span>` : ''}
     <div class="ev">${esc(m.evidence)} <button type="button" class="srcbtn" onclick="event.preventDefault(); event.stopPropagation(); this.nextElementSibling.hidden = !this.nextElementSibling.hidden">출처</button><span class="src" hidden>· ${esc(m.source)}</span></div>
     ${m.notice ? `<span class="sd">${esc(m.notice)}</span>` : ''}
     ${m.completed_before && keepMsg ? `<div class="keep">${esc(keepMsg)}</div>` : ''}</div>`;
@@ -91,6 +93,7 @@ async function main() {
     if (await apiGetCurrentCycle()) { location.replace('challenge-progress.html'); return; }
   } catch (e) { showError(friendlyError(e)); return; }
 
+  try { (await apiCall('GET', '/challenges/participants', undefined, '')).data.forEach(x => counts[x.challenge_code] = x.participants); } catch (e) { /* 참여 인원은 없어도 진행 */ }
   let rec;
   try { rec = await apiGetChallengeRecommendations(); }
   catch (e) {

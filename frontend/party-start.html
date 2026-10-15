@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 파티</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .tabs{display:flex; border-bottom:1px solid var(--line); margin:0 -20px; padding:0 20px}
+  .tabs a,.tabs span{flex:1; height:46px; border-bottom:3px solid transparent; margin-bottom:-1px; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--muted); text-decoration:none}
+  .tabs .on{color:var(--ink); font-weight:800; border-bottom-color:var(--ink)}
+  .feed-head{display:flex; align-items:center; justify-content:space-between; min-height:64px}
+  .feed-head h1{font-size:20px}
+  .me-char{width:44px; height:44px; display:flex; align-items:center; justify-content:center}
+  .hero{background:var(--cream); border-radius:28px; padding:26px 20px 22px; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center}
+  .hero h2{font-size:22px; font-weight:800; letter-spacing:-.5px; line-height:1.35; margin:0}
+  .hero p{font-size:14px; color:#4A5C6D; line-height:1.65; margin:0}
+  .join{display:flex; gap:8px}
+  .join input{flex:1; min-width:0; height:52px; border:0; border-radius:14px; background:var(--cream); padding:0 16px; font:700 16px inherit; letter-spacing:1px; color:var(--ink)}
+  .join button{width:84px; height:52px; border-radius:14px; border:1px solid #D2C4B4; background:#fff; font:700 15px inherit; color:var(--ink); cursor:pointer}
+  .join button:disabled{color:var(--muted); cursor:not-allowed}
+  .rules{display:flex; flex-direction:column; gap:6px; font-size:13px; color:var(--muted); line-height:1.65}
+</style>
+</head>
+<body>
+<div id="header-slot"></div>
+<div class="wrapper"><div class="frame"><div class="frame-body"><div class="screen" style="gap:18px">
+  <div class="feed-head"><h1>커뮤니티</h1><a class="me-char" id="me-char" href="character.html" aria-label="내 캐릭터"></a></div>
+  <div class="tabs" role="tablist" style="margin-bottom:6px">
+    <a href="feed.html" role="tab">피드</a>
+    <a href="common-challenges.html" role="tab">챌린지</a>
+    <span class="on" role="tab" aria-selected="true">파티</span>
+  </div>
+  <div class="hero">
+    <h2>같이 하면<br>더 오래 해요</h2>
+    <p>친구와 파티를 만들어 서로 챌린지 인증을 응원해요.</p>
+    <a class="cta" href="party-create.html">파티 만들기</a>
+  </div>
+  <div style="display:flex; flex-direction:column; gap:10px">
+    <label for="code" style="font-size:16px; font-weight:800">초대 코드로 참여하기</label>
+    <div class="join"><input id="code" placeholder="초대 코드 입력" maxlength="10" autocomplete="off"><button type="button" id="join" disabled>참여</button></div>
+    <p class="err" id="err" hidden></p>
+  </div>
+  <div class="rules">
+    <span>· 파티는 파티장을 포함해 최대 6명이에요.</span>
+    <span>· 한 사람이 하나의 파티에 들어갈 수 있어요.</span>
+    <span>· 파티 피드는 준비 중이에요.</span>
+  </div>
+</div></div></div></div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+const meChar = document.getElementById('me-char');
+meChar.innerHTML = characterSvg(null, 30);
+apiCall('GET', '/characters/me', undefined, '').then(r => { meChar.innerHTML = characterSvg(r.data, 30); }).catch(() => {});
+const code = document.getElementById('code'), btn = document.getElementById('join'), err = document.getElementById('err');
+const MSG = {
+  PARTY_NOT_FOUND: '없는 초대 코드예요. 코드를 다시 확인해 주세요.',
+  PARTY_FULL: '이 파티는 자리가 다 찼어요.',
+  PARTY_ALREADY_JOINED: '이미 다른 파티에 들어가 있어요.',
+};
+code.addEventListener('input', () => { btn.disabled = !code.value.trim(); err.hidden = true; });
+btn.addEventListener('click', async () => {
+  btn.disabled = true;
+  try {
+    await apiCall('POST', '/parties/join', { invite_code: code.value.trim() }, '파티에 들어가지 못했어요');
+    location.href = 'party-home.html';
+  } catch (e) {
+    err.textContent = MSG[e.code] || friendlyError(e);
+    err.hidden = false; btn.disabled = false;
+    if (e.code === 'PARTY_ALREADY_JOINED') setTimeout(() => location.href = 'party-home.html', 1500);
+  }
+});
+</script>
+</body>
+</html>

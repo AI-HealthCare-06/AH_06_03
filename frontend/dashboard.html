@@ -69,6 +69,7 @@
 </div>
 
 <script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
 
 <script>
 function cssv(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
@@ -131,26 +132,35 @@ function pieSvg(n, done) {
   return `<img src="assets/img/pie${k}.png" alt="파이 ${n}조각 중 ${done}조각을 구웠어요">`;
 }
 
-// 챌린지 기록(paeon-progress)으로 계산한 오늘 상태·연속 달성·이번 주 요일 원
+// 서버 /home/summary 값. 실패하면 챌린지 기록(paeon-progress)으로 계산
+let summary = null;
 function ringHtml() {
-  const idxToday = dayNo - 1;
   const doneDays = new Set(progress.days);
   const ml = progress.missionLog || {};
-  const n = cycle.missions.length;
-  const todaySet = doneDays.has(idxToday) ? n : (ml[idxToday] ? new Set(ml[idxToday]).size : 0);
-  let streak = 0;
-  for (let i = doneDays.has(idxToday) ? idxToday : idxToday - 1; i >= 0 && doneDays.has(i); i--) streak++;
+  const idxToday = dayNo - 1;
+  const dow = ['일', '월', '화', '수', '목', '금', '토'];
+  const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  let n, todaySet, streak, week = '';
+  if (summary) {
+    n = summary.today_total; todaySet = summary.today_done; streak = summary.streak;
+    summary.week.forEach(w => {
+      const d = new Date(w.date + 'T00:00:00');
+      week += `<div class="${[w.done ? 'on' : '', iso(d) === iso(todayD) ? 'now' : ''].join(' ')}"><span>${dow[d.getDay()]}</span><i></i></div>`;
+    });
+  } else {
+    n = cycle.missions.length;
+    todaySet = doneDays.has(idxToday) ? n : (ml[idxToday] ? new Set(ml[idxToday]).size : 0);
+    streak = 0;
+    for (let i = doneDays.has(idxToday) ? idxToday : idxToday - 1; i >= 0 && doneDays.has(i); i--) streak++;
+    const mon = new Date(todayD); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
+    for (let k = 0; k < 7; k++) {
+      const d = new Date(mon); d.setDate(mon.getDate() + k);
+      const i = Math.round((d - startedOn) / 86400000);
+      week += `<div class="${[i >= 0 && doneDays.has(i) ? 'on' : '', d.getTime() === todayD.getTime() ? 'now' : ''].join(' ')}"><span>${dow[d.getDay()]}</span><i></i></div>`;
+    }
+  }
   const left = n - todaySet;
   const sub = left <= 0 ? '오늘 파이를 모두 구웠어요!' : left === 1 ? '하나만 더 구우면<br>오늘 파이 완성!' : `${left}개 더 구우면<br>오늘 파이 완성!`;
-  const dow = ['일', '월', '화', '수', '목', '금', '토'];
-  const mon = new Date(todayD); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
-  let week = '';
-  for (let k = 0; k < 7; k++) {
-    const d = new Date(mon); d.setDate(mon.getDate() + k);
-    const i = Math.round((d - startedOn) / 86400000);
-    const cls = [i >= 0 && doneDays.has(i) ? 'on' : '', d.getTime() === todayD.getTime() ? 'now' : ''].join(' ');
-    week += `<div class="${cls}"><span>${dow[d.getDay()]}</span><i></i></div>`;
-  }
   return `<a class="ring" href="challenge-progress.html">
     <span class="t">챌린지를 완료해서 파이를 구워봐요!</span>
     <div class="mid">${pieSvg(n, todaySet)}<div class="tx"><span class="lb">연속 달성</span><span class="big">${streak}일째</span><span class="sub">${sub}</span></div></div>
@@ -209,6 +219,7 @@ function render() {
   document.getElementById('screen').innerHTML = body;
 }
 render();
+if (state === 'active') apiCall('GET', '/home/summary', undefined, '').then(r => { summary = r.data; render(); }).catch(() => {});
 </script>
 </body>
 </html>

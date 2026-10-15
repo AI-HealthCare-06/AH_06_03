@@ -57,6 +57,14 @@ const $ = (x) => document.getElementById(x);
 const CAT_LABEL = { diet: '식단', exercise: '운동', challenge: '챌린지 인증', tips: '고민과 꿀팁' };
 const KIND = { fixed: ['고정', 'fixed'], selected: ['선택', 'selected'], common: ['공통', 'common'] };
 const REASONS = [['health_info', '건강정보나 개인정보가 들어 있어요'], ['spam', '광고·스팸이에요'], ['abuse', '욕설·비방이에요'], ['other', '기타']];
+const _avc = {};
+const _avView = (n) => _avc[n] || (_avc[n] = apiCall('GET', '/characters/by-nickname/' + encodeURIComponent(n), undefined, '').then(r => r.data));
+function hydrateAvatars(root, px) {
+  (root || document).querySelectorAll('[data-av]:not([data-done])').forEach(el => {
+    el.dataset.done = '1';
+    _avView(el.dataset.av).then(v => { el.innerHTML = characterSvg(v, px || 40); }).catch(() => {});
+  });
+}
 function ago(iso) {
   const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + 'Z'), s = (Date.now() - d) / 1000;
   if (s < 60) return '방금 전'; if (s < 3600) return Math.floor(s / 60) + '분 전'; if (s < 86400) return Math.floor(s / 3600) + '시간 전';
@@ -74,7 +82,7 @@ function renderPost() {
   let att = '';
   if (p.attach) { const k = KIND[p.attach.kind]; att = '<div class="attach"><span class="ctag ' + k[1] + '">' + k[0] + '</span><span class="lb">' + esc(p.attach.label) + '</span><span class="dy">인증 ' + p.attach.days + '일째</span></div>'; }
   $('post').innerHTML = '<div style="display:flex; flex-direction:column; gap:14px">'
-    + '<div class="head"><span class="av">' + esc(nick.slice(0, 1)) + '</span><div><div class="meta"><span class="cat">' + esc(CAT_LABEL[p.category] || '') + '</span>' + esc(nick) + ' · ' + ago(p.created_at) + '</div></div></div>'
+    + '<div class="head"><span class="av"' + (p.author_nickname ? ' data-av="' + esc(nick) + '"' : '') + '>' + esc(nick.slice(0, 1)) + '</span><div><div class="meta"><span class="cat">' + esc(CAT_LABEL[p.category] || '') + '</span>' + esc(nick) + ' · ' + ago(p.created_at) + '</div></div></div>'
     + '<h1 class="ttl2">' + esc(p.title) + '</h1>'
     + (p.hidden ? '<div class="callout">' + esc(p.notice || '') + '</div>' : '<div class="bodytx">' + esc(p.body) + '</div>') + att
     + '<div class="acts"><button type="button" class="like' + (p.liked_by_me ? ' on' : '') + '" id="like">좋아요 <span id="lc">' + p.like_count + '</span></button>'
@@ -83,6 +91,7 @@ function renderPost() {
   if ($('del')) $('del').addEventListener('click', onDelete);
   if ($('rep')) $('rep').addEventListener('click', () => sheet('신고 사유를 골라 주세요', REASONS, (v) => report('posts/' + id, v)));
   $('cmbar').hidden = !!p.hidden;
+  hydrateAvatars($('post'), 40);
 }
 async function onLike() {
   try {
@@ -105,7 +114,8 @@ async function loadComments() {
   try {
     const list = (await apiCall('GET', '/community/posts/' + id + '/comments', undefined, '댓글을 불러오지 못했어요')).data;
     $('cms').innerHTML = '<div class="sect" style="margin:0 0 4px">댓글 ' + list.length + '</div>' + (list.length ? list.map(c =>
-      '<div class="cm"><div class="t"><span>' + esc(c.author_nickname) + ' · ' + ago(c.created_at) + '</span>' + (c.mine ? '<button type="button" class="lnk" style="min-height:0" data-del="' + c.comment_id + '">삭제</button>' : '<button type="button" class="lnk" style="min-height:0" data-rep="' + c.comment_id + '">신고</button>') + '</div><div class="b">' + esc(c.body) + '</div></div>').join('') : '<div class="empty" style="padding:20px 0">첫 댓글을 남겨 보세요.</div>');
+      '<div class="cm"><div class="t"><span style="display:flex; align-items:center; gap:8px"><span class="av" style="width:36px; height:36px; border-radius:12px; font-size:14px" data-av="' + esc(c.author_nickname) + '">' + esc((c.author_nickname || '?').slice(0, 1)) + '</span>' + esc(c.author_nickname) + ' · ' + ago(c.created_at) + '</span>' + (c.mine ? '<button type="button" class="lnk" style="min-height:0" data-del="' + c.comment_id + '">삭제</button>' : '<button type="button" class="lnk" style="min-height:0" data-rep="' + c.comment_id + '">신고</button>') + '</div><div class="b">' + esc(c.body) + '</div></div>').join('') : '<div class="empty" style="padding:20px 0">첫 댓글을 남겨 보세요.</div>');
+    hydrateAvatars($('cms'), 28);
     document.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
       if (await confirmDialog('댓글을 삭제할까요?', '', '삭제')) { try { await apiCall('DELETE', '/community/comments/' + b.dataset.del, undefined, '삭제하지 못했어요'); loadComments(); } catch (e) { showErr(friendlyError(e)); } }
     }));

@@ -29,7 +29,7 @@
     <div class="frame-body">
       <div class="screen" id="screen" style="gap:24px">
         <a class="me" href="mypage.html">
-          <span class="av"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#243749" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"></circle><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"></path></svg></span>
+          <span class="av" id="me-av"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#243749" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"></circle><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"></path></svg></span>
           <span class="tx"><b id="me-email">&nbsp;</b><span>마이페이지 · 정보 수정</span></span>
           <span data-icon="chevron"></span>
         </a>
@@ -63,6 +63,7 @@
 <script src="assets/api.js"></script>
 <script>
 if (!loggedIn()) location.replace('login.html');
+apiCall('GET', '/characters/me', undefined, '').then(r => { document.getElementById('me-av').innerHTML = characterSvg(r.data, 36); }).catch(() => {});
 apiGetMe().then(me => { document.getElementById('me-email').textContent = me.email; }).catch(() => {});
 inquiryUnread().then(n => { const b = document.getElementById('inq-badge'); if (n) { b.textContent = '새 답변 ' + n; b.hidden = false; } });
 document.getElementById('logout').addEventListener('click', async () => {

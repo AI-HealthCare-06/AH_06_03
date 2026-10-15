@@ -115,7 +115,8 @@ const MISSION_ICON = {
 let cycle = null;          // 서버 사이클
 let selectedIdx = 0;       // 0~27
 let weekOffset = 0;
-let partialFor = null;     // 벽 스쿼트 "일부만" 횟수 고르는 중
+let partialFor = null;
+let summary = null, counts = {}, party = undefined, badges = null;   // 서버 값. 못 받으면 null     // 벽 스쿼트 "일부만" 횟수 고르는 중
 
 const startDate = () => new Date(cycle.started_on + 'T00:00:00');
 const dateForIdx = (i) => new Date(startDate().getTime() + i * 86400000);
@@ -132,10 +133,11 @@ function pieSvg(n, done) {
 }
 
 function ringHtml() {
-  const n = cycle.missions.length, t = iso(dateForIdx(todayIdx()));
-  const done = cycle.missions.filter(m => doneOn(m, t)).length;
+  let n = cycle.missions.length, t = iso(dateForIdx(todayIdx()));
+  let done = cycle.missions.filter(m => doneOn(m, t)).length;
   let streak = 0;
   for (let i = allDoneOn(t) ? todayIdx() : todayIdx() - 1; i >= 0 && allDoneOn(iso(dateForIdx(i))); i--) streak++;
+  if (summary) { n = summary.today_total; done = summary.today_done; streak = summary.streak; }
   const left = n - done;
   const sub = left <= 0 ? '오늘 파이를 모두 구웠어요!' : left === 1 ? '하나만 더 구우면 오늘 파이 완성!' : `${left}개 더 구우면 오늘 파이 완성!`;
   const dayNo = Math.min(28, cycle.day_number);
@@ -201,7 +203,7 @@ function missionCardHtml(m, d, editable) {
   return `<div class="mrow${done ? ' done' : ''}">
     <div class="main">
       <span class="ic${fixed ? '' : ' sel'}">${MISSION_ICON[m.card.category] || MISSION_ICON.other}</span>
-      <div class="tx"><div>${tagHtml(m)}</div><span class="nm">${esc(m.card.name)}</span><span class="ds">${esc(m.card.description)}</span></div>
+      <div class="tx"><div>${tagHtml(m)}</div><span class="nm">${esc(m.card.name)}</span><span class="ds">${esc(m.card.description)}</span>${counts[m.card.code] ? `<span class="ds">${counts[m.card.code].toLocaleString()}명 참여 중</span>` : ''}</div>
       <span class="ck" role="img" aria-label="${done ? '완료됨' : '아직 안 했어요'}"><i>${done ? '<svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5l2.5 2.5L11 4.5"/></svg>' : ''}</i></span>
     </div>
     <div class="q">${esc(m.card.question)}</div>
@@ -228,16 +230,35 @@ function dayDetailHtml() {
   </div>`;
 }
 
-// 파티·배지는 서버에 아직 없어 '준비 중'으로 둔다. 공통 챌린지는 실제 화면으로 연결한다.
+const CHEV = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#5A6B7A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>';
+const PARTY_ICON = svg('<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M15 14.2c.7-.2 1.4-.3 2-.3 2.2 0 3.8 1.5 3.8 4"/>', 22);
+
+function partyRowHtml() {
+  if (party === undefined) return '';
+  if (party === null) {
+    return `<a class="lrow" href="party-start.html"><span class="ic" style="background:#DCEFE5; color:#1F6B49">${PARTY_ICON}</span>
+      <div class="tx"><div><span class="ctag party">파티</span></div><span class="nm">파티 만들기</span><span class="ds">친구와 함께 인증하는 파티를 시작해 봐요</span></div>${CHEV}</a>`;
+  }
+  const left = party.today_all_done ? '오늘 파티원 모두 인증했어요' : `오늘 ${party.today_remaining}명이 더 인증하면 돼요`;
+  return `<a class="lrow" href="party-home.html"><span class="ic" style="background:#DCEFE5; color:#1F6B49">${PARTY_ICON}</span>
+    <div class="tx"><div><span class="ctag party">파티</span></div><span class="nm">${esc(party.party.name)}</span><span class="ds">${left} · 연속 ${party.streak}일째</span></div>${CHEV}</a>`;
+}
+
+function badgeRowHtml() {
+  if (!badges) return '';
+  const next = badges.next ? ` · 다음은 ${esc(badges.next.label)}` : '';
+  return `<a href="badges.html" style="display:flex; align-items:center; gap:12px; padding:4px 2px; text-decoration:none; color:inherit">
+    <div style="display:flex"><span style="width:32px;height:32px;border-radius:16px;background:#AACDDC;border:2px solid #fff"></span><span style="width:32px;height:32px;border-radius:16px;background:#F3E3D0;border:2px solid #fff;margin-left:-10px"></span><span style="width:32px;height:32px;border-radius:16px;background:#81A6C6;border:2px solid #fff;margin-left:-10px"></span></div>
+    <span style="flex:1; font-size:14px; font-weight:700">모은 배지 ${badges.earned_count}개<span style="font-weight:400; color:var(--muted)"> / ${badges.total}${next}</span></span>${CHEV}</a>`;
+}
+
 function togetherHtml() {
   return `<div class="sec">
     <div class="sec-h"><b>함께 하는 챌린지</b><span>파이 조각과는 별개예요</span></div>
-    <div class="lrow off"><span class="ic" style="background:#DCEFE5; color:#1F6B49">${svg('<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M15 14.2c.7-.2 1.4-.3 2-.3 2.2 0 3.8 1.5 3.8 4"/>', 22)}</span>
-      <div class="tx"><div><span class="ctag party">파티</span></div><span class="nm">파티 챌린지</span><span class="ds">친구와 함께 인증하는 기능이에요</span></div><span class="soon">준비 중</span></div>
+    ${partyRowHtml()}
     <a class="lrow" href="common-challenges.html"><span class="ic" style="background:#DDE2E8; color:#243749">${svg('<circle cx="12" cy="12" r="9"/><path d="M3.5 12h17M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/>', 22)}</span>
       <div class="tx"><div><span class="ctag common">공통</span></div><span class="nm">공통 챌린지</span><span class="ds">모두가 함께 하는 챌린지를 둘러봐요</span></div><span class="go">보러 가기</span></a>
-    <div class="lrow off"><div style="display:flex"><span style="width:32px;height:32px;border-radius:16px;background:#AACDDC;border:2px solid #fff"></span><span style="width:32px;height:32px;border-radius:16px;background:#F3E3D0;border:2px solid #fff;margin-left:-10px"></span><span style="width:32px;height:32px;border-radius:16px;background:#81A6C6;border:2px solid #fff;margin-left:-10px"></span></div>
-      <div class="tx"><span class="nm" style="font-size:14px">모은 배지</span></div><span class="soon">준비 중</span></div>
+    ${badgeRowHtml()}
   </div>`;
 }
 
@@ -310,6 +331,13 @@ async function main() {
   selectedIdx = todayIdx();
   weekOffset = Math.floor(selectedIdx / 7);
   render();
+  const get = (path) => apiCall('GET', path, undefined, '').then(r => r.data);
+  Promise.all([
+    get('/home/summary').then(v => summary = v).catch(() => {}),
+    get('/challenges/participants').then(v => v.forEach(x => counts[x.challenge_code] = x.participants)).catch(() => {}),
+    get('/parties/me').then(v => party = v).catch(e => { if (e.code === 'PARTY_NOT_JOINED') party = null; }),
+    get('/badges').then(v => badges = v).catch(() => {}),
+  ]).then(render);
   document.getElementById('stop-wrap').style.display = 'flex';
   document.getElementById('stop-btn').addEventListener('click', async () => {
     if (!confirm('진행 중인 챌린지를 중단할까요? 지금까지 기록은 남아요.')) return;

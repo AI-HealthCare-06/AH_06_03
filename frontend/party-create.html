@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 파티 만들기</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .lb{font-size:14px; font-weight:800; color:var(--ink)}
+  .inp{height:54px; box-sizing:border-box; border:2px solid transparent; border-radius:14px; background:var(--cream); padding:0 16px; font:500 16px inherit; color:var(--ink); width:100%}
+  .inp:focus{outline:none; border-color:var(--ink)}
+  .sm{font-size:12px; color:var(--muted); line-height:1.6}
+  .chip{height:38px; padding:0 14px; border-radius:19px; font-size:14px; font-family:inherit}
+  .cap{display:flex; align-items:center; justify-content:space-between; background:var(--cream); border-radius:16px; padding:14px 18px}
+  .bars{display:flex; gap:6px}
+  .bars span{flex:1; height:10px; border-radius:5px; background:#E6DBCD}
+  .bars span:first-child{background:#5C86AC}
+</style>
+</head>
+<body>
+<div class="wrapper"><div class="frame"><div class="frame-body"><div class="screen" style="gap:20px">
+  <div class="page-bar"><a class="back" href="party-start.html" aria-label="뒤로" id="back"></a><span class="ttl">파티 만들기</span></div>
+  <div style="display:flex; flex-direction:column; gap:8px"><label class="lb" for="pn">파티 이름</label><input id="pn" class="inp" maxlength="12" autocomplete="off" placeholder="예: 아침 걷기단"><span class="sm" style="text-align:right">2~12자</span></div>
+  <div style="display:flex; flex-direction:column; gap:8px"><label class="lb" for="pd">한 줄 소개 <span style="font-weight:500; color:var(--muted)">(선택)</span></label><input id="pd" class="inp" maxlength="60" autocomplete="off" placeholder="예: 점심 먹고 같이 걸어요"></div>
+  <div style="display:flex; flex-direction:column; gap:10px">
+    <span class="lb">파티 챌린지</span>
+    <div class="chips" id="chips" role="radiogroup" aria-label="파티 챌린지"></div>
+    <span class="sm">파티원 모두 같은 챌린지를 파티 안에서 완료 한 번으로 인증해요. 내 4주 챌린지와는 따로 쌓여요. 흡연·음주는 고를 수 없어요.</span>
+  </div>
+  <div style="display:flex; flex-direction:column; gap:10px">
+    <span class="lb">인원</span>
+    <div class="cap"><span style="font-size:15px">파티장 포함 최대</span><span style="font-size:20px; font-weight:800">6명</span></div>
+    <div class="bars"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <span class="sm">지금은 나 혼자예요. 만든 뒤에 초대 코드를 보내 친구를 불러요.</span>
+  </div>
+  <div class="callout">· 초대 코드를 아는 사람만 들어올 수 있어요.<br>· 건강정보(혈압, 진단명 등)는 적지 마세요.</div>
+  <p class="err" id="err" hidden></p>
+  <button type="button" class="cta" id="go" disabled>파티 만들기</button>
+</div></div></div></div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+document.getElementById('back').innerHTML = ICON.back;
+const pn = document.getElementById('pn'), pd = document.getElementById('pd'), go = document.getElementById('go'), err = document.getElementById('err'), chips = document.getElementById('chips');
+let picked = null;
+const ready = () => { go.disabled = !(pn.value.trim().length >= 2 && picked); err.hidden = true; };
+pn.addEventListener('input', ready);
+apiCall('GET', '/parties/challenges', undefined, '챌린지 목록을 불러오지 못했어요').then(r => {
+  r.data.forEach(c => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = c.challenge_name; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', 'false');
+    b.addEventListener('click', () => {
+      picked = c.challenge_code;
+      chips.querySelectorAll('.chip').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); });
+      ready();
+    });
+    chips.appendChild(b);
+  });
+}).catch(e => { err.textContent = friendlyError(e); err.hidden = false; });
+const MSG = {
+  PARTY_NAME_INVALID: '파티 이름은 2~12자로 지어 주세요.',
+  PARTY_CHALLENGE_INVALID: '파티에서 고를 수 없는 챌린지예요. 다른 챌린지를 골라 주세요.',
+  PARTY_ALREADY_JOINED: '이미 파티에 들어가 있어요.',
+};
+go.addEventListener('click', async () => {
+  go.disabled = true;
+  try {
+    await apiCall('POST', '/parties', { name: pn.value.trim(), intro: pd.value.trim() || undefined, challenge_code: picked }, '파티를 만들지 못했어요');
+    location.href = 'party-home.html';
+  } catch (e) {
+    err.textContent = MSG[e.code] || friendlyError(e);
+    err.hidden = false; go.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

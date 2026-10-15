@@ -87,10 +87,10 @@ function loggedIn(){ try { return !!localStorage.getItem('paeon-access-token'); 
 // 하단 탭 5개. 챌린지는 진행 중인 사이클이 있으면 수행 화면, 없으면 시작 화면으로 간다.
 const NAV_ITEMS = [
   { icon: ICON.record, label: '내 기록', href: 'trend.html', pages: ['trend.html', 'twelve-weeks.html', 'reassessment.html'] },
-  { icon: ICON.challenge, label: '챌린지', href: localStorage.getItem('paeon-cycle') ? 'challenge-progress.html' : 'challenges.html', pages: ['challenges.html', 'challenge-progress.html'] },
+  { icon: ICON.challenge, label: '챌린지', href: localStorage.getItem('paeon-cycle') ? 'challenge-progress.html' : 'challenges.html', pages: ['challenges.html', 'challenge-progress.html', 'badges.html'] },
   { icon: ICON.home, label: '홈', href: 'dashboard.html', pages: ['dashboard.html', 'health-info.html', 'survey.html', 'review.html', 'result.html', 'calendar-diary.html'] },
-  { icon: ICON.community, label: '커뮤니티', href: 'feed.html', pages: ['feed.html', 'write.html', 'post.html', 'nickname.html', 'common-challenges.html', 'common-challenge.html'] },
-  { icon: ICON.more, label: '더보기', href: 'menu.html', pages: ['menu.html', 'mypage.html', 'inquiries.html', 'guide.html', 'terms.html', 'pie.html'] },
+  { icon: ICON.community, label: '커뮤니티', href: 'feed.html', pages: ['feed.html', 'write.html', 'post.html', 'nickname.html', 'common-challenges.html', 'common-challenge.html', 'party.html', 'party-start.html', 'party-create.html', 'party-home.html'] },
+  { icon: ICON.more, label: '더보기', href: 'menu.html', pages: ['menu.html', 'mypage.html', 'inquiries.html', 'guide.html', 'terms.html', 'character.html', 'pie.html'] },
 ];
 // 안 읽은 문의 답변 수. 로그인하지 않았거나 서버에 닿지 않으면 0 (메뉴만 빠지고 화면은 그대로 동작한다)
 async function inquiryUnread() {
@@ -211,4 +211,87 @@ function modelANoticeHtml(models) {
   const a = (models || []).find(m => m.model_code === 'MODEL_A');
   return a && !a.comparable && a.before_status === 'completed' && a.after_status === 'completed'
     ? '<p class="hint" style="margin:0 0 8px">모델이 업데이트되어 이번에는 비교하지 않아요. 다음 4주부터 비교해요.</p>' : '';
+}
+
+// ---- 캐릭터 그리기: 서버가 주는 조합 {body,color,expr,face,head} → 16x20 픽셀 SVG (시안 CharacterCreate의 그리기 코드)
+const CHARACTER_DEFAULT = { body: 'mongle', color: '#AACDDC', expr: 'basic', face: 'none', head: 'none' };
+function characterSvg(view, px) {
+  const s = { ...CHARACTER_DEFAULT, ...(view || {}) };
+  if (!/^#[0-9A-Fa-f]{6}$/.test(s.color)) s.color = CHARACTER_DEFAULT.color;
+    const BODIES = {
+      mongle: { top: 3, rows: ['................', '...oo......oo...', '..obbo....obbo..', '..obbboooobbbo..', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '..obboooooobbo..', '..oooo....oooo..'] },
+      bobo: { top: 2, rows: ['................', '................', '.....oooooo.....', '...ooobbbbooo...', '..obbbbbbbbbbo..', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '...obbbbbbbbo...', '....oooooooo....'] },
+      rabbit: { top: 3, rows: ['...oooo..oooo...', '...obbo..obbo...', '...obbo..obbo...', '..ooobbbbbbooo..', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '...obbbbbbbbo...', '....oooooooo....'] },
+      bear: { top: 3, rows: ['................', '..ooo......ooo..', '.obbbo....obbbo.', '.obbbboooobbbbo.', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '..obboooooobbo..', '..oooo....oooo..'] },
+      ghost: { top: 2, rows: ['................', '................', '.....oooooo.....', '...ooobbbbooo...', '..obbbbbbbbbbo..', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbobbobbobbobbo', 'ooo.oo.oo.oo.ooo'] },
+      dino: { top: 3, rows: ['................', '...o...o...o....', '..obo.obo.obo...', '.obbbbbbbbbbbbo.', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '..obboooooobbo..', '..oooo....oooo..'] },
+      square: { top: 2, rows: ['................', '................', '..oooooooooooo..', '.obbbbbbbbbbbbo.', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..oooooooooooo..'] },
+      cat: { top: 3, rows: ['................', '..o..........o..', '..oo........oo..', '..obboooooobbo..', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '..obboooooobbo..', '..oooo....oooo..'] }
+    };
+    // 머리 장식이 몸 위로 삐져나와도 잘리지 않게 위에 4줄을 더 둔다 (좌표는 몸 기준 그대로 쓰고 put이 4줄을 더해 준다)
+    const OFF = 4;
+    const g = Array.from({ length: OFF }, () => Array(16).fill('.')).concat(BODIES[s.body].rows.map((r) => r.split('')));
+    const put = (r, c, ch) => { if (r + OFF >= 0 && r + OFF < g.length && c >= 0 && c < 16) g[r + OFF][c] = ch; };
+    const many = (list, ch) => list.forEach(([r, c]) => put(r, c, ch));
+    const cheeks = [[9, 2], [9, 3], [9, 12], [9, 13]];
+    const smile = [[10, 6], [10, 9], [11, 7], [11, 8]];
+    const E = {
+      basic: [[[7, 4], [7, 5], [8, 4], [8, 5], [7, 10], [7, 11], [8, 10], [8, 11], [10, 7], [10, 8]]],
+      smile: [[[8, 4], [7, 5], [8, 6], [8, 9], [7, 10], [8, 11]].concat(smile)],
+      sleepy: [[[8, 4], [8, 5], [8, 10], [8, 11], [10, 7]]],
+      wow: [[[7, 4], [7, 5], [8, 4], [8, 5], [9, 4], [9, 5], [7, 10], [7, 11], [8, 10], [8, 11], [9, 10], [9, 11], [10, 7], [10, 8], [11, 7], [11, 8]]],
+      wink: [[[8, 4], [8, 5], [7, 10], [7, 11], [8, 10], [8, 11]].concat(smile)],
+      heart: [smile],
+      angry: [[[8, 4], [8, 5], [8, 10], [8, 11], [6, 4], [7, 5], [7, 10], [6, 11], [11, 6], [11, 7], [11, 8], [11, 9]]],
+      cry: [[[7, 4], [7, 5], [8, 4], [8, 5], [7, 10], [7, 11], [8, 10], [8, 11], [11, 6], [11, 7], [11, 8], [11, 9]]],
+      sparkle: [smile]
+    };
+    const EXTRA = {
+      heart: [['r', [[7, 4], [7, 6], [8, 4], [8, 5], [8, 6], [9, 5], [7, 9], [7, 11], [8, 9], [8, 10], [8, 11], [9, 10]]]],
+      cry: [['t', [[9, 4], [10, 4], [9, 11], [10, 11]]]],
+      sparkle: [['y', [[7, 5], [8, 4], [8, 5], [8, 6], [9, 5], [7, 10], [8, 9], [8, 10], [8, 11], [9, 10]]]]
+    };
+    many(cheeks, 'c');
+    many(E[s.expr][0], 'e');
+    (EXTRA[s.expr] || []).forEach(([ch, list]) => many(list, ch));
+
+    if (s.face === 'glasses') {
+      for (let c = 3; c <= 6; c++) { put(6, c, 'o'); put(9, c, 'o'); }
+      for (let c = 9; c <= 12; c++) { put(6, c, 'o'); put(9, c, 'o'); }
+      [3, 6, 9, 12].forEach((c) => { put(7, c, 'o'); put(8, c, 'o'); });
+      put(7, 7, 'o'); put(7, 8, 'o');
+    }
+    if (s.face === 'shades') {
+      for (let c = 3; c <= 6; c++) { put(7, c, 'o'); put(8, c, 'o'); }
+      for (let c = 9; c <= 12; c++) { put(7, c, 'o'); put(8, c, 'o'); }
+      put(7, 7, 'o'); put(7, 8, 'o');
+    }
+    if (s.face === 'mask') {
+      for (let c = 4; c <= 11; c++) { put(10, c, 'w'); put(11, c, 'w'); }
+      put(10, 3, 'o'); put(10, 12, 'o');
+    }
+
+    if (s.face === 'whiskers') { many([[10, 1], [10, 2], [11, 1], [10, 13], [10, 14], [11, 14]], 'o'); }
+    if (s.face === 'freckles') { many([[9, 5], [10, 4], [9, 10], [10, 11], [10, 3], [10, 12]], 'k'); }
+    if (s.face === 'mustache') { many([[10, 5], [10, 6], [10, 9], [10, 10], [11, 4], [11, 11]], 'o'); }
+    if (s.face === 'eyepatch') { for (let c = 3; c <= 6; c++) { put(7, c, 'o'); put(8, c, 'o'); } many([[6, 4], [5, 5], [6, 8], [6, 12], [5, 13]], 'o'); }
+    // 머리 장식: b는 머리 맨 위 테두리 줄. 장식은 이 줄과 겹치게(머리 위에 얹은 것처럼) 몸 앞에 그린다
+    const b = BODIES[s.body].top;
+    const H = {
+      sprout: [['g', [[b - 1, 7], [b - 2, 7], [b - 3, 6], [b - 3, 8], [b - 2, 6], [b - 2, 8]]]],
+      crown: [['y', [[b - 2, 5], [b - 2, 7], [b - 2, 8], [b - 2, 10], [b - 1, 5], [b - 1, 6], [b - 1, 7], [b - 1, 8], [b - 1, 9], [b - 1, 10], [b, 5], [b, 6], [b, 7], [b, 8], [b, 9], [b, 10]]]],
+      bow: [['r', [[b - 1, 10], [b - 1, 12], [b, 10], [b, 12], [b + 1, 10], [b + 1, 12]]], ['y', [[b, 11]]]],
+      flower: [['r', [[b - 1, 11], [b, 10], [b, 12], [b + 1, 11]]], ['y', [[b, 11]]]],
+      star: [['y', [[b - 3, 8], [b - 2, 7], [b - 2, 8], [b - 2, 9], [b - 1, 8]]]],
+      halo: [['y', [[b - 3, 6], [b - 3, 7], [b - 3, 8], [b - 3, 9], [b - 2, 5], [b - 2, 10], [b - 1, 6], [b - 1, 7], [b - 1, 8], [b - 1, 9]]]],
+      horns: [['r', [[b, 4], [b - 1, 4], [b - 2, 3], [b, 11], [b - 1, 11], [b - 2, 12]]]],
+      party: [['r', [[b, 5], [b, 6], [b, 7], [b, 8], [b, 9], [b, 10], [b - 1, 6], [b - 1, 7], [b - 1, 8], [b - 1, 9], [b - 2, 7], [b - 2, 8]]], ['y', [[b - 3, 7], [b - 3, 8]]]]
+    };
+    (H[s.head] || []).forEach(([ch, list]) => many(list, ch));
+
+    const fills = { k: '#B5835A', t: '#7FB6E8', o: '#243749', e: '#243749', m: '#243749', b: s.color, h: '#FFFFFF', c: '#E8B9A5', g: '#6FA58A', y: '#F2C94C', r: '#E58F9B', w: '#DCE8EF' };
+  let rects = '';
+  g.forEach((row, y) => row.forEach((ch, x) => { if (fills[ch]) rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${fills[ch]}"/>`; }));
+  const w = px || 40;
+  return `<svg width="${w}" height="${Math.round(w * 1.25)}" viewBox="0 0 16 20" shape-rendering="crispEdges" role="img" aria-label="캐릭터">${rects}</svg>`;
 }

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 내 배지</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .screen{gap:20px; padding-bottom:84px}
+  .sum{display:flex; align-items:center; gap:20px; background:var(--cream); border-radius:28px; padding:22px}
+  .sum .rg{position:relative; width:96px; height:96px; flex:none}
+  .sum .rg svg{transform:rotate(-90deg)}
+  .sum .rg div{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:800; letter-spacing:-.5px}
+  .sum .rg small{font-size:15px; color:var(--muted); font-weight:700}
+  .sum .tx{display:flex; flex-direction:column; gap:6px}
+  .sum .tt{font-size:20px; font-weight:800; letter-spacing:-.4px}
+  .sum .sd{font-size:14px; color:#4A5C6D; line-height:1.5}
+  h2{font-size:18px; font-weight:800; margin:0}
+  .grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px 10px; margin-top:-8px}
+  .b{display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center}
+  .b .c{width:76px; height:76px; box-sizing:border-box; border-radius:38px; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:800; color:var(--ink)}
+  .b .c svg{width:34px; height:34px}
+  .b.off .c{border:1.5px dashed #D2C4B4; color:var(--muted)}
+  .b .nm{font-size:13px; font-weight:700}
+  .b.off .nm{font-weight:400; color:var(--muted)}
+  .b .ht{font-size:11px; color:var(--muted); line-height:1.4}
+  .foot{font-size:12px; color:var(--muted); line-height:1.6; text-align:center}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen">
+        <div class="page-bar"><a class="back" href="challenge-progress.html" aria-label="뒤로"><span data-icon="back"></span></a><span class="ttl">내 배지</span></div>
+        <div id="err" class="callout" style="display:none"></div>
+        <div id="main"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const ic = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const LOCK = ic('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>');
+const GLYPH = {
+  first: ic('<path d="M8 12.5l3 3 5-6"/><circle cx="12" cy="12" r="9"/>'),
+  week_1: ic('<path d="M6 20V5M6 5h11l-2 4 2 4H6"/>'),
+  exercise_10: ic('<path d="M3 13h4l2.5-6 4 11 2.5-5H21"/>'),
+  bp_4: ic('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
+  cycle_1: LOCK, cycle_2: LOCK, cycle_12w: LOCK,
+};
+
+function badgeHtml(b) {
+  const bg = b.group === 'record' ? '#F3E3D0' : (b.code === 'first' || b.code === 'streak_3' ? '#AACDDC' : '#81A6C6');
+  const inner = GLYPH[b.code] || b.code.split('_')[1];
+  return `<div class="b${b.earned ? '' : ' off'}"><span class="c"${b.earned ? ` style="background:${bg}"` : ''}>${inner}</span><span class="nm">${esc(b.label)}</span>${b.earned ? '' : `<span class="ht">${esc(b.hint)}</span>`}</div>`;
+}
+
+function render(d) {
+  const next = d.next;
+  const title = d.earned_count >= d.total ? '모두 모았어요' : d.earned_count ? '꾸준히 모으는 중이에요' : '첫 배지를 모아 봐요';
+  const sub = next ? `다음 배지: ${esc(next.label)}<br>${esc(next.hint)}` : '배지를 모두 모았어요';
+  const group = (g) => d.badges.filter(b => b.group === g).map(badgeHtml).join('');
+  document.getElementById('main').innerHTML = `<div style="display:flex; flex-direction:column; gap:20px">
+    <div class="sum">
+      <div class="rg"><svg width="96" height="96" viewBox="0 0 100 100" role="img" aria-label="${d.total}개 중 ${d.earned_count}개 모음"><circle cx="50" cy="50" r="42" fill="none" stroke="#E6DBCD" stroke-width="9"/><circle cx="50" cy="50" r="42" fill="none" stroke="#5C86AC" stroke-width="9" stroke-linecap="round" stroke-dasharray="${(264 * d.earned_count / d.total).toFixed(1)} 264"/></svg><div>${d.earned_count}<small>/${d.total}</small></div></div>
+      <div class="tx"><span class="tt">${title}</span><span class="sd">${sub}</span></div>
+    </div>
+    <h2>연속 달성</h2><div class="grid">${group('streak')}</div>
+    <h2>완주와 기록</h2><div class="grid">${group('record')}</div>
+    <div class="foot">배지는 습관을 이어 가는 기록일 뿐, 건강 상태를 평가하지 않아요.</div>
+  </div>`;
+}
+
+apiCall('GET', '/badges', undefined, '배지를 불러오지 못했어요').then(r => render(r.data)).catch(e => {
+  const el = document.getElementById('err'); el.style.display = 'block'; el.textContent = friendlyError(e);
+});
+</script>
+</body>
+</html>

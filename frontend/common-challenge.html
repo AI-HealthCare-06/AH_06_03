@@ -57,6 +57,14 @@ document.getElementById('back').innerHTML = ICON.back;
 const id = new URLSearchParams(location.search).get('id');
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const ERR = { NICKNAME_REQUIRED: '닉네임을 먼저 정해 주세요.', ALREADY_CERTIFIED: '오늘은 이미 인증했어요.', STEPS_NOT_ENOUGH: '목표 걸음 수에 아직 못 미쳤어요.', STEPS_REQUIRED: '걸음 수를 적어 주세요.', NOT_JOINED: '먼저 챌린지에 참여해 주세요.', COMMON_CHALLENGE_ENDED: '이미 끝난 챌린지예요.', COMMON_CHALLENGE_NOT_ACTIVE: '아직 시작하지 않았거나 끝난 챌린지예요.', ALREADY_JOINED: '이미 참여하고 있어요.' };
+const _avc = {};
+const _avView = (n) => _avc[n] || (_avc[n] = apiCall('GET', '/characters/by-nickname/' + encodeURIComponent(n), undefined, '').then(r => r.data));
+function hydrateAvatars(root, px) {
+  (root || document).querySelectorAll('[data-av]:not([data-done])').forEach(el => {
+    el.dataset.done = '1';
+    _avView(el.dataset.av).then(v => { el.innerHTML = characterSvg(v, px || 40); }).catch(() => {});
+  });
+}
 function dateRange(a, b) {
   const f = (s) => { const d = new Date(s + 'T00:00:00'); return (d.getMonth() + 1) + '.' + d.getDate() + '(' + '일월화수목금토'[d.getDay()] + ')'; };
   return f(a) + ' ~ ' + f(b);
@@ -70,6 +78,7 @@ function render() {
     + (c.joined ? '<div class="me"><span style="width:48px; height:48px; border-radius:16px; background:#fff; display:flex; align-items:center; justify-content:center; flex:none">' + ICON.pie + '</span><div style="flex:1"><div class="l">내 순위</div><div class="v">' + (c.my_rank ? c.my_rank + '위' : '아직 없어요') + '</div></div><div style="text-align:right"><div style="font-size:15px; font-weight:800">인증 ' + c.my_days + '일</div></div></div>' : '')
     + '<div><div style="display:flex; align-items:baseline; justify-content:space-between; padding-bottom:8px"><span class="sect" style="margin:0">순위</span><span style="font-size:12px; color:var(--muted)">인증한 일수 기준</span></div>' + (rows.length ? rows.join('') : '<div class="empty" style="padding:20px 0">아직 인증한 사람이 없어요.</div>') + '</div>'
     + '<div class="hint" style="line-height:1.7">순위는 인증한 일수로만 정해져요. 혈압 같은 건강 수치는 서로 비교하지 않아요. 보상 파이는 챌린지가 끝난 뒤 한꺼번에 들어와요.</div></div>';
+  hydrateAvatars(document.getElementById('main'), 34);
   const bar = document.getElementById('bar'); bar.hidden = false;
   if (c.state === 'ended') { bar.innerHTML = '<button type="button" class="cta" disabled>' + (c.finalized ? '순위가 확정되었어요' : '종료된 챌린지예요') + '</button>'; return; }
   if (!c.joined) { bar.innerHTML = '<button type="button" class="cta" id="join">참여하기</button>'; document.getElementById('join').addEventListener('click', join); return; }
