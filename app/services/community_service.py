@@ -1,0 +1,256 @@
+"""커뮤니티: 닉네임, 글, 댓글, 좋아요, 신고(이용자 쪽).
+
+- 닉네임을 정해야 글·댓글을 쓸 수 있다. 처음 정할 때 파이 시작 선물 10개.
+- 글쓰기는 하루 3번까지 파이 2개를 받는다 (한국 날짜 기준).
+- 운영팀이 숨긴 글은 작성자에게만 안내와 함께 보이고, 다른 사람의 목록·상세에는 나오지 않는다.
+- 글·댓글은 건강정보를 적지 않는 곳이라, 신고(건강정보 포함 사유)로 운영팀이 숨긴다.
+"""
+from datetime import timedelta
+
+from sqlalchemy import delete, exists, func, or_, select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.errors import AppError
+from app.core.security import utcnow
+from app.models.community import (
+    CommunityComment, CommunityLike, CommunityPost, CommunityProfile, CommunityReport,
+)
+from app.schemas.community import (
+    CommentCreate, CommentItem, LikeResult, MyCommunity, PostCreate, PostCreated, PostDetail, PostItem, PostList,
+    ReportRequest, ReportResult,
+)
+from app.services import pie_service
+
+WELCOME_PIE = 10
+POST_PIE = 2
+POST_PIE_PER_DAY = 3
+HIDDEN_NOTICE = "운영 정책에 따라 숨김 처리됐어요"
+PREVIEW_LEN = 100
+POPULAR_DAYS = 30
+
+
+# ---------------------------------------------------------------- 닉네임
+async def get_me(db: AsyncSession, user_id: str) -> MyCommunity:
+    p = await db.get(CommunityProfile, user_id)
+    return MyCommunity(nickname=p.nickname if p else None)
+
+
+async def set_nickname(db: AsyncSession, user_id: str, nickname: str) -> MyCommunity:
+    taken = (await db.execute(select(CommunityProfile.user_id).where(
+        CommunityProfile.nickname == nickname, CommunityProfile.user_id != user_id))).first()
+    if taken is not None:
+        raise AppError(409, "NICKNAME_TAKEN", "이미 쓰고 있는 닉네임이에요. 다른 닉네임을 적어 주세요.")
+    p = await db.get(CommunityProfile, user_id)
+    gift = 0
+    if p is None:
+        db.add(CommunityProfile(user_id=user_id, nickname=nickname, created_at=utcnow()))
+        if await pie_service.add(db, user_id, WELCOME_PIE, pie_service.WELCOME, "welcome"):
+            gift = WELCOME_PIE
+    else:
+        p.nickname = nickname
+    try:
+        await db.commit()
+    except IntegrityError:          # 동시에 같은 닉네임을 정한 경우
+        await db.rollback()
+        raise AppError(409, "NICKNAME_TAKEN", "이미 쓰고 있는 닉네임이에요. 다른 닉네임을 적어 주세요.")
+    return MyCommunity(nickname=nickname, pie_gift=gift)
+
+
+async def require_nickname(db: AsyncSession, user_id: str) -> str:
+    p = await db.get(CommunityProfile, user_id)
+    if p is None:
+        raise AppError(409, "NICKNAME_REQUIRED", "닉네임을 먼저 정해 주세요.")
+    return p.nickname
+
+
+def not_found(what: str = "글") -> AppError:
+    return AppError(404, "COMMUNITY_NOT_FOUND", f"{what}을 찾을 수 없어요.")
+
+
+# ---------------------------------------------------------------- 글
+def _like_count():
+    return (select(func.count()).select_from(CommunityLike)
+            .where(CommunityLike.post_id == CommunityPost.post_id).correlate(CommunityPost).scalar_subquery())
+
+
+def _comment_count():
+    return (select(func.count()).select_from(CommunityComment)
+            .where(CommunityComment.post_id == CommunityPost.post_id, CommunityComment.status == "visible")
+            .correlate(CommunityPost).scalar_subquery())
+
+
+def _liked_by(user_id: str):
+    return exists().where(CommunityLike.post_id == CommunityPost.post_id, CommunityLike.user_id == user_id)
+
+
+def _item(p: CommunityPost, nickname: str | None, likes: int, comments: int, liked: bool, me: str) -> dict:
+    hidden = p.status == "hidden"
+    return dict(
+        post_id=p.post_id, category=p.category, title=p.title, preview="" if hidden else p.body[:PREVIEW_LEN],
+        author_nickname=nickname or "알 수 없음", created_at=p.created_at, like_count=likes, comment_count=comments,
+        liked_by_me=bool(liked), mine=p.user_id == me, hidden=hidden, notice=HIDDEN_NOTICE if hidden else None,
+    )
+
+
+def _visible_to(user_id: str):
+    """남에게는 visible만, 내 글은 숨김 처리된 것도 (삭제된 글은 아무에게도 안 보인다)."""
+    return or_(CommunityPost.status == "visible",
+               (CommunityPost.status == "hidden") & (CommunityPost.user_id == user_id))
+
+
+async def _load_post(db: AsyncSession, user_id: str, post_id: str):
+    row = (await db.execute(
+        select(CommunityPost, CommunityProfile.nickname, _like_count(), _comment_count(), _liked_by(user_id))
+        .outerjoin(CommunityProfile, CommunityProfile.user_id == CommunityPost.user_id)
+        .where(CommunityPost.post_id == post_id, _visible_to(user_id))
+    )).first()
+    if row is None:
+        raise not_found()
+    return row
+
+
+async def create_post(db: AsyncSession, user_id: str, req: PostCreate) -> PostCreated:
+    nickname = await require_nickname(db, user_id)
+    post = CommunityPost(user_id=user_id, category=req.category, title=req.title, body=req.body,
+                         status="visible", created_at=utcnow())
+    db.add(post)
+    await db.flush()
+    gain = 0
+    if await pie_service.count_today(db, user_id, pie_service.POST_WRITE) < POST_PIE_PER_DAY:
+        if await pie_service.add(db, user_id, POST_PIE, pie_service.POST_WRITE, post.post_id):
+            gain = POST_PIE
+    await db.commit()
+    return PostCreated(**_item(post, nickname, 0, 0, False, user_id), body=post.body, pie_gain=gain)
+
+
+async def list_posts(db: AsyncSession, user_id: str, category: str | None, sort: str, q: str | None,
+                     limit: int, offset: int) -> PostList:
+    base = select(CommunityPost).where(_visible_to(user_id))
+    if category:
+        base = base.where(CommunityPost.category == category)
+    if sort == "popular":
+        base = base.where(CommunityPost.created_at >= utcnow() - timedelta(days=POPULAR_DAYS))
+    if q and q.strip():
+        like = q.strip()
+        base = base.where(or_(CommunityPost.title.contains(like, autoescape=True),
+                              CommunityPost.body.contains(like, autoescape=True)))
+    total = int((await db.execute(select(func.count()).select_from(base.subquery()))).scalar_one())
+    likes = _like_count()
+    stmt = (select(CommunityPost, CommunityProfile.nickname, likes, _comment_count(), _liked_by(user_id))
+            .outerjoin(CommunityProfile, CommunityProfile.user_id == CommunityPost.user_id)
+            .where(CommunityPost.post_id.in_(select(base.subquery().c.post_id))))
+    stmt = stmt.order_by(likes.desc(), CommunityPost.created_at.desc()) if sort == "popular" \
+        else stmt.order_by(CommunityPost.created_at.desc(), CommunityPost.post_id)
+    rows = (await db.execute(stmt.limit(limit).offset(offset))).all()
+    return PostList(total=total, items=[PostItem(**_item(p, n, lk, cm, ld, user_id)) for p, n, lk, cm, ld in rows])
+
+
+async def get_post(db: AsyncSession, user_id: str, post_id: str) -> PostDetail:
+    p, n, lk, cm, ld = await _load_post(db, user_id, post_id)
+    return PostDetail(**_item(p, n, lk, cm, ld, user_id), body="" if p.status == "hidden" else p.body)
+
+
+async def _remove_post_rows(db: AsyncSession, post_id: str) -> None:
+    """글에 딸린 좋아요·댓글·신고를 지운다 (DB의 CASCADE와 같은 결과, 테스트 DB에서도 같게 동작하도록 직접 지운다)."""
+    comment_ids = select(CommunityComment.comment_id).where(CommunityComment.post_id == post_id)
+    await db.execute(delete(CommunityReport).where(
+        or_(CommunityReport.post_id == post_id, CommunityReport.comment_id.in_(comment_ids))))
+    await db.execute(delete(CommunityLike).where(CommunityLike.post_id == post_id))
+    await db.execute(delete(CommunityComment).where(CommunityComment.post_id == post_id))
+
+
+async def delete_post(db: AsyncSession, user_id: str, post_id: str) -> None:
+    p = await db.get(CommunityPost, post_id)
+    if p is None or p.user_id != user_id or p.status == "deleted":
+        raise not_found()
+    await _remove_post_rows(db, post_id)
+    await db.delete(p)
+    await db.commit()
+
+
+async def toggle_like(db: AsyncSession, user_id: str, post_id: str) -> LikeResult:
+    await require_nickname(db, user_id)
+    p = await db.get(CommunityPost, post_id)
+    if p is None or p.status != "visible":
+        raise not_found()
+    mine = (await db.execute(select(CommunityLike).where(
+        CommunityLike.post_id == post_id, CommunityLike.user_id == user_id))).scalar_one_or_none()
+    if mine is None:
+        db.add(CommunityLike(post_id=post_id, user_id=user_id))
+        liked = True
+    else:
+        await db.delete(mine)
+        liked = False
+    await db.commit()
+    count = (await db.execute(select(func.count()).select_from(CommunityLike)
+                              .where(CommunityLike.post_id == post_id))).scalar_one()
+    return LikeResult(liked=liked, like_count=int(count))
+
+
+# ---------------------------------------------------------------- 댓글
+async def list_comments(db: AsyncSession, user_id: str, post_id: str) -> list[CommentItem]:
+    await _load_post(db, user_id, post_id)
+    rows = (await db.execute(
+        select(CommunityComment, CommunityProfile.nickname)
+        .outerjoin(CommunityProfile, CommunityProfile.user_id == CommunityComment.user_id)
+        .where(CommunityComment.post_id == post_id, CommunityComment.status == "visible")
+        .order_by(CommunityComment.created_at, CommunityComment.comment_id))).all()
+    return [CommentItem(comment_id=c.comment_id, body=c.body, author_nickname=n or "알 수 없음",
+                        created_at=c.created_at, mine=c.user_id == user_id) for c, n in rows]
+
+
+async def create_comment(db: AsyncSession, user_id: str, post_id: str, req: CommentCreate) -> CommentItem:
+    nickname = await require_nickname(db, user_id)
+    p = await db.get(CommunityPost, post_id)
+    if p is None or p.status != "visible":
+        raise not_found()
+    c = CommunityComment(post_id=post_id, user_id=user_id, body=req.body, status="visible", created_at=utcnow())
+    db.add(c)
+    await db.commit()
+    return CommentItem(comment_id=c.comment_id, body=c.body, author_nickname=nickname, created_at=c.created_at, mine=True)
+
+
+async def delete_comment(db: AsyncSession, user_id: str, comment_id: str) -> None:
+    c = await db.get(CommunityComment, comment_id)
+    if c is None or c.user_id != user_id or c.status == "deleted":
+        raise not_found("댓글")
+    await db.execute(delete(CommunityReport).where(CommunityReport.comment_id == comment_id))
+    await db.delete(c)
+    await db.commit()
+
+
+# ---------------------------------------------------------------- 신고
+async def _report(db: AsyncSession, user_id: str, key: str, req: ReportRequest, **target) -> ReportResult:
+    dup = (await db.execute(select(CommunityReport.report_id).where(
+        CommunityReport.user_id == user_id, CommunityReport.target_key == key))).first()
+    if dup is not None:
+        raise AppError(409, "ALREADY_REPORTED", "이미 신고한 글이에요.")
+    db.add(CommunityReport(user_id=user_id, target_key=key, reason=req.reason, created_at=utcnow(), **target))
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise AppError(409, "ALREADY_REPORTED", "이미 신고한 글이에요.")
+    return ReportResult()
+
+
+async def report_post(db: AsyncSession, user_id: str, post_id: str, req: ReportRequest) -> ReportResult:
+    p = await db.get(CommunityPost, post_id)
+    if p is None or p.status != "visible":
+        raise not_found()
+    if p.user_id == user_id:
+        raise AppError(400, "REPORT_OWN", "내 글은 신고할 수 없어요.")
+    return await _report(db, user_id, f"post:{post_id}", req, post_id=post_id)
+
+
+async def report_comment(db: AsyncSession, user_id: str, comment_id: str, req: ReportRequest) -> ReportResult:
+    c = await db.get(CommunityComment, comment_id)
+    if c is None or c.status != "visible":
+        raise not_found("댓글")
+    if c.user_id == user_id:
+        raise AppError(400, "REPORT_OWN", "내 댓글은 신고할 수 없어요.")
+    post = await db.get(CommunityPost, c.post_id)
+    if post is None or post.status != "visible":
+        raise not_found("댓글")
+    return await _report(db, user_id, f"comment:{comment_id}", req, comment_id=comment_id)
