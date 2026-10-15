@@ -168,7 +168,7 @@ function missionCardHtml(m, d, editable) {
   const week = m.weeks[Math.min(3, Math.floor(selectedIdx / 7))];
   const pct = Math.round(week.rate * 100);
   return `<div class="mission-card">
-    <div class="mt">${esc(m.card.name)} <span class="lvl" data-l="${LEVEL_LABEL[m.card.difficulty]}">${LEVEL_LABEL[m.card.difficulty]}</span></div>
+    <div class="mt"><span class="ctag ${/^(SMK|ALC)/.test(m.card.code || '') ? 'fixed' : 'selected'}">${/^(SMK|ALC)/.test(m.card.code || '') ? '고정' : '선택'}</span> ${esc(m.card.name)} <span class="lvl" data-l="${LEVEL_LABEL[m.card.difficulty]}">${LEVEL_LABEL[m.card.difficulty]}</span></div>
     <div class="mq">${esc(m.card.question)}</div>
     ${editable ? answerHtml(m, log) : `<div class="logged ${log ? log.status : ''}">${log ? STATUS_LABEL[log.status] : '기록 없음'}</div>`}
     ${editable && log ? `<div class="logged ${log.status}">오늘 기록: ${STATUS_LABEL[log.status]}</div>` : ''}
