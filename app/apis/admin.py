@@ -16,6 +16,7 @@ from app.schemas.admin import (
     PurgeRequest, PurgeResult,
 )
 from app.schemas.common import DataResponse
+from app.schemas.admin import SuspendRequest
 from app.schemas.inquiry import AdminGuestDetail, AdminGuestList, AdminInquiryDetail, AdminInquiryList, AnswerRequest
 from app.services import admin_service, admin_users_service, audit_service, guest_inquiry_service, inquiry_service
 
@@ -138,3 +139,24 @@ async def guest_inquiry_detail(inquiry_id: str, admin: str = Depends(require_adm
 @router.put("/guest-inquiries/{inquiry_id}/answer", response_model=DataResponse[AdminGuestDetail])
 async def answer_guest_inquiry(inquiry_id: str, req: AnswerRequest, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
     return DataResponse(data=await guest_inquiry_service.admin_answer(db, admin, inquiry_id, req.answer))
+
+
+# ---------------------------------------------------------------- 회원 조치 (신고 처리 등에서)
+@router.post("/users/{user_id}/suspend", status_code=204)
+async def suspend_user(user_id: str, req: SuspendRequest, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
+    """이용 정지. days를 비우면 무기한. 관리자 계정은 정지할 수 없다."""
+    await admin_users_service.suspend(db, admin, user_id, req.days)
+    return Response(status_code=204)
+
+
+@router.post("/users/{user_id}/unsuspend", status_code=204)
+async def unsuspend_user(user_id: str, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
+    await admin_users_service.unsuspend(db, admin, user_id)
+    return Response(status_code=204)
+
+
+@router.delete("/users/{user_id}", status_code=204)
+async def delete_user(user_id: str, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
+    """회원 탈퇴 처리(모든 데이터 삭제, 되돌릴 수 없음). 관리자 계정은 지울 수 없다."""
+    await admin_users_service.delete_user(db, admin, user_id)
+    return Response(status_code=204)

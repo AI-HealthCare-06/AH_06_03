@@ -150,6 +150,7 @@ class AdminReportItem(BaseModel):
     target_id: str
     title: str                    # 글 제목 (댓글이면 그 댓글이 달린 글의 제목)
     author_nickname: str
+    author_user_id: str | None = None   # 정지·삭제 같은 계정 조치에 쓰는 작성자 번호 (관리자에게만 내려간다)
     category: str                 # 글의 카테고리 (댓글이면 달린 글의 카테고리)
     report_count: int
     pending_count: int            # 아직 처리하지 않은 신고 수

@@ -60,7 +60,7 @@ async def _item(db: AsyncSession, key: str, rs: list[CommunityReport], pending: 
     handled = [r for r in rs if r.action is not None]
     last_action = max(handled, key=lambda r: r.handled_at).action if handled else None
     return AdminReportItem(
-        target_type=kind, target_id=target_id, title=title, author_nickname=nick or "알 수 없음", category=category,
+        target_type=kind, target_id=target_id, title=title, author_nickname=nick or "알 수 없음", author_user_id=author_id, category=category,
         report_count=len(rs), pending_count=pending, reasons=reasons, preview=text[:PREVIEW_LEN], status=state,
         action=last_action, last_reported_at=max(r.created_at for r in rs),
     )

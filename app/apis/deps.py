@@ -7,6 +7,7 @@ from app.core.db.databases import async_get_db
 from app.core.errors import AppError
 from app.core.security import decode_access_token
 from app.repositories import user_repository
+from app.services import suspension
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -25,4 +26,5 @@ async def get_current_user_id(
     user = await user_repository.get_user_by_id(db, user_id)
     if user is None or user.status == "deleted":
         raise AppError(401, "AUTH_UNAUTHORIZED", "다시 로그인해 주세요.")
+    suspension.check(user)
     return user_id
