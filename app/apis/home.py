@@ -51,6 +51,8 @@ class Badge(BaseModel):
     hint: str                   # 아직 못 받았을 때 보여 줄 조건
     earned: bool
     earned_on: date | None
+    progress: int               # 받기까지 지금까지 한 만큼 (받았으면 목표와 같다)
+    target: int                 # 받기 위한 목표 (연속 일수, 횟수 등)
 
 
 class BadgeSummary(BaseModel):

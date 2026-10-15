@@ -97,3 +97,12 @@ async def test_파티_카드는_파티_글에서만_붙일_수_있다(client, db
     (a, ha), _, _ = await _setup(client, db_session)
     r = await client.post("/v1/community/posts", json={**POST, "attach": {"party_card": True}}, headers=ha)
     assert r.status_code == 409 and r.json()["error"]["code"] == "ATTACH_NOT_ALLOWED"
+
+
+async def test_배지에_받기까지_진행_정도가_함께_나온다(client, db_session):
+    (a, ha), _, _ = await _setup(client, db_session)
+    b = (await client.get("/v1/badges", headers=ha)).json()["data"]["badges"]
+    by = {x["code"]: x for x in b}
+    assert by["streak_7"]["target"] == 7 and by["streak_7"]["progress"] == 0 and not by["streak_7"]["earned"]
+    assert by["exercise_10"]["target"] == 10 and by["bp_4"]["target"] == 4
+    assert by["cycle_12w"]["target"] == 3 and by["first"]["target"] == 1

@@ -58,6 +58,19 @@ def _first_full_week(cycles: dict) -> date | None:
     return best
 
 
+def _best_week(cycles: dict) -> tuple[int, int]:
+    """가장 잘한 한 주에 주간 목표를 채운 미션 수와 전체 미션 수 (1주 완주 배지의 진행 정도)."""
+    best, total = 0, 0
+    for c in cycles.values():
+        total = max(total, len(c["missions"]))
+        for w in range(4):
+            ws = c["start"] + timedelta(days=7 * w)
+            we = ws + timedelta(days=6)
+            hit = sum(1 for target, dates in c["missions"].values() if sum(1 for d in dates if ws <= d <= we) >= target)
+            best = max(best, hit)
+    return best, total
+
+
 async def my_badges(db: AsyncSession, user_id: str) -> dict:
     rows = await _cycle_rows(db, user_id)
     earned: dict[str, date] = {}
@@ -103,8 +116,21 @@ async def my_badges(db: AsyncSession, user_id: str) -> dict:
     if len(bp) >= 4:
         earned["bp_4"] = bp[3]
 
-    badges = [{"code": c, "label": l, "group": g, "hint": h, "earned": c in earned, "earned_on": earned.get(c)}
-              for c, l, g, h in BADGES]
+    # 받기까지 얼마나 왔는지 (화면이 파이 조각처럼 채워서 보여 준다): 코드 → (지금까지, 목표)
+    longest = max((length for _, length in streak_service.runs(days)), default=0)
+    week_hit, week_total = _best_week(cycles)
+    progress = {"first": (len(completed), 1), "week_1": (week_hit, week_total or 3),
+                "exercise_10": (len(exercises), 10), "bp_4": (len(bp), 4)}
+    for n in (3, 5, 7, 14, 28):
+        progress[f"streak_{n}"] = (longest, n)
+    for i, code in enumerate(["cycle_1", "cycle_2", "cycle_12w"]):
+        progress[code] = (len(finished), i + 1)
+    badges = []
+    for c, l, g, h in BADGES:
+        done, goal = progress[c]
+        got = c in earned
+        badges.append({"code": c, "label": l, "group": g, "hint": h, "earned": got, "earned_on": earned.get(c),
+                       "progress": goal if got else min(done, goal), "target": goal})
     nxt = next((b for b in badges if not b["earned"]), None)
     return {"earned_count": len(earned), "total": len(BADGES), "next": nxt, "badges": badges}
 
