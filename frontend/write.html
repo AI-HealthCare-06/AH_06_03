@@ -43,7 +43,7 @@
           <span class="hint">미션 이름과 인증한 일수만 붙어요. 혈압이나 걸음 수 같은 수치는 붙지 않아요.</span></div>
 
         <div>
-          <input class="tt" id="title" maxlength="100" placeholder="제목" aria-label="제목">
+          <input class="tt" id="title" maxlength="100" placeholder="제목" aria-label="제목" data-t>
           <textarea class="bd" id="body" maxlength="1000" placeholder="오늘의 챌린지 이야기를 남겨 보세요" aria-label="내용"></textarea>
           <div style="text-align:right; font-size:13px; color:var(--muted)"><span id="cnt">0</span> / 1000</div>
         </div>
@@ -80,12 +80,12 @@ function renderAttach() {
   $('att-card').innerHTML = o ? '<div class="att-card"><span class="ctag ' + KIND[o.kind][1] + '">' + KIND[o.kind][0] + '</span><div class="nm"><b>' + esc(o.label) + '</b><span>인증 ' + o.days + '일째</span></div><button type="button" id="att-del">빼기</button></div>' : '';
   const del = $('att-del'); if (del) del.addEventListener('click', () => { st.pick = null; renderAttach(); });
 }
-function check() { $('submit').disabled = !($('title').value.trim() && $('body').value.trim()); $('cnt').textContent = $('body').value.length; }
+function check() { $('submit').disabled = !(($('title').value.trim() || st.to === 'party') && $('body').value.trim()); $('cnt').textContent = $('body').value.length; }
 ['title', 'body'].forEach(id => $(id).addEventListener('input', check));
 // 올릴 곳: 전체 커뮤니티 / 내 파티 (파티 글은 파티원에게만 보이고 카테고리가 없다)
 function renderTo() {
   $('to-all').classList.toggle('on', st.to === 'all'); $('party').classList.toggle('on', st.to === 'party');
-  $('cat-sec').hidden = st.to === 'party';
+  $('cat-sec').hidden = st.to === 'party'; $('title').hidden = st.to === 'party'; check();
 }
 $('to-all').addEventListener('click', () => { st.to = 'all'; renderTo(); });
 $('party').addEventListener('click', async () => {
@@ -96,7 +96,7 @@ if (new URLSearchParams(location.search).get('to') === 'party') st.to = 'party';
 apiCall('GET', '/parties/me', undefined, '').then(() => { st.inParty = true; renderTo(); }).catch(() => { if (st.to === 'party') { st.to = 'all'; renderTo(); } });
 $('submit').addEventListener('click', async () => {
   $('submit').disabled = true; $('err').hidden = true;
-  const payload = { category: st.to === 'party' ? 'tips' : st.cat, title: $('title').value.trim(), body: $('body').value.trim() };
+  const payload = { category: st.to === 'party' ? 'tips' : st.cat, title: st.to === 'party' ? $('body').value.trim().slice(0, 30) : $('title').value.trim(), body: $('body').value.trim() };
   const o = st.pick === null ? null : st.options[st.pick];
   if (o) payload.attach = o.mission_code ? { mission_code: o.mission_code } : { common_challenge_id: o.common_challenge_id };
   try {

@@ -35,6 +35,13 @@
   .sub a,.sub span{height:40px; padding:0 18px; border-radius:20px; display:inline-flex; align-items:center; font-size:14px; text-decoration:none; box-sizing:border-box; border:1px solid var(--sage); color:var(--ink)}
   .sub .on{background:var(--accent-light); border-color:var(--accent-light); color:#1E3246; font-weight:700}
   .pill{height:28px; padding:0 12px; border-radius:14px; background:var(--notice); color:#234257; font-size:13px; font-weight:800; display:inline-flex; align-items:center}
+  .post .av{width:44px; height:44px; border-radius:14px}
+  .post .who{display:flex; flex-direction:column; gap:1px; min-width:0}
+  .post .who b{font-size:15px; font-weight:800; color:var(--ink)}
+  .post .who .ld{font-size:12px; font-weight:700; color:var(--muted); margin-left:6px}
+  .post .who .tm{font-size:12px; color:var(--muted)}
+  .post .pv{font-size:15px; color:#3B5063; line-height:1.65}
+  .post .top{gap:12px}
 </style>
 </head>
 <body>
@@ -73,6 +80,7 @@ const CATS = [['', 'latest', '전체'], ['', 'popular', '인기'], ['diet', 'lat
 const CAT_LABEL = { diet: '식단', exercise: '운동', challenge: '챌린지 인증', tips: '고민과 꿀팁' };
 const KIND = { fixed: ['고정', 'fixed'], selected: ['선택', 'selected'], common: ['공통', 'common'] };
 const PAGE = 20;
+const LEADERS = new Set();
 const st = { cat: 0, q: '', offset: 0, total: 0, items: [], nickname: undefined };
 
 const _avc = {};
@@ -95,10 +103,10 @@ function attachHtml(a) {
 }
 function postHtml(p) {
   const nick = p.author_nickname || '알 수 없음';
+  const lead = LEADERS.has(nick) ? ' <span class="ld">파티장</span>' : '';
   return `<a class="post" href="post.html?id=${encodeURIComponent(p.post_id)}&from=party">
     <div class="top"><span class="av" aria-hidden="true"${p.author_nickname ? ` data-av="${esc(nick)}"` : ''}>${esc(nick.slice(0, 1))}</span>
-      <div><div class="meta"><span>${esc(nick)} · ${ago(p.created_at)}</span></div>
-      <div class="ttl">${esc(p.title)}</div></div></div>
+      <div class="who"><div><b>${esc(nick)}</b>${lead}</div><span class="tm">${ago(p.created_at)}</span></div></div>
     ${p.hidden ? `<div class="pv" style="color:var(--muted)">${esc(p.notice || '')}</div>` : `<div class="pv">${esc(p.preview)}</div>`}
     ${attachHtml(p.attach)}
     <div class="cnt"><span>좋아요 ${p.like_count}</span><span>댓글 ${p.comment_count}</span></div></a>`;
@@ -119,6 +127,7 @@ apiCall('GET', '/characters/me', undefined, '').then(r => { document.getElementB
 (async () => {
   try {
     const home = (await apiCall('GET', '/parties/me', undefined, '파티를 불러오지 못했어요')).data;
+    home.members.forEach(m => { if (m.is_leader) LEADERS.add(m.nickname); });
     document.getElementById('pname').textContent = home.party.name;
     document.getElementById('pcount').textContent = home.party.member_count + ' / ' + home.party.max_members + '명';
     await load(false);
