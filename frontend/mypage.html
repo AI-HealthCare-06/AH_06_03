@@ -72,11 +72,10 @@ function render() {
         <div class="field"><label>생년월일</label><input id="p-birth" type="date" value="${me.birth_date || ''}" max="${new Date().toISOString().slice(0, 10)}"></div>
         <div class="field"><label>성별</label><select id="p-sex"><option value="male" ${me.sex === 'male' ? 'selected' : ''}>남성</option><option value="female" ${me.sex === 'female' ? 'selected' : ''}>여성</option></select></div>
         ${state.perr ? `<p class="err">${state.perr}</p>` : ''}
-        <p class="hint" style="margin:0">저장하면 새 정보로 바로 다시 분석하고, 분석 결과 화면으로 이동해요.</p>
         <div style="display:flex; gap:8px"><button type="button" id="p-save" class="ghost">저장</button><button type="button" id="p-cancel" class="ghost">취소</button></div></div>`
       : `<button type="button" id="p-edit" class="ln"><span class="k">생년월일</span><span class="v">${(me.birth_date || '').replace(/-/g, '.')}${chev}</span></button>
       <button type="button" id="p-edit2" class="ln last"><span class="k">성별</span><span class="v">${SEX_LABEL[me.sex] || '미입력'}${chev}</span></button>
-      <div class="callout">생년월일이나 성별을 수정하면 새 정보로 바로 다시 분석하고, 분석 결과 화면으로 이동해요. 입력한 건강정보가 아직 없으면 저장만 해요.</div>`}` : ''}
+      <div class="callout">수정하면 새 정보로 다시 분석하고 결과 화면으로 이동해요.</div>`}` : ''}
     </div>
 
     <div class="grp" style="gap:12px">

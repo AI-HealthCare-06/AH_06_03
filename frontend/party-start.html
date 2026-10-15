@@ -20,7 +20,8 @@
   .join input{flex:1; min-width:0; height:52px; border:0; border-radius:14px; background:var(--cream); padding:0 16px; font:700 16px inherit; letter-spacing:1px; color:var(--ink)}
   .join button{width:84px; height:52px; border-radius:14px; border:1px solid #D2C4B4; background:#fff; font:700 15px inherit; color:var(--ink); cursor:pointer}
   .join button:disabled{color:var(--muted); cursor:not-allowed}
-  .rules{display:flex; flex-direction:column; gap:6px; font-size:13px; color:var(--muted); line-height:1.65}
+  .rules{display:flex; flex-direction:column; gap:6px; background:var(--notice); border-radius:18px; padding:16px 18px; font-size:13px; color:var(--muted)}
+  .rules b{font-size:17px; font-weight:800; color:var(--ink)}
 </style>
 </head>
 <body>
@@ -35,7 +36,7 @@
   <div class="hero">
     <div class="crew" id="crew" aria-hidden="true"></div>
     <h2>같이 하면<br>더 오래 해요</h2>
-    <p>친구와 파티를 만들어 서로 챌린지 인증을 응원하고, 파티 안에서만 글을 나눠요.</p>
+    <p>친구와 같은 챌린지를 함께 인증해요.</p>
     <a class="cta" href="party-create.html">파티 만들기</a>
   </div>
   <div style="display:flex; flex-direction:column; gap:10px">
@@ -44,9 +45,9 @@
     <p class="err" id="err" hidden></p>
   </div>
   <div class="rules">
-    <span>· 파티는 파티장을 포함해 최대 6명이에요.</span>
-    <span>· 한 사람이 하나의 파티에 들어갈 수 있어요.</span>
-    <span>· 파티 글은 파티원에게만 보여요. 건강정보는 적지 마세요.</span>
+    <b>파티는 최대 6명</b>
+    <b>파티는 한 사람당 하나</b>
+    <span>건강정보는 적지 마세요.</span>
   </div>
 </div></div></div></div>
 <script src="assets/common.js"></script>

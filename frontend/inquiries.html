@@ -67,11 +67,11 @@ function render() {
   if (state.view === 'new') {
     $screen.innerHTML = `
       ${pageBar('inquiries.html', '문의 남기기')}
-      <div class="callout" style="background:var(--cream); color:var(--body); font-size:14px; line-height:1.65">궁금한 점을 편하게 적어 주세요. 건강 관련 질문도 괜찮아요. 문의는 서비스 안에서만 보관되고, 답변은 이 화면에서 확인할 수 있어요.</div>
+      <div class="callout" style="background:var(--cream); color:var(--body); font-size:14px; line-height:1.65">건강 관련 질문도 괜찮아요. 답변은 이 화면에서 확인해요.</div>
       <div class="field"><label>제목</label><input id="q-title" maxlength="100" value="${esc(state.draft.title)}" placeholder="예: 결과가 이해되지 않아요"></div>
       <div class="field"><label>내용</label><textarea id="q-body" maxlength="2000" placeholder="문의 내용을 적어 주세요">${esc(state.draft.body)}</textarea><div class="cnt"><span id="q-cnt">${state.draft.body.length}</span> / 2000</div></div>
       ${state.err ? `<p class="err">${esc(state.err)}</p>` : ''}
-      <p class="hint">로그인이 안 되거나 가입이 안 될 때는 로그인 화면의 <a href="guest-inquiry.html" style="color:inherit; text-decoration:underline">비회원 문의</a>를 써 주세요.</p>
+      <p class="hint">로그인이 안 되면 <a href="guest-inquiry.html" style="color:inherit; text-decoration:underline">비회원 문의</a>를 써요.</p>
       <div class="bar"><button type="button" class="ghost" id="q-cancel" style="width:96px">취소</button><button type="button" class="cta" id="q-send" style="flex:1" ${state.busy ? 'disabled' : ''}>${state.busy ? '보내는 중...' : '문의 보내기'}</button></div>`;
     const body = document.getElementById('q-body');
     body.addEventListener('input', () => { document.getElementById('q-cnt').textContent = body.value.length; });
@@ -93,7 +93,7 @@ function render() {
       <div class="box"><span class="lb">내 문의</span>${esc(d.body)}</div>
       ${d.answer
         ? `<div class="box ans"><span class="lb">답변 · ${kst(d.answered_at)}</span>${esc(d.answer)}</div>`
-        : '<div class="box ans"><span class="lb">답변</span>아직 답변을 준비하고 있어요. 답변이 오면 알려 드릴게요.</div>'}
+        : '<div class="box ans"><span class="lb">답변</span>아직 답변을 준비하고 있어요.</div>'}
       <div class="bar"><button type="button" class="ghost" id="q-back">목록으로</button></div>`;
     document.getElementById('q-back').addEventListener('click', () => { state.view = 'list'; load(); });
     document.getElementById('back').addEventListener('click', (e) => { e.preventDefault(); state.view = 'list'; load(); });
@@ -110,7 +110,7 @@ function render() {
     <div class="fl">${FL.map(([f, t]) => `<button type="button" data-f="${f}" class="${state.filter === f ? 'on' : ''}">${t}</button>`).join('')}</div>
     ${state.list === null ? '<p class="hint">불러오는 중...</p>'
       : items.length ? `<div class="list">${items.map(i => `<button type="button" class="inq" data-id="${esc(i.inquiry_id)}"><span class="top">${tag(i)}<span class="d">${day(i.created_at)}</span></span><span class="t">${esc(i.title)}</span>${i.body ? `<span class="pv">${esc(i.body)}</span>` : ''}</button>`).join('')}</div>`
-      : '<p class="hint">남긴 문의가 없어요. 궁금한 점이 있으면 편하게 남겨 주세요.</p>'}
+      : '<p class="hint">남긴 문의가 없어요.</p>'}
     <div class="bar"><button type="button" class="cta" id="q-new">＋ 문의 작성하기</button></div>`;
   document.getElementById('q-new').addEventListener('click', () => { state.view = 'new'; state.err = ''; state.notice = ''; render(); });
   $screen.querySelectorAll('.inq').forEach(b => b.addEventListener('click', () => open(b.dataset.id)));
@@ -136,7 +136,7 @@ async function send() {
   state.busy = true; state.err = ''; render();
   try {
     await apiCall('POST', '/inquiries', { title, body }, '문의를 보내지 못했습니다');
-    state.draft = { title: '', body: '' }; state.view = 'list'; state.notice = '문의를 남겼어요. 답변이 오면 알려 드릴게요.';
+    state.draft = { title: '', body: '' }; state.view = 'list'; state.notice = '문의를 남겼어요.';
     state.busy = false; await load(); return;
   } catch (e) { state.err = friendlyError(e); }
   state.busy = false; render();

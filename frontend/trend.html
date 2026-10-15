@@ -173,7 +173,7 @@ function renderList() {
 
   html += '<div class="sec"><span class="t">4주 기록</span>';
   if (!cycles.length) {
-    html += '<div class="callout"><b>기록이 쌓이면 여기에 변화가 보입니다</b><br>챌린지를 시작하고 4주 뒤 재입력을 하면 혈압 변화가 그려져요.</div><a class="ghost" href="challenges.html">챌린지 시작하기</a></div>';
+    html += '<div class="callout"><b>기록이 쌓이면 변화가 보여요</b></div><a class="ghost" href="challenges.html">챌린지 시작하기</a></div>';
     $('app').innerHTML = html;
     return;
   }
@@ -202,8 +202,8 @@ function cyclePane(rv) {
   if (!rv.reassessed) {
     const day = c.started_on ? Math.min(28, Math.max(1, Math.floor((Date.now() - new Date(c.started_on)) / 864e5) + 1)) : null;
     return head + (run
-      ? `<div class="pend"><b>아직 4주가 끝나지 않았어요</b>${day ? `<div class="tr"><i style="width:${Math.round(day / 28 * 100)}%"></i></div><span class="s">${day} / 28일 진행 중이에요. 4주가 끝나면 다시 입력하고 처음과 비교해 드려요.</span>` : ''}<a class="cta" href="challenge-progress.html">오늘 인증하기</a></div>`
-      : `<div class="pend"><b>4주가 끝났어요</b><span class="s">지금 상태를 입력하면 처음과 비교해 드려요.</span><a class="cta" href="reassessment.html?cycle=${encodeURIComponent(rv.cycle_id)}">${rv.cycle_number}차 4주 재입력하기</a></div>`);
+      ? `<div class="pend"><b>아직 4주가 끝나지 않았어요</b>${day ? `<div class="tr"><i style="width:${Math.round(day / 28 * 100)}%"></i></div><span class="s">${day} / 28일 · 4주가 끝나면 다시 입력해요</span>` : ''}<a class="cta" href="challenge-progress.html">오늘 인증하기</a></div>`
+      : `<div class="pend"><b>4주가 끝났어요</b><span class="s">지금 상태를 입력해 주세요.</span><a class="cta" href="reassessment.html?cycle=${encodeURIComponent(rv.cycle_id)}">${rv.cycle_number}차 4주 재입력하기</a></div>`);
   }
   const b = rv.before || {}, a = rv.after || {}, m = modelA(rv), cmpA = m && m.comparable;
   const rate = c.cycle_rate != null ? Math.round(c.cycle_rate * 100) + '%' : '—';
@@ -222,8 +222,7 @@ function twelveSection(cycles) {
       rate: rated.length ? Math.round(rated.reduce((s, c) => s + c.cycle_rate, 0) / rated.length * 100) : null };
   }).sort((x, y) => y.n - x.n);
   return `<div class="sec" style="gap:8px; padding-top:8px"><div class="wkhd"><span class="t">지난 12주 기록</span><a href="twelve-weeks.html">전체 보기 (${ps.length})</a></div>
-    ${ps.slice(0, 3).map(p => `<a class="wk${p.running ? ' run' : ''}" href="${p.running ? 'challenge-progress.html' : 'twelve-weeks.html'}"><div class="tx"><b>${p.n}번째 12주 <em>· ${p.running ? '진행 중' : '완료'}</em></b><span>${mdKo(p.start)}${p.end ? ' ~ ' + mdKo(p.end) : ' 시작'} · ${p.running ? `4주 ${p.done}번 마침` : p.rate != null ? `평균 달성률 ${p.rate}%` : ''}</span></div>${p.running ? '' : ICON.chevron}</a>`).join('')}
-    <div class="small">진행 중인 12주와 최근 기록만 보여요. 지난 기록은 전체 보기에서 볼 수 있어요.</div></div>`;
+    ${ps.slice(0, 3).map(p => `<a class="wk${p.running ? ' run' : ''}" href="${p.running ? 'challenge-progress.html' : 'twelve-weeks.html'}"><div class="tx"><b>${p.n}번째 12주 <em>· ${p.running ? '진행 중' : '완료'}</em></b><span>${mdKo(p.start)}${p.end ? ' ~ ' + mdKo(p.end) : ' 시작'} · ${p.running ? `4주 ${p.done}번 마침` : p.rate != null ? `평균 달성률 ${p.rate}%` : ''}</span></div>${p.running ? '' : ICON.chevron}</a>`).join('')}</div>`;
 }
 
 function renderCompare(rv) {
@@ -243,8 +242,8 @@ function renderCompare(rv) {
       <div class="rw"><span>흡연</span><span>${SMOKING[b.smoking] || '—'} → <b>${SMOKING[a.smoking] || '—'}</b></span></div>
       <div class="rw"><span>음주</span><span>${DRINK[b.drink_freq] || '—'} → <b>${DRINK[a.drink_freq] || '—'}</b></span></div></div>
     ${modelANoticeHtml(rv.models)}
-    ${chg ? `<div class="simbox"><span class="a">혈압이 정상인 사람들의 전체 자료와 비교했어요</span><span class="b">${chg}</span><span class="a">허리둘레, 몸무게, 술은 내가 바꿀 수 있는 부분이에요. 4주 뒤에 다시 비교해 봐요.</span></div>` : ''}
-    <div class="small" style="font-size:13px; line-height:1.7">진단이 아닌 선별 정보입니다. AI가 분석한 참고 정보이며, 정확한 진단은 의사에게 문의하세요.</div>
+    ${chg ? `<div class="simbox"><span class="a">혈압이 정상인 사람들의 전체 자료와 비교했어요</span><span class="b">${chg}</span><span class="a">허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</span></div>` : ''}
+    <div class="small" style="font-size:13px; line-height:1.7">진단이 아닌 참고 정보입니다. AI가 분석한 참고 정보이며, 정확한 진단은 의사에게 문의하세요.</div>
     ${rv.cycle_number < rv.total_cycles ? `<a class="cta" style="height:56px; border-radius:28px; font-size:17px" href="challenges.html">${rv.cycle_number + 1}차 챌린지 시작하기</a>` : ''}
     <a class="ghost" href="twelve-weeks.html">12주 기록 보기</a>`;
   $('cmp-back').addEventListener('click', (e) => { e.preventDefault(); renderList(); window.scrollTo(0, 0); });
@@ -258,7 +257,7 @@ document.addEventListener('click', (e) => {
 
 (async () => {
   try { DATA = await loadReviews(); }
-  catch (e) { $('app').innerHTML = '<div class="callout"><b>불러오지 못했어요</b><br>잠시 뒤 다시 열어 주세요. 계속 안 되면 다시 로그인해 주세요.</div>'; return; }
+  catch (e) { $('app').innerHTML = '<div class="callout"><b>불러오지 못했어요</b><br>잠시 뒤 다시 열어 주세요.</div>'; return; }
   const last = DATA.reviews.filter(r => r.reassessed).pop();
   SEL = last ? last.cycle_id : 'start';
   renderList();

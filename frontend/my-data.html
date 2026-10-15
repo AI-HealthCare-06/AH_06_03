@@ -141,18 +141,18 @@ const profile = read('paeon-profile');
 
 document.getElementById('doc').innerHTML = `
   <h3>내 데이터</h3>
-  <p class="meta">파이온 PAEON · ${stamp} 기준 · 이 기기에 저장된 값을 정리했어요</p>
+  <p class="meta">파이온 PAEON · ${stamp} 기준</p>
   ${section('기본 정보', profileRows(profile))}
   ${section('건강정보', healthRows(read('paeon-health')))}
   ${section('생활습관 설문', surveyRows(read('paeon-survey')))}
   ${section('분석 결과', predictionRows(read('paeon-prediction')))}
   ${section('챌린지', challengeRows(read('paeon-cycle'), read('paeon-progress')))}
-  <p class="foot">진단이 아닌 선별 정보입니다. AI가 분석한 참고 정보이며, 정확한 진단은 의사에게 문의하세요.<br>이 문서의 값은 이 기기(브라우저)에 저장된 값이에요. 서버에 저장된 모든 원본 기록은 마이페이지의 "원본 데이터 내려받기(JSON)"로 받을 수 있어요.</p>
+  <p class="foot">진단이 아닌 참고 정보입니다. AI가 분석한 참고 정보이며, 정확한 진단은 의사에게 문의하세요.<br>이 기기에 저장된 값이에요. 서버 원본은 마이페이지의 "원본 데이터 내려받기(JSON)"로 받아요.</p>
   <div class="actions no-print">
     <a class="ghost" href="mypage.html">돌아가기</a>
     <button type="button" class="cta" id="print-btn">PDF로 저장</button>
   </div>
-  <p class="hint no-print" style="text-align:center; margin-top:8px">인쇄 창에서 '대상(프린터)'을 <b>PDF로 저장</b>으로 고르면 파일로 저장돼요.</p>`;
+  <p class="hint no-print" style="text-align:center; margin-top:8px">인쇄 창에서 <b>PDF로 저장</b>을 고르세요.</p>`;
 document.getElementById('back').innerHTML = ICON.back;
 document.getElementById('print-btn').addEventListener('click', () => window.print());
 </script>

@@ -29,6 +29,7 @@
   .sheet .grab{width:36px; height:4px; border-radius:2px; background:var(--sage); align-self:center}
   .sheet b{font-size:16px}
   .rb{height:52px; border:1px solid var(--sage); border-radius:14px; background:#fff; font-size:15px; text-align:left; padding:0 16px}
+  .ph{width:100%; aspect-ratio:4/3; border-radius:14px; background:#F3E3D0 center/cover no-repeat}
 </style>
 </head>
 <body>
@@ -85,6 +86,7 @@ function renderPost() {
     + '<div class="head"><span class="av"' + (p.author_nickname ? ' data-av="' + esc(nick) + '"' : '') + '>' + esc(nick.slice(0, 1)) + '</span><div><div class="meta"><span class="cat">' + esc(CAT_LABEL[p.category] || '') + '</span>' + esc(nick) + ' · ' + ago(p.created_at) + '</div></div></div>'
     + (new URLSearchParams(location.search).get('from') === 'party' ? '' : '<h1 class="ttl2">' + esc(p.title) + '</h1>')
     + (p.hidden ? '<div class="callout">' + esc(p.notice || '') + '</div>' : '<div class="bodytx">' + esc(p.body) + '</div>') + att
+    + (p.hidden ? '' : Array.from({ length: p.photo_count || 0 }, (_, i) => '<div class="ph" data-ph="' + esc(p.post_id) + '" data-n="' + i + '"></div>').join(''))
     + '<div class="acts"><button type="button" class="like' + (p.liked_by_me ? ' on' : '') + '" id="like">좋아요 <span id="lc">' + p.like_count + '</span></button>'
     + (p.mine ? '<button type="button" class="lnk" id="del">삭제</button>' : '<button type="button" class="lnk" id="rep">신고</button>') + '</div></div>';
   $('like').addEventListener('click', onLike);
@@ -92,6 +94,7 @@ function renderPost() {
   if ($('rep')) $('rep').addEventListener('click', () => sheet('신고 사유를 골라 주세요', REASONS, (v) => report('posts/' + id, v)));
   $('cmbar').hidden = !!p.hidden;
   hydrateAvatars($('post'), 40);
+  document.querySelectorAll('#post [data-ph]').forEach(el => apiPhotoUrl(el.dataset.ph, +el.dataset.n).then(u => { el.style.backgroundImage = `url(${u})`; }).catch(() => {}));
 }
 async function onLike() {
   try {

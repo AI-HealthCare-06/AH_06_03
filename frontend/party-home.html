@@ -64,7 +64,7 @@
     </div>
     <div style="display:flex; flex-direction:column; gap:6px">
       <div style="display:flex; align-items:baseline; justify-content:space-between"><span style="font-size:18px; font-weight:800">파티원 인증 현황</span><span id="day" style="font-size:13px; color:var(--muted)"></span></div>
-      <div style="display:flex; align-items:center; gap:8px; background:var(--cream); border-radius:14px; padding:12px 14px"><span class="ctag" style="background:#A9D6C2; color:#0F2E20">파티</span><span id="cname" style="font-size:14px; font-weight:700"></span><span style="font-size:12px; color:var(--muted); margin-left:auto">파티원 모두 같은 챌린지</span></div>
+      <div style="display:flex; align-items:center; gap:8px; background:var(--cream); border-radius:14px; padding:12px 14px"><span class="ctag" style="background:#A9D6C2; color:#0F2E20">파티</span><span id="cname" style="font-size:14px; font-weight:700"></span></div>
       <div class="legend"><span><i style="background:#5C86AC"></i>오늘 완료</span><span><i style="border:2px solid #D2C4B4"></i>오늘 미완료</span></div>
       <div id="members" style="border-bottom:1px solid var(--line)"></div>
     </div>
@@ -73,6 +73,7 @@
       <span id="remain" style="font-size:13px; color:#4A5C6D; text-align:right; line-height:1.6"></span>
     </div>
     <p class="err" id="err2" hidden></p>
+    <div style="font-size:17px; font-weight:800; text-align:center">인증은 하루 한 번</div>
     <button type="button" class="cta" id="checkin">오늘 완료</button>
     <button type="button" class="leave" id="leave">파티 나가기</button>
   </div>
@@ -104,9 +105,9 @@ function render(h) {
       <div class="info"><span class="nm" style="${m.is_me ? 'font-weight:800' : ''}">${esc(m.nickname)} <small>${tag ? tag + ' · ' : ''}${m.days_total}일 중 ${m.days_done}일</small></span><div class="bar"><i style="width:${pct}%"></i></div></div>
       <span class="ck${m.done_today ? ' done' : (m.is_me ? ' me' : '')}" aria-label="${m.done_today ? '오늘 완료' : '오늘 미완료'}">${m.done_today ? CHECK : ''}</span></div>`;
   }).join('') + Array.from({ length: left }, () =>
-    `<div class="mrow vacant"><span class="face"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span style="flex:1; font-size:15px; color:var(--muted)">빈자리 · 초대 코드를 보내 보세요</span></div>`).join('');
+    `<div class="mrow vacant"><span class="face"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span style="flex:1; font-size:15px; color:var(--muted)">빈자리</span></div>`).join('');
   $('streak').textContent = h.streak + '일째';
-  $('remain').innerHTML = h.today_all_done ? '오늘은 모두 인증했어요' : '오늘 ' + h.today_remaining + '명 남았어요<br>모두 인증하면 ' + (h.streak + 1) + '일로 이어져요';
+  $('remain').innerHTML = h.today_all_done ? '오늘은 모두 인증했어요' : '오늘 ' + h.today_remaining + '명 남았어요';
   const me = h.members.find(m => m.is_me);
   if (me) $('me-char').innerHTML = characterSvg(me.character, 36);
   const done = !!(me && me.done_today);
@@ -134,7 +135,7 @@ $('checkin').addEventListener('click', async () => {
   catch (e) { fail($('err2'), e); $('checkin').disabled = false; }
 });
 $('leave').addEventListener('click', async () => {
-  if (!await confirmDialog('파티를 나갈까요?', '나가면 이 파티에서 한 인증 기록도 지워져요. 마지막 한 명이 나가면 파티가 없어져요.', '나가기')) return;
+  if (!await confirmDialog('파티를 나갈까요?', '나가면 이 파티의 인증 기록이 지워져요. 마지막 한 명이 나가면 파티가 없어져요.', '나가기')) return;
   try { await apiCall('POST', '/parties/me/leave', undefined, '파티에서 나가지 못했어요'); location.href = 'party-start.html'; }
   catch (e) { fail($('err2'), e); }
 });

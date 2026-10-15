@@ -58,7 +58,7 @@
       <div class="screen ov">
         <h3>운영 현황 (관리자)</h3>
         <p class="nav"><a href="admin.html">← 미션 관리·통계·기록</a></p>
-        <p class="meta">숫자만 보여요. 이메일이나 사용자 번호는 나오지 않고, 이 화면을 연 것도 관리자 행위 기록에 남아요.</p>
+        <p class="meta">숫자만 보여요. 연 기록은 관리자 기록에 남아요.</p>
         <div id="msg" role="status" aria-live="polite"></div>
         <div id="content"></div>
       </div>
@@ -118,7 +118,7 @@ function renderActivity(list) {
     el('td', {}, String(a.returning_users))));
   return el('div', {}, range, el('div', { class: 'card' },
     el('table', { class: 't' }, el('thead', {}, el('tr', {}, ...head.map((h) => el('th', {}, h)))), el('tbody', {}, ...rows))),
-    el('p', { class: 'meta' }, '날짜는 한국 시각 기준이고 최근 날짜가 위예요. 재방문은 그 전에도 로그인한 적이 있는 사용자 수예요. 로그인 기록은 93일이 지나면 자동으로 지워져서 그 이전 날짜는 비어 있어요. 2026-10-12 이전에 가입한 계정의 가입 날짜는 예전 오류 때문에 정확하지 않을 수 있어요.'));
+    el('p', { class: 'meta' }, '한국 시각 기준, 최근 날짜가 위예요. 로그인 기록은 93일 뒤 지워져요. 2026-10-12 이전 가입 날짜는 부정확할 수 있어요.'));
 }
 
 function renderConsents(list) {
@@ -166,14 +166,14 @@ function render(d) {
   const csv = el('button', { class: 'btn', type: 'button', onclick: (ev) => downloadCsv(ev.currentTarget) }, '집계 CSV 내려받기');
   $content.replaceChildren(
     el('h4', {}, '체험 진행 현황'),
-    el('p', { class: 'meta' }, '각 단계까지 간 사용자 수예요. 막대가 갑자기 짧아지는 곳이 사용자가 멈추는 단계예요.'),
+    el('p', { class: 'meta' }, '단계별 사용자 수예요. 막대가 확 짧아지는 곳에서 멈춰요.'),
     renderFunnel(d.funnel),
-    el('h4', {}, '날짜별 활동'), el('p', { class: 'meta' }, '신규 가입과 로그인 수예요. 사용자를 알아볼 수 있는 값 없이 숫자만 세요.'), renderActivity(d.activity),
+    el('h4', {}, '날짜별 활동'), el('p', { class: 'meta' }, '신규 가입과 로그인 수예요.'), renderActivity(d.activity),
     el('h4', {}, '동의 현황'), renderConsents(d.consents),
     el('h4', {}, '삭제 현황'), renderDeletions(d.deletions),
     el('h4', {}, '서비스 상태'), renderStatus(d.status),
     el('h4', {}, '내보내기'),
-    el('p', { class: 'meta' }, '진행 현황, 동의 현황, 미션 통계의 집계 숫자만 담겨요. 사용자별 행은 없어요.'),
+    el('p', { class: 'meta' }, '집계 숫자만 담겨요.'),
     csv);
 }
 

@@ -247,9 +247,8 @@ function todoListHtml(entry) {
   return `<div class="todos">
     <h3>오늘 할 일</h3>
     ${chalLogHtml(selectedKey)}${rows}
-    <div class="recs"><div><b>건강 활동을 추천해요</b><br><span class="s">눌러서 오늘 할 일에 넣어 보세요</span></div><div class="chips">${chips}</div></div>
+    <div class="recs"><div><b>건강 활동을 추천해요</b><br><span class="s">눌러서 추가해요</span></div><div class="chips">${chips}</div></div>
     <div class="add-row"><label for="todo-input" style="position:absolute; left:-9999px">할 일 직접 추가</label><input id="todo-input" placeholder="내 할 일 직접 적기"><button type="button" id="todo-add">추가</button></div>
-    <p class="note" style="margin-top:8px">구체적인 횟수나 시간을 적으면 해내기 쉬워요</p>
   </div>`;
 }
 

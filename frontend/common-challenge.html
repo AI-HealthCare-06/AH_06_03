@@ -34,6 +34,10 @@
   .bar{position:fixed; left:50%; transform:translateX(-50%); bottom:84px; width:100%; max-width:430px; padding:12px 20px; background:#fff; border-top:1px solid var(--line); z-index:55}
   .stepbox{display:flex; gap:8px; margin-bottom:8px}
   .stepbox input{flex:1; height:48px; border:0; border-radius:12px; background:var(--cream); padding:0 14px; font:inherit; font-size:15px}
+  .rules{display:flex; flex-direction:column; gap:10px}
+  .rules > div{background:var(--notice); border-radius:18px; padding:16px 18px; display:flex; flex-direction:column; gap:4px}
+  .rules span{font-size:13px; font-weight:700; color:#234257}
+  .rules b{font-size:20px; font-weight:800; letter-spacing:-.4px; line-height:1.35}
 </style>
 </head>
 <body style="padding-bottom:180px">
@@ -74,10 +78,11 @@ function render() {
   const r = c.rewards, rw = [r.first, r.second, r.third], rows = c.top.map(t => '<div class="rk' + (t.is_me ? ' me2' : '') + '"><span class="n' + (t.rank <= 3 ? ' r' + t.rank : '') + '">' + t.rank + '</span><span class="av">' + esc(t.nickname.slice(0, 1)) + '</span><span class="nm"><span' + (t.is_me ? ' style="font-weight:800"' : '') + '>' + esc(t.nickname) + (t.is_me ? ' <span style="font-size:12px; font-weight:700; color:var(--body)">나</span>' : '') + '</span><span class="dy">인증 ' + t.days + '일</span></span>' + (t.rank <= 3 ? '<span class="rw">' + ICON.pie + '+' + rw[t.rank - 1] + '</span>' : '') + '</div>');
   document.getElementById('main').innerHTML = '<div style="display:flex; flex-direction:column; gap:18px">'
     + '<div class="hero"><span class="tg">공통 챌린지</span><div class="t">' + esc(c.title) + '</div><div class="p">' + dateRange(c.starts_on, c.ends_on) + ' · ' + c.participants.toLocaleString() + '명 참여 중' + (c.proof_type === 'steps' ? ' · 하루 ' + c.target_steps.toLocaleString() + '걸음' : ' · 직접 인증') + '</div></div>'
-    + '<div><div class="sect" style="margin:0 0 8px">순위 보상</div><div class="rew"><div>1위'+ICON.pie+'<b>+' + r.first + '</b></div><div>2위'+ICON.pie+'<b>+' + r.second + '</b></div><div>3위'+ICON.pie+'<b>+' + r.third + '</b></div><div>완주'+ICON.pie+'<b>+' + r.complete + '</b></div></div><div class="hint" style="margin-top:6px">전체 ' + c.total_days + '일 중 ' + c.complete_min_days + '일 이상 인증하면 완주예요.</div></div>'
+    + '<div class="rules"><div><span>완주</span><b>' + c.total_days + '일 중 ' + c.complete_min_days + '일 이상 인증</b></div><div><span>순위</span><b>인증한 일수가 많은 순서</b></div></div>'
+    + '<div><div class="sect" style="margin:0 0 8px">순위 보상</div><div class="rew"><div>1위'+ICON.pie+'<b>+' + r.first + '</b></div><div>2위'+ICON.pie+'<b>+' + r.second + '</b></div><div>3위'+ICON.pie+'<b>+' + r.third + '</b></div><div>완주'+ICON.pie+'<b>+' + r.complete + '</b></div></div></div>'
     + (c.joined ? '<div class="me"><span style="width:48px; height:48px; border-radius:16px; background:#fff; display:flex; align-items:center; justify-content:center; flex:none">' + ICON.pie + '</span><div style="flex:1"><div class="l">내 순위</div><div class="v">' + (c.my_rank ? c.my_rank + '위' : '아직 없어요') + '</div></div><div style="text-align:right"><div style="font-size:15px; font-weight:800">인증 ' + c.my_days + '일</div></div></div>' : '')
     + '<div><div style="display:flex; align-items:baseline; justify-content:space-between; padding-bottom:8px"><span class="sect" style="margin:0">순위</span><span style="font-size:12px; color:var(--muted)">인증한 일수 기준</span></div>' + (rows.length ? rows.join('') : '<div class="empty" style="padding:20px 0">아직 인증한 사람이 없어요.</div>') + '</div>'
-    + '<div class="hint" style="line-height:1.7">순위는 인증한 일수로만 정해져요. 혈압 같은 건강 수치는 서로 비교하지 않아요. 보상 파이는 챌린지가 끝난 뒤 한꺼번에 들어와요.</div></div>';
+    + '<div class="hint">보상 파이는 끝난 뒤 한꺼번에 들어와요.</div></div>';
   hydrateAvatars(document.getElementById('main'), 34);
   const bar = document.getElementById('bar'); bar.hidden = false;
   if (c.state === 'ended') { bar.innerHTML = '<button type="button" class="cta" disabled>' + (c.finalized ? '순위가 확정되었어요' : '종료된 챌린지예요') + '</button>'; return; }

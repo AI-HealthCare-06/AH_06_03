@@ -694,3 +694,48 @@ async function apiPredictV1Temp(profile, health, survey) {
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+
+// ---- 글 사진: 가로 640px·300KB 이하 JPEG로 다시 그려 올린다 (다시 그리면 촬영 위치 같은 정보가 빠진다)
+const PHOTO_MAX_BYTES = 300 * 1024, PHOTO_MAX_COUNT = 3;
+function shrinkPhotoBlob(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 640 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      let q = 0.8;
+      const step = () => c.toBlob((b) => {
+        if (!b) return reject(new Error('사진을 줄이지 못했어요.'));
+        if (b.size <= PHOTO_MAX_BYTES || q <= 0.3) return b.size <= PHOTO_MAX_BYTES ? resolve(b) : reject(new Error('사진이 너무 커요.'));
+        q -= 0.1; step();
+      }, 'image/jpeg', q);
+      step();
+    };
+    img.onerror = () => reject(new Error('사진을 읽지 못했어요.'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+async function apiUploadPhoto(postId, blob, retried = false) {
+  const res = await fetch(`${API_BASE}/community/posts/${encodeURIComponent(postId)}/photos`, {
+    method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'Authorization': `Bearer ${getAccessToken()}` }, body: blob,
+  });
+  const body = await res.json();
+  if (!res.ok) {
+    const code = body.error?.code;
+    if (code === 'AUTH_TOKEN_EXPIRED' && !retried && await refreshTokens()) return apiUploadPhoto(postId, blob, true);
+    const err = new Error(body.error?.message || '사진을 올리지 못했어요.'); err.code = code; throw err;
+  }
+  return body;
+}
+// 사진은 로그인 값이 있어야 받을 수 있어서 fetch로 받아 임시 주소(blob:)로 바꿔 쓴다. 같은 사진은 한 번만 받는다.
+const _photoCache = {};
+function apiPhotoUrl(postId, n) {
+  const k = postId + ':' + n;
+  return _photoCache[k] || (_photoCache[k] = fetch(`${API_BASE}/community/posts/${encodeURIComponent(postId)}/photos/${n}`, {
+    headers: { 'Authorization': `Bearer ${getAccessToken()}` },
+  }).then(r => { if (!r.ok) throw new Error('photo'); return r.blob(); }).then(b => URL.createObjectURL(b)));
+}

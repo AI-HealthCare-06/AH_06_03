@@ -54,13 +54,13 @@
 
           <form id="health-form" class="screen">
             <div class="page-bar"><a class="back" href="dashboard.html" aria-label="뒤로"><span data-icon="back"></span></a></div>
-            <div class="head"><h1>건강정보를<br>입력해 볼까요</h1><p>검진 결과지를 옆에 두고 하나씩 적으면 돼요.</p></div>
+            <div class="head"><h1>건강정보를<br>입력해 볼까요</h1></div>
             <div id="ocr-card">
               <div class="hd">
                 <span class="ic"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg></span>
                 <div style="display:flex; flex-direction:column; gap:6px"><span class="soon">준비 중</span><span class="tt">검진 결과지 사진으로<br>빠르게 입력</span></div>
               </div>
-              <p class="hint">준비 중인 서비스입니다. 이번 체험 버전에서는 사진 자동 입력을 제공하지 않아요. 아래에서 직접 입력해 주세요.</p>
+              <p class="hint">사진 자동 입력은 제공하지 않아요. 아래에서 직접 입력해 주세요.</p>
               <label class="ghost">
                 <span id="ocr-label-text">사진 올리기 (준비 중)</span>
                 <input type="file" accept="image/*" id="ocr-input" style="display:none" disabled>
@@ -149,7 +149,7 @@
                   <option value="7_9">7–9잔</option>
                   <option value="10plus">10잔 이상</option>
                 </select>
-                <p class="hint" style="margin-top:6px">소주·양주 구분 없이 각각의 술잔으로 세어 주세요.</p>
+                <p class="hint" style="margin-top:6px">술잔 수로 세어 주세요.</p>
                 <table class="cupguide">
                   <thead><tr><th>술</th><th>1잔</th><th>병·캔으로 셀 때</th></tr></thead>
                   <tbody>
@@ -182,7 +182,7 @@
               <div class="field">
                 <label for="total-chol">총콜레스테롤 (mg/dL) · 선택</label>
                 <input id="total-chol" type="number">
-                <p class="hint" style="margin:4px 0 0">모르면 비워 두세요. 학습 데이터의 중앙값(234)으로 대신해 분석하고, 결과에 한계를 알려 드려요.</p>
+                <p class="hint" style="margin:4px 0 0">모르면 비워 두세요. 중앙값(234)으로 대신해 분석해요.</p>
               </div>
               <div class="field">
                 <label for="parent-htn">부모 고혈압 가족력</label>
@@ -203,7 +203,7 @@
               </div>
             </div>
 
-            <p class="tip">허리둘레·한 번 음주량은 나와 비슷한 사람들과 비교할 때 쓰는 항목이에요. 한 번 음주량은 음주 빈도가 "최근 1년간 전혀 마시지 않음" 이하면 묻지 않습니다.</p>
+            <p class="tip">허리둘레·한 번 음주량은 나와 비슷한 사람들과 비교할 때 써요.</p>
 
             <p id="form-err" class="err" style="display:none"></p>
 

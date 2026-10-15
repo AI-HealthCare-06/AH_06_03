@@ -98,7 +98,7 @@ function bars(factors) {
 function factorBlock(model, res, title) {
   const f = shown(res.factors);
   return `<div class="blk"><div class="sect">${title}</div>
-    ${f.length ? bars(f) + '<div class="small">막대가 길수록 이번 결과에 더 크게 작용한 요인이에요.</div>' : '<div class="small">표시할 요인이 없어요.</div>'}
+    ${f.length ? bars(f) + '<div class="small">막대가 길수록 영향이 커요.</div>' : '<div class="small">표시할 요인이 없어요.</div>'}
     ${fixedNote(res.factors)}${linkHint(model, res)}</div>`;
 }
 
@@ -109,7 +109,7 @@ const screen = document.getElementById('screen');
 document.getElementById('back').innerHTML = ICON.back;
 
 if (!pred) {
-  screen.innerHTML = '<div class="callout"><b>분석 결과가 없어요</b><br>입력 검토 화면에서 "위험 신호 분석하기"를 먼저 눌러주세요.</div>';
+  screen.innerHTML = '<div class="callout"><b>분석 결과가 없어요</b><br>입력을 마치고 분석하면 볼 수 있어요.</div>';
 } else {
   let html = adviceBannerHtml(pred, health);   // 혈압 140/90·160/100 이상이면 결과보다 먼저 의료기관 상담 안내
 
@@ -140,7 +140,7 @@ if (!pred) {
   } else {
     const b = withoutMissing(pred.model_b);
     bHtml = `<div class="blk"><div class="sect">나와 비슷한 사람</div>
-      <div class="desc">혈압이 정상인 사람들의 전체 자료와 비교했어요. 허리둘레, 몸무게, 술은 내가 바꿀 수 있는 부분이에요. 4주 뒤에 다시 비교해 봐요.</div>
+      <div class="desc">혈압이 정상인 사람들의 전체 자료와 비교했어요. 허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</div>
       ${SIM_NOW[b.similarity_level] ? `<div class="simnow">지금 내 몸 상태는 ${SIM_NOW[b.similarity_level]}</div>` : ''}
       ${SIM_NOW[b.similarity_level] ? `<div class="three">${Object.keys(SIM_LABEL).map(k => `<span class="${k === b.similarity_level ? 'on' : ''}">${SIM_LABEL[k]}</span>`).join('')}</div>` : ''}
       </div>
@@ -152,7 +152,7 @@ if (!pred) {
     : aHtml + bHtml;
 
   const miss = (pred.model_a.missing_features || []).includes('totChol');
-  html += `<div class="notes">${miss ? '<div>총콜레스테롤은 입력하지 않아서 학습 데이터의 중앙값(234)으로 대신해 계산했어요. 이 값은 내 실제 수치가 아니에요.</div>' : ''}<div>진단이 아닌 선별 정보입니다. AI가 분석한 참고 정보이며, 정확한 진단은 의사에게 문의하세요.</div></div>
+  html += `<div class="notes">${miss ? '<div>총콜레스테롤은 입력하지 않아서 학습 데이터의 중앙값(234)으로 대신해 계산했어요. 이 값은 내 실제 수치가 아니에요.</div>' : ''}<div>진단이 아닌 참고 정보입니다. AI가 분석한 참고 정보이며, 정확한 진단은 의사에게 문의하세요.</div></div>
     <a class="cta" style="height:56px; border-radius:28px; font-size:17px" href="challenges.html">챌린지 시작하기</a>`;
 
   screen.innerHTML = html;

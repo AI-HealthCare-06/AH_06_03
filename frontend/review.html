@@ -40,7 +40,7 @@
         <div id="kpis" style="display:flex; flex-direction:column; gap:22px"></div>
 
         <p id="form-err" class="err" style="display:none"></p>
-        <div class="bar"><button type="button" id="submit-btn" class="cta">분석하기</button><span>진단이 아닌 참고 정보예요.</span></div>
+        <div class="bar"><button type="button" id="submit-btn" class="cta">분석하기</button><span>진단이 아닌 참고 정보입니다.</span></div>
       </div>
     </div>
   </div>
@@ -63,7 +63,7 @@ if (!profile || !elig || !health || !survey) {
   const box = document.getElementById('status-callout');
   box.className = '';
   box.innerHTML = `<p class="sect" style="margin-top:0">아직 마치지 않은 단계가 있어요</p>
-    <p class="hint" style="margin:0 0 10px">네 단계를 모두 마치면 입력 내용을 확인하고 위험 신호를 분석할 수 있어요.</p>
+    <p class="hint" style="margin:0 0 10px">네 단계를 마치면 분석할 수 있어요.</p>
     ${sp.html}
     ${go ? `<a class="cta" style="display:block; text-align:center; text-decoration:none; margin-top:14px" href="${go.href}">${go.label}</a>` : ''}`;
   document.getElementById('submit-btn').style.display = 'none';
@@ -105,7 +105,7 @@ if (!profile || !elig || !health || !survey) {
       ${r('당뇨 · 고혈압 진단', `${health.diabetes ? '있음' : '없음'} · ${health.htn_status === 'none' ? '없음' : '있음'}`)}
       ${r('부모 고혈압', L.parent[health.parent_htn] || '')}
     </div>
-    ${health.total_chol == null ? `<div class="cream"><div class="t"><span>총콜레스테롤</span><span>입력 안 함</span></div><p>비워 두면 학습 데이터의 중앙값(234)으로 대신해 계산해요. 이 값은 내 실제 수치가 아니에요.</p></div>`
+    ${health.total_chol == null ? `<div class="cream"><div class="t"><span>총콜레스테롤</span><span>입력 안 함</span></div><p>비워 두면 중앙값(234)으로 계산해요. 내 실제 수치는 아니에요.</p></div>`
       : `<div class="cream"><div class="t"><span>총콜레스테롤</span><span>${health.total_chol} mg/dL</span></div></div>`}
     <div class="sec"><div class="sh"><b>생활습관 설문</b><a href="survey.html">수정</a></div>${surveyRows}</div>`;
 }

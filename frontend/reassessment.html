@@ -42,7 +42,7 @@
       <div class="page-bar" style="margin-bottom:0"><a class="back" href="challenge-progress.html" aria-label="뒤로" id="back"></a><span class="ttl">4주 재입력</span></div>
       <div class="screen" id="screen">
         <p id="lede">불러오는 중...</p>
-        <p id="sub" hidden>처음과 비교해서 변화를 보여 드려요.</p>
+        <p id="sub" hidden>처음과 비교해 드려요.</p>
         <div id="err" class="callout" style="display:none"></div>
         <div id="body"></div>
       </div>
@@ -67,9 +67,9 @@ function formHtml() {
   return `
   <p class="sect">혈압</p>
   <div class="guide">
-    <div class="g1">아침이나 저녁 중 편한 시간에 재 주세요. 다음에도 같은 시간대에 재야 비교할 수 있어요.</div>
-    · 아침: 일어난 지 1시간 안에, 화장실에 다녀온 뒤, 식사·약 먹기 전<br>· 저녁: 잠자리에 들기 전 1시간 안에<br>· 재기 30분 전부터는 커피, 운동, 흡연, 목욕, 음주를 피해요<br>· 의자에 앉아 1~2분 쉰 다음, 1~2분 간격으로 두 번 재요<br>· 소매를 걷고 맨팔에 감는 게 좋아요 (얇은 옷이라면 옷 위에 감아도 괜찮아요)
-    <div class="note">집에 혈압계가 없으면 가까운 약국이나 보건소에서 재도 돼요. · 대한고혈압학회 가정혈압포럼 2022</div>
+    <div class="g1">같은 시간대에 재야 비교할 수 있어요.</div>
+    · 아침: 일어난 뒤 1시간 안, 식사·약 먹기 전<br>· 저녁: 잠자리에 들기 전<br>· 재기 30분 전부터 커피·운동·흡연·음주는 피해요<br>· 앉아서 1~2분 쉰 뒤, 1~2분 간격으로 두 번 재요
+    <div class="note">대한고혈압학회 가정혈압포럼 2022</div>
   </div>
   <div class="grid2">
     <div class="field"><label for="sbp1">첫 번째 수축기</label><input id="sbp1" type="number" min="60" max="260"></div>
@@ -95,7 +95,7 @@ function formHtml() {
     <select id="damount"><option value="">선택</option><option value="1_2">1–2잔</option><option value="3_4">3–4잔</option>
       <option value="5_6">5–6잔</option><option value="7_9">7–9잔</option><option value="10plus">10잔 이상</option></select>
     <div class="note">소주·양주 구분 없이 각각의 술잔으로 세어 주세요.</div></div>
-  <p class="hint" style="font-size:13px">키·콜레스테롤·당뇨·고혈압 진단·가족력은 처음 입력한 값을 그대로 써요.</p>
+  <p class="hint" style="font-size:13px">키·콜레스테롤·진단·가족력은 처음 값을 그대로 써요.</p>
   <button type="button" id="submit" class="cta" style="height:56px; font-size:17px">다음 · 생활습관 설문</button>`;
 }
 
@@ -139,7 +139,7 @@ function reviewHtml(rv) {
     return `<div class="bcmp">
       <p class="bt">나와 비슷한 사람들과 비교했어요</p>
       ${chg ? `<div class="chip">${chg}</div>` : ''}
-      <p class="bnote" style="word-break:keep-all; text-wrap:balance">혈압이 정상인 사람들의 전체 자료와 비교했어요. 허리둘레, 몸무게, 술은 내가 바꿀 수 있는 부분이에요. 4주 뒤에 다시 비교해 봐요.</p>
+      <p class="bnote" style="word-break:keep-all; text-wrap:balance">혈압이 정상인 사람들의 전체 자료와 비교했어요. 허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</p>
     </div>`;
   }).join('');
   return `

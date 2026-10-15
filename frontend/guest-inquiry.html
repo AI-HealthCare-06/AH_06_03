@@ -66,7 +66,7 @@
 
         <div id="write-pane">
           <div id="form-area" class="pane">
-            <div class="info">로그인·가입이 안 될 때 로그인 없이 문의를 남길 수 있어요. 이메일을 받지 않고 서비스 안에서만 보관해요. 답변은 문의를 보낼 때 알려 드리는 <b>조회 번호</b>로 확인해요. <b>건강정보(혈압, 진단명 등)는 적지 마세요.</b></div>
+            <div class="info">로그인 없이 문의를 남길 수 있어요. 답변은 <b>조회 번호</b>로 확인해요. <b>건강정보(혈압, 진단명 등)는 적지 마세요.</b></div>
             <div class="fld"><label for="g-title">제목</label><input id="g-title" maxlength="100" placeholder="예: 로그인이 안 돼요"></div>
             <div class="fld"><label for="g-body">내용</label><textarea id="g-body" maxlength="1000" placeholder="어떤 화면에서 어떤 문제가 생기는지 적어 주세요"></textarea></div>
             <div class="hp" aria-hidden="true"><label>웹사이트<input id="g-website" tabindex="-1" autocomplete="off"></label></div>
@@ -80,7 +80,7 @@
           <div id="done-area" class="pane done" style="display:none">
             <span class="ck"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span>
             <h2>문의를 남겼어요</h2>
-            <div class="descr">아래 조회 번호는 <b>지금만 보여 드려요.</b><br>꼭 저장해 두세요. 답변이 오면 이 번호로 확인할 수 있어요.</div>
+            <div class="descr" style="font-size:18px; font-weight:800; color:var(--ink); line-height:1.5">조회 번호는 지금만 보여 드려요<br>꼭 저장해 두세요</div>
             <div class="code" id="g-code"></div>
             <button type="button" class="btn line" id="g-copy">번호 복사하기</button>
             <div class="dock" style="border:0">
@@ -91,12 +91,12 @@
         </div>
 
         <div id="check-pane" class="pane" style="display:none">
-          <div class="descr">문의를 보낼 때 받은 <b>조회 번호</b>를 넣으면 내 문의와 답변을 볼 수 있어요.</div>
+          <div class="descr"><b>조회 번호</b>로 내 문의와 답변을 볼 수 있어요.</div>
           <div class="fld"><label for="v-code">조회 번호</label><input id="v-code" placeholder="XXXX-XXXX-XXXX" maxlength="20" autocomplete="off"></div>
           <p id="v-err" class="err" style="display:none"></p>
           <button type="button" class="btn" id="v-btn">확인하기</button>
           <div id="v-result"></div>
-          <div class="foot">조회 번호를 잃어버리면 다시 찾을 수 없어요. 답변이 오기까지 시간이 걸릴 수 있어요.</div>
+          <div class="foot">조회 번호를 잃어버리면 다시 찾을 수 없어요.</div>
         </div>
       </div>
     </div>
@@ -143,7 +143,7 @@ $('v-btn').addEventListener('click', async () => {
     $('v-result').innerHTML = `<div class="res"><span class="when">${kst(d.created_at)}에 남긴 문의</span>
       <span class="ttl2">${esc(d.title)}</span>
       <div class="box"><span class="lb">내 문의</span>${esc(d.body)}</div>
-      <div class="box"><span class="lb">답변${d.answer ? ' · ' + kst(d.answered_at) : ''}</span>${d.answer ? esc(d.answer) : '아직 답변을 준비하고 있어요. 나중에 다시 확인해 주세요.'}</div></div>`;
+      <div class="box"><span class="lb">답변${d.answer ? ' · ' + kst(d.answered_at) : ''}</span>${d.answer ? esc(d.answer) : '아직 답변을 준비하고 있어요.'}</div></div>`;
   } catch (e) { show($('v-err'), friendlyError(e)); }
 });
 

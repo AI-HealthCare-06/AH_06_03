@@ -179,7 +179,7 @@ function tilesHtml() {
   if (!a) {
     const ma = pred && pred.model_a;
     const age = ma && ma.skip_reason === 'age_out_of_range';
-    if (!ma || ma.status !== 'skipped') html += stateCard(STATE_ICON.doc, '아직 분석 결과가 없어요', '건강정보와 설문을 입력하면<br>10년 내 심장 혈관 건강 신호를<br>볼 수 있어요.', '', btn('health-info.html', '입력 시작하기'));
+    if (!ma || ma.status !== 'skipped') html += stateCard(STATE_ICON.doc, '아직 분석 결과가 없어요', '건강정보와 설문을 입력하면 결과를 볼 수 있어요.', '', btn('health-info.html', '입력 시작하기'));
     else html += stateCard(STATE_ICON.info, '이번엔 분석할 수 없어요',
       (age ? '만 32~70세가 아니어서<br>10년 내 심장 혈관 건강 신호는<br>분석하지 않아요.' : '심장 혈관 질환 진단 이력이 있거나<br>고혈압으로 진단·치료 중이면<br>분석하지 않아요.<br>담당 의사와 상의해 주세요.')
       + '<br>챌린지는 그대로 할 수 있어요.');
@@ -203,23 +203,23 @@ function render() {
   let body = '<h1>오늘도 하나씩,<br>차근차근 해봐요</h1>' + adviceBannerHtml(pred, health);
 
   if (state === 'empty') {
-    body += stateCard(STATE_ICON.doc, '아직 분석 결과가 없어요', '건강정보와 설문을 입력하면<br>10년 내 심장 혈관 건강 신호를<br>볼 수 있어요.', '', btn('health-info.html', '입력 시작하기'));
+    body += stateCard(STATE_ICON.doc, '아직 분석 결과가 없어요', '건강정보와 설문을 입력하면 결과를 볼 수 있어요.', '', btn('health-info.html', '입력 시작하기'));
   } else if (state === 'pending') {
     const segs = `<div class="segs">${sp.steps.map(s => `<i class="${s.done ? 'on' : ''}"></i>`).join('')}</div>`;
-    body += stateCard(STATE_ICON.doc, '입력을 이어서 마무리해 주세요', '네 단계를 모두 마치면<br>위험 신호 결과를 볼 수 있어요.', segs, btn(sp.next ? sp.next.href : 'review.html', '이어서 하기'));
+    body += stateCard(STATE_ICON.doc, '입력을 이어서 마무리해 주세요', '네 단계를 마치면 결과를 볼 수 있어요.', segs, btn(sp.next ? sp.next.href : 'review.html', '이어서 하기'));
   } else {
     if (state === 'active') body += ringHtml();
-    else if (state === 'ready') body += stateCard(STATE_ICON.doc, '분석이 끝났어요', '결과에 맞는 챌린지를 골라 보세요.<br>12주를 4주씩 3번으로 나눠 해요.', '', btn('challenges.html', '4주 챌린지 시작'));
+    else if (state === 'ready') body += stateCard(STATE_ICON.doc, '분석이 끝났어요', '결과에 맞는 챌린지를 골라요.<br><b style="font-size:17px;color:var(--ink)">12주 = 4주씩 3번</b>', '', btn('challenges.html', '4주 챌린지 시작'));
     else {
       const last = cycleNo >= 3;
-      body += stateCard(STATE_ICON.doc, last ? '12주 챌린지를 모두 마쳤어요' : `${cycleNo}차 4주가 끝났어요`, '얼마나 달라졌을까요?<br>바뀐 항목만 다시 입력하면 같은 모델로 비교해 드려요.', '',
+      body += stateCard(STATE_ICON.doc, last ? '12주 챌린지를 모두 마쳤어요' : `${cycleNo}차 4주가 끝났어요`, '바뀐 항목만 다시 입력하면 비교해 드려요.', '',
         btn(reassessHref, last ? '12주 결과 확인하기' : '4주 결과 확인하기') + (!last && !cycle.cycleId ? btn('challenges.html', `다음 4주 챌린지 시작 (${cycleNo + 1}차)`, 'ghost') : ''));
     }
     if (pred) body += tilesHtml();
     body += `<div class="shortcut"><a href="calendar-diary.html"><span>${ICON.calendar}</span>캘린더</a></div>`;
     const bpPts = bpPoints(health, progress.bpLog);
     if (bpPts.length > 1) body += `<figure><figcaption>수축기 혈압 · <b>시작과 4주마다 측정</b></figcaption>${bpChart(bpPts)}</figure>`;
-    body += '<div class="foot">진단이 아닌 참고 정보예요. 걱정되면 의료기관에 상담하세요.</div>';
+    body += '<div class="foot">진단이 아닌 참고 정보입니다. 정확한 판단은 의료진과 상담하세요.</div>';
   }
   document.getElementById('screen').innerHTML = body;
 }
