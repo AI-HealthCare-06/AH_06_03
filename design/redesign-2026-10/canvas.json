@@ -360,6 +360,13 @@
       "w": 390,
       "x": 940,
       "y": 8700
+    },
+    "TwelveWeekList.dc.html": {
+      "h": 844,
+      "title": "전체 12주 기록",
+      "w": 390,
+      "x": 1880,
+      "y": 8700
     }
   },
   "createdOnFiles": {
@@ -505,6 +512,7 @@
     "Pie.dc.html",
     "Reassessment.dc.html",
     "Trend.dc.html",
+    "TwelveWeekList.dc.html",
     "InquiryWrite.dc.html",
     "InquiryDetail.dc.html",
     "GuestInquiry.dc.html",
