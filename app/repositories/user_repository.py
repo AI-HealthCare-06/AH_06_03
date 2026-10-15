@@ -1,7 +1,7 @@
 """ 회원 창고 담당. DB에 넣고 꺼내는 일 수행. 판단은 서비스가 """
 from datetime import date,datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User, UserProfile, UserSession, GuardianConsentVerification
@@ -31,6 +31,16 @@ async def create_session(
     )
     db.add(session)
     return session
+
+
+async def revoke_active_sessions(db: AsyncSession, user_id: str, now: datetime) -> int:
+    """이 회원의 살아 있는 로그인(쿠폰)을 모두 끊는다. 저장 확정(commit)은 서비스가 한다."""
+    result = await db.execute(
+        update(UserSession)
+        .where(UserSession.user_id == user_id, UserSession.revoked_at.is_(None))
+        .values(revoked_at=now)
+    )
+    return result.rowcount or 0
 
 async def create_guardian_verification(
     db: AsyncSession,

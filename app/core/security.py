@@ -20,8 +20,8 @@ def verify_password(password: str, password_hash: str) -> bool:
     return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
 
 
-def create_access_token(user_id: str) -> str:
-    """팔찌(액세스 토큰)를 만든다."""
+def create_access_token(user_id: str, session_id: str | None = None) -> str:
+    """팔찌(액세스 토큰)를 만든다. session_id(sid)를 넣으면 그 로그인이 끊기는 즉시 팔찌도 못 쓰게 된다."""
     now = datetime.now(UTC)
     payload = {
         "sub": user_id,
@@ -29,18 +29,26 @@ def create_access_token(user_id: str) -> str:
         "iat": now,
         "exp": now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     }
+    if session_id is not None:
+        payload["sid"] = session_id
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
-def decode_access_token(token: str) -> str | None:
-    """팔찌가 진짜면 회원 번호, 가짜거나 만료됐으면 None."""
+def decode_access_claims(token: str) -> dict | None:
+    """팔찌가 진짜면 내용(sub=회원 번호, sid=로그인 번호), 가짜거나 만료됐으면 None."""
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
     except jwt.PyJWTError:
         return None
-    if payload.get("type") != "access":
+    if payload.get("type") != "access" or not payload.get("sub"):
         return None
-    return payload.get("sub")
+    return payload
+
+
+def decode_access_token(token: str) -> str | None:
+    """팔찌가 진짜면 회원 번호, 가짜거나 만료됐으면 None."""
+    claims = decode_access_claims(token)
+    return claims["sub"] if claims else None
 
 
 def new_refresh_token() -> str:
