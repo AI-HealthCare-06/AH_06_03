@@ -27,6 +27,8 @@ WELCOME_PIE = 10
 POST_PIE = 2
 POST_PIE_PER_DAY = 3
 HIDDEN_NOTICE = "운영 정책에 따라 숨김 처리됐어요"
+AUTO_HIDE_REPORTERS = 3    # 서로 다른 사람이 이만큼 신고하면 관리자가 보기 전까지 자동으로 숨긴다 (한 사람이 혼자 내리지 못하게)
+DAILY_REPORT_LIMIT = 10    # 한 사람이 24시간 동안 할 수 있는 신고 수 (아무 글이나 신고하고 다니는 것을 막는다)
 PREVIEW_LEN = 100
 POPULAR_DAYS = 30
 
@@ -252,17 +254,29 @@ async def delete_comment(db: AsyncSession, user_id: str, comment_id: str) -> Non
 
 
 # ---------------------------------------------------------------- 신고
-async def _report(db: AsyncSession, user_id: str, key: str, req: ReportRequest, **target) -> ReportResult:
+async def _report(db: AsyncSession, user_id: str, key: str, req: ReportRequest, obj, **target) -> ReportResult:
     dup = (await db.execute(select(CommunityReport.report_id).where(
         CommunityReport.user_id == user_id, CommunityReport.target_key == key))).first()
     if dup is not None:
         raise AppError(409, "ALREADY_REPORTED", "이미 신고한 글이에요.")
-    db.add(CommunityReport(user_id=user_id, target_key=key, reason=req.reason, created_at=utcnow(), **target))
+    now = utcnow()
+    recent = (await db.execute(select(func.count()).select_from(CommunityReport).where(
+        CommunityReport.user_id == user_id, CommunityReport.created_at > now - timedelta(hours=24)))).scalar_one()
+    if recent >= DAILY_REPORT_LIMIT:
+        raise AppError(429, "REPORT_DAILY_LIMIT", f"신고는 하루 {DAILY_REPORT_LIMIT}건까지 할 수 있어요. 내일 다시 시도해 주세요.")
+    db.add(CommunityReport(user_id=user_id, target_key=key, reason=req.reason, created_at=now, **target))
     try:
-        await db.commit()
+        await db.flush()
     except IntegrityError:
         await db.rollback()
         raise AppError(409, "ALREADY_REPORTED", "이미 신고한 글이에요.")
+    # 처리 대기 중인 신고(한 사람당 한 건이라 곧 신고한 사람 수)가 기준에 닿으면 관리자 확인 전까지 숨긴다.
+    # 관리자가 '문제 없음'으로 처리하면 다시 보인다 (report_service.act).
+    pending = (await db.execute(select(func.count()).select_from(CommunityReport).where(
+        CommunityReport.target_key == key, CommunityReport.action.is_(None)))).scalar_one()
+    if pending >= AUTO_HIDE_REPORTERS and obj.status == "visible":
+        obj.status = "hidden"
+    await db.commit()
     return ReportResult()
 
 
@@ -272,7 +286,7 @@ async def report_post(db: AsyncSession, user_id: str, post_id: str, req: ReportR
         raise not_found()
     if p.user_id == user_id:
         raise AppError(400, "REPORT_OWN", "내 글은 신고할 수 없어요.")
-    return await _report(db, user_id, f"post:{post_id}", req, post_id=post_id)
+    return await _report(db, user_id, f"post:{post_id}", req, p, post_id=post_id)
 
 
 async def report_comment(db: AsyncSession, user_id: str, comment_id: str, req: ReportRequest) -> ReportResult:
@@ -284,7 +298,7 @@ async def report_comment(db: AsyncSession, user_id: str, comment_id: str, req: R
     post = await db.get(CommunityPost, c.post_id)
     if post is None or post.status != "visible" or not await _can_see_party(db, user_id, post):
         raise not_found("댓글")
-    return await _report(db, user_id, f"comment:{comment_id}", req, comment_id=comment_id)
+    return await _report(db, user_id, f"comment:{comment_id}", req, c, comment_id=comment_id)
 
 
 # ---------------------------------------------------------------- 사진
