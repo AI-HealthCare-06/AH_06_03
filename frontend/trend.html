@@ -208,7 +208,7 @@ function cyclePane(rv) {
   const b = rv.before || {}, a = rv.after || {}, m = modelA(rv), cmpA = m && m.comparable;
   const rate = c.cycle_rate != null ? Math.round(c.cycle_rate * 100) + '%' : '—';
   return head + `<div class="rows">${row('혈압', bpText(b), bpText(a))}${row('체중', unit(b.weight_kg, 'kg'), unit(a.weight_kg, 'kg'))}${row('허리둘레', unit(b.waist_cm, 'cm'), unit(a.waist_cm, 'cm'))}${row('챌린지 달성률', '', rate)}${cmpA ? row('건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')) : ''}</div>
-    <div class="two"><a class="cta" href="result.html">분석 결과 보기</a><button type="button" class="ghost" id="to-cmp" data-id="${esc(rv.cycle_id)}">전·후 비교</button></div>`;
+    <div class="two">${DATA.reviews.filter(r => r.reassessed).pop().cycle_id === rv.cycle_id ? '<a class="cta" href="result.html">분석 결과 보기</a>' : ''}<button type="button" class="ghost" id="to-cmp" data-id="${esc(rv.cycle_id)}">전·후 비교</button></div>`;
 }
 
 // 서버가 12주 번호를 주기 전까지는 4주 사이클 번호 3개씩을 한 묶음(12주)으로 본다.
