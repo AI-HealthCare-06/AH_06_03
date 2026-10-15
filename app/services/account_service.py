@@ -37,6 +37,7 @@ def _result(r: AccountDeletionRequest) -> DeletionResult:
 HEALTH_KEEP_TABLES = KEEP_TABLES | {
     "users", "user_profiles", "user_sessions", "user_consents", "inquiries",
     "community_profiles", "community_posts", "community_comments", "community_likes", "community_reports",
+    "character_items", "user_characters",
 }
 
 

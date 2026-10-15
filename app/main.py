@@ -21,7 +21,7 @@ from app.apis.pie import router as pie_router
 from app.apis.community import router as community_router
 from app.apis.community_admin import admin_router as community_admin_router
 from app.apis.common_challenge import admin_router as common_challenge_admin_router, router as common_challenge_router
-
+from app.apis.home import router as home_router
 
 from app.apis.prediction import router as prediction_router
 from app.apis.auth import router as auth_router
@@ -29,6 +29,8 @@ from app.apis.challenge import router as challenge_router
 from app.core.db.databases import AsyncSessionLocal
 from app.core.errors import register_error_handlers
 from app.services import admin_registry_service
+from app.apis.character import router as character_router
+from app.apis.party import router as party_router
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -82,6 +84,9 @@ app.include_router(common_challenge_admin_router, prefix="/v1")
 app.include_router(guest_inquiry_router, prefix="/v1")
 app.include_router(admin_router, prefix="/v1")
 app.include_router(admin_overview_router, prefix="/v1")
+app.include_router(home_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
+app.include_router(character_router, prefix="/v1")
+app.include_router(party_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.mount("/media", StaticFiles(directory=BASE_DIR / "media"), name="media")
 
