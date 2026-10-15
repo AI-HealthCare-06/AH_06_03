@@ -29,6 +29,7 @@ a{color:inherit}
 button{font:inherit; cursor:pointer}
 .num{font-variant-numeric:tabular-nums}
 [hidden]{display:none !important}
+input::placeholder,textarea::placeholder{color:#A9B3BC; font-weight:500; opacity:1}
 :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
 
 /* 모바일 틀: 390~430px 한 칸. 넓은 화면에서도 가운데에 좁게 보인다 */
