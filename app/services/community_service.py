@@ -17,10 +17,10 @@ from app.models.community import (
     CommunityComment, CommunityLike, CommunityPost, CommunityProfile, CommunityReport,
 )
 from app.schemas.community import (
-    CommentCreate, CommentItem, LikeResult, MyCommunity, PostCreate, PostCreated, PostDetail, PostItem, PostList,
-    ReportRequest, ReportResult,
+    AttachOption, CommentCreate, CommentItem, LikeResult, MyCommunity, PostAttach, PostCreate, PostCreated, PostDetail,
+    PostItem, PostList, ReportRequest, ReportResult,
 )
-from app.services import pie_service
+from app.services import pie_service, post_attach_service
 
 WELCOME_PIE = 10
 POST_PIE = 2
@@ -90,6 +90,7 @@ def _item(p: CommunityPost, nickname: str | None, likes: int, comments: int, lik
         post_id=p.post_id, category=p.category, title=p.title, preview="" if hidden else p.body[:PREVIEW_LEN],
         author_nickname=nickname or "알 수 없음", created_at=p.created_at, like_count=likes, comment_count=comments,
         liked_by_me=bool(liked), mine=p.user_id == me, hidden=hidden, notice=HIDDEN_NOTICE if hidden else None,
+        attach=PostAttach(kind=p.attach_kind, label=p.attach_label, days=p.attach_days or 0) if p.attach_kind and not hidden else None,
     )
 
 
@@ -110,10 +111,17 @@ async def _load_post(db: AsyncSession, user_id: str, post_id: str):
     return row
 
 
+async def attach_options(db: AsyncSession, user_id: str) -> list[AttachOption]:
+    return await post_attach_service.options(db, user_id)
+
+
 async def create_post(db: AsyncSession, user_id: str, req: PostCreate) -> PostCreated:
     nickname = await require_nickname(db, user_id)
+    kind = label = days = None
+    if req.attach is not None:
+        kind, label, days = await post_attach_service.resolve(db, user_id, req.attach)
     post = CommunityPost(user_id=user_id, category=req.category, title=req.title, body=req.body,
-                         status="visible", created_at=utcnow())
+                         status="visible", created_at=utcnow(), attach_kind=kind, attach_label=label, attach_days=days)
     db.add(post)
     await db.flush()
     gain = 0
