@@ -21,7 +21,7 @@ from app.schemas.community import (
     PhotoResult, PostItem, PostList, ReportRequest, ReportResult,
 )
 from app.models.party import PartyMember
-from app.services import photo_check, pie_service, post_attach_service
+from app.services import admin_alert, audit_service, photo_check, pie_service, post_attach_service
 
 WELCOME_PIE = 10
 POST_PIE = 2
@@ -29,6 +29,7 @@ POST_PIE_PER_DAY = 3
 HIDDEN_NOTICE = "운영 정책에 따라 숨김 처리됐어요"
 AUTO_HIDE_REPORTERS = 3    # 서로 다른 사람이 이만큼 신고하면 관리자가 보기 전까지 자동으로 숨긴다 (한 사람이 혼자 내리지 못하게)
 DAILY_REPORT_LIMIT = 10    # 한 사람이 24시간 동안 할 수 있는 신고 수 (아무 글이나 신고하고 다니는 것을 막는다)
+AUTO_HIDE_ACTOR = "system(신고 누적)"   # 자동 숨김을 관리자 기록에 남길 때의 기록자 (관리자 목록 변경의 "system(서버 설정)"과 같은 방식)
 PREVIEW_LEN = 100
 POPULAR_DAYS = 30
 
@@ -274,9 +275,18 @@ async def _report(db: AsyncSession, user_id: str, key: str, req: ReportRequest, 
     # 관리자가 '문제 없음'으로 처리하면 다시 보인다 (report_service.act).
     pending = (await db.execute(select(func.count()).select_from(CommunityReport).where(
         CommunityReport.target_key == key, CommunityReport.action.is_(None)))).scalar_one()
-    if pending >= AUTO_HIDE_REPORTERS and obj.status == "visible":
+    auto_hidden = pending >= AUTO_HIDE_REPORTERS and obj.status == "visible"
+    if auto_hidden:
         obj.status = "hidden"
+        # 누가(시스템) 언제 무엇을 숨겼는지 관리자 기록에 남긴다. 사람이 한 조치처럼 번호 끝 8자만, 내용은 남기지 않는다
+        kind, _, target_id = key.partition(":")          # "post" 또는 "comment"
+        await audit_service.record(db, AUTO_HIDE_ACTOR, "community_auto_hide",
+                                   target=f"{kind[0]}-{target_id[-8:]}", detail=f"신고 {pending}명")
     await db.commit()
+    if auto_hidden:   # 숨겨지는 순간에 한 번만. 내용·작성자·번호는 보내지 않는다
+        what = "글" if key.startswith("post:") else "댓글"
+        admin_alert.notify(f"🔒 커뮤니티 {what} 1건이 신고 {AUTO_HIDE_REPORTERS}명으로 자동 숨김됐어요. "
+                           f"관리자 화면의 신고 탭에서 확인해 주세요.")
     return ReportResult()
 
 
