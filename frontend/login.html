@@ -70,6 +70,12 @@ const form = document.getElementById('login-form');
 const errEl = document.getElementById('form-err');
 const submitBtn = document.getElementById('submit-btn');
 
+// 다른 기기에서 로그인해 이 기기가 로그아웃된 경우 이유를 알려 준다
+if (new URLSearchParams(location.search).get('reason') === 'other-device') {
+  errEl.textContent = '다른 기기에서 로그인해 이 기기는 로그아웃됐어요. 계속하려면 다시 로그인해 주세요.';
+  errEl.style.display = 'block';
+}
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   errEl.style.display = 'none';
