@@ -3,13 +3,14 @@
 건강 수치(혈압·몸무게 등)와 일기·사진은 읽지도 돌려주지도 않는다. 조회·삭제는 서버 로그에 남긴다.
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.errors import AppError
+from app.core.security import utcnow
 from app.models.challenge import ChallengeCycle
 from app.models.consent import ConsentPolicy, UserConsent
 from app.models.eligibility import EligibilityAssessment
@@ -20,7 +21,7 @@ from app.models.user import User
 from app.schemas.admin import (
     AdminConsentItem, AdminUserDetail, AdminUserList, AdminUserRow, PurgeResult, PurgeTarget,
 )
-from app.services import account_service, audit_service
+from app.services import account_service, audit_service, suspension
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +77,7 @@ def _row(user: User, stages: set[str], consent: str) -> AdminUserRow:
     return AdminUserRow(
         user_id_short=user.user_id[-8:], user_id=user.user_id, email_masked=mask_email(user.email), status=user.status,
         joined_at=_iso(user.created_at) or "", stage=max(stages, key=STAGES.index), health_consent=consent,
+        suspended_until=_iso(user.suspended_until) if suspension.is_suspended(user) else None,
     )
 
 
@@ -161,3 +163,36 @@ async def purge(db: AsyncSession, admin: str, patterns: list[str], apply: bool, 
     await audit_service.record(db, admin, "purge_apply", detail=f"대상 {len(ids)}명, 완료 {done}명, 실패 {failed}명")
     await db.commit()
     return PurgeResult(count=len(ids), targets=targets, applied=True, done=done, failed=failed)
+
+
+
+async def _target(db: AsyncSession, user_id: str) -> User:
+    user = await db.get(User, user_id)
+    if user is None or user.status == "deleted":
+        raise AppError(404, "ADMIN_USER_NOT_FOUND", "회원을 찾을 수 없어요.")
+    if user.email.lower() in settings.admin_email_set:
+        raise AppError(409, "ADMIN_USER_PROTECTED", "관리자 계정은 정지하거나 지울 수 없어요.")
+    return user
+
+
+async def suspend(db: AsyncSession, admin: str, user_id: str, days: int | None) -> None:
+    """이용 정지. days를 비우면 무기한. 정지 중에는 로그인도, 이미 받은 로그인으로 하는 요청도 막힌다."""
+    user = await _target(db, user_id)
+    user.suspended_until = suspension.FOREVER if days is None else utcnow() + timedelta(days=days)
+    await audit_service.record(db, admin, "user_suspend", target=user_id[-8:], detail="무기한" if days is None else f"{days}일")
+    await db.commit()
+
+
+async def unsuspend(db: AsyncSession, admin: str, user_id: str) -> None:
+    user = await _target(db, user_id)
+    user.suspended_until = None
+    await audit_service.record(db, admin, "user_unsuspend", target=user_id[-8:])
+    await db.commit()
+
+
+async def delete_user(db: AsyncSession, admin: str, user_id: str) -> None:
+    """회원 한 명 탈퇴 처리(건강정보·글 등 모든 데이터 삭제). 되돌릴 수 없다."""
+    user = await _target(db, user_id)
+    await account_service.delete_account_data(db, user)
+    await audit_service.record(db, admin, "user_delete", target=user_id[-8:])
+    await db.commit()

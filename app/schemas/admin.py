@@ -52,6 +52,7 @@ class AdminUserRow(BaseModel):
     joined_at: str
     stage: str                  # signup / eligibility / health / survey / prediction / challenge
     health_consent: str         # agreed / withdrawn / none
+    suspended_until: str | None = None   # 이용 정지 중이면 풀리는 시각(UTC, ISO). 영구 정지는 9999-12-31
 
 
 class AdminUserList(BaseModel):
@@ -134,3 +135,8 @@ class AuditLogItem(BaseModel):
     action: str
     target: str | None
     detail: str | None
+
+
+class SuspendRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    days: int | None = Field(default=None, ge=1, le=365)   # 비우면 무기한

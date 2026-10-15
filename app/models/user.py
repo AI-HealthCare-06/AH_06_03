@@ -23,6 +23,7 @@ class User(Base, TimestampMixin):
         Enum("active", "deleted", "pending_guardian", name="user_status"), nullable=False, default="active"
     )
     deleted_at: Mapped[datetime | None]=mapped_column(DateTime, nullable=True)
+    suspended_until: Mapped[datetime | None]=mapped_column(DateTime, nullable=True)   # 이 시각(UTC)까지 이용 정지. 영구 정지는 9999-12-31
 
 # 보호자 정보 추가 표
 class GuardianConsentVerification(Base):
