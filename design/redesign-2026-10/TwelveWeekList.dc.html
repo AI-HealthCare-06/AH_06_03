@@ -12,6 +12,7 @@
 <style>
 body{margin:0}
 a{color:inherit;text-decoration:none}
+button{cursor:pointer}
 </style>
 </helmet>
 <div style="position: relative; width: 390px; height: 844px; background: #FFFFFF; color: #243749; font-family: 'Nanum Gothic', sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; overflow: hidden">
@@ -19,32 +20,80 @@ a{color:inherit;text-decoration:none}
     <a href="Trend.dc.html" aria-label="뒤로" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#243749" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
     <span style="font-size: 17px; font-weight: 800">지난 12주 기록</span>
   </div>
-  <div style="padding: 4px 20px 0; display: flex; flex-direction: column; gap: 8px">
-    <div style="font-size: 13px; color: #5A6B7A; padding-bottom: 4px">최근 순이에요. 눌러서 그때의 12주 요약을 볼 수 있어요.</div>
-      <div style="display: flex; align-items: center; gap: 12px; background: #E4F0F5; border-radius: 20px; padding: 14px 16px"><div style="flex: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 800">5번째 12주 <span style="font-size: 12px; font-weight: 700; color: #234257">· 진행 중</span></span><span style="font-size: 13px; color: #4A5C6D">10월 14일 시작 · 1차 4주 진행 중</span></div></div>
-      <a href="Summary.dc.html" style="display: flex; align-items: center; gap: 12px; border: 1px solid #E6DBCD; border-radius: 20px; padding: 14px 16px">
-          <div style="flex: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 800">4번째 12주 <span style="font-size: 12px; font-weight: 700; color: #5A6B7A">· 완료</span></span><span style="font-size: 13px; color: #5A6B7A">4월 3일 ~ 7월 2일 · 평균 달성률 85% · 혈압 124 → 119</span></div>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5A6B7A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
-        </a>
-      <a href="Summary.dc.html" style="display: flex; align-items: center; gap: 12px; border: 1px solid #E6DBCD; border-radius: 20px; padding: 14px 16px">
-          <div style="flex: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 800">3번째 12주 <span style="font-size: 12px; font-weight: 700; color: #5A6B7A">· 완료</span></span><span style="font-size: 13px; color: #5A6B7A">1월 9일 ~ 4월 2일 · 평균 달성률 79% · 혈압 127 → 124</span></div>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5A6B7A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
-        </a>
-      <a href="Summary.dc.html" style="display: flex; align-items: center; gap: 12px; border: 1px solid #E6DBCD; border-radius: 20px; padding: 14px 16px">
-          <div style="flex: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 800">2번째 12주 <span style="font-size: 12px; font-weight: 700; color: #5A6B7A">· 완료</span></span><span style="font-size: 13px; color: #5A6B7A">2025년 10월 1일 ~ 12월 24일 · 평균 달성률 82% · 혈압 129 → 127</span></div>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5A6B7A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
-        </a>
-      <a href="Summary.dc.html" style="display: flex; align-items: center; gap: 12px; border: 1px solid #E6DBCD; border-radius: 20px; padding: 14px 16px">
-          <div style="flex: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 800">1번째 12주 <span style="font-size: 12px; font-weight: 700; color: #5A6B7A">· 완료</span></span><span style="font-size: 13px; color: #5A6B7A">2025년 7월 22일 ~ 10월 13일 · 평균 달성률 81% · 혈압 138 → 129</span></div>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5A6B7A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
-        </a>
+
+  <!-- 조회 기간: 연도 -> 월 -->
+  <div style="padding: 0 20px; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-size: 13px; color: #5A6B7A">조회 기간</span><span style="font-size: 13px; font-weight: 700; color: #243749">{{rangeText}}</span></div>
+    <div style="display: flex; gap: 8px">
+      <sc-for list="{{years}}" as="y" hint-placeholder-count="3">
+        <button onClick="{{y.pick}}" style="height: 40px; box-sizing: border-box; padding: 0 18px; border-radius: 20px; border: {{y.border}}; background: {{y.bg}}; color: {{y.fg}}; font: {{y.weight}} 14px 'Nanum Gothic', sans-serif">{{y.label}}</button>
+      </sc-for>
+    </div>
+    <sc-if value="{{showMonths}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px">
+        <sc-for list="{{months}}" as="m" hint-placeholder-count="13">
+          <button onClick="{{m.pick}}" style="flex: none; height: 34px; box-sizing: border-box; padding: 0 14px; border-radius: 17px; border: {{m.border}}; background: {{m.bg}}; color: {{m.fg}}; font: {{m.weight}} 13px 'Nanum Gothic', sans-serif">{{m.label}}</button>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="padding: 16px 20px 0; display: flex; flex-direction: column; gap: 8px">
+    <div style="font-size: 13px; color: #5A6B7A; padding-bottom: 2px">{{count}}건 · 최근 순이에요. 눌러서 그때의 12주 요약을 볼 수 있어요.</div>
+    <sc-for list="{{items}}" as="it" hint-placeholder-count="5">
+      <a href="{{it.href}}" style="display: flex; align-items: center; gap: 12px; background: {{it.bg}}; border: {{it.border}}; border-radius: 20px; padding: 14px 16px">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 800">{{it.title}} <span style="font-size: 12px; font-weight: 700; color: #5A6B7A">· {{it.state}}</span></span><span style="font-size: 13px; color: #5A6B7A">{{it.period}}</span><span style="font-size: 13px; color: #5A6B7A; display: {{it.detailShow}}">{{it.detail}}</span></div>
+        <span style="display: {{it.chevShow}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5A6B7A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg></span>
+      </a>
+    </sc-for>
+    <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+      <div style="padding: 40px 0; text-align: center; font-size: 14px; color: #5A6B7A; line-height: 1.7">이 기간에는 12주 기록이 없어요.<br>다른 기간을 골라 보세요.</div>
+    </sc-if>
     <div style="display: flex; justify-content: center; padding-top: 10px"><span style="height: 44px; padding: 0 22px; border-radius: 22px; border: 1px solid #D2C4B4; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center">더 보기</span></div>
   </div>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
 class Component extends DCLogic {
-  renderVals() { return {}; }
+  state = { year: 'all', month: 'all' };
+  renderVals() {
+    const s = this.state;
+    // 예시 데이터 (시작 연·월·일, 끝 연·월·일 / 진행 중이면 end 없음)
+    const DATA = [
+      { n: 5, start: [2026, 10, 14], end: null, detail: '1차 4주 진행 중' },
+      { n: 4, start: [2026, 4, 3], end: [2026, 7, 2], detail: '평균 달성률 85% · 혈압 124 → 119' },
+      { n: 3, start: [2026, 1, 9], end: [2026, 4, 2], detail: '평균 달성률 79% · 혈압 127 → 124' },
+      { n: 2, start: [2025, 10, 1], end: [2025, 12, 24], detail: '평균 달성률 82% · 혈압 129 → 127' },
+      { n: 1, start: [2025, 7, 22], end: [2025, 10, 13], detail: '평균 달성률 81% · 혈압 138 → 129' }
+    ];
+    const NOW = [2026, 10, 14];
+    const ym = (a) => a[0] * 12 + a[1];
+    const fmt = (a) => a[0] + '.' + String(a[1]).padStart(2, '0') + '.' + String(a[2]).padStart(2, '0');
+    // 선택한 기간과 겹치는 12주만 보여 준다
+    let from = 0, to = 99999;
+    if (s.year !== 'all') {
+      from = s.year * 12 + (s.month === 'all' ? 1 : s.month);
+      to = s.year * 12 + (s.month === 'all' ? 12 : s.month);
+    }
+    const list = DATA.filter((d) => ym(d.start) <= to && ym(d.end || NOW) >= from);
+    const sel = (on) => ({ bg: on ? '#81A6C6' : '#FFFFFF', fg: on ? '#1E3246' : '#3B5063', border: on ? '1px solid #81A6C6' : '1px solid #D2C4B4', weight: on ? 800 : 500 });
+    const years = [['all', '전체'], [2026, '2026년'], [2025, '2025년']].map(([v, label]) => ({ label, ...sel(s.year === v), pick: () => this.setState({ year: v, month: 'all' }) }));
+    const months = [['all', '전체 월']].concat(Array.from({ length: 12 }, (_, i) => [i + 1, (i + 1) + '월'])).map(([v, label]) => ({ label, ...sel(s.month === v), pick: () => this.setState({ month: v }) }));
+    const rangeText = s.year === 'all' ? '전체 (2025.07 ~ 지금)' : (s.month === 'all' ? s.year + '년' : s.year + '년 ' + s.month + '월');
+    return {
+      years, months, showMonths: s.year !== 'all', rangeText, count: list.length, empty: list.length === 0,
+      items: list.map((d) => {
+        const running = d.end === null;
+        return {
+          title: d.n + '번째 12주', state: running ? '진행 중' : '완료',
+          period: fmt(d.start) + ' ~ ' + (running ? '진행 중' : fmt(d.end)), detail: d.detail, detailShow: 'block',
+          href: running ? 'Challenge.dc.html' : 'Summary.dc.html',
+          bg: running ? '#E4F0F5' : '#FFFFFF', border: running ? '1px solid #E4F0F5' : '1px solid #E6DBCD',
+          chevShow: 'block'
+        };
+      })
+    };
+  }
 }
 </script>
 </body>

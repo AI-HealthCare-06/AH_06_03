@@ -366,7 +366,8 @@
       "title": "지난 12주 기록",
       "w": 390,
       "x": 1880,
-      "y": 8700
+      "y": 8700,
+      "is_interactive": true
     }
   },
   "createdOnFiles": {
