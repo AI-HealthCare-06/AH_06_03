@@ -52,6 +52,7 @@ const kst = (iso) => {
   const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + 'Z');   // 서버 시각은 UTC
   return isNaN(d) ? '' : d.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
+const FROM_BELL = new URLSearchParams(location.search).get('from') === 'bell';   // 종 모양으로 들어오면 "알림"
 const state = { filter: 'all', view: 'list', list: null, detail: null, err: '', notice: '', busy: false, draft: { title: '', body: '' } };
 const $screen = document.getElementById('screen');
 
@@ -101,20 +102,16 @@ function render() {
   }
   const all = state.list ? state.list.items : [];
   const items = state.filter === 'all' ? all : all.filter(i => kind(i) === state.filter);
-  const cnt = (f) => f === 'all' ? all.length : all.filter(i => kind(i) === f).length;
-  const FL = [['all', `전체 ${cnt('all')}`], ['wait', '답변 대기'], ['new', '답변 도착'], ['done', '완료']];
   $screen.innerHTML = `
-    ${pageBar('menu.html', '1:1 문의')}
+    ${pageBar('menu.html', FROM_BELL ? '알림' : '1:1 문의')}
     ${state.notice ? `<p class="ok" style="font-weight:700; margin:0">${esc(state.notice)}</p>` : ''}
     ${state.err ? `<p class="err">${esc(state.err)}</p>` : ''}
-    <div class="fl">${FL.map(([f, t]) => `<button type="button" data-f="${f}" class="${state.filter === f ? 'on' : ''}">${t}</button>`).join('')}</div>
     ${state.list === null ? '<p class="hint">불러오는 중...</p>'
       : items.length ? `<div class="list">${items.map(i => `<button type="button" class="inq" data-id="${esc(i.inquiry_id)}"><span class="top">${tag(i)}<span class="d">${day(i.created_at)}</span></span><span class="t">${esc(i.title)}</span>${i.body ? `<span class="pv">${esc(i.body)}</span>` : ''}</button>`).join('')}</div>`
-      : '<p class="hint">남긴 문의가 없어요.</p>'}
+      : (FROM_BELL ? '<p class="hint">새 알림이 없어요.</p>' : '<p class="hint">남긴 문의가 없어요.</p>')}
     <div class="bar"><button type="button" class="cta" id="q-new">＋ 문의 작성하기</button></div>`;
   document.getElementById('q-new').addEventListener('click', () => { state.view = 'new'; state.err = ''; state.notice = ''; render(); });
   $screen.querySelectorAll('.inq').forEach(b => b.addEventListener('click', () => open(b.dataset.id)));
-  $screen.querySelectorAll('[data-f]').forEach(b => b.addEventListener('click', () => { state.filter = b.dataset.f; render(); }));
 }
 
 async function load() {

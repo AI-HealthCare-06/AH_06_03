@@ -70,7 +70,7 @@ function renderHeader(){
   slot.innerHTML = `
     <div class="picker">
       ${hd.brand ? `<a class="brand" href="dashboard.html">PAEON</a>` : `<span class="brand" style="font-size:22px; letter-spacing:-.3px">${hd.title}</span>`}
-      ${showRight ? `<div class="hdr-right"><a class="hdr-pie" id="hdr-pie" href="pie.html" aria-label="내 파이" hidden>${ICON.pie}<span id="hdr-pie-n"></span></a><a class="hdr-bell" id="hdr-bell" href="inquiries.html" aria-label="문의 답변">${ICON.bell}</a></div>` : ''}
+      ${showRight ? `<div class="hdr-right"><a class="hdr-pie" id="hdr-pie" href="pie.html" aria-label="내 파이" hidden>${ICON.pie}<span id="hdr-pie-n"></span></a><a class="hdr-bell" id="hdr-bell" href="inquiries.html?from=bell" aria-label="문의 답변">${ICON.bell}</a></div>` : ''}
     </div>`;
   if (!showRight) return;
   pieBalance().then((n) => {
