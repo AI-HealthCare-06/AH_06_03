@@ -8,7 +8,7 @@ from app.models.inquiry import Inquiry
 from app.schemas.inquiry import (
     AdminInquiryDetail, AdminInquiryItem, AdminInquiryList, InquiryCreate, InquiryDetail, InquiryItem, InquiryList,
 )
-from app.services import audit_service
+from app.services import admin_alert, audit_service
 
 MAX_OPEN = 5    # 답을 기다리는 문의는 한 사람당 5개까지 (도배 방지)
 
@@ -31,6 +31,8 @@ async def create(db: AsyncSession, user_id: str, req: InquiryCreate) -> InquiryI
     inq = Inquiry(user_id=user_id, title=req.title, body=req.body, created_at=utcnow())
     db.add(inq)
     await db.commit()
+    # 늦게 답하지 않게 관리자에게 알린다. 제목·내용·작성자는 보내지 않는다 (디스코드는 서비스 밖)
+    admin_alert.notify("💬 새 1:1 문의가 1건 들어왔어요. 관리자 화면의 문의 탭에서 확인해 주세요.")
     return _item(inq)
 
 
