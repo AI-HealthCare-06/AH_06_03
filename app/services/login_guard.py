@@ -1,7 +1,8 @@
 """로그인 시도 제한: 비밀번호를 짧은 시간에 여러 번 틀리면 잠시 막는다 (비밀번호 맞히기 공격 방지).
 
 - 같은 이메일: 15분 안에 5번 틀리면 그 이메일로는 잠시(최대 15분) 로그인할 수 없다. 로그인에 성공하면 처음부터 다시 센다.
-- 같은 IP: 15분 안에 20번 틀리면 그 IP에서는 잠시 로그인할 수 없다 (여러 계정을 번갈아 찔러 보는 것을 막는다).
+- 같은 IP: 15분 안에 50번(설정 LOGIN_MAX_FAILS_PER_IP) 틀리면 그 IP에서는 잠시 로그인할 수 없다
+  (여러 계정을 번갈아 찔러 보는 것을 막는다). 같은 와이파이에서 여러 명이 로그인하는 날을 생각해 넉넉히 두었다.
 - 막혀 있는 동안의 시도는 비밀번호를 확인하지도, 실패로 세지도 않는다 (막힘이 끝없이 늘어나지 않게).
 - 없는 이메일도 똑같이 세서, 응답만 보고 가입 여부를 알 수 없게 한다.
 
@@ -13,12 +14,12 @@ uvicorn을 여러 프로세스로 늘리면 횟수가 프로세스마다 따로 
 from collections import deque
 from datetime import datetime, timedelta
 
+from app.core.config import settings
 from app.core.errors import AppError
 from app.core.security import utcnow
 
 WINDOW = timedelta(minutes=15)
 MAX_PER_ACCOUNT = 5
-MAX_PER_IP = 20
 MAX_KEYS = 10_000          # 메모리가 끝없이 커지지 않게: 이보다 많아지면 지난 기록부터 정리한다
 
 TOO_MANY = AppError(429, "AUTH_TOO_MANY_ATTEMPTS", "로그인 시도가 너무 많아요. 15분 뒤에 다시 시도해 주세요.")
@@ -50,7 +51,7 @@ def check(email: str, ip: str | None) -> None:
     now = utcnow()
     if _recent(_by_email, email.strip().lower(), now) >= MAX_PER_ACCOUNT:
         raise TOO_MANY
-    if ip and _recent(_by_ip, ip, now) >= MAX_PER_IP:
+    if ip and _recent(_by_ip, ip, now) >= settings.LOGIN_MAX_FAILS_PER_IP:
         raise TOO_MANY
 
 

@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import pytest
 from sqlalchemy import select
 
+from app.core.config import settings
 from app.core.security import hash_password, utcnow
 from app.services import login_guard
 from app.models.access_log import AccessLog
@@ -74,12 +75,28 @@ async def test_없는_이메일도_똑같이_막혀서_가입_여부를_알_수_
     assert (await login(client, email="nobody@test.kr", pw="wrong-pass")).status_code == 429
 
 
-async def test_같은_IP에서_여러_계정을_20번_틀리면_그_IP는_막힌다(client, db_session):
+async def test_같은_IP에서_여러_계정을_한도만큼_틀리면_그_IP는_막힌다(client, db_session):
     await make_user(db_session)
-    for i in range(20):                                                 # 계정마다 1번씩, 20개 계정
+    limit = settings.LOGIN_MAX_FAILS_PER_IP
+    for i in range(limit):                                              # 계정마다 1번씩, 한도만큼의 계정
         assert (await login(client, email=f"spray{i}@test.kr", pw="wrong-pass")).status_code == 401
     assert (await login(client)).status_code == 429                     # 같은 IP: 진짜 계정도 막힘
     assert (await login(client, ip="198.51.100.7")).status_code == 200  # 다른 IP는 그대로
+
+
+async def test_같은_와이파이에서_20명이_한_번씩_틀려도_막히지_않는다(client, db_session):
+    await make_user(db_session)
+    for i in range(20):
+        assert (await login(client, email=f"guest{i}@test.kr", pw="wrong-pass")).status_code == 401
+    assert (await login(client)).status_code == 200                     # 기본 한도(50)라 같은 자리의 다른 사람은 그대로 로그인
+
+
+async def test_IP_한도는_설정으로_바꿀_수_있다(client, db_session, monkeypatch):
+    monkeypatch.setattr(settings, "LOGIN_MAX_FAILS_PER_IP", 3)
+    await make_user(db_session)
+    for i in range(3):
+        await login(client, email=f"x{i}@test.kr", pw="wrong-pass")
+    assert (await login(client)).status_code == 429
 
 
 async def test_실패는_접속_기록에_남지_않는다(client, db_session):
