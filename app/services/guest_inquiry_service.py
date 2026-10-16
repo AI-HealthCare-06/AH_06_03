@@ -15,7 +15,7 @@ from app.models.guest_inquiry import GuestInquiry
 from app.schemas.inquiry import (
     AdminGuestDetail, AdminGuestItem, AdminGuestList, GuestInquiryCreate, GuestInquiryView,
 )
-from app.services import audit_service
+from app.services import admin_alert, audit_service
 
 RETENTION_DAYS = 30        # 접수 후 30일이 지나면 삭제
 PER_HOUR, PER_DAY = 3, 10  # IP별 접수 횟수 제한
@@ -64,6 +64,8 @@ async def create(db: AsyncSession, ip: str | None, req: GuestInquiryCreate) -> s
         raise AppError(429, "GUEST_INQUIRY_BUSY", "지금은 문의가 많아 접수를 잠시 멈췄어요. 나중에 다시 시도해 주세요.")
     db.add(GuestInquiry(code_hash=_hash(_norm(code)), ip_hash=ip_hash, title=req.title, body=req.body, created_at=now))
     await db.commit()
+    # 실제로 접수된 문의만 알린다 (봇·횟수 초과로 막힌 것은 위에서 끝남). 제목·내용은 보내지 않는다
+    admin_alert.notify("💬 새 비회원 문의가 1건 들어왔어요. 관리자 화면의 비회원 문의 탭에서 확인해 주세요.")
     return code
 
 
