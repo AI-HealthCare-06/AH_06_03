@@ -16,7 +16,7 @@ from app.core.security import (
     verify_password_async,
 )
 from app.repositories import user_repository
-from app.services import access_log_service, consent_service, suspension
+from app.services import access_log_service, consent_service, login_guard, suspension
 from app.schemas.auth import SignupResult, TokenResult, MeResult
 
 
@@ -83,13 +83,17 @@ async def _issue_tokens(db: AsyncSession, user_id: str) -> TokenResult:
 
 
 async def login(db: AsyncSession, email: str, password: str, ip: str | None = None) -> TokenResult:
+    login_guard.check(email, ip)                                    # 여러 번 틀렸으면 잠시 막는다 (비밀번호 확인 전)
     user = await user_repository.get_user_by_email(db, email.lower())
     if user is None:
         await verify_password_async(password, DUMMY_PASSWORD_HASH)  # 없는 이메일도 같은 시간 걸리게
+        login_guard.record_failure(email, ip)
         raise INVALID_LOGIN
     ok = await verify_password_async(password, user.password_hash)
     if user.status == "deleted" or not ok:
+        login_guard.record_failure(email, ip)
         raise INVALID_LOGIN
+    login_guard.record_success(email)
     suspension.check(user)
     if user.status == "pending_guardian":
         raise AppError(403, "AUTH_GUARDIAN_PENDING", "법정대리인 동의가 확인된 뒤 이용할 수 있습니다.")
