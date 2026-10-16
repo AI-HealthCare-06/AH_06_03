@@ -92,8 +92,30 @@
   #msg:empty{display:none}
   #cc-form{gap:10px !important}
   #cc-form input,#cc-form select{height:44px; box-sizing:border-box; border:1px solid var(--sage); border-radius:12px; font:inherit; font-size:14px; padding:0 14px; background:#fff}
-  .wrapper{max-width:760px}
-  .picker{max-width:760px}
+  body{display:block; margin:0}
+  .adm-shell{display:flex; min-height:100vh; background:var(--cream)}
+  .adm-side{width:240px; flex:none; box-sizing:border-box; background:#fff; border-right:1px solid var(--line); padding:28px 16px; display:flex; flex-direction:column; gap:4px; position:sticky; top:0; height:100vh; overflow-y:auto}
+  .adm-side .logo{font-size:20px; font-weight:800; letter-spacing:3px; padding:0 12px}
+  .adm-side .sub{font-size:13px; color:var(--body); padding:2px 12px 22px}
+  .adm-side .ov{display:block; font-size:13px; font-weight:700; text-decoration:underline; padding:0 12px 14px; color:var(--body)}
+  .adm-side .who{margin-top:auto; border-top:1px solid var(--line); padding:16px 12px 0; display:flex; flex-direction:column; gap:6px; font-size:13px; color:var(--body)}
+  .adm-side .who b{color:var(--ink); word-break:break-all}
+  .adm-side .who button{align-self:flex-start; background:none; border:0; padding:0; font:inherit; font-size:13px; text-decoration:underline; color:var(--body); cursor:pointer}
+  #tabs{display:flex; flex-direction:column; gap:4px; margin:0}
+  #tabs button{width:100%; height:44px; display:flex; align-items:center; padding:0 12px; border-radius:12px; background:transparent; font-size:15px; text-align:left; color:var(--body)}
+  #tabs button.on{background:var(--notice); color:var(--ink); font-weight:800}
+  .adm-main{flex:1; min-width:0; max-width:1040px; box-sizing:border-box; padding:32px 40px}
+  .adm-shell.locked .adm-side, .adm-shell.locked section, .adm-shell.locked #pg-title{display:none}
+  .adm .loginbox{width:100%; max-width:360px; margin:12vh auto 0; display:flex; flex-direction:column; gap:12px}
+  .adm .loginbox input{height:44px; box-sizing:border-box; border:1px solid var(--sage); border-radius:12px; font:inherit; font-size:14px; padding:0 14px; background:#fff}
+  @media (max-width: 860px){
+    .adm-shell{flex-direction:column}
+    .adm-side{width:auto; height:auto; position:static; border-right:0; border-bottom:1px solid var(--line); padding:16px}
+    #tabs{flex-direction:row; flex-wrap:wrap}
+    #tabs button{width:auto; height:38px}
+    .adm-side .sub{padding-bottom:10px}
+    .adm-main{padding:20px 16px}
+  }
   .rw{display:grid; grid-template-columns:repeat(4,1fr); gap:6px}
   .rw input{width:100%}
   .thread{background:#fff; border:1px solid var(--line); border-radius:18px; margin-bottom:8px; overflow:hidden}
@@ -113,25 +135,34 @@
 </head>
 <body>
 
-<div class="wrapper">
-  <div class="frame">
-    <div class="frame-body">
-      <div class="screen adm" style="max-width:680px; margin:0 auto; width:100%">
-        <h3>관리자</h3>
-        <p class="meta" style="margin:0 0 10px"><a href="admin-overview.html" style="text-decoration:underline; font-weight:700">운영 현황 (진행 현황, 동의·삭제, 서비스 상태, CSV) →</a></p>
-        <div class="tabs" id="tabs">
-          <button type="button" data-t="mission" class="on">미션 관리</button>
-          <button type="button" data-t="users">가입자</button>
-          <button type="button" data-t="stats">챌린지 통계</button>
-          <button type="button" data-t="logs">열람 기록</button>
-          <button type="button" data-t="inquiries">문의</button>
-          <button type="button" data-t="guest">비회원 문의</button>
-          <button type="button" data-t="reports">신고</button>
-          <button type="button" data-t="posts">글 관리</button>
-          <button type="button" data-t="cc">공통 챌린지</button>
-          <button type="button" data-t="purge">테스트 계정 삭제</button>
-        </div>
+<div class="adm-shell" id="shell">
+  <aside class="adm-side">
+    <div class="logo">PAEON</div>
+    <div class="sub">관리자</div>
+    <a class="ov" href="admin-overview.html">운영 현황 →</a>
+    <div class="tabs" id="tabs">
+      <button type="button" data-t="mission" class="on">미션 관리</button>
+      <button type="button" data-t="users">가입자</button>
+      <button type="button" data-t="stats">챌린지 통계</button>
+      <button type="button" data-t="cc">공통 챌린지</button>
+      <button type="button" data-t="logs">열람 기록</button>
+      <button type="button" data-t="inquiries">문의</button>
+      <button type="button" data-t="guest">비회원 문의</button>
+      <button type="button" data-t="reports">신고</button>
+      <button type="button" data-t="posts">글 관리</button>
+      <button type="button" data-t="purge">테스트 계정 삭제</button>
+    </div>
+    <div class="who" id="who" hidden><b id="who-mail"></b><button type="button" id="logout">로그아웃</button></div>
+  </aside>
+  <main class="adm-main"><div class="screen adm" style="width:100%">
+        <h3 id="pg-title">미션 관리</h3>
         <div id="msg" role="status" aria-live="polite"></div>
+        <form id="lg" class="loginbox" hidden>
+          <h3>관리자 로그인</h3>
+          <input id="lg-email" type="email" placeholder="이메일" autocomplete="username" required>
+          <input id="lg-pw" type="password" placeholder="비밀번호" autocomplete="current-password" required>
+          <button type="submit" class="btn" id="lg-go" style="height:44px; background:var(--accent-light); border-color:var(--accent-light)">로그인</button>
+        </form>
 
         <section id="sec-mission">
                 <div class="notice">
@@ -235,9 +266,7 @@
           </div>
           <div id="p-result" class="detail" hidden></div>
         </section>
-      </div>
-    </div>
-  </div>
+  </div></main>
 </div>
 
 <script src="assets/api.js"></script>
@@ -263,9 +292,26 @@ function el(tag, props, ...kids) {
 
 function say(text, kind) { $msg.textContent = text || ''; $msg.className = kind || ''; }
 
-function showLocked(text) {
-  $list.replaceChildren(el('div', { class: 'lock' }, text, el('br'), el('a', { href: 'login.html' }, '관리자 계정으로 로그인하기')));
+const $shell = document.getElementById('shell'), $lg = document.getElementById('lg');
+function showLogin(text) {
+  $shell.classList.add('locked'); $lg.hidden = false;
+  say(text || '', 'err');
 }
+goLogin = () => { showLogin(); return new Promise(() => {}); };   // 만료되면 다른 화면으로 가지 않고 여기서 다시 로그인한다
+$lg.addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const btn = document.getElementById('lg-go'); btn.disabled = true; say('로그인하는 중...');
+  try {
+    const res = await apiLogin(document.getElementById('lg-email').value.trim(), document.getElementById('lg-pw').value);
+    PaeonTokens.save(res.data.access_token, res.data.refresh_token, true);
+    location.reload();
+  } catch (e) { say(friendlyError(e), 'err'); btn.disabled = false; }
+});
+document.getElementById('logout').addEventListener('click', async () => {
+  try { await apiCall('POST', '/auth/logout', { refresh_token: PaeonTokens.refresh() }, '로그아웃하지 못했어요'); } catch (e) { /* 서버가 안 받아도 이 기기에서는 로그아웃 */ }
+  PaeonTokens.clear(); location.reload();
+});
+function showLocked(text) { showLogin(text); }
 
 async function run(job, okText) {
   if (busy) return;
@@ -334,8 +380,12 @@ async function load(keepMessage) {
     categories = body.data;
     render();
   } catch (e) {
-    if (e.code === 'ADMIN_FORBIDDEN') showLocked('이 계정은 관리자가 아니에요.');
+    if (e.code === 'ADMIN_FORBIDDEN') showLocked('이 계정은 관리자가 아니에요. 관리자 계정으로 로그인해 주세요.');
     else showLocked(friendlyError(e));
+    return;
+  }
+  if (!document.getElementById('who-mail').textContent) {
+    try { document.getElementById('who-mail').textContent = (await apiGetMe()).email; document.getElementById('who').hidden = false; } catch (e) { /* 이메일 표시만 빠진다 */ }
   }
 }
 
@@ -345,6 +395,7 @@ document.getElementById('tabs').addEventListener('click', (ev) => {
   const t = ev.target.dataset && ev.target.dataset.t;
   if (!t) return;
   for (const b of document.querySelectorAll('#tabs button')) b.classList.toggle('on', b.dataset.t === t);
+  document.getElementById('pg-title').textContent = ev.target.textContent;
   for (const [k, sec] of Object.entries(sections)) sec.hidden = k !== t;
   say('');
   if (t === 'users' && !usersLoaded) loadUsers(0);
