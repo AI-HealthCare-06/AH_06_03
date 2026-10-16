@@ -48,6 +48,7 @@ input::placeholder,textarea::placeholder{color:#A9B3BC; font-weight:500; opacity
 .hdr-pie{height:32px; padding:0 12px; border-radius:16px; background:var(--cream); display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:800; text-decoration:none; color:var(--ink)}
 .hdr-pie .pie-coin{width:26px; height:auto}
 .hdr-bell{position:relative; width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--ink); text-decoration:none}
+.hdr-bell .dot{position:absolute; top:11px; right:11px; width:8px; height:8px; border-radius:50%; background:#2F7DE1; box-shadow:0 0 0 1.5px #fff}
 .hdr-bell .badge{position:absolute; top:6px; right:5px; min-width:16px; height:16px; border-radius:8px; background:var(--accent); color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; padding:0 4px}
 .page-bar{display:flex; align-items:center; gap:4px; min-height:56px; margin:0 -12px 4px}
 .page-bar .back{width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--ink)}
@@ -125,6 +126,8 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .confirm-backdrop{position:fixed; inset:0; background:rgba(36,55,73,.5); display:flex; align-items:center; justify-content:center; padding:20px; z-index:200}
 .confirm-card{background:#fff; border-radius:20px; padding:24px 22px; max-width:360px; width:100%; text-align:center; box-shadow:none}
 .confirm-card b{font-size:16px}
+.notice-tag{display:inline-block; height:24px; line-height:24px; padding:0 10px; border-radius:12px; background:var(--notice); color:#234257; font-size:12px; font-weight:800; margin-bottom:10px}
+.confirm-card .notice-tag + b{display:block}
 .confirm-card p{font-size:13.5px; line-height:1.6; color:var(--muted); margin:10px 0 18px}
 .confirm-actions{display:flex; gap:10px}
 .confirm-actions button{flex:1; margin:0}
