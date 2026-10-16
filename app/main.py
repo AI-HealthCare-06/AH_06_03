@@ -19,10 +19,9 @@ from app.apis.guest_inquiry import router as guest_inquiry_router
 from app.apis.notice import admin_router as notice_admin_router, public_router as notice_router
 from app.apis.pie import router as pie_router
 from app.apis.community import router as community_router
-from app.apis.community_admin import admin_router as community_admin_router
 from app.apis.common_challenge import admin_router as common_challenge_admin_router, router as common_challenge_router
 from app.apis.home import router as home_router
-from app.apis.community_admin import posts_router as community_posts_admin_router
+from app.apis.community_admin import admin_router as community_admin_router, posts_router as community_posts_admin_router
 
 from app.apis.prediction import router as prediction_router
 from app.apis.auth import router as auth_router

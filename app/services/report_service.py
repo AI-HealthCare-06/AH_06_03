@@ -82,6 +82,10 @@ async def _apply(db: AsyncSession, target_type: str, target_id: str, obj, action
         else:
             obj.body = ""
     elif action in ("dismiss", "restore") and obj.status == "hidden":
+        # dismiss(신고 "문제 없음"): 처리 대기 신고가 남아 있는 숨김은 '신고 누적 자동 숨김'뿐이다.
+        # 신고는 보이는 글에만 할 수 있고, 관리자가 숨길 때는 신고 처리든 직접 숨김(moderate_post)이든
+        # 대기 신고를 함께 처리하기 때문이다. 그래서 문제 없음이면 다시 보이게 해도 된다.
+        # restore(직접 관리): 관리자가 숨긴 글을 일부러 다시 보이게 하는 것.
         obj.status = "visible"
 
 
