@@ -22,6 +22,7 @@ from app.apis.community import router as community_router
 from app.apis.community_admin import admin_router as community_admin_router
 from app.apis.common_challenge import admin_router as common_challenge_admin_router, router as common_challenge_router
 from app.apis.home import router as home_router
+from app.apis.community_admin import posts_router as community_posts_admin_router
 
 from app.apis.prediction import router as prediction_router
 from app.apis.auth import router as auth_router
@@ -87,6 +88,7 @@ app.include_router(admin_overview_router, prefix="/v1")
 app.include_router(home_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.include_router(character_router, prefix="/v1")
 app.include_router(party_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
+app.include_router(community_posts_admin_router, prefix="/v1")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.mount("/media", StaticFiles(directory=BASE_DIR / "media"), name="media")
 
