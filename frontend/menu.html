@@ -41,6 +41,7 @@
 
         <div class="grp">
           <div class="gt">문의 · 안내</div>
+          <a class="row" href="notices.html"><span>공지사항</span><span class="rt"><span class="badge" id="ntc-badge" hidden>새 공지</span><span data-icon="chevron"></span></span></a>
           <a class="row" href="inquiries.html"><span>1:1 문의</span><span class="rt"><span class="badge" id="inq-badge" hidden></span><span data-icon="chevron"></span></span></a>
           <a class="row" href="guide.html"><span>검사 · 상담 안내</span><span data-icon="chevron"></span></a>
         </div>
@@ -65,6 +66,7 @@
 if (!loggedIn()) location.replace('login.html');
 apiCall('GET', '/characters/me', undefined, '').then(r => { document.getElementById('me-av').innerHTML = characterSvg(r.data, 36); }).catch(() => {});
 apiGetMe().then(me => { document.getElementById('me-email').textContent = me.email; }).catch(() => {});
+unseenNotices().then(l => { if (l.length) document.getElementById('ntc-badge').hidden = false; });
 inquiryUnread().then(n => { const b = document.getElementById('inq-badge'); if (n) { b.textContent = '새 답변 ' + n; b.hidden = false; } });
 document.getElementById('logout').addEventListener('click', async () => {
   if (await confirmDialog('로그아웃할까요?', '다시 이용하려면 로그인해야 해요.', '로그아웃')) apiLogout();

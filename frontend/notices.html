@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 공지사항</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .pb{margin-bottom:-6px}
+  .list{display:flex; flex-direction:column}
+  .ntc{border-top:1px solid var(--line); padding:18px 0}
+  .ntc:last-child{border-bottom:1px solid var(--line)}
+  .ntc .top{display:flex; align-items:center; gap:8px; margin-bottom:6px}
+  .ntc .d{font-size:13px; color:var(--muted)}
+  .ntc .new{height:22px; padding:0 9px; border-radius:11px; background:#2F7DE1; color:#fff; font-size:12px; font-weight:800; display:inline-flex; align-items:center}
+  .ntc .t{font-size:16px; font-weight:800; line-height:1.4; word-break:break-all}
+  .ntc .b{font-size:14px; color:var(--body); line-height:1.7; white-space:pre-wrap; word-break:break-all; margin-top:8px}
+</style>
+</head>
+<body>
+
+<div id="header-slot"></div>
+
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" id="screen"><p class="hint">불러오는 중...</p></div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const day = (iso) => {
+  const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + 'Z');   // 서버 시각은 UTC
+  return isNaN(d) ? '' : d.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'numeric', day: 'numeric' });
+};
+(async () => {
+  const bar = `<div class="page-bar pb"><a class="back" href="menu.html" aria-label="뒤로">${ICON.back}</a><span class="ttl">공지사항</span></div>`;
+  const seen = new Set(JSON.parse(localStorage.getItem(_noticeKey()) || '[]'));
+  const list = await fetchNotices();
+  document.getElementById('screen').innerHTML = bar + (list.length
+    ? `<div class="list">${list.map(n => `<div class="ntc"><div class="top">${seen.has(n.notice_id) ? '' : '<span class="new">NEW</span>'}<span class="d">${day(n.starts_at)}</span></div><div class="t">${esc(n.title)}</div><div class="b">${esc(n.body)}</div></div>`).join('')}</div>`
+    : '<p class="hint">게시 중인 공지가 없어요.</p>');
+  markNoticesSeen(list);   // 열어서 봤으니 파란 점과 새 공지 표시는 다음부터 사라진다
+})();
+</script>
+</body>
+</html>

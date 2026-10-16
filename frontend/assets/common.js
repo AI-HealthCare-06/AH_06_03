@@ -112,9 +112,42 @@ function renderHeader(){
     document.getElementById('hdr-pie-n').textContent = n;
     document.getElementById('hdr-pie').hidden = false;
   });
-  inquiryUnread().then((n) => {   // 1:1 문의에 답변이 오면 종에 숫자
-    if (n) document.getElementById('hdr-bell').insertAdjacentHTML('beforeend', `<span class="badge" aria-label="새 답변 ${n}개">${n}</span>`);
+  Promise.all([inquiryUnread(), unseenNotices()]).then(([n, notices]) => {   // 문의 답변은 종에 숫자, 새 공지는 파란 점
+    const bell = document.getElementById('hdr-bell');
+    if (n) bell.insertAdjacentHTML('beforeend', `<span class="badge" aria-label="새 답변 ${n}개">${n}</span>`);
+    else if (notices.length) { bell.insertAdjacentHTML('beforeend', '<span class="dot" aria-label="새 공지"></span>'); bell.href = 'notices.html'; }
   });
+}
+// 공지: 게시 중인 공지(GET /notices, 로그인 불필요)와 이 기기에서 계정별로 "본 공지" 기록
+async function fetchNotices() {
+  try {
+    const r = await fetch(_apiBase() + '/notices');
+    return r.ok ? (await r.json()).data : [];
+  } catch (e) { return []; }
+}
+function _noticeKey() { try { return 'paeon-notices-seen:' + (localStorage.getItem('paeon-user-id') || ''); } catch (e) { return 'paeon-notices-seen:'; } }
+function _noticesSeen() { try { return JSON.parse(localStorage.getItem(_noticeKey()) || '[]'); } catch (e) { return []; } }
+function markNoticesSeen(list) {
+  try { localStorage.setItem(_noticeKey(), JSON.stringify([...new Set([..._noticesSeen(), ...list.map((n) => n.notice_id)])].slice(-100))); } catch (e) { /* 기록만 빠진다 */ }
+}
+async function unseenNotices() {
+  if (!loggedIn()) return [];
+  const seen = _noticesSeen();
+  return (await fetchNotices()).filter((n) => !seen.includes(n.notice_id));
+}
+// 새 공지를 하나씩 팝업으로 보여 준다 (확인하면 본 것으로 기록)
+async function showNoticePopups() {
+  for (const n of (await unseenNotices()).reverse()) {
+    await new Promise((resolve) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'confirm-backdrop';
+      wrap.innerHTML = '<div class="confirm-card" role="dialog" aria-modal="true"><span class="notice-tag">공지</span><b></b><p></p><div class="confirm-actions"><button type="button" class="cta">확인</button></div></div>';
+      wrap.querySelector('b').textContent = n.title;
+      const p = wrap.querySelector('p'); p.textContent = n.body; p.style.cssText = 'white-space:pre-wrap; text-align:left; max-height:50vh; overflow:auto';
+      wrap.querySelector('button').addEventListener('click', () => { markNoticesSeen([n]); wrap.remove(); resolve(); });
+      document.body.appendChild(wrap);
+    });
+  }
 }
 function loggedIn(){ return !!PaeonTokens.access(); }
 
@@ -124,7 +157,7 @@ const NAV_ITEMS = [
   { icon: ICON.challenge, label: '챌린지', href: localStorage.getItem('paeon-cycle') ? 'challenge-progress.html' : 'challenges.html', pages: ['challenges.html', 'challenge-progress.html', 'badges.html'] },
   { icon: ICON.home, label: '홈', href: 'dashboard.html', pages: ['dashboard.html', 'health-info.html', 'survey.html', 'review.html', 'result.html', 'calendar-diary.html'] },
   { icon: ICON.community, label: '커뮤니티', href: 'feed.html', pages: ['feed.html', 'write.html', 'post.html', 'nickname.html', 'common-challenges.html', 'common-challenge.html', 'party.html', 'party-start.html', 'party-create.html', 'party-home.html'] },
-  { icon: ICON.more, label: '더보기', href: 'menu.html', pages: ['menu.html', 'mypage.html', 'inquiries.html', 'guide.html', 'terms.html', 'character.html', 'pie.html'] },
+  { icon: ICON.more, label: '더보기', href: 'menu.html', pages: ['menu.html', 'mypage.html', 'inquiries.html', 'notices.html', 'guide.html', 'terms.html', 'character.html', 'pie.html'] },
 ];
 // 안 읽은 문의 답변 수. 로그인하지 않았거나 서버에 닿지 않으면 0 (메뉴만 빠지고 화면은 그대로 동작한다)
 async function inquiryUnread() {
