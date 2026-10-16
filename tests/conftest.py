@@ -13,6 +13,7 @@ from app import models  # noqa: F401  (테이블 설계도 등록)
 from app.core.db.databases import Base, async_get_db
 from app.core.security import create_access_token
 from app.main import app
+from app.services import login_guard
 from app.models.challenge import Challenge, ChallengeCategory, ChallengeLevel
 from app.models.health import HealthInputSchema, HealthMeasurement, HealthRecord
 from app.models.survey import SurveyInstance, SurveyOption, SurveyQuestion, SurveyResponse, SurveyVersion
@@ -76,6 +77,7 @@ async def db_session():
 
 @pytest_asyncio.fixture
 async def client(db_session):
+    login_guard.reset()   # 로그인 실패 횟수는 메모리에 있어서, 시험마다 0부터 시작하게 비운다
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c
 
