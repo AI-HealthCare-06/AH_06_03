@@ -183,3 +183,33 @@ class ReportActionResult(BaseModel):
 
 class PhotoResult(BaseModel):
     position: int                 # 몇 번째 사진인지 (0부터)
+
+
+class AdminPostItem(BaseModel):
+    """관리자 글 관리 목록 한 줄 (전체 커뮤니티 글, 파티 글 제외)."""
+    post_id: str
+    title: str
+    preview: str                  # 본문 앞부분 (관리자만 본다)
+    category: str
+    author_nickname: str
+    author_user_id: str | None = None   # 정지·삭제 같은 계정 조치에 쓰는 작성자 번호 (관리자에게만)
+    status: Literal["visible", "hidden", "deleted"]
+    pending_reports: int          # 아직 처리하지 않은 신고 수
+    created_at: datetime
+
+
+class AdminPostList(BaseModel):
+    total: int
+    items: list[AdminPostItem]
+
+
+class AdminPostActionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    action: Literal["hide", "delete", "restore"]
+
+
+class AdminPostActionResult(BaseModel):
+    post_id: str
+    status: str                   # 바뀐 뒤 상태
+    handled_reports: int          # 함께 처리된 대기 신고 수

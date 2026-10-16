@@ -9,7 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import AppError
 from app.core.security import utcnow
 from app.models.community import CommunityComment, CommunityPost, CommunityPostPhoto, CommunityProfile, CommunityReport
-from app.schemas.community import AdminReportItem, AdminReportList, ReportActionResult
+from app.schemas.community import (
+    AdminPostActionResult, AdminPostItem, AdminPostList, AdminReportItem, AdminReportList, ReportActionResult,
+)
 from app.services import audit_service, community_service
 
 PREVIEW_LEN = 200
@@ -82,7 +84,7 @@ async def _apply(db: AsyncSession, target_type: str, target_id: str, obj, action
     elif action in ("dismiss", "restore") and obj.status == "hidden":
         obj.status = "visible"
 
-        
+
 async def act(db: AsyncSession, admin: str, target_type: str, target_id: str, action: str) -> ReportActionResult:
     if target_type not in ("post", "comment"):
         raise AppError(404, "COMMUNITY_NOT_FOUND", "대상을 찾을 수 없어요.")
@@ -103,3 +105,66 @@ async def act(db: AsyncSession, admin: str, target_type: str, target_id: str, ac
     await audit_service.record(db, admin, f"community_report_{action}", target=f"{target_type[0]}-{target_id[-8:]}")
     await db.commit()
     return ReportActionResult(target_type=target_type, target_id=target_id, action=action, handled=len(reports))
+
+# ---------------------------------------------------------------- 관리자 글 관리 (신고 없이)
+def _like(q: str) -> str:
+    """검색어의 %·_를 글자 그대로 찾게 바꾼다."""
+    return "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+
+
+async def admin_posts(
+    db: AsyncSession, admin: str, q: str | None, status: str | None, limit: int, offset: int,
+) -> AdminPostList:
+    """전체 커뮤니티 글 (최신순, 파티 글 제외). 목록을 연 것은 관리자 기록에 남긴다 (10분 안에는 한 번만)."""
+    query = select(CommunityPost).where(CommunityPost.party_id.is_(None))
+    if status:
+        query = query.where(CommunityPost.status == status)
+    if q and q.strip():
+        pattern = _like(q.strip())
+        query = query.where(CommunityPost.title.like(pattern, escape="\\") | CommunityPost.body.like(pattern, escape="\\"))
+    total = (await db.execute(select(func.count()).select_from(query.subquery()))).scalar_one()
+    posts = (await db.execute(
+        query.order_by(CommunityPost.created_at.desc(), CommunityPost.post_id.desc()).limit(limit).offset(offset)
+    )).scalars().all()
+
+    ids = [p.user_id for p in posts]
+    nicks = dict((await db.execute(
+        select(CommunityProfile.user_id, CommunityProfile.nickname).where(CommunityProfile.user_id.in_(ids))
+    )).all()) if ids else {}
+    keys = [f"post:{p.post_id}" for p in posts]
+    pending = dict((await db.execute(
+        select(CommunityReport.target_key, func.count())
+        .where(CommunityReport.target_key.in_(keys), CommunityReport.action.is_(None))
+        .group_by(CommunityReport.target_key)
+    )).all()) if keys else {}
+
+    items = [AdminPostItem(
+        post_id=p.post_id, title=p.title, preview=p.body[:PREVIEW_LEN], category=p.category,
+        author_nickname=nicks.get(p.user_id, "알 수 없음"), author_user_id=p.user_id, status=p.status,
+        pending_reports=pending.get(f"post:{p.post_id}", 0), created_at=p.created_at,
+    ) for p in posts]
+    await audit_service.record(db, admin, "community_posts_view", dedupe_seconds=audit_service.VIEW_DEDUPE_SECONDS)
+    await db.commit()
+    return AdminPostList(total=total, items=items)
+
+
+async def moderate_post(db: AsyncSession, admin: str, post_id: str, action: str) -> AdminPostActionResult:
+    """신고 없이 글 숨김 / 삭제 / 다시 보이기. 신고 처리와 같은 상태 변경(_apply)을 쓰고,
+    그 글에 대기 중인 신고가 있으면 같은 결과로 함께 처리한다 (다시 보이기는 '문제 없음'으로)."""
+    post = await db.get(CommunityPost, post_id)
+    if post is None or post.party_id is not None:          # 파티 글은 관리 대상이 아니다 (파티원에게만 보이는 글)
+        raise AppError(404, "COMMUNITY_NOT_FOUND", "글을 찾을 수 없어요.")
+    if post.status == "deleted":
+        raise AppError(409, "COMMUNITY_ALREADY_DELETED", "이미 삭제한 글이에요.")
+    if (action, post.status) in (("hide", "hidden"), ("restore", "visible")):
+        return AdminPostActionResult(post_id=post_id, status=post.status, handled_reports=0)   # 바뀔 게 없음
+
+    await _apply(db, "post", post_id, post, action)
+    reports = (await db.execute(select(CommunityReport).where(
+        CommunityReport.target_key == f"post:{post_id}", CommunityReport.action.is_(None)))).scalars().all()
+    now = utcnow()
+    for r in reports:
+        r.action, r.handled_by, r.handled_at = ("dismiss" if action == "restore" else action), admin, now
+    await audit_service.record(db, admin, f"community_post_{action}", target=f"p-{post_id[-8:]}")
+    await db.commit()
+    return AdminPostActionResult(post_id=post_id, status=post.status, handled_reports=len(reports))
