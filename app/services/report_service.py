@@ -67,6 +67,22 @@ async def _item(db: AsyncSession, key: str, rs: list[CommunityReport], pending: 
     )
 
 
+async def _apply(db: AsyncSession, target_type: str, target_id: str, obj, action: str) -> None:
+    """글·댓글 상태 바꾸기. 신고 처리와 관리자 직접 관리(신고 없이)가 같이 쓴다.
+    hide: 숨김 / delete: 내용 비우고 삭제 표시(행은 남김) / dismiss·restore: 숨김이면 다시 보이게."""
+    if action == "hide":
+        obj.status = "hidden"
+    elif action == "delete":
+        obj.status = "deleted"            # 내용은 비운다 (글은 제목도 가린다). 처리 기록을 보이기 위해 행은 남긴다
+        if target_type == "post":
+            obj.title, obj.body = DELETED_TITLE, ""
+            await db.execute(delete(CommunityPostPhoto).where(CommunityPostPhoto.post_id == target_id))   # 사진도 지운다
+        else:
+            obj.body = ""
+    elif action in ("dismiss", "restore") and obj.status == "hidden":
+        obj.status = "visible"
+
+        
 async def act(db: AsyncSession, admin: str, target_type: str, target_id: str, action: str) -> ReportActionResult:
     if target_type not in ("post", "comment"):
         raise AppError(404, "COMMUNITY_NOT_FOUND", "대상을 찾을 수 없어요.")
@@ -79,19 +95,8 @@ async def act(db: AsyncSession, admin: str, target_type: str, target_id: str, ac
     if not reports:
         raise AppError(409, "REPORT_ALREADY_HANDLED", "이미 처리한 신고예요.")
 
-    if action == "hide":
-        obj.status = "hidden"
-    elif action == "delete":
-        obj.status = "deleted"            # 내용은 비운다 (글은 제목도 가린다). 처리 기록을 보이기 위해 행은 남긴다
-        if target_type == "post":
-            obj.title, obj.body = DELETED_TITLE, ""
-            await db.execute(delete(CommunityPostPhoto).where(CommunityPostPhoto.post_id == target_id))   # 사진도 지운다
-        else:
-            obj.body = ""
-    elif action == "dismiss" and obj.status == "hidden":
-        # 처리 대기 신고가 남아 있는 숨김은 신고 누적으로 자동 숨김된 것뿐이다
-        # (신고는 보이는 글에만 할 수 있고, 관리자가 숨기면 대기 신고가 모두 처리되므로). 문제 없으면 다시 보이게 한다.
-        obj.status = "visible"
+    await _apply(db, target_type, target_id, obj, action)
+
     now = utcnow()
     for r in reports:
         r.action, r.handled_by, r.handled_at = action, admin, now
