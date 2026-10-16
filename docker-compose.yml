@@ -9,7 +9,8 @@ services:
       DB_HOST: mysql
       DB_PORT: 3306
     ports:
-      - "8000:8000"
+      # 서버 안(127.0.0.1)에서만 열어 둔다. 밖에서는 Caddy(80·443)를 거쳐야만 들어온다 (보안 그룹에 더한 한 겹)
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./app:/app
       - static_volume:/app/static
@@ -49,7 +50,8 @@ services:
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "${DB_PORT}:3306"
+      # DB도 서버 안에서만. 앱·Caddy는 도커 내부 네트워크로 붙고, 로컬 개발의 localhost 접속은 그대로 된다
+      - "127.0.0.1:${DB_PORT}:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
