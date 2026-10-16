@@ -92,6 +92,7 @@
   #msg:empty{display:none}
   #cc-form{gap:10px !important}
   #cc-form input,#cc-form select{height:44px; box-sizing:border-box; border:1px solid var(--sage); border-radius:12px; font:inherit; font-size:14px; padding:0 14px; background:#fff}
+  html{scrollbar-gutter:stable}
   body{display:block; margin:0}
   .adm-shell{display:flex; min-height:100vh; background:var(--cream)}
   .adm-side{width:240px; flex:none; box-sizing:border-box; background:#fff; border-right:1px solid var(--line); padding:28px 16px; display:flex; flex-direction:column; gap:4px; position:sticky; top:0; height:100vh; overflow-y:auto}
@@ -396,6 +397,7 @@ document.getElementById('tabs').addEventListener('click', (ev) => {
   if (!t) return;
   for (const b of document.querySelectorAll('#tabs button')) b.classList.toggle('on', b.dataset.t === t);
   document.getElementById('pg-title').textContent = ev.target.textContent;
+  window.scrollTo(0, 0);   // 탭을 바꾸면 항상 맨 위에서 시작 (제목이 위로 밀려나지 않게)
   for (const [k, sec] of Object.entries(sections)) sec.hidden = k !== t;
   say('');
   if (t === 'users' && !usersLoaded) loadUsers(0);
