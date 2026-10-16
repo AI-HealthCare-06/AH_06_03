@@ -655,7 +655,7 @@ async function loadPosts(reset) {
       const acts = r.status === 'visible' ? ['hide', 'delete'] : r.status === 'hidden' ? ['restore', 'delete'] : [];
       return el('div', { class: 'detail', style: 'margin-bottom:8px' },
         el('b', {}, r.title), el('span', { class: 'st ' + (r.status === 'visible' ? 'done' : 'wait'), style: 'margin-left:6px' }, PO_STATE[r.status] || r.status), el('br'),
-        `${r.author_nickname} · ${kst(r.created_at)}`,
+        `${r.author_nickname} · ${kst(r.created_at)}${r.pending_reports ? ` · 처리 안 한 신고 ${r.pending_reports}건` : ''}`,
         el('div', { style: 'white-space:pre-wrap; word-break:break-all; margin:8px 0' }, r.preview),
         acts.length ? el('div', {}, ...acts.map((a) => el('button', { type: 'button', class: 'btn' + (a === 'delete' ? ' danger' : ''), style: 'margin-right:6px', onclick: async () => {
           if (a === 'delete' && !window.confirm('글을 삭제할까요? 내용과 사진이 지워지고 되돌릴 수 없어요.')) return;
