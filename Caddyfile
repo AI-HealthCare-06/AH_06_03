@@ -1,4 +1,21 @@
 54-116-113-17.sslip.io {
+    # 보안 헤더 (화면·API 모든 응답에 붙음)
+    header {
+        # 1년 동안 이 주소는 HTTPS로만 열게 함 (이 주소 하나에만, 하위 주소는 해당 없음)
+        Strict-Transport-Security "max-age=31536000"
+        # 다른 사이트가 우리 화면을 iframe으로 감싸 속이는 것(클릭재킹)을 막음
+        X-Frame-Options "DENY"
+        Content-Security-Policy "frame-ancestors 'none'"
+        # 파일 형식을 브라우저가 멋대로 추측하지 않게 함
+        X-Content-Type-Options "nosniff"
+        # 다른 사이트로 이동할 때 우리 주소의 경로(화면 이름 등)는 넘기지 않음
+        Referrer-Policy "strict-origin-when-cross-origin"
+        # 쓰지 않는 카메라·마이크·위치 권한은 아예 막음 (사진 올리기는 파일 선택이라 영향 없음)
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        # 서버 프로그램 이름(Caddy)을 숨김
+        -Server
+    }
+
     @api path /v1/* /docs /docs/* /openapi.json /healthcheck /static/* /media/*
     handle @api {
         reverse_proxy fastapi:8000
