@@ -112,6 +112,7 @@ def _to_model_result(p, factors: list) -> ModelResult:
         probability=p.score,
         risk_level=p.risk_level,
         vascular_age=p.vascular_age,
+        percentile=p.percentile,
         similarity_level=similarity_level_b(p.score, p.model_version)
         if p.model_code == "MODEL_B" and p.status == "completed" else None,
         factors=fs,
@@ -193,6 +194,7 @@ def _summary(p) -> ModelSummary | None:
         model_version=p.model_version,
         risk_level=p.risk_level,
         vascular_age=p.vascular_age,
+        percentile=p.percentile,
         similarity_level=similarity_level_b(p.score, p.model_version)
         if p.model_code == "MODEL_B" and p.status == "completed" else None,
         skip_reason=p.skip_reason,

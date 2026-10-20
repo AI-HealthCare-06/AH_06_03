@@ -17,7 +17,7 @@ import math
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent
-SPEC_A = BASE / "model_a" / "artifacts" / "model_a_v0.1.1.json"
+SPEC_A = BASE / "model_a" / "artifacts" / "model_a_v0.2.0.json"  # v0.2.0: 계수는 v0.1.1과 같음 + 한국인 상대 위치(상위 %)·성별 절편 재보정·혈관 나이 한국 평균 기준
 SPEC_B = BASE / "model_b" / "artifacts" / "model_b_v0.2.0.json"  # v0.2.0: 운동·아침·외식 제외(9개 피처). 그 입력은 받아도 무시됨
 
 # ── 선택지 → 모델 값 변환표 (학습 데이터 코드와 1:1) ─────────────────────
@@ -140,24 +140,58 @@ def predict_model_a(inp: dict, spec: dict | None = None) -> dict:
     lo, hi = spec["age_range"]
     if inp.get("age") is None or not (lo <= inp["age"] <= hi):
         return _skip(spec, "age_out_of_range")
-    out = _score(spec, features_a(inp))
-    p = out["probability"]
-    out["risk_level"] = "normal" if p < 0.10 else ("borderline" if p <= 0.20 else "high")
-    out["percentile"] = None  # 첫 번째 사이클 미제공 (한국인 기준 상대 위치는 보정 사이클에서)
-    out["vascular_age"] = vascular_age(spec, features_a(inp))
+    sex = inp.get("sex")
+    if sex not in ("M", "F"):
+        raise ValueError("모델 A v0.2.0은 성별(M/F)이 필요합니다")  # 서버는 성별이 없으면 분석을 요청하지 않음. 여기서 막히면 failed
+    x = features_a(inp)
+    # 확률: 계수는 v0.1.1 그대로, 절편만 성별별 한국인 재보정 값 (확률은 한국인 10년 위험 추정치로 표시, 검증 전)
+    out = _score({**spec, "intercept": spec["intercept_by_sex"][sex]}, x)
+    # 같은 성별·연령대 한국 성인 중 위치(상위 %): 순위는 계수만으로 정해져 절편 보정과 무관
+    top = _top_percent(spec, sex, int(inp["age"]), _linear_z(spec, x))
+    out["percentile"] = top  # 참고 정보 (범주에는 쓰지 않음)
+    out["risk_level"] = risk_level_a(out["probability"], spec)
+    out["vascular_age"] = vascular_age(spec, x, spec["vascular_age"]["ref_means"][f"{sex}|{_age_band(spec, int(inp['age']))}"])
     return {"model_code": spec["model_code"], "model_version": spec["version"], "status": "completed",
             "skip_reason": None, **out}
 
 
-def vascular_age(spec: dict, x: dict) -> float:
-    """혈관 나이 (추정치, 학습 아닌 후처리). 나이·성별 외 요인이 평균 대비 올린 위험을 '나이 몇 년치'로 환산해 더함."""
+def risk_level_a(p: float, spec: dict) -> str:
+    """모델 A 범주: 보정된 10년 위험 p → normal(양호) / borderline(주의) / high(높음).
+    기준 = JAS 2017 구간 (spec["bands"]): p < 0.02 양호, 0.02 ≤ p < 0.09 주의, p ≥ 0.09 높음. 근거·한계는 handoff/데이터_특성.md §1.7"""
+    b = spec["bands"]
+    return "high" if p >= b["high_min_risk"] else ("borderline" if p >= b["borderline_min_risk"] else "normal")
+
+
+def _age_band(spec: dict, age: int) -> str:
+    return next(f"{lo}-{hi}" for lo, hi in spec["kr_percentile"]["age_bands"] if lo <= age <= hi)
+
+
+def _linear_z(spec: dict, x: dict) -> float:
+    """절편을 뺀 선형합 Σ coef·(x − mean) (결측은 impute). 점수 순서(상위 %)에 쓰임."""
+    z = 0.0
+    for f in spec["feats"]:
+        v = x.get(f["k"])
+        z += f["coef"] * ((f["impute"] if v is None else v) - f["mean"])
+    return z
+
+
+def _top_percent(spec: dict, sex: str, age: int, z: float) -> int:
+    """같은 성별·연령대 한국 성인(국민건강영양조사 2022~24, 가중) 중 상위 %: 1(가장 위험) ~ 100. 상위 % = max(1, 100 − z보다 작은 분위수 개수)"""
+    q = spec["kr_percentile"]["groups"][f"{sex}|{_age_band(spec, age)}"]["z_quantiles"]
+    below = sum(1 for v in q if v < z)
+    return max(1, 100 - below)
+
+
+def vascular_age(spec: dict, x: dict, ref: dict | None = None) -> float:
+    """혈관 나이 (추정치, 학습 아닌 후처리). 나이·성별 외 요인이 기준 평균 대비 올린 위험을 '나이 몇 년치'로 환산해 더함.
+    ref = 요인별 기준 평균 (v0.2.0: 같은 성별·연령대 한국 성인 평균). 없으면 학습 데이터(Framingham) 평균."""
     va = spec["vascular_age"]
     extra = 0.0
     for f in spec["feats"]:
         if f["k"] in va["fixed"]:
             continue
         v = x.get(f["k"])
-        extra += f["coef"] * ((f["impute"] if v is None else v) - f["mean"])
+        extra += f["coef"] * ((f["impute"] if v is None else v) - (ref[f["k"]] if ref else f["mean"]))
     lo, hi = va["clamp"]
     return round(min(max(x["age"] + extra / va["age_coef"], lo), hi), 1)
 

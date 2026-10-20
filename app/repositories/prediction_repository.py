@@ -37,6 +37,7 @@ async def save_result(
         score=result.get("probability"),
         risk_level=result.get("risk_level"),
         vascular_age=result.get("vascular_age"),
+        percentile=result.get("percentile"),
         missing_features=result.get("missing_features") or None,
         predicted_at=now,
     )

@@ -60,6 +60,7 @@ class Prediction(Base):
         Enum("normal", "borderline", "high", name="risk_level_type"), nullable=True
     )
     vascular_age: Mapped[float | None] = mapped_column(Numeric(5, 1, asdecimal=False), nullable=True)
+    percentile: Mapped[float | None] = mapped_column(Numeric(5, 2, asdecimal=False), nullable=True)   # 같은 성별·연령대 상위 N% (모델 A v0.2.0부터)
     missing_features: Mapped[list | None] = mapped_column(JSON, nullable=True)
     predicted_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)   
 
