@@ -60,8 +60,11 @@ input::placeholder,textarea::placeholder{color:#A9B3BC; font-weight:500; opacity
 .prob{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap}
 .prob b{font-size:22px; font-weight:800; letter-spacing:-.3px}
 .prob span{font-size:13px; color:var(--muted)}
-.pnote .pcap{font-size:13px; color:var(--muted); margin-top:6px}
-.pnote button{min-height:44px; padding:0; border:0; background:none; font:inherit; font-size:13px; font-weight:700; color:var(--accent-text); text-decoration:underline; cursor:pointer}
+.pnote .prow{display:flex; align-items:center; flex-wrap:wrap; gap:0 12px}
+.pnote .pcap{font-size:13px; color:var(--muted)}
+.pnote button{min-height:44px; padding:0; border:0; background:none; font:inherit; font-size:13px; font-weight:700; color:var(--accent-text); cursor:pointer; display:inline-flex; align-items:center; gap:4px}
+.pnote button svg{transition:transform .2s}
+.pnote button[aria-expanded=true] svg{transform:rotate(180deg)}
 .pnote p{margin:0 0 4px; padding:12px 14px; border-radius:12px; background:var(--cream); font-size:13px; line-height:1.6; color:var(--body)}
 .pnote p[hidden]{display:none}
 .fade-r{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 36px),transparent); mask-image:linear-gradient(to right,#000 calc(100% - 36px),transparent)}
