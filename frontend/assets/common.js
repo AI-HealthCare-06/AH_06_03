@@ -159,6 +159,21 @@ function progressOverlay(title, sub) {
   };
 }
 
+// 뒤로 버튼(a.back): 같은 앱에서 바로 전에 보던 화면이 있으면 그리로 돌아간다. 입력·제출 화면에서 왔거나 없으면 화면에 정해 둔 곳(href)으로.
+const BACK_NEVER = ['login.html', 'signup.html', 'index.html', 'write.html', 'nickname.html', 'party-create.html', 'review.html', 'eligibility.html'];
+const BACK_NEVER_PAIR = { 'reassessment.html': ['survey.html'] };
+document.addEventListener('click', (e) => {
+  const a = e.target.closest && e.target.closest('a.back');
+  if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
+  let u;
+  try { u = new URL(document.referrer); } catch (err) { return; }
+  if (u.origin !== location.origin) return;
+  const ref = u.pathname.split('/').pop(), cur = location.pathname.split('/').pop();
+  if (!ref || ref === cur || BACK_NEVER.includes(ref) || (BACK_NEVER_PAIR[cur] || []).includes(ref) || history.length <= 1) return;
+  e.preventDefault();
+  history.back();
+});
+
 // 파이 그림을 접시에 올린다. hot이면 김이 올라온다 (선으로 그린 요소: 픽셀 파이와 어울리게)
 function pieDish(inner, hot) {
   const steam = hot ? '<svg class="steam" viewBox="0 0 60 28" aria-hidden="true"><path d="M12 26c-5-6 5-9 0-15M30 26c-5-6 5-9 0-15M48 26c-5-6 5-9 0-15"/></svg>' : '';

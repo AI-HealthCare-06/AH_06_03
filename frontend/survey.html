@@ -217,7 +217,7 @@ document.getElementById('next-btn').addEventListener('click', async () => {
   try {
     await apiSubmitSurvey(payload, INTERIM ? 'interim_lifestyle' : 'initial_lifestyle');
     localStorage.setItem('paeon-survey', JSON.stringify(payload));
-    if (INTERIM) { location.href = NEXT_URL; return; }
+    if (INTERIM) { location.replace(NEXT_URL); return; }
     document.getElementById('success-modal').style.display = 'flex';
   } catch (e) {
     errEl.textContent = friendlyError(e); errEl.style.display = 'block';

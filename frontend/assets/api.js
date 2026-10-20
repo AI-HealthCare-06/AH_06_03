@@ -83,7 +83,7 @@ let refreshing = null; // 동시에 여러 요청이 만료돼도 재발급은 �
 // reason이 있으면 로그인 화면이 이유를 보여 준다 (예: other-device = 다른 기기에서 로그인해 끊김)
 function goLogin(reason) {
   PaeonTokens.clear();
-  location.href = 'login.html' + (reason ? '?reason=' + encodeURIComponent(reason) : '');
+  location.replace('login.html' + (reason ? '?reason=' + encodeURIComponent(reason) : ''));
   return new Promise(() => {}); // 이동 중에는 호출한 쪽이 에러를 띄우지 않게 멈춰 둔다
 }
 
@@ -690,7 +690,7 @@ async function apiLogout() {
   try { await apiCall('POST', '/auth/logout', { refresh_token }, '로그아웃에 실패했습니다'); } catch (e) { /* 서버 실패여도 이 기기에서는 로그아웃 */ }
   PaeonTokens.clear();
   try { localStorage.removeItem('paeon-user-id'); } catch (e) {}
-  location.href = 'login.html';
+  location.replace('login.html');
 }
 
 // (구) 혜림님 임시 창구(POST /v1/predict) 전용 — 정식 /predictions/jobs 생기면 지울 예정.

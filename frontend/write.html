@@ -134,7 +134,7 @@ $('submit').addEventListener('click', async () => {
     try { for (const ph of st.photos) await apiUploadPhoto(d.post_id, ph.blob); }
     catch (pe) { try { await apiCall('DELETE', '/community/posts/' + encodeURIComponent(d.post_id), undefined, ''); } catch (x) { /* 지우지 못해도 아래 안내는 한다 */ } throw pe; }
     if (d.pie_gain) toastNext('파이 ' + d.pie_gain + '개를 받았어요');   // 팝업 없이 이동한 화면에서 잠깐 알린다
-    location.href = st.to === 'party' ? 'party-feed.html' : 'post.html?id=' + encodeURIComponent(d.post_id);
+    location.replace(st.to === 'party' ? 'party-feed.html' : 'post.html?id=' + encodeURIComponent(d.post_id));
   } catch (e) {
     if (e.code === 'NICKNAME_REQUIRED') { location.href = 'nickname.html?next=write.html'; return; }
     $('err').textContent = e.code === 'ATTACH_NOT_ALLOWED' ? '오늘 인증한 챌린지만 붙일 수 있어요.' : friendlyError(e);

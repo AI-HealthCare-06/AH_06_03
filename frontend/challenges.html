@@ -196,7 +196,7 @@ async function main() {
     btn.disabled = true; btn.textContent = '시작하는 중...';
     try {
       await apiStartCycle(picked);
-      location.href = 'challenge-progress.html';
+      location.replace('challenge-progress.html');
     } catch (e) {
       showError(friendlyError(e));
       btn.disabled = false; btn.textContent = `${rec.cycle_number}차 챌린지 시작 (4주)`;

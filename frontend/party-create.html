@@ -67,7 +67,7 @@ go.addEventListener('click', async () => {
   go.disabled = true;
   try {
     await apiCall('POST', '/parties', { name: pn.value.trim(), intro: pd.value.trim() || undefined, challenge_code: picked }, '파티를 만들지 못했어요');
-    location.href = 'party-home.html';
+    location.replace('party-home.html');
   } catch (e) {
     err.textContent = MSG[e.code] || friendlyError(e);
     err.hidden = false; go.disabled = false;

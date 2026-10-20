@@ -109,6 +109,7 @@
 </div>
 
 <script src="assets/common.js"></script>
+<script>if (!loggedIn()) document.getElementById('back').href = 'index.html';   // 로그인 전에 열었으면 더보기가 아니라 첫 화면으로</script>
 <script src="assets/api.js"></script>
 <script src="assets/policies.js"></script>
 <script>

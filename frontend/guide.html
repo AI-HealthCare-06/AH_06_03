@@ -50,11 +50,12 @@
 </div>
 
 <div class="dock">
-  <a class="cta" href="challenges.html">챌린지도 함께 시작하기</a>
+  <a class="cta" id="go-ch" href="challenges.html">챌린지도 함께 시작하기</a>
   <a class="ghost" href="result.html">결과로 돌아가기</a>
 </div>
 
 <script src="assets/common.js"></script>
+<script>if (localStorage.getItem('paeon-cycle')) { const a = document.getElementById('go-ch'); a.href = 'challenge-progress.html'; a.textContent = '내 챌린지 보기'; }</script>
 <script>
 // 더보기에서 왔으면 더보기로, 결과 화면의 상담 안내 링크로 왔으면 결과로 돌아간다
 document.getElementById('back').addEventListener('click', (e) => {

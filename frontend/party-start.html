@@ -69,11 +69,11 @@ btn.addEventListener('click', async () => {
   btn.disabled = true;
   try {
     await apiCall('POST', '/parties/join', { invite_code: code.value.trim() }, '파티에 들어가지 못했어요');
-    location.href = 'party-home.html';
+    location.replace('party-home.html');
   } catch (e) {
     err.textContent = MSG[e.code] || friendlyError(e);
     err.hidden = false; btn.disabled = false;
-    if (e.code === 'PARTY_ALREADY_JOINED') setTimeout(() => location.href = 'party-home.html', 1500);
+    if (e.code === 'PARTY_ALREADY_JOINED') setTimeout(() => location.replace('party-home.html'), 1500);
   }
 });
 </script>

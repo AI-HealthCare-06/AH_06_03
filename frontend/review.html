@@ -121,7 +121,7 @@ document.getElementById('submit-btn').addEventListener('click', async () => {
     const result = await apiRequestPrediction(profile, elig, health, survey);
     localStorage.setItem('paeon-prediction', JSON.stringify(result.data));
     await building.finish();
-    window.location.href = 'plan.html';   // 분석이 끝나면 12주 계획을 먼저 보여 준다
+    window.location.replace('plan.html');   // 분석이 끝나면 12주 계획을 먼저 보여 준다
   } catch (e) {
     building.cancel();
     errEl.textContent = friendlyError(e);

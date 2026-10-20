@@ -137,7 +137,7 @@ $('checkin').addEventListener('click', async () => {
 });
 $('leave').addEventListener('click', async () => {
   if (!await confirmDialog('파티를 나갈까요?', '나가면 이 파티의 인증 기록이 지워져요. 마지막 한 명이 나가면 파티가 없어져요.', '나가기')) return;
-  try { await apiCall('POST', '/parties/me/leave', undefined, '파티에서 나가지 못했어요'); location.href = 'party-start.html'; }
+  try { await apiCall('POST', '/parties/me/leave', undefined, '파티에서 나가지 못했어요'); location.replace('party-start.html'); }
   catch (e) { fail($('err2'), e); }
 });
 </script>

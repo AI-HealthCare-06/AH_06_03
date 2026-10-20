@@ -35,7 +35,7 @@
 <body>
 
 <div id="header-slot"></div>
-<div class="bar"><a class="back" href="login.html" aria-label="뒤로" data-icon="back"></a></div>
+<div class="bar"><a class="back" href="index.html" aria-label="뒤로" data-icon="back"></a></div>
 
 <div class="wrapper">
   <div class="frame">
@@ -132,7 +132,7 @@ document.getElementById('next-btn').addEventListener('click', () => {
   const elig = { ageBand, chd: chd === 'yes', emer };
   localStorage.setItem('paeon-eligibility', JSON.stringify(elig));
   document.getElementById('next-btn').disabled = true;
-  apiSaveEligibility(elig).finally(() => { window.location.href = 'health-info.html'; });   // 서버 저장은 실패해도 진행
+  apiSaveEligibility(elig).finally(() => { window.location.replace('health-info.html'); });   // 서버 저장은 실패해도 진행
 });
 </script>
 </body>
