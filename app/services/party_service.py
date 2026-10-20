@@ -3,7 +3,8 @@
 - 최대 6명, 한 사람에 한 파티 (party_members.user_id 유니크)
 - 파티장은 가장 먼저 들어온 파티원 (따로 저장하지 않는다)"""
 import secrets
-from datetime import timedelta
+from collections import deque
+from datetime import datetime, timedelta
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
@@ -83,13 +84,35 @@ async def create(db: AsyncSession, user_id: str, name: str, intro: str | None, c
     return await _info(db, party)
 
 
+# 초대 코드 대입 막기: 코드가 4글자(약 100만 가지)라, 한 사람이 1시간에 10번 틀리면 잠시 막는다(API 보안 검사 4묶음).
+# 횟수는 메모리에만 둔다(로그인 시도 제한과 같은 방식, uvicorn 1개라 충분, 재배포하면 0).
+JOIN_FAIL_WINDOW = timedelta(hours=1)
+JOIN_FAIL_MAX = 10
+_join_failures: dict[str, deque[datetime]] = {}
+
+
+def _recent_join_failures(user_id: str, now: datetime) -> int:
+    q = _join_failures.get(user_id)
+    while q and q[0] <= now - JOIN_FAIL_WINDOW:
+        q.popleft()
+    if q is not None and not q:
+        del _join_failures[user_id]
+        return 0
+    return len(q) if q else 0
+
+
 async def join(db: AsyncSession, user_id: str, invite_code: str) -> PartyInfo:
+    now = utcnow()
+    if _recent_join_failures(user_id, now) >= JOIN_FAIL_MAX:
+        raise AppError(429, "PARTY_JOIN_TOO_MANY", "초대 코드를 여러 번 틀려서 잠시 막혔어요. 한 시간 뒤에 다시 시도해 주세요.")
     code = invite_code.strip().upper()
     party = (await db.execute(
         select(Party).where(Party.invite_code == code).with_for_update()   # 같은 파티 참여를 한 번에 하나씩 (7번째 막기)
     )).scalar_one_or_none()
     if party is None:
+        _join_failures.setdefault(user_id, deque()).append(now)
         raise AppError(404, "PARTY_NOT_FOUND", "초대 코드를 다시 확인해 주세요.")
+    _join_failures.pop(user_id, None)
     if await _membership(db, user_id) is not None:
         raise AppError(409, "PARTY_ALREADY_JOINED", "이미 파티에 들어가 있어요.")
     count = (await db.execute(
