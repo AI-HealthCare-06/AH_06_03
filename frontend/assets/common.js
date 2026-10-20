@@ -327,15 +327,19 @@ function simChangeText(before, after) {
   return SIM_RANK[after] < SIM_RANK[before] ? '4주 전보다 더 비슷해졌어요' : SIM_RANK[after] === SIM_RANK[before] ? '비슷한 자리예요' : '조금 달라졌어요';
 }
 
-// 상담 권고가 필요한 경우의 제목. 혈압이 140/90 이상(고혈압 진단 없음) 또는 160/100 이상이거나,
+// 상담 권고가 필요한 경우의 제목. 혈압이 140/90 이상(진단 여부와 상관없이, 160/100 이상이면 "많이 높아요")이거나,
 // 모델 A(10년 내 심장 혈관 건강 신호)가 "높음"(확률 9% 이상)일 때 뜬다. 아니면 ''.
 function adviceTitle(pred, health) {
   if (!pred) return '';
   const very = health && (health.sbp >= 160 || health.dbp >= 100);
   const high = health && (health.sbp >= 140 || health.dbp >= 90);
   const aHigh = pred.model_a && pred.model_a.status === 'completed' && pred.model_a.risk_level === 'high';
-  if (very || (high && pred.htn_status === 'none')) return `입력하신 혈압이 ${very ? '많이 ' : ''}높아요 (${health.sbp}/${health.dbp} mmHg)`;
+  if (very || high) return `입력하신 혈압이 ${very ? '많이 ' : ''}높아요 (${health.sbp}/${health.dbp} mmHg)`;
   return aHigh ? '10년 내 심장 혈관 건강 신호가 높게 나왔어요' : '';
+}
+// 안내 문장: 고혈압 진단·치료 중이면 담당 의료진과 상담하도록, 진단이 없으면 가까운 의료기관을 안내한다.
+function adviceText(pred) {
+  return pred && pred.htn_status && pred.htn_status !== 'none' ? '치료 중이시라면 담당 의료진과 상담해 보세요.' : '가까운 의료기관에서 상담을 받아 보세요.';
 }
 const ADVICE_ACK_TEXT = '의료기관 상담 권고를 확인했고, 이를 확인한 뒤 챌린지를 진행하는 데 동의합니다.';
 const adviceAcked = () => { try { return localStorage.getItem('paeon-advice-ack') === '1'; } catch (e) { return false; } };
@@ -343,7 +347,7 @@ const setAdviceAck = (v) => { try { v ? localStorage.setItem('paeon-advice-ack',
 // 상담 권고 배너: X로 닫아도 챌린지는 계속 가능하고 다음 방문 때 다시 보인다. 확인 체크는 챌린지 시작 때 다시 묻는다.
 // 이미 확인(체크)했으면 한 줄로 접어서 보여 주고, "다시 보기"를 누르면 원래 배너(문구 그대로)가 펼쳐진다.
 function adviceFullHtml(title) {
-  return `<div class="callout" id="advice-banner" style="border-color:var(--risk); position:relative; padding-right:44px"><button type="button" aria-label="닫기" onclick="document.getElementById('advice-banner').remove()" style="position:absolute; top:0; right:0; width:44px; height:44px; border:0; background:none; font-size:20px; line-height:1; color:var(--muted); cursor:pointer">×</button><b>${title}</b><br>가까운 의료기관에서 상담을 받아 보세요. <a href="guide.html" style="color:var(--accent-text); font-weight:700; display:inline-block; padding:8px 0">검사 · 상담 안내 보기</a>
+  return `<div class="callout" id="advice-banner" style="border-color:var(--risk); position:relative; padding-right:44px"><button type="button" aria-label="닫기" onclick="document.getElementById('advice-banner').remove()" style="position:absolute; top:0; right:0; width:44px; height:44px; border:0; background:none; font-size:20px; line-height:1; color:var(--muted); cursor:pointer">×</button><b>${title}</b><br>${window.__adviceText || '가까운 의료기관에서 상담을 받아 보세요.'} <a href="guide.html" style="color:var(--accent-text); font-weight:700; display:inline-block; padding:8px 0">검사 · 상담 안내 보기</a>
     <label style="display:flex; gap:8px; align-items:flex-start; margin-top:10px; font-size:12.5px; line-height:1.5; cursor:pointer"><input type="checkbox" ${adviceAcked() ? 'checked' : ''} onchange="setAdviceAck(this.checked); if (this.checked) collapseAdvice()" style="margin-top:3px"><span>${ADVICE_ACK_TEXT}</span></label></div>`;
 }
 function adviceCompactHtml() {
@@ -355,6 +359,7 @@ function adviceBannerHtml(pred, health) {
   const title = adviceTitle(pred, health);
   if (!title) return '';
   window.__adviceTitle = title;
+  window.__adviceText = adviceText(pred);
   return adviceAcked() ? adviceCompactHtml() : adviceFullHtml(title);
 }
 
