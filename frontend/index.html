@@ -12,7 +12,13 @@
   .dots{display:flex; gap:8px}
   .dots i{width:8px; height:8px; border-radius:4px; background:var(--sage-light)}
   .dots i:first-child{background:var(--sage-deep)}
-  .shot{width:100%; height:420px; border-radius:20px; border:1px dashed var(--sage); background:var(--cream)}
+  .carousel{width:100%; display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; border-radius:28px; background:var(--cream)}
+  .carousel::-webkit-scrollbar{display:none}
+  .slide{flex:none; width:100%; height:380px; scroll-snap-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:0 28px; box-sizing:border-box; text-align:center}
+  .slide .art{height:150px; display:flex; align-items:center; justify-content:center; color:var(--accent); margin-bottom:14px}
+  .slide b{font-size:20px; font-weight:800}
+  .slide span{font-size:15px; color:var(--body); line-height:1.6}
+  .slide .art img{width:104px; height:104px; image-rendering:pixelated}
   .headline{padding-top:28px; text-align:center; font-size:24px; font-weight:800; letter-spacing:-.5px; line-height:1.4}
   .intro{position:relative; cursor:pointer; margin:14px 0 4px; border-radius:18px; overflow:hidden; line-height:0}
   .intro video{width:100%; height:auto; display:block; aspect-ratio:8/5}
@@ -35,7 +41,7 @@
       <div class="screen" style="gap:0">
         <div class="shots">
           <div class="dots"><i></i><i></i><i></i><i></i><i></i></div>
-          <div class="shot"></div>
+          <div class="carousel" id="carousel" aria-label="서비스 소개"><div class="slide"><div class="art"><svg width="104" height="104" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M9 3.5V2h6v1.5M8.5 9h7M8.5 12.5h7M8.5 16h4"/></svg></div><b>건강정보 입력</b><span>혈압·허리둘레 같은 검진 수치를 입력해요</span></div><div class="slide"><div class="art"><svg width="104" height="104" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9.5L5 20v-4H4z"/><path d="M8 9h8M8 12h5"/></svg></div><b>생활습관 설문</b><span>식사·운동 습관에 가볍게 답해요</span></div><div class="slide"><div class="art"><svg width="104" height="104" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M8 11h2l1.2-2.2 1.6 3.6L14 11h2"/></svg></div><b>위험 신호 확인</b><span>10년 내 심장 혈관 건강 신호를 확인해요</span></div><div class="slide"><div class="art"><span id="pie-slot"></span></div><b>12주 챌린지</b><span>4주씩 3번, 미션을 하며 파이를 구워요</span></div><div class="slide"><div class="art"><svg width="104" height="104" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h2M12 14h2M8 17h2"/></svg></div><b>캘린더</b><span>하루 기록을 모아 변화를 봐요</span></div></div>
         </div>
         <p class="headline">10년 내 심장 혈관 건강 신호를<br>12주 챌린지로 관리해요</p>
 
@@ -62,6 +68,24 @@
 </div>
 
 <script src="assets/common.js"></script>
+<script>
+// 서비스 소개 슬라이드: 넘기면 위의 점이 따라가고, 움직임 줄이기를 켠 사람이 아니면 4초마다 넘어간다
+(() => {
+  const car = document.getElementById('carousel'), dots = [...document.querySelectorAll('.dots i')];
+  document.getElementById('pie-slot').outerHTML = pieDish('<img src="assets/img/pie3.png" alt="">', true);
+  const idx = () => Math.round(car.scrollLeft / car.clientWidth);
+  const show = () => dots.forEach((d, i) => { d.style.background = i === idx() ? 'var(--sage-deep)' : 'var(--sage-light)'; });
+  car.addEventListener('scroll', show, { passive: true });
+  let timer = null, touched = false;
+  const stop = () => { touched = true; clearInterval(timer); };
+  ['pointerdown', 'touchstart', 'wheel'].forEach((ev) => car.addEventListener(ev, stop, { passive: true }));
+  if (!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+    timer = setInterval(() => { if (!touched) car.scrollTo({ left: ((idx() + 1) % dots.length) * car.clientWidth, behavior: 'smooth' }); }, 4000);
+  }
+  dots.forEach((d, i) => { d.style.cursor = 'pointer'; d.addEventListener('click', () => { stop(); car.scrollTo({ left: i * car.clientWidth, behavior: 'smooth' }); }); });
+  show();
+})();
+</script>
 <script>
 // 움직임 줄이기를 켠 사람과 데이터 절약 모드에서는 영상을 자동으로 재생하지 않는다 (첫 화면 이미지만 보임)
 (() => {

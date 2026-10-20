@@ -327,11 +327,21 @@ const ADVICE_ACK_TEXT = '의료기관 상담 권고를 확인했고, 이를 확�
 const adviceAcked = () => { try { return localStorage.getItem('paeon-advice-ack') === '1'; } catch (e) { return false; } };
 const setAdviceAck = (v) => { try { v ? localStorage.setItem('paeon-advice-ack', '1') : localStorage.removeItem('paeon-advice-ack'); } catch (e) { /* 저장 못 해도 화면은 계속 */ } };
 // 상담 권고 배너: X로 닫아도 챌린지는 계속 가능하고 다음 방문 때 다시 보인다. 확인 체크는 챌린지 시작 때 다시 묻는다.
+// 이미 확인(체크)했으면 한 줄로 접어서 보여 주고, "다시 보기"를 누르면 원래 배너(문구 그대로)가 펼쳐진다.
+function adviceFullHtml(title) {
+  return `<div class="callout" id="advice-banner" style="border-color:var(--risk); position:relative; padding-right:44px"><button type="button" aria-label="닫기" onclick="document.getElementById('advice-banner').remove()" style="position:absolute; top:0; right:0; width:44px; height:44px; border:0; background:none; font-size:20px; line-height:1; color:var(--muted); cursor:pointer">×</button><b>${title}</b><br>가까운 의료기관에서 상담을 받아 보세요. <a href="guide.html" style="color:var(--accent-text); font-weight:700; display:inline-block; padding:8px 0">검사 · 상담 안내 보기</a>
+    <label style="display:flex; gap:8px; align-items:flex-start; margin-top:10px; font-size:12.5px; line-height:1.5; cursor:pointer"><input type="checkbox" ${adviceAcked() ? 'checked' : ''} onchange="setAdviceAck(this.checked); if (this.checked) collapseAdvice()" style="margin-top:3px"><span>${ADVICE_ACK_TEXT}</span></label></div>`;
+}
+function adviceCompactHtml() {
+  return `<div class="callout" id="advice-banner" style="border-color:var(--risk); display:flex; align-items:center; gap:10px; padding:6px 6px 6px 16px"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none; color:var(--accent-text)"><circle cx="8" cy="8" r="6.2"/><path d="M5.2 8.2l2 2 3.6-4"/></svg><span style="flex:1; font-size:14px; font-weight:700">의료기관 상담 권고를 확인했어요</span><button type="button" onclick="expandAdvice()" style="min-height:44px; padding:0 12px; border:0; background:none; font:inherit; font-size:13px; font-weight:700; color:var(--accent-text); text-decoration:underline; cursor:pointer">다시 보기</button></div>`;
+}
+function collapseAdvice() { setTimeout(() => { const b = document.getElementById('advice-banner'); if (b && adviceAcked()) b.outerHTML = adviceCompactHtml(); }, 500); }
+function expandAdvice() { const b = document.getElementById('advice-banner'); if (b) b.outerHTML = adviceFullHtml(window.__adviceTitle || ''); }
 function adviceBannerHtml(pred, health) {
   const title = adviceTitle(pred, health);
   if (!title) return '';
-  return `<div class="callout" id="advice-banner" style="border-color:var(--risk); position:relative; padding-right:44px"><button type="button" aria-label="닫기" onclick="document.getElementById('advice-banner').remove()" style="position:absolute; top:0; right:0; width:44px; height:44px; border:0; background:none; font-size:20px; line-height:1; color:var(--muted); cursor:pointer">×</button><b>${title}</b><br>가까운 의료기관에서 상담을 받아 보세요. <a href="guide.html" style="color:var(--accent-text); font-weight:700; display:inline-block; padding:8px 0">검사 · 상담 안내 보기</a>
-    <label style="display:flex; gap:8px; align-items:flex-start; margin-top:10px; font-size:12.5px; line-height:1.5; cursor:pointer"><input type="checkbox" ${adviceAcked() ? 'checked' : ''} onchange="setAdviceAck(this.checked)" style="margin-top:3px"><span>${ADVICE_ACK_TEXT}</span></label></div>`;
+  window.__adviceTitle = title;
+  return adviceAcked() ? adviceCompactHtml() : adviceFullHtml(title);
 }
 
 // 모델 A 버전이 바뀌어 전·후를 비교할 수 없을 때(comparable=false, 둘 다 분석 완료) 비교 줄 대신 안내한다. 오류가 아니다.
