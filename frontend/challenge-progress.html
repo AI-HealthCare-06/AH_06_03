@@ -130,7 +130,7 @@ function showError(msg) { const el = document.getElementById('err'); el.style.di
 
 function pieSvg(n, done) {
   const k = Math.min(3, Math.round(3 * done / Math.max(1, n)));   // 시안의 파이 그림은 3조각 기준
-  return `<img src="assets/img/pie${k}.png" alt="파이 ${n}조각 중 ${done}조각을 구웠어요">`;
+  return pieDish(`<img src="assets/img/pie${k}.png" alt="파이 ${n}조각 중 ${done}조각을 구웠어요">`, k > 0);
 }
 
 function ringHtml() {

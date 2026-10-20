@@ -48,6 +48,11 @@ input::placeholder,textarea::placeholder{color:#A9B3BC; font-weight:500; opacity
 .hdr-pie{height:32px; padding:0 12px; border-radius:16px; background:var(--cream); display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:800; text-decoration:none; color:var(--ink)}
 .hdr-pie .pie-coin{width:26px; height:auto}
 .hdr-bell{position:relative; width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--ink); text-decoration:none}
+/* 파이 접시: 픽셀 파이 아래에 가는 선으로 그린 접시, 구운 파이에서는 김이 올라온다 */
+.dish{position:relative; display:inline-flex; flex:none; align-items:center; justify-content:center; margin:12px}
+.dish::before{content:""; position:absolute; inset:-11%; border-radius:50%; background:#fff; border:1.5px solid #D2C4B4; box-shadow:inset 0 0 0 6px #fff, inset 0 0 0 7.5px #E6DBCD}
+.dish > img{position:relative}
+.dish .steam{position:absolute; left:50%; top:-19%; width:36% !important; height:auto !important; transform:translateX(-50%); fill:none; stroke:#5C86AC; stroke-width:1.7; stroke-linecap:round; opacity:.6}
 .hdr-bell .dot{position:absolute; top:11px; right:11px; width:8px; height:8px; border-radius:50%; background:#2F7DE1; box-shadow:0 0 0 1.5px #fff}
 .hdr-bell .badge{position:absolute; top:6px; right:5px; min-width:16px; height:16px; border-radius:8px; background:var(--accent); color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; padding:0 4px}
 .page-bar{display:flex; align-items:center; gap:4px; min-height:56px; margin:0 -12px 4px}

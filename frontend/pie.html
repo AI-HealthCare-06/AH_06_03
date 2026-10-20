@@ -56,7 +56,7 @@
 <script>
 if (!loggedIn()) location.replace('login.html');
 document.getElementById('back').innerHTML = ICON.back;
-document.getElementById('coin').innerHTML = '<img src="assets/img/pie-full.png" alt="" width="140" style="image-rendering:pixelated">';
+document.getElementById('coin').innerHTML = pieDish('<img src="assets/img/pie-full.png" alt="" width="140" style="image-rendering:pixelated">', true);
 const LABEL = { welcome: '닉네임 시작 선물', post_write: '커뮤니티 글 쓰기', common_challenge_rank: '공통 챌린지 순위 보상', common_challenge_complete: '공통 챌린지 완주 보상', shop_buy: '캐릭터 아이템 구매', challenge_daily_complete: '오늘 미션 모두 완료', challenge_streak_5: '5일 연속 달성', challenge_cycle_complete: '4주 챌린지 완주', party_all_checkin: '파티 전원 인증' };
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 function kstDate(iso) {

@@ -135,7 +135,7 @@ const reassessHref = cycle && cycle.cycleId ? `reassessment.html?cycle=${encodeU
 // 파이 n조각 중 done조각을 구운 그림 (시안의 파이 이미지 대신 SVG)
 function pieSvg(n, done) {
   const k = Math.min(3, Math.round(3 * done / Math.max(1, n)));   // 시안의 파이 그림은 3조각 기준
-  return `<img src="assets/img/pie${k}.png" alt="파이 ${n}조각 중 ${done}조각을 구웠어요">`;
+  return pieDish(`<img src="assets/img/pie${k}.png" alt="파이 ${n}조각 중 ${done}조각을 구웠어요">`, k > 0);
 }
 
 // 서버 /home/summary 값. 실패하면 챌린지 기록(paeon-progress)으로 계산
