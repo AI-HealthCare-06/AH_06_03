@@ -327,13 +327,11 @@ function simChangeText(before, after) {
   return SIM_RANK[after] < SIM_RANK[before] ? '4주 전보다 더 비슷해졌어요' : SIM_RANK[after] === SIM_RANK[before] ? '비슷한 자리예요' : '조금 달라졌어요';
 }
 
-// 상담 권고가 필요한 경우의 제목(혈압 140/90·160/100 이상, 또는 10년 내 심장 혈관 건강 신호 높음). 필요 없으면 ''.
+// 상담 권고가 필요한 경우의 제목. 모델 A(10년 내 심장 혈관 건강 신호)가 "높음"(확률 9% 이상)일 때만 뜬다. 아니면 ''.
+// (모델 A v0.2.0 한국인 보정 이후 기준. 예전에 있던 혈압 140/90·160/100 이상 조건은 뺐다.)
 function adviceTitle(pred, health) {
   if (!pred) return '';
-  const very = health && (health.sbp >= 160 || health.dbp >= 100);
-  const high = health && (health.sbp >= 140 || health.dbp >= 90);
   const aHigh = pred.model_a && pred.model_a.status === 'completed' && pred.model_a.risk_level === 'high';
-  if (very || (high && pred.htn_status === 'none')) return `입력하신 혈압이 ${very ? '많이 ' : ''}높아요 (${health.sbp}/${health.dbp} mmHg)`;
   return aHigh ? '10년 내 심장 혈관 건강 신호가 높게 나왔어요' : '';
 }
 const ADVICE_ACK_TEXT = '의료기관 상담 권고를 확인했고, 이를 확인한 뒤 챌린지를 진행하는 데 동의합니다.';

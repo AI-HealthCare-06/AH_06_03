@@ -112,7 +112,7 @@ document.getElementById('back').innerHTML = ICON.back;
 if (!pred) {
   screen.innerHTML = '<div class="callout"><b>분석 결과가 없어요</b><br>입력을 마치고 분석하면 볼 수 있어요.</div>';
 } else {
-  const advice = adviceBannerHtml(pred, health);   // 혈압 140/90·160/100 이상이면 의료기관 상담 안내 (결과 카드 바로 아래에 둔다)
+  const advice = adviceBannerHtml(pred, health);   // 모델 A "높음"일 때만 의료기관 상담 안내 (결과 카드 바로 아래에 둔다)
   let html = '';
 
   html += pred.bp_stage ? `<div class="bprow"><b>${BP_LABEL[pred.bp_stage]}</b>입력 혈압 판정</div>` : '';
