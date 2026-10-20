@@ -174,10 +174,9 @@ document.addEventListener('click', (e) => {
   history.back();
 });
 
-// 파이 그림을 접시에 올린다. hot이면 김이 올라온다 (선으로 그린 요소: 픽셀 파이와 어울리게)
-function pieDish(inner, hot) {
-  const steam = hot ? '<svg class="steam" viewBox="0 0 60 28" aria-hidden="true"><path d="M12 26c-5-6 5-9 0-15M30 26c-5-6 5-9 0-15M48 26c-5-6 5-9 0-15"/></svg>' : '';
-  return `<span class="dish">${steam}${inner}</span>`;
+// 파이 그림을 접시에 올린다 (선으로 그린 접시: 픽셀 파이와 어울리게). hot 인자는 예전 호출과 맞추려고 남겨 둔 것이다.
+function pieDish(inner) {
+  return `<span class="dish">${inner}</span>`;
 }
 // 공지: 게시 중인 공지(GET /notices, 로그인 불필요)와 이 기기에서 계정별로 "본 공지" 기록
 async function fetchNotices() {
