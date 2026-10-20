@@ -60,7 +60,7 @@ async def test_목록_검색과_단계_필터(client, db_session):
     # 이메일은 암호화되어 있어 전체 이메일(대소문자·앞뒤 공백 무관)로만 찾는다. 일부 글자로는 찾지 않는다
     r = await client.get("/v1/admin/users", params={"q": " B2@Test.kr "}, headers=h)
     assert [i["email_masked"] for i in r.json()["data"]["items"]] == ["b*@test.kr"]
-    r = await client.get("/v1/admin/users", params={"q": "b2"}, headers=h)
+    r = await client.get("/v1/admin/users", params={"q": "b2@test"}, headers=h)   # 이메일 일부(회원 번호와 헷갈리지 않게 @ 포함)
     assert r.json()["data"]["items"] == []
     r = await client.get("/v1/admin/users", params={"stage": "signup"}, headers=h)
     emails = {i["email_masked"] for i in r.json()["data"]["items"]}
