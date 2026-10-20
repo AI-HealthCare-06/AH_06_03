@@ -8,6 +8,7 @@
 """
 from pathlib import Path
 import json
+import math
 import os
 import sys
 import numpy as np
@@ -16,16 +17,18 @@ import pandas as pd
 BASE = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "model_b"))
+sys.path.insert(0, str(BASE / "model_a"))
 import paeon_models as pm  # noqa: E402
 from train_model_b import from_knhanes  # noqa: E402
+import build_model_a_v020 as bm  # noqa: E402  (한국인 보정 확인용: 국민건강영양조사 입력 변환)
 
 DATA_DIR = Path(os.environ.get("PAEON_DATA_DIR", BASE.parents[1] / "데이터"))  # 저장소 바깥 데이터
 SPEC_A, SPEC_B = json.loads(pm.SPEC_A.read_text()), json.loads(pm.SPEC_B.read_text())
 
 
-def sigmoid_linear(spec, X: pd.DataFrame):
-    """spec 계수로 직접 계산 (결측은 impute) — sklearn 파이프라인과 같은 식."""
-    z = np.full(len(X), spec["intercept"])
+def sigmoid_linear(spec, X: pd.DataFrame, intercept=None):
+    """spec 계수로 직접 계산 (결측은 impute) — sklearn 파이프라인과 같은 식. intercept를 주면(모델 A v0.2.0 성별 절편) 그 값을 씀."""
+    z = np.full(len(X), spec["intercept"]) if intercept is None else np.asarray(intercept, dtype=float).copy()
     for f in spec["feats"]:
         z += f["coef"] * (X[f["k"]].fillna(f["impute"]).to_numpy() - f["mean"])
     return 1 / (1 + np.exp(-z))
@@ -72,7 +75,8 @@ def check_a():
     fr = pd.read_csv(DATA_DIR / "framingham.csv").sample(1000, random_state=0)
     fr = fr[fr["age"].between(32, 70)]
     feats = [f["k"] for f in SPEC_A["feats"]]
-    ref = sigmoid_linear(SPEC_A, fr[feats])
+    icpt = np.where(fr["male"].to_numpy() == 1, SPEC_A["intercept_by_sex"]["M"], SPEC_A["intercept_by_sex"]["F"])  # v0.2.0 성별 절편
+    ref = sigmoid_linear(SPEC_A, fr[feats], icpt)
     got = []
     for _, r in fr.iterrows():
         htn = "treated" if r["BPMeds"] == 1 else ("diagnosed_untreated" if r["prevalentHyp"] == 1 else "none")
@@ -87,6 +91,49 @@ def check_a():
     mask = fr["BPMeds"].notna().to_numpy()
     diff = np.abs(ref - np.array(got))[mask]
     return {"n": int(mask.sum()), "max_abs_diff": float(diff.max()), "n_diff_gt_1e-4": int((diff > 1e-4).sum())}
+
+
+def check_kr_a():
+    """모델 A v0.2.0 한국인 보정 확인 (국민건강영양조사 2022~24 만 32~70세, 가중).
+    ① 범주 경계값(JAS 2017: 2%·9%)과 국민건강영양조사의 범주 비율 ② 목표 10년 위험 재현(Korean Heart Study 평균 프로필)
+    ③ 혈관 나이: 한국 평균이면 실제 나이와 같음(성별·연령대별 평균 차) ④ 보정 후 평균 확률, 상위 %가 점수 순서와 같은지."""
+    b = SPEC_A["bands"]
+    lo, hi = b["borderline_min_risk"], b["high_min_risk"]
+    probe = {0.0: "normal", lo - 1e-9: "normal", lo: "borderline", hi - 1e-9: "borderline", hi: "high", 1.0: "high"}
+    boundary_ok = all(pm.risk_level_a(p, SPEC_A) == want for p, want in probe.items())
+    r = bm.knhanes_inputs()
+    res = [pm.predict_model_a(row, SPEC_A) for row in r.to_dict("records")]
+    r["p"] = [x["probability"] for x in res]
+    r["top"] = [x["percentile"] for x in res]
+    r["lvl"] = [x["risk_level"] for x in res]
+    r["va"] = [x["vascular_age"] for x in res]
+    wmean = lambda v, w: float(np.average(np.asarray(v, dtype=float), weights=w))  # noqa: E731
+    out = {"model_version": SPEC_A["version"], "n": int(len(r)), "cuts": [lo, hi], "boundary_ok": bool(boundary_ok), "by_sex": {}}
+    wall = r["w"].to_numpy()
+    out["share_by_level_all"] = {k: round(float(wall[(r["lvl"] == k).to_numpy()].sum() / wall.sum()), 3)
+                                 for k in ("normal", "borderline", "high")}
+    for sex in ("M", "F"):
+        g = r[r["sex"] == sex]
+        w = g["w"].to_numpy()
+        share = {k: round(float(w[(g["lvl"] == k).to_numpy()].sum() / w.sum()), 3) for k in ("high", "borderline", "normal")}
+        va_gap = {b: round(wmean(gg["va"] - gg["age"], gg["w"]), 2) for b, gg in g.groupby(g["age"].map(bm.band_of))}
+        cal = SPEC_A["kr_calibration"]["by_sex"][sex]
+        p_khs = 1 / (1 + math.exp(-(SPEC_A["intercept_by_sex"][sex] + cal["z_at_khs_mean"])))
+        out["by_sex"][sex] = {
+            "share_by_level": share,
+            "target_10y_risk": cal["target_10y_risk"], "risk_at_khs_mean_profile": round(p_khs, 5),
+            "weighted_mean_probability": round(wmean(g["p"], w), 4),
+            "vascular_age_minus_age_by_band": va_gap,
+            "top_percent_range": [int(g["top"].min()), int(g["top"].max())],
+        }
+    # 확률이 높을수록 상위 %가 작아지는지 (같은 성별·연령대 안에서)
+    viol = 0
+    for _, gg in r.groupby([r["sex"], r["age"].map(bm.band_of)]):
+        s = gg.sort_values("p")
+        # 확률은 소수 6자리로 반올림해서 같은 값끼리는 순서가 정해지지 않음 → 확률이 실제로 커졌는데(>1e-6) 상위 %가 커지면 위반
+        viol += int(((s["p"].diff() > 1e-6) & (s["top"].diff() > 0)).sum())
+    out["monotone_violations"] = viol
+    return out
 
 
 def check_similarity():
@@ -134,7 +181,8 @@ CASES = [
 
 
 def main():
-    out = {"consistency_model_a": check_a(), "consistency_model_b": check_b(), "similarity_level_b": check_similarity()}
+    out = {"consistency_model_a": check_a(), "consistency_model_b": check_b(), "similarity_level_b": check_similarity(),
+           "model_a_korean": check_kr_a()}
     # 반복 일관성 100건 × 10회
     rng = np.random.default_rng(0)
     base = [c[1] for c in CASES]

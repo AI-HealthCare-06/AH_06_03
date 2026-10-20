@@ -1,7 +1,7 @@
 {
   "consistency_model_a": {
     "n": 985,
-    "max_abs_diff": 4.996079575048107e-07,
+    "max_abs_diff": 4.997472204484356e-07,
     "n_diff_gt_1e-4": 0
   },
   "consistency_model_b": {
@@ -29,6 +29,63 @@
     },
     "normal_median_N": 0.261,
     "normal_q75_N": 0.411
+  },
+  "model_a_korean": {
+    "model_version": "0.2.0",
+    "n": 10652,
+    "cuts": [
+      0.02,
+      0.09
+    ],
+    "boundary_ok": true,
+    "by_sex": {
+      "M": {
+        "share_by_level": {
+          "high": 0.027,
+          "borderline": 0.337,
+          "normal": 0.636
+        },
+        "target_10y_risk": 0.0103,
+        "risk_at_khs_mean_profile": 0.0103,
+        "weighted_mean_probability": 0.022,
+        "vascular_age_minus_age_by_band": {
+          "32-39": 0.0,
+          "40-49": 0.0,
+          "50-59": -0.0,
+          "60-70": -0.0
+        },
+        "top_percent_range": [
+          1,
+          100
+        ]
+      },
+      "F": {
+        "share_by_level": {
+          "high": 0.0,
+          "borderline": 0.098,
+          "normal": 0.902
+        },
+        "target_10y_risk": 0.004,
+        "risk_at_khs_mean_profile": 0.004,
+        "weighted_mean_probability": 0.0083,
+        "vascular_age_minus_age_by_band": {
+          "32-39": 0.0,
+          "40-49": 0.0,
+          "50-59": -0.0,
+          "60-70": -0.0
+        },
+        "top_percent_range": [
+          1,
+          100
+        ]
+      }
+    },
+    "share_by_level_all": {
+      "normal": 0.771,
+      "borderline": 0.216,
+      "high": 0.014
+    },
+    "monotone_violations": 0
   },
   "repeat_100x10_max_deviation": 0.0
 }
