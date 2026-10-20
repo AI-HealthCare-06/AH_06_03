@@ -275,8 +275,19 @@ async function record(code, answer, quantity) {
   try {
     await apiRecordChallengeLog(code, answer, quantity);
     partialFor = null;
+    const doneBefore = new Set([...document.querySelectorAll('.mrow.done .nm')].map(n => n.textContent));
+    const pieBefore = (document.querySelector('.ring .cnt b') || {}).textContent;
     cycle = await apiGetCurrentCycle();  // 달성률·연속 기록일을 서버 값으로 다시 그림
+    // 파이 개수·연속 일수(오늘 완료 수)와 배지도 새 값으로 (안 그러면 체크해도 파이가 그대로다)
+    await Promise.all([
+      apiCall('GET', '/home/summary', undefined, '').then(r => summary = r.data).catch(() => {}),
+      apiCall('GET', '/badges', undefined, '').then(r => badges = r.data).catch(() => {}),
+    ]);
     render();
+    // 방금 체크한 미션의 동그라미와, 파이 개수가 늘었으면 파이가 톡 튀어 오른다
+    document.querySelectorAll('.mrow.done').forEach(r => { if (!doneBefore.has(r.querySelector('.nm').textContent)) r.querySelector('.ck i').classList.add('pop'); });
+    const pieNow = (document.querySelector('.ring .cnt b') || {}).textContent;
+    if (pieBefore && pieNow && pieBefore !== pieNow) { const d = document.querySelector('.ring .dish'); if (d) d.classList.add('bump'); }
   } catch (e) { showError(friendlyError(e)); }
 }
 

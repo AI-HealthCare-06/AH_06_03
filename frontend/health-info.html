@@ -216,7 +216,7 @@
             <p id="form-err" class="err" style="display:none"></p>
 
             <div class="privacy" id="privacy-note">
-              <span>🔒</span>
+              <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px; flex:none; margin-top:2px"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
               <span>입력하신 건강정보는 위험 신호 분석과 챌린지 추천에만 씁니다. 다른 용도로 쓰거나 제3자에게 제공하지 않습니다.</span>
             </div>
 
@@ -229,7 +229,7 @@
 
 <div id="success-modal" class="modal-backdrop" style="display:none">
   <div class="modal-card">
-    <div style="font-size:32px">✅</div>
+    <div><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M7.8 12.4l3 3 5.6-6.4"/></svg></div>
     <b>건강정보를 저장했어요!</b>
     <a class="cta" style="display:block; text-align:center; text-decoration:none; margin-top:14px" href="survey.html">생활습관 설문으로</a>
   </div>
@@ -285,7 +285,7 @@ ocrInput.addEventListener('change', async () => {
       ? `<div class="callout"><b>${filledCount}개 항목을 채웠습니다</b><br>${missingNames.join(', ')}은(는) 직접 입력해주세요</div>`
       : `<div class="callout"><b>${filledCount}개 항목을 채웠습니다</b><br>값을 확인하고 필요하면 수정해주세요</div>`;
   } catch (e) {
-    ocrResult.innerHTML = `<div class="callout" style="border-color:var(--danger)"><b>⚠️ 인식할 수 없는 서식입니다</b><br>글자가 흐리거나 잘린 것 같아요. 아래에서 직접 입력해주세요</div>`;
+    ocrResult.innerHTML = `<div class="callout" style="border-color:var(--danger)"><b><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px; "><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.5v.5"/></svg> 인식할 수 없는 서식입니다</b><br>글자가 흐리거나 잘린 것 같아요. 아래에서 직접 입력해주세요</div>`;
   } finally {
     ocrLabelText.textContent = '사진 올리기 (준비 중)';
     ocrInput.value = '';
