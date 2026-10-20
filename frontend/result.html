@@ -66,6 +66,7 @@ const A_SKIP_MSG = { age_out_of_range: '만 32~70세가 아니어서 분석할 �
 const B_SKIP_MSG = { age_out_of_range: '19세 미만이어서 분석할 수 없습니다', htn_diagnosed: '고혈압으로 진단·치료 중이라 분석할 수 없습니다' };
 const SIM_LABEL = { similar: '비슷한 편이에요', slightly_different: '조금 달라요', different: '많이 달라요' };
 const TRI = '<svg width="26" height="26" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M8 2l6.5 11.5h-13z"/></svg>';
+const OKI = '<svg width="26" height="26" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M5.2 8.2l2 2 3.6-4"/></svg>';   // 양호는 홈 카드와 같은 체크 아이콘
 
 // 명세 §3: 학습 방향이 상식과 반대인 요인(direction_matches_expectation = false)은 요인 목록에 표시하지 않는다.
 const visible = (factors) => (factors || []).filter(f => f.direction_matches_expectation !== false);
@@ -111,13 +112,14 @@ document.getElementById('back').innerHTML = ICON.back;
 if (!pred) {
   screen.innerHTML = '<div class="callout"><b>분석 결과가 없어요</b><br>입력을 마치고 분석하면 볼 수 있어요.</div>';
 } else {
-  let html = adviceBannerHtml(pred, health);   // 혈압 140/90·160/100 이상이면 결과보다 먼저 의료기관 상담 안내
+  const advice = adviceBannerHtml(pred, health);   // 혈압 140/90·160/100 이상이면 의료기관 상담 안내 (결과 카드 바로 아래에 둔다)
+  let html = '';
 
   html += pred.bp_stage ? `<div class="bprow"><b>${BP_LABEL[pred.bp_stage]}</b>입력 혈압 판정</div>` : '';
 
   // 모델 A는 만 32~70세만 계산한다. 나이 때문에 못 하면 모델 B를 먼저 보여 주고 아래에 작게 알린다.
   const ageSkipA = pred.model_a.status !== 'completed' && pred.model_a.skip_reason === 'age_out_of_range';
-  let aHtml = '', bHtml = '';
+  let aHtml = '', aRest = '', bHtml = '';
 
   if (pred.model_a.status !== 'completed') {
     aHtml = ageSkipA ? '' : `<div class="callout"><b>${A_SKIP_MSG[pred.model_a.skip_reason] || '이번엔 분석할 수 없습니다'}</b></div>`;
@@ -126,13 +128,14 @@ if (!pred) {
     const cur = (i) => n === i ? ' class="cur"' : '';
     aHtml = `<div class="rescard">
         <span class="cap">10년 내 심장 혈관 건강 신호</span>
-        <div class="big">${TRI}<span>${RISK_LABEL[a.risk_level]}</span></div>
+        <div class="big">${n === 1 ? OKI : TRI}<span>${RISK_LABEL[a.risk_level]}</span></div>
         <div class="seg">${[1, 2, 3].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>
         <div class="lv"><span${cur(1)}>양호</span><span${cur(2)}>주의</span><span${cur(3)}>높음</span></div>
         ${top && top.direction_matches_expectation !== false ? `<div class="why">바꿀 수 있는 요인 중 <b>${top.label}</b> 쪽이 이 신호에 가장 크게 영향을 주고 있어요.</div>` : ''}
       </div>
       ${a.vascular_age != null ? `<div class="agebox"><div class="t">혈관 나이 (추정)<span>실제 나이와 차이가 클 수 있어요</span></div><div class="n">${Math.round(a.vascular_age)}세</div></div>` : ''}
-      ${factorBlock('MODEL_A', a, '바꿀 수 있는 요인')}`;
+      `;
+    aRest = factorBlock('MODEL_A', a, '바꿀 수 있는 요인');
   }
 
   if (pred.model_b.status !== 'completed') {
@@ -148,8 +151,8 @@ if (!pred) {
   }
 
   html += ageSkipA
-    ? bHtml + '<div class="callout" style="text-align:center">10년 내 심장 혈관 건강 신호는 <b>만 32~70세</b>에게만 분석해요</div>'
-    : aHtml + bHtml;
+    ? bHtml + advice + '<div class="callout" style="text-align:center">10년 내 심장 혈관 건강 신호는 <b>만 32~70세</b>에게만 분석해요</div>'
+    : aHtml + advice + aRest + bHtml;
 
   const miss = (pred.model_a.missing_features || []).includes('totChol');
   html += `<div class="notes">${miss ? '<div>총콜레스테롤은 입력하지 않아서 학습 데이터의 중앙값(234)으로 대신해 계산했어요. 이 값은 내 실제 수치가 아니에요.</div>' : ''}<div>진단이 아닌 참고 정보입니다. AI가 분석한 참고 정보이며, 정확한 진단은 의사에게 문의하세요.</div></div>

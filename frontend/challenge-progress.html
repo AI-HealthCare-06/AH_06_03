@@ -7,13 +7,16 @@
 <link rel="stylesheet" href="assets/style.css">
 <style>
   .screen{gap:14px}
-  .ring{display:flex; flex-direction:column; align-items:center; gap:16px; background:var(--cream); border-radius:28px; padding:22px 20px 20px}
+  .ring{display:flex; flex-direction:column; align-items:center; gap:10px; background:var(--cream); border-radius:28px; padding:18px 20px 18px}
+  .ring .pr{display:flex; align-items:center; gap:14px; width:100%}
   .ring .top{display:flex; align-items:baseline; justify-content:space-between; width:100%}
   .ring .top b{font-size:14px; color:#4A5C6D}
   .ring .top span{font-size:13px; color:var(--muted)}
   .ring .t{font-size:17px; font-weight:800; text-align:center; line-height:1.4}
-  .ring svg,.ring img{width:184px; height:184px; image-rendering:pixelated}
-  .ring .cnt{display:flex; flex-direction:column; align-items:center; gap:4px}
+  .ring svg,.ring img{width:92px; height:92px; image-rendering:pixelated}
+  .ring .dish{margin:10px 12px 10px 10px}
+  .ring .dish .steam{height:auto; width:34%}
+  .ring .cnt{display:flex; flex-direction:column; align-items:flex-start; gap:4px; flex:1; min-width:0}
   .ring .cnt b{font-size:20px; font-weight:800; letter-spacing:-.3px}
   .ring .cnt b small{font-size:15px; color:var(--muted); font-weight:700}
   .ring .cnt span{font-size:14px; color:#4A5C6D}
@@ -144,9 +147,7 @@ function ringHtml() {
   const dayNo = Math.min(28, cycle.day_number);
   return `<div class="ring">
     <div class="top"><b>${cycle.cycle_number}차 · ${cycle.week_number}주차</b><span>연속 ${streak}일</span></div>
-    <span class="t">챌린지를 완료해서<br>파이를 구워봐요!</span>
-    ${pieSvg(n, done)}
-    <div class="cnt"><b>${done}개 구웠어요 <small>/ ${n}</small></b><span>${sub}</span></div>
+    <div class="pr">${pieSvg(n, done)}<div class="cnt"><b>${done}개 구웠어요 <small>/ ${n}</small></b><span>${sub}</span></div></div>
     <div class="prog"><div><span>4주 진행</span><span><b style="color:var(--ink)">${dayNo}</b> / 28일</span></div><div class="bar"><i style="width:${Math.round(dayNo / 28 * 100)}%"></i></div></div>
   </div>`;
 }
