@@ -189,8 +189,8 @@ function tilesHtml() {
   let vv, pct, ft;
   if (state === 'active') {
     const left = 28 - dayNo;
-    vv = left > 0 ? `${left}일 <small>남았어요</small>` : '<small>오늘이에요</small>'; pct = Math.round(dayNo / 28 * 100); ft = `챌린지 ${dayNo} / 28일`;
-  } else if (state === 'redo') { vv = '<small>지금 재요</small>'; pct = 100; ft = '챌린지 28 / 28일'; }
+    vv = left > 0 ? `${left}일 <small>남았어요</small>` : '<small>오늘이에요</small>'; pct = Math.round(dayNo / 28 * 100); ft = `12주 중 ${(cycleNo - 1) * 4 + Math.min(4, Math.ceil(dayNo / 7))}주차 · ${dayNo} / 28일`;
+  } else if (state === 'redo') { vv = '<small>지금 재요</small>'; pct = 100; ft = `12주 중 ${cycleNo * 4}주차 · 28 / 28일`; }
   else { vv = '<small>챌린지 시작 전</small>'; pct = 0; ft = '챌린지 0 / 28일'; }
   const href = state === 'active' || state === 'redo' ? reassessHref : 'challenges.html';
   const when = `<a class="tile blue" href="${href}"><span class="lb">혈압·체중을<br>다시 재는 날까지</span><div><div class="vv">${vv}</div><div class="trk"><b style="width:${pct}%"></b></div><span class="ft">${ft}</span></div></a>`;
@@ -213,7 +213,7 @@ function render() {
     else if (state === 'ready') body += stateCard(STATE_ICON.doc, '분석이 끝났어요', '결과에 맞는 챌린지를 골라요.<br><b style="font-size:17px;color:var(--ink)">12주 = 4주씩 3번</b>', '', btn('challenges.html', '4주 챌린지 시작'));
     else {
       const last = cycleNo >= 3;
-      body += stateCard(STATE_ICON.doc, last ? '12주 챌린지를 모두 마쳤어요' : `${cycleNo}차 4주가 끝났어요`, '바뀐 항목만 다시 입력하면 비교해 드려요.', '',
+      body += stateCard(STATE_ICON.doc, last ? '12주 계획을 모두 마쳤어요' : `12주 계획 ${cycleNo}/3차가 끝났어요`, '바뀐 항목만 다시 입력하면 비교해 드려요.', '',
         btn(reassessHref, last ? '12주 결과 확인하기' : '4주 결과 확인하기') + (!last && !cycle.cycleId ? btn('challenges.html', `다음 4주 챌린지 시작 (${cycleNo + 1}차)`, 'ghost') : ''));
     }
     if (pred) body += tilesHtml();

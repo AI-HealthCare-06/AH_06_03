@@ -155,7 +155,7 @@ function loggedIn(){ return !!PaeonTokens.access(); }
 const NAV_ITEMS = [
   { icon: ICON.record, label: '내 기록', href: 'trend.html', pages: ['trend.html', 'twelve-weeks.html', 'reassessment.html'] },
   { icon: ICON.challenge, label: '챌린지', href: localStorage.getItem('paeon-cycle') ? 'challenge-progress.html' : 'challenges.html', pages: ['challenges.html', 'challenge-progress.html', 'badges.html'] },
-  { icon: ICON.home, label: '홈', href: 'dashboard.html', pages: ['dashboard.html', 'health-info.html', 'survey.html', 'review.html', 'result.html', 'calendar-diary.html'] },
+  { icon: ICON.home, label: '홈', href: 'dashboard.html', pages: ['dashboard.html', 'plan.html', 'health-info.html', 'survey.html', 'review.html', 'result.html', 'calendar-diary.html'] },
   { icon: ICON.community, label: '커뮤니티', href: 'feed.html', pages: ['feed.html', 'write.html', 'post.html', 'nickname.html', 'common-challenges.html', 'common-challenge.html', 'party.html', 'party-start.html', 'party-create.html', 'party-home.html'] },
   { icon: ICON.more, label: '더보기', href: 'menu.html', pages: ['menu.html', 'mypage.html', 'inquiries.html', 'notices.html', 'guide.html', 'terms.html', 'character.html', 'pie.html'] },
 ];
