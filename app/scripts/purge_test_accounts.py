@@ -9,6 +9,8 @@ import asyncio
 
 from sqlalchemy import or_, select
 
+from app.core.config import settings
+
 from app.core.db.databases import async_get_db
 from app.models.user import User
 from app.services import account_service
@@ -63,3 +65,10 @@ if __name__ == "__main__":
     parser.add_argument("--apply", action="store_true", help="진짜로 탈퇴 처리")
     args = parser.parse_args()
     asyncio.run(main(args.pattern, args.apply))
+
+def _admin_emails() -> list[str]:
+    """관리자 목록은 관리자 창구와 같은 설정(settings.admin_email_set)을 쓴다."""
+    emails = sorted(settings.admin_email_set)
+    if not emails:
+        print("⚠️  ADMIN_EMAILS가 비어 있어요. 관리자 계정이 자동 제외되지 않아요.\n")
+    return emails

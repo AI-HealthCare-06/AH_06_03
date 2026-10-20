@@ -132,6 +132,7 @@ class ModelSummary(BaseModel):
     vascular_age: float | None
     skip_reason: str | None
     similarity_level: str | None = None
+    percentile: float | None = None     # 모델 A: 같은 성별·연령대 상위 N% (참고용)
 
 
 class PredictionSummary(BaseModel):
