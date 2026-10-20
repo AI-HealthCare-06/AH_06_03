@@ -11,7 +11,8 @@ from app.schemas.community import (
     AttachOption, CommentCreate, PhotoResult, CommentItem, LikeResult, MyCommunity, NicknameRequest, PostCreate, PostCreated, PostDetail, PostList,
     ReportRequest, ReportResult,
 )
-from app.services import community_service
+from app.core.errors import AppError
+from app.services import community_service, photo_check
 
 router = APIRouter(prefix="/community", tags=["community"])
 
@@ -98,7 +99,22 @@ async def report_comment(
 @router.post("/posts/{post_id}/photos", status_code=status.HTTP_201_CREATED, response_model=DataResponse[PhotoResult])
 async def add_photo(post_id: str, request: Request, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)):
     """내 글에 사진 한 장 (본문이 곧 JPEG 파일, Content-Type: image/jpeg). 가로 640px·300KB 이하."""
-    return DataResponse(data=await community_service.add_photo(db, user_id, post_id, await request.body()))
+    return DataResponse(data=await community_service.add_photo(db, user_id, post_id, await _read_photo(request)))
+
+
+async def _read_photo(request: Request) -> bytes:
+    """사진 본문을 300KB까지만 읽는다. 크기 검사 전에 본문을 통째로 메모리에 올리지 않게(큰 본문으로 서버를 멈추는 것 방지)."""
+    too_large = AppError(413, "PHOTO_TOO_LARGE", "사진은 한 장에 300KB 이하만 올릴 수 있어요.")
+    declared = request.headers.get("content-length")
+    if declared and declared.isdigit() and int(declared) > photo_check.MAX_BYTES:
+        raise too_large
+    chunks, size = [], 0
+    async for chunk in request.stream():
+        size += len(chunk)
+        if size > photo_check.MAX_BYTES:
+            raise too_large
+        chunks.append(chunk)
+    return b"".join(chunks)
 
 
 @router.get("/posts/{post_id}/photos/{position}")
