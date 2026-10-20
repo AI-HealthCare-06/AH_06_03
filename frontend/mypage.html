@@ -193,12 +193,14 @@ function wire() {
       const L = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
       localStorage.setItem('paeon-profile', JSON.stringify({ ...(L('paeon-profile') || {}), birth: me.birth_date, sex: me.sex }));
       if (localStorage.getItem('paeon-health-record-id')) {
+        const building = progressOverlay('분석을 다시<br>하는 중이에요', '바뀐 정보로 결과를 새로 계산하고 있어요');
         try {
           await restoreEligibilityFromServer();                 // 나이대를 새 생년월일로 다시 계산
           const r = await apiRequestPrediction(L('paeon-profile'), L('paeon-eligibility'), L('paeon-health'), L('paeon-survey'));
           localStorage.setItem('paeon-prediction', JSON.stringify(r.data));
+          await building.finish();
           location.href = 'result.html';
-        } catch (e) { state.perr = friendlyError(e); render(); }
+        } catch (e) { building.cancel(); state.perr = friendlyError(e); render(); }
       }
     }
   });

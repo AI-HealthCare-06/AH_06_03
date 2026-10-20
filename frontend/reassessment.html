@@ -207,14 +207,17 @@ async function main() {
     if (draft && draft.cycleId === cycleId) {
       lede.textContent = '변화를 정리하고 있어요...';
       document.getElementById('sub').hidden = true; body.innerHTML = '';
+      const building = progressOverlay('처음과 비교하는 중이에요', '4주 동안 달라진 점을 정리하고 있어요');
       try {
         const res = (await apiCall('POST', `/challenges/cycles/${encodeURIComponent(cycleId)}/reassessment`, { measurements: draft.measurements }, '저장하지 못했습니다')).data;
         try { sessionStorage.removeItem('paeon-reassess-draft'); } catch (e) {}
+        await building.finish();
         lede.textContent = `${res.cycle_number}차 4주 동안의 변화예요.`;
         body.innerHTML = reviewHtml(res);
         history.replaceState(null, '', `reassessment.html?cycle=${encodeURIComponent(cycleId)}`);
         window.scrollTo(0, 0);
       } catch (e) {
+        building.cancel();
         lede.textContent = `${rv.cycle_number}차 4주가 끝났어요.
 지금 상태를 적어 주세요`;
         document.getElementById('sub').hidden = false; body.innerHTML = formHtml();

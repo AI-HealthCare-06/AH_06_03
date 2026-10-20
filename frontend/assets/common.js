@@ -118,6 +118,22 @@ function renderHeader(){
     else if (notices.length) { bell.insertAdjacentHTML('beforeend', '<span class="dot" aria-label="새 공지"></span>'); bell.href = 'notices.html'; }
   });
 }
+// 서버 계산을 기다리는 동안 보여 주는 진행 화면. 바는 요청이 끝날 때까지 최대 92%까지 차오르고,
+// finish()를 부르면 100%로 채운 뒤 잠깐 보여 주고(await), 실패하면 cancel()로 닫는다. title·sub는 우리가 쓴 문구만 넣는다(HTML 허용).
+function progressOverlay(title, sub) {
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed; inset:0; z-index:300; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:24px; text-align:center';
+  box.innerHTML = `<b style="font-size:22px; font-weight:800; line-height:1.4">${title}</b><p style="margin:0; font-size:14px; color:var(--body); line-height:1.6">${sub}</p><div style="width:min(280px,80%); height:10px; border-radius:5px; background:var(--line); overflow:hidden; margin-top:10px"><i class="pg-bar" style="display:block; height:100%; width:0; border-radius:5px; background:var(--accent); transition:width .35s"></i></div><span class="pg-pct" style="font-size:13px; font-weight:700; color:var(--muted)">0%</span>`;
+  document.body.appendChild(box);
+  let v = 0;
+  const set = (n) => { v = n; box.querySelector('.pg-bar').style.width = n + '%'; box.querySelector('.pg-pct').textContent = Math.round(n) + '%'; };
+  const timer = setInterval(() => set(Math.min(92, v + (92 - v) * 0.08 + 0.4)), 300);
+  return {
+    finish: () => { clearInterval(timer); set(100); return new Promise((r) => setTimeout(r, 500)); },
+    cancel: () => { clearInterval(timer); box.remove(); },
+  };
+}
+
 // 파이 그림을 접시에 올린다. hot이면 김이 올라온다 (선으로 그린 요소: 픽셀 파이와 어울리게)
 function pieDish(inner, hot) {
   const steam = hot ? '<svg class="steam" viewBox="0 0 60 28" aria-hidden="true"><path d="M12 26c-5-6 5-9 0-15M30 26c-5-6 5-9 0-15M48 26c-5-6 5-9 0-15"/></svg>' : '';

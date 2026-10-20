@@ -110,25 +110,13 @@ if (!profile || !elig || !health || !survey) {
     <div class="sec"><div class="sh"><b>생활습관 설문</b><a href="survey.html">수정</a></div>${surveyRows}</div>`;
 }
 
-// 실제 분석 요청이 끝날 때까지 바가 차오르고(최대 92%), 끝나면 100%로 채운 뒤 계획 화면으로 간다
-function buildingOverlay() {
-  const box = document.createElement('div');
-  box.style.cssText = 'position:fixed; inset:0; z-index:300; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:24px; text-align:center';
-  box.innerHTML = '<b style="font-size:22px; font-weight:800; line-height:1.4">내 12주 계획을<br>만드는 중이에요</b><p style="margin:0; font-size:14px; color:var(--body); line-height:1.6">답해 주신 내용으로 분석하고<br>4주 일정을 맞추고 있어요</p><div style="width:min(280px,80%); height:10px; border-radius:5px; background:var(--line); overflow:hidden; margin-top:10px"><i id="build-bar" style="display:block; height:100%; width:0; border-radius:5px; background:var(--accent); transition:width .35s"></i></div><span id="build-pct" style="font-size:13px; font-weight:700; color:var(--muted)">0%</span>';
-  document.body.appendChild(box);
-  let v = 0;
-  const set = (n) => { v = n; box.querySelector('#build-bar').style.width = n + '%'; box.querySelector('#build-pct').textContent = Math.round(n) + '%'; };
-  const timer = setInterval(() => set(Math.min(92, v + (92 - v) * 0.08 + 0.4)), 300);
-  return { finish: () => { clearInterval(timer); set(100); return new Promise((r) => setTimeout(r, 500)); }, cancel: () => { clearInterval(timer); box.remove(); } };
-}
-
 document.getElementById('submit-btn').addEventListener('click', async () => {
   const btn = document.getElementById('submit-btn');
   const errEl = document.getElementById('form-err');
   errEl.style.display = 'none';
   btn.disabled = true;
   btn.textContent = '분석하는 중...';
-  const building = buildingOverlay();
+  const building = progressOverlay('내 12주 계획을<br>만드는 중이에요', '답해 주신 내용으로 분석하고<br>4주 일정을 맞추고 있어요');
   try {
     const result = await apiRequestPrediction(profile, elig, health, survey);
     localStorage.setItem('paeon-prediction', JSON.stringify(result.data));
