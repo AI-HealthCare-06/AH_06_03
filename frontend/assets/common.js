@@ -118,6 +118,21 @@ function renderHeader(){
     else if (notices.length) { bell.insertAdjacentHTML('beforeend', '<span class="dot" aria-label="새 공지"></span>'); bell.href = 'notices.html'; }
   });
 }
+// 화면 위에 잠깐 떴다 사라지는 알림 줄. toastNext는 다른 화면으로 이동한 뒤 그 화면에서 보여 준다(글쓰기 직후 등).
+function toast(msg) {
+  const t = document.createElement('div');
+  t.setAttribute('role', 'status');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed; left:50%; top:16px; transform:translate(-50%,-12px); z-index:400; max-width:calc(100% - 32px); box-sizing:border-box; padding:12px 18px; border-radius:22px; background:#243749; color:#fff; font-size:14px; font-weight:700; text-align:center; opacity:0; transition:opacity .25s, transform .25s';
+  document.body.appendChild(t);
+  requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translate(-50%,0)'; });
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+function toastNext(msg) { try { sessionStorage.setItem('paeon-toast', msg); } catch (e) { /* 알림만 빠진다 */ } }
+document.addEventListener('DOMContentLoaded', () => {
+  try { const m = sessionStorage.getItem('paeon-toast'); if (m) { sessionStorage.removeItem('paeon-toast'); toast(m); } } catch (e) { /* 알림만 빠진다 */ }
+});
+
 // 서버 계산을 기다리는 동안 보여 주는 진행 화면. 바는 요청이 끝날 때까지 최대 92%까지 차오르고,
 // finish()를 부르면 100%로 채운 뒤 잠깐 보여 주고(await), 실패하면 cancel()로 닫는다. title·sub는 우리가 쓴 문구만 넣는다(HTML 허용).
 function progressOverlay(title, sub) {
