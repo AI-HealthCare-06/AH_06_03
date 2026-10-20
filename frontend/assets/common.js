@@ -118,6 +118,66 @@ function renderHeader(){
     else if (notices.length) { bell.insertAdjacentHTML('beforeend', '<span class="dot" aria-label="새 공지"></span>'); bell.href = 'notices.html'; }
   });
 }
+// 화면 위에 잠깐 떴다 사라지는 알림 줄. toastNext는 다른 화면으로 이동한 뒤 그 화면에서 보여 준다(글쓰기 직후 등).
+function toast(msg) {
+  const t = document.createElement('div');
+  t.setAttribute('role', 'status');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed; left:50%; top:16px; transform:translate(-50%,-12px); z-index:400; max-width:calc(100% - 32px); box-sizing:border-box; padding:12px 18px; border-radius:22px; background:#243749; color:#fff; font-size:14px; font-weight:700; text-align:center; opacity:0; transition:opacity .25s, transform .25s';
+  document.body.appendChild(t);
+  requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translate(-50%,0)'; });
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+function toastNext(msg) { try { sessionStorage.setItem('paeon-toast', msg); } catch (e) { /* 알림만 빠진다 */ } }
+document.addEventListener('DOMContentLoaded', () => {
+  try { const m = sessionStorage.getItem('paeon-toast'); if (m) { sessionStorage.removeItem('paeon-toast'); toast(m); } } catch (e) { /* 알림만 빠진다 */ }
+});
+
+// 가로로 넘기는 칩 줄(.cats, .fl): 오른쪽에 더 있으면 끝을 흐리게 해서 넘길 수 있다는 걸 알려 준다
+function enableScrollFade() {
+  document.querySelectorAll('.cats, .fl').forEach((el) => {
+    const upd = () => el.classList.toggle('fade-r', el.scrollWidth - el.clientWidth - el.scrollLeft > 4);
+    if (!el.dataset.fade) { el.dataset.fade = '1'; el.addEventListener('scroll', upd, { passive: true }); new MutationObserver(upd).observe(el, { childList: true }); }
+    upd();
+  });
+}
+document.addEventListener('DOMContentLoaded', () => { enableScrollFade(); setTimeout(enableScrollFade, 600); });
+
+// 서버 계산을 기다리는 동안 보여 주는 진행 화면. 바는 요청이 끝날 때까지 최대 92%까지 차오르고,
+// finish()를 부르면 100%로 채운 뒤 잠깐 보여 주고(await), 실패하면 cancel()로 닫는다. title·sub는 우리가 쓴 문구만 넣는다(HTML 허용).
+function progressOverlay(title, sub) {
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed; inset:0; z-index:300; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:24px; text-align:center';
+  box.innerHTML = `<b style="font-size:22px; font-weight:800; line-height:1.4">${title}</b><p style="margin:0; font-size:14px; color:var(--body); line-height:1.6">${sub}</p><div style="width:min(280px,80%); height:10px; border-radius:5px; background:var(--line); overflow:hidden; margin-top:10px"><i class="pg-bar" style="display:block; height:100%; width:0; border-radius:5px; background:var(--accent); transition:width .35s"></i></div><span class="pg-pct" style="font-size:13px; font-weight:700; color:var(--muted)">0%</span>`;
+  document.body.appendChild(box);
+  let v = 0;
+  const set = (n) => { v = n; box.querySelector('.pg-bar').style.width = n + '%'; box.querySelector('.pg-pct').textContent = Math.round(n) + '%'; };
+  const timer = setInterval(() => set(Math.min(92, v + (92 - v) * 0.08 + 0.4)), 300);
+  return {
+    finish: () => { clearInterval(timer); set(100); return new Promise((r) => setTimeout(r, 500)); },
+    cancel: () => { clearInterval(timer); box.remove(); },
+  };
+}
+
+// 뒤로 버튼(a.back): 같은 앱에서 바로 전에 보던 화면이 있으면 그리로 돌아간다. 입력·제출 화면에서 왔거나 없으면 화면에 정해 둔 곳(href)으로.
+const BACK_NEVER = ['login.html', 'signup.html', 'index.html', 'write.html', 'nickname.html', 'party-create.html', 'review.html', 'eligibility.html'];
+const BACK_NEVER_PAIR = { 'reassessment.html': ['survey.html'] };
+document.addEventListener('click', (e) => {
+  const a = e.target.closest && e.target.closest('a.back');
+  if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
+  let u;
+  try { u = new URL(document.referrer); } catch (err) { return; }
+  if (u.origin !== location.origin) return;
+  const ref = u.pathname.split('/').pop(), cur = location.pathname.split('/').pop();
+  if (!ref || ref === cur || BACK_NEVER.includes(ref) || (BACK_NEVER_PAIR[cur] || []).includes(ref) || history.length <= 1) return;
+  e.preventDefault();
+  history.back();
+});
+
+// 파이 그림을 접시에 올린다 (선으로 그린 접시: 픽셀 파이와 어울리게). hot 인자는 예전 호출과 맞추려고 남겨 둔 것이다.
+function pieDish(inner) {
+  return `<span class="dish">${inner}</span>`;
+}
 // 공지: 게시 중인 공지(GET /notices, 로그인 불필요)와 이 기기에서 계정별로 "본 공지" 기록
 async function fetchNotices() {
   try {
@@ -153,9 +213,9 @@ function loggedIn(){ return !!PaeonTokens.access(); }
 
 // 하단 탭 5개. 챌린지는 진행 중인 사이클이 있으면 수행 화면, 없으면 시작 화면으로 간다.
 const NAV_ITEMS = [
-  { icon: ICON.record, label: '내 기록', href: 'trend.html', pages: ['trend.html', 'twelve-weeks.html', 'reassessment.html'] },
+  { icon: ICON.record, label: '내 변화', href: 'trend.html', pages: ['trend.html', 'twelve-weeks.html', 'reassessment.html'] },
   { icon: ICON.challenge, label: '챌린지', href: localStorage.getItem('paeon-cycle') ? 'challenge-progress.html' : 'challenges.html', pages: ['challenges.html', 'challenge-progress.html', 'badges.html'] },
-  { icon: ICON.home, label: '홈', href: 'dashboard.html', pages: ['dashboard.html', 'health-info.html', 'survey.html', 'review.html', 'result.html', 'calendar-diary.html'] },
+  { icon: ICON.home, label: '홈', href: 'dashboard.html', pages: ['dashboard.html', 'plan.html', 'health-info.html', 'survey.html', 'review.html', 'result.html', 'calendar-diary.html'] },
   { icon: ICON.community, label: '커뮤니티', href: 'feed.html', pages: ['feed.html', 'write.html', 'post.html', 'nickname.html', 'common-challenges.html', 'common-challenge.html', 'party.html', 'party-start.html', 'party-create.html', 'party-home.html'] },
   { icon: ICON.more, label: '더보기', href: 'menu.html', pages: ['menu.html', 'mypage.html', 'inquiries.html', 'notices.html', 'guide.html', 'terms.html', 'character.html', 'pie.html'] },
 ];
@@ -244,6 +304,20 @@ function addPasswordToggles(root = document) {
 
 document.addEventListener('DOMContentLoaded', () => { renderHeader(); renderNav(); addPasswordToggles(); document.querySelectorAll('[data-icon]').forEach(e => { e.innerHTML = ICON[e.dataset.icon] || ''; }); });
 
+// 모델 A v0.2.0: 서버가 주는 확률(0~1 소수)을 "%"로, 소수 첫째 자리까지 보여 준다. 값이 없으면 ''.
+// 범주(양호·주의·높음)는 서버가 주는 risk_level을 그대로 쓰고 화면에서 확률로 다시 가르지 않는다.
+function probText(p) { return typeof p === 'number' && isFinite(p) ? (p * 100).toFixed(1) + '%' : ''; }
+// "같은 성별·연령대 상위 N%" (참고용 보조 문구. 범주 판정에는 쓰지 않는다). 값이 없으면 ''.
+function percentileText(pc) { return typeof pc === 'number' && isFinite(pc) ? `같은 성별·연령대 상위 ${Math.max(1, Math.round(pc))}%` : ''; }
+const PROB_NOTE = '일본 동맥경화학회 기준을 참고한 구간이며 한국인 자료로 검증된 진단 기준이 아닙니다. 의학적 진단·치료를 대신하지 않습니다.';
+const AGE_NOTE = '혈관 나이는 같은 성별·연령대 한국 성인 평균을 기준으로 한 추정치예요.';
+// 확률 근거 안내: 평소에는 접혀 있고 버튼을 누르면 펼쳐진다
+function probNoteHtml(withAge, caption) {
+  const chev = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6"/></svg>';
+  const btn = `<button type="button" aria-expanded="false" onclick="const p = this.closest('.pnote').querySelector('p'); p.hidden = !p.hidden; this.setAttribute('aria-expanded', String(!p.hidden))">확률 근거${chev}</button>`;
+  return `<div class="pnote"><div class="prow">${caption ? '<span class="pcap">확률은 생활습관 관리용 참고 신호예요</span>' : ''}${btn}</div><p hidden>${PROB_NOTE}${withAge ? '<br>' + AGE_NOTE : ''}</p></div>`;
+}
+
 // 모델 B: 서버가 주는 similarity_level(similar / slightly_different / different)을 말로만 보여 준다. 화면에서 기준값을 계산하지 않는다.
 // 값이 아직 없으면(서버 미지원) 판정 문장은 빼고 설명만 보인다.
 const SIM_NOW = { similar: '혈압이 정상인 사람들과 비슷한 편이에요', slightly_different: '혈압이 정상인 사람들과 조금 달라요', different: '혈압이 정상인 사람들과 많이 달라요' };
@@ -253,24 +327,40 @@ function simChangeText(before, after) {
   return SIM_RANK[after] < SIM_RANK[before] ? '4주 전보다 더 비슷해졌어요' : SIM_RANK[after] === SIM_RANK[before] ? '비슷한 자리예요' : '조금 달라졌어요';
 }
 
-// 상담 권고가 필요한 경우의 제목(혈압 140/90·160/100 이상, 또는 10년 내 심장 혈관 건강 신호 높음). 필요 없으면 ''.
+// 상담 권고가 필요한 경우의 제목. 혈압이 140/90 이상(진단 여부와 상관없이, 160/100 이상이면 "많이 높아요")이거나,
+// 모델 A(10년 내 심장 혈관 건강 신호)가 "높음"(확률 9% 이상)일 때 뜬다. 아니면 ''.
 function adviceTitle(pred, health) {
   if (!pred) return '';
   const very = health && (health.sbp >= 160 || health.dbp >= 100);
   const high = health && (health.sbp >= 140 || health.dbp >= 90);
   const aHigh = pred.model_a && pred.model_a.status === 'completed' && pred.model_a.risk_level === 'high';
-  if (very || (high && pred.htn_status === 'none')) return `입력하신 혈압이 ${very ? '많이 ' : ''}높아요 (${health.sbp}/${health.dbp} mmHg)`;
+  if (very || high) return `입력하신 혈압이 ${very ? '많이 ' : ''}높아요 (${health.sbp}/${health.dbp} mmHg)`;
   return aHigh ? '10년 내 심장 혈관 건강 신호가 높게 나왔어요' : '';
+}
+// 안내 문장: 고혈압 진단·치료 중이면 담당 의료진과 상담하도록, 진단이 없으면 가까운 의료기관을 안내한다.
+function adviceText(pred) {
+  return pred && pred.htn_status && pred.htn_status !== 'none' ? '치료 중이시라면 담당 의료진과 상담해 보세요.' : '가까운 의료기관에서 상담을 받아 보세요.';
 }
 const ADVICE_ACK_TEXT = '의료기관 상담 권고를 확인했고, 이를 확인한 뒤 챌린지를 진행하는 데 동의합니다.';
 const adviceAcked = () => { try { return localStorage.getItem('paeon-advice-ack') === '1'; } catch (e) { return false; } };
 const setAdviceAck = (v) => { try { v ? localStorage.setItem('paeon-advice-ack', '1') : localStorage.removeItem('paeon-advice-ack'); } catch (e) { /* 저장 못 해도 화면은 계속 */ } };
 // 상담 권고 배너: X로 닫아도 챌린지는 계속 가능하고 다음 방문 때 다시 보인다. 확인 체크는 챌린지 시작 때 다시 묻는다.
+// 이미 확인(체크)했으면 한 줄로 접어서 보여 주고, "다시 보기"를 누르면 원래 배너(문구 그대로)가 펼쳐진다.
+function adviceFullHtml(title) {
+  return `<div class="callout" id="advice-banner" style="border-color:var(--risk); position:relative; padding-right:44px"><button type="button" aria-label="닫기" onclick="document.getElementById('advice-banner').remove()" style="position:absolute; top:0; right:0; width:44px; height:44px; border:0; background:none; font-size:20px; line-height:1; color:var(--muted); cursor:pointer">×</button><b>${title}</b><br>${window.__adviceText || '가까운 의료기관에서 상담을 받아 보세요.'} <a href="guide.html" style="color:var(--accent-text); font-weight:700; display:inline-block; padding:8px 0">검사 · 상담 안내 보기</a>
+    <label style="display:flex; gap:8px; align-items:flex-start; margin-top:10px; font-size:12.5px; line-height:1.5; cursor:pointer"><input type="checkbox" ${adviceAcked() ? 'checked' : ''} onchange="setAdviceAck(this.checked); if (this.checked) collapseAdvice()" style="margin-top:3px"><span>${ADVICE_ACK_TEXT}</span></label></div>`;
+}
+function adviceCompactHtml() {
+  return `<div class="callout" id="advice-banner" style="border-color:var(--risk); display:flex; align-items:center; gap:10px; padding:6px 6px 6px 16px"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none; color:var(--accent-text)"><circle cx="8" cy="8" r="6.2"/><path d="M5.2 8.2l2 2 3.6-4"/></svg><span style="flex:1; font-size:14px; font-weight:700">의료기관 상담 권고를 확인했어요</span><button type="button" onclick="expandAdvice()" style="min-height:44px; padding:0 12px; border:0; background:none; font:inherit; font-size:13px; font-weight:700; color:var(--accent-text); text-decoration:underline; cursor:pointer">다시 보기</button></div>`;
+}
+function collapseAdvice() { setTimeout(() => { const b = document.getElementById('advice-banner'); if (b && adviceAcked()) b.outerHTML = adviceCompactHtml(); }, 500); }
+function expandAdvice() { const b = document.getElementById('advice-banner'); if (b) b.outerHTML = adviceFullHtml(window.__adviceTitle || ''); }
 function adviceBannerHtml(pred, health) {
   const title = adviceTitle(pred, health);
   if (!title) return '';
-  return `<div class="callout" id="advice-banner" style="border-color:var(--risk); position:relative; padding-right:34px"><button type="button" aria-label="닫기" onclick="document.getElementById('advice-banner').remove()" style="position:absolute; top:8px; right:10px; border:0; background:none; font-size:18px; line-height:1; color:var(--muted); cursor:pointer">×</button><b>${title}</b><br>가까운 의료기관에서 상담을 받아 보세요. <a href="guide.html" style="color:var(--sage-deep); font-weight:700">검사 · 상담 안내 보기</a>
-    <label style="display:flex; gap:8px; align-items:flex-start; margin-top:10px; font-size:12.5px; line-height:1.5; cursor:pointer"><input type="checkbox" ${adviceAcked() ? 'checked' : ''} onchange="setAdviceAck(this.checked)" style="margin-top:3px"><span>${ADVICE_ACK_TEXT}</span></label></div>`;
+  window.__adviceTitle = title;
+  window.__adviceText = adviceText(pred);
+  return adviceAcked() ? adviceCompactHtml() : adviceFullHtml(title);
 }
 
 // 모델 A 버전이 바뀌어 전·후를 비교할 수 없을 때(comparable=false, 둘 다 분석 완료) 비교 줄 대신 안내한다. 오류가 아니다.

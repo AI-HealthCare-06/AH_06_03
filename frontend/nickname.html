@@ -77,7 +77,7 @@ btn.addEventListener('click', async () => {
     const d = (await apiCall('PUT', '/community/me', { nickname: input.value.trim() }, '닉네임을 저장하지 못했어요')).data;
     await apiCall('PUT', '/characters/me', ch.view, '캐릭터를 저장하지 못했어요');
     if (d.pie_gift) await confirmDialog('환영해요!', '시작 선물로 파이 ' + d.pie_gift + '개를 드렸어요.', '확인');
-    location.href = dest;
+    location.replace(dest);
   } catch (e) {
     err.textContent = e.code === 'NICKNAME_TAKEN' ? '이미 쓰고 있는 닉네임이에요. 다른 닉네임을 적어 주세요.' : friendlyError(e);
     err.hidden = false; btn.disabled = false;

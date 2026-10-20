@@ -12,8 +12,19 @@
   .dots{display:flex; gap:8px}
   .dots i{width:8px; height:8px; border-radius:4px; background:var(--sage-light)}
   .dots i:first-child{background:var(--sage-deep)}
-  .shot{width:100%; height:420px; border-radius:20px; border:1px dashed var(--sage); background:var(--cream)}
-  .headline{padding-top:28px; text-align:center; font-size:24px; font-weight:800; letter-spacing:-.5px; line-height:1.4}
+  .stage{position:relative; width:100%}
+  .carousel{width:100%; display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none}
+  .carousel::-webkit-scrollbar{display:none}
+  .slide{flex:none; width:100%; scroll-snap-align:center; display:flex; flex-direction:column; align-items:center; padding-top:14px}
+  /* 아이폰 틀: 위만 보이고 아래는 배경색으로 자연스럽게 사라진다 */
+  .phone{position:relative; width:88%; border:7px solid #1D1D1F; border-bottom:0; border-radius:38px 38px 0 0; background:#fff; overflow:hidden; box-sizing:border-box; -webkit-mask-image:linear-gradient(to bottom,#000 44%,transparent 88%); mask-image:linear-gradient(to bottom,#000 44%,transparent 88%)}
+  .phone::before{content:""; position:absolute; top:8px; left:50%; width:70px; height:20px; border-radius:10px; background:#1D1D1F; transform:translateX(-50%); z-index:2}
+  .phone .scr{padding-top:32px; background:#fff}
+  .phone img{display:block; width:100%; height:auto}
+  .arrow{position:absolute; top:260px; width:36px; height:36px; border-radius:50%; border:1px solid var(--sage); background:rgba(255,255,255,.94); color:var(--ink); display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; z-index:2}
+  .arrow.l{left:-14px} .arrow.r{right:-14px}
+  .arrow svg{width:16px; height:16px}
+  .headline{position:relative; z-index:1; margin:-60px 0 0; padding:0 8px; text-align:center; font-size:21px; font-weight:800; letter-spacing:-.4px; line-height:1.45}
   .intro{position:relative; cursor:pointer; margin:14px 0 4px; border-radius:18px; overflow:hidden; line-height:0}
   .intro video{width:100%; height:auto; display:block; aspect-ratio:8/5}
   .intro .play{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none}
@@ -35,7 +46,11 @@
       <div class="screen" style="gap:0">
         <div class="shots">
           <div class="dots"><i></i><i></i><i></i><i></i><i></i></div>
-          <div class="shot"></div>
+          <div class="stage">
+            <button type="button" class="arrow l" id="prev" aria-label="이전 장면"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg></button>
+            <div class="carousel" id="carousel" aria-label="서비스 소개"><div class="slide"><div class="phone"><div class="scr"><img src="assets/intro/intro-1.jpg" alt="건강정보 입력 화면: 혈압을 입력하는 단계" loading="eager"></div></div></div><div class="slide"><div class="phone"><div class="scr"><img src="assets/intro/intro-2.jpg" alt="생활습관 설문 화면" loading="lazy"></div></div></div><div class="slide"><div class="phone"><div class="scr"><img src="assets/intro/intro-3.jpg" alt="분석 결과 화면: 10년 내 심장 혈관 건강 신호" loading="lazy"></div></div></div><div class="slide"><div class="phone"><div class="scr"><img src="assets/intro/intro-4.jpg" alt="챌린지 화면: 파이와 이번 주 달력" loading="lazy"></div></div></div><div class="slide"><div class="phone"><div class="scr"><img src="assets/intro/intro-5.jpg" alt="캘린더와 일기 화면" loading="lazy"></div></div></div></div>
+            <button type="button" class="arrow r" id="next" aria-label="다음 장면"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></button>
+          </div>
         </div>
         <p class="headline">10년 내 심장 혈관 건강 신호를<br>12주 챌린지로 관리해요</p>
 
@@ -62,6 +77,25 @@
 </div>
 
 <script src="assets/common.js"></script>
+<script>
+// 서비스 소개 슬라이드(실제 화면 캡처): 한 장면에서 2초 머문 뒤(넘어가는 움직임 0.5초 포함 2.5초 간격) 옆으로 넘어가고, 양옆 화살표나 점으로 직접 넘길 수도 있다.
+// 손으로 넘기거나 화살표·점을 누르면 자동 넘김은 멈춘다. 움직임 줄이기를 켠 사람은 처음부터 자동으로 넘기지 않는다.
+(() => {
+  const car = document.getElementById('carousel'), dots = [...document.querySelectorAll('.dots i')], N = dots.length;
+  const idx = () => Math.round(car.scrollLeft / car.clientWidth);
+  const go = (i) => car.scrollTo({ left: ((i % N) + N) % N * car.clientWidth, behavior: 'smooth' });
+  const show = () => dots.forEach((d, i) => { d.style.background = i === idx() ? 'var(--sage-deep)' : 'var(--sage-light)'; });
+  car.addEventListener('scroll', show, { passive: true });
+  let timer = null;
+  const stop = () => { clearInterval(timer); timer = null; };
+  ['pointerdown', 'touchstart', 'wheel'].forEach((ev) => car.addEventListener(ev, stop, { passive: true }));
+  document.getElementById('prev').addEventListener('click', () => { stop(); go(idx() - 1); });
+  document.getElementById('next').addEventListener('click', () => { stop(); go(idx() + 1); });
+  dots.forEach((d, i) => { d.style.cursor = 'pointer'; d.addEventListener('click', () => { stop(); go(i); }); });
+  if (!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) timer = setInterval(() => go(idx() + 1), 2500);
+  show();
+})();
+</script>
 <script>
 // 움직임 줄이기를 켠 사람과 데이터 절약 모드에서는 영상을 자동으로 재생하지 않는다 (첫 화면 이미지만 보임)
 (() => {

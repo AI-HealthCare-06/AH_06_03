@@ -9,6 +9,7 @@
   .tabs{display:flex; border-bottom:1px solid var(--line); margin:0 -20px; padding:0 20px}
   .tabs a,.tabs span{flex:1; height:46px; border-bottom:3px solid transparent; margin-bottom:-1px; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--muted); text-decoration:none}
   .tabs .on{color:var(--ink); font-weight:800; border-bottom-color:var(--ink)}
+  .tabs{margin-top:-16px}   /* 화면 gap(16px)을 지워 커뮤니티 탭 높이를 피드와 같게 */
   .feed-head{display:flex; align-items:center; justify-content:space-between; min-height:64px}
   .feed-head h1{font-size:20px}
   .me-char{width:44px; height:44px; display:flex; align-items:center; justify-content:center}
@@ -136,7 +137,7 @@ $('checkin').addEventListener('click', async () => {
 });
 $('leave').addEventListener('click', async () => {
   if (!await confirmDialog('파티를 나갈까요?', '나가면 이 파티의 인증 기록이 지워져요. 마지막 한 명이 나가면 파티가 없어져요.', '나가기')) return;
-  try { await apiCall('POST', '/parties/me/leave', undefined, '파티에서 나가지 못했어요'); location.href = 'party-start.html'; }
+  try { await apiCall('POST', '/parties/me/leave', undefined, '파티에서 나가지 못했어요'); location.replace('party-start.html'); }
   catch (e) { fail($('err2'), e); }
 });
 </script>

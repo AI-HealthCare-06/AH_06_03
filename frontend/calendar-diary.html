@@ -20,7 +20,7 @@
   .day{position:relative; aspect-ratio:1/1; border-radius:10px; background:var(--cream); cursor:pointer; overflow:hidden; box-sizing:border-box}
   .day.blank{visibility:hidden; cursor:default}
   .day .num{position:absolute; top:4px; left:6px; font-size:13px; line-height:1; color:#4A5C6D; z-index:1}
-  .day.future .num{color:#8A98A5}
+  .day.future .num{color:var(--muted)}
   .day.has-photo{background:#AACDDC}
   .day.has-photo .num{color:var(--ink)}
   .day .photo{position:absolute; inset:0; background-size:cover; background-position:center}
@@ -37,7 +37,7 @@
   .diary{background:var(--cream); border-radius:20px; padding:16px 18px; display:flex; flex-direction:column; gap:6px}
   .diary .hd{display:flex; justify-content:space-between; align-items:center}
   .diary .hd b{font-size:14px}
-  .diary .hd button{min-height:32px; border:0; background:none; font-size:13px; font-weight:700; color:var(--accent)}
+  .diary .hd button{min-height:44px; padding:0 8px; border:0; background:none; font-size:13px; font-weight:700; color:var(--accent-text)}
   .diary textarea{font:inherit; font-size:14px; line-height:1.6; color:#4A5C6D; border:0; background:#fff; border-radius:12px; padding:10px 12px; width:100%; min-height:72px; resize:vertical}
   .photos{display:flex; gap:10px; align-items:flex-start}
   .photos .ph{width:84px; height:84px; border-radius:16px; background:var(--cream-2) center/cover; flex:none}
@@ -76,7 +76,7 @@
   <div class="frame">
     <div class="frame-body">
       <div class="screen">
-        <div class="top"><b>캘린더</b><a href="trend.html">내 기록으로</a></div>
+        <div class="top"><b>캘린더</b><a href="trend.html">내 변화로</a></div>
         <div id="cal-wrap"></div>
         <div id="detail-wrap"></div>
       </div>

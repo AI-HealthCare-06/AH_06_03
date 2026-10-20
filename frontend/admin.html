@@ -130,6 +130,21 @@
   .st.wait{background:#F7EDD9; color:#8C6014}
   .st.done{background:#E4EFE5; color:#3E7A55}
   .btn.danger{border-color:#E0B3A8; color:#B0543F; background:#fff}
+  .tbl{background:#fff; border:1px solid var(--line); border-radius:22px; overflow:hidden; margin-bottom:12px}
+  .trow{display:grid; gap:12px; align-items:center; padding:14px 18px; border-top:1px solid var(--line); font-size:14px}
+  .trow.head{border-top:0; font-size:13px; font-weight:700; color:var(--muted)}
+  .cols-r{grid-template-columns:minmax(0,1.9fr) 90px 120px 90px 290px}
+  .cols-p{grid-template-columns:minmax(0,1.9fr) 90px 110px 90px 270px}
+  .trow .tt{display:flex; flex-direction:column; gap:4px; min-width:0}
+  .trow .tt b{font-size:15px; font-weight:800; word-break:break-all}
+  .trow .pv{font-size:13px; color:var(--body); line-height:1.5; word-break:break-all; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  .trow .sm{font-size:13px; color:var(--muted); line-height:1.5}
+  .trow .ops{display:flex; gap:6px; flex-wrap:wrap}
+  .adm .btn.sm{height:34px; padding:0 14px; font-size:13px}
+  .tacct{padding:0 18px 14px; background:var(--cream); border-top:0}
+  .tacct .acct{margin-top:0; padding-top:12px}
+  .tacct[hidden]{display:none}
+  @media (max-width: 860px){ .trow.cols-r,.trow.cols-p{grid-template-columns:1fr} .trow.head{display:none} }
   .acct{margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; align-items:center}
   .acct .btn{height:36px; padding:0 14px; margin:0 !important}
 </style>
@@ -621,21 +636,42 @@ function acctActions(userId, name, after) {
     run('정지 해제', `${name}님의 정지를 풀까요?`, () => apiCall('POST', `/admin/users/${encodeURIComponent(userId)}/unsuspend`, undefined, '풀지 못했어요')),
     run('계정 삭제', `${name}님의 계정을 삭제할까요? 건강정보와 글 등 모든 데이터가 지워지고 되돌릴 수 없어요.`, () => apiCall('DELETE', `/admin/users/${encodeURIComponent(userId)}`, undefined, '삭제하지 못했어요')));
 }
+// 신고·글 관리 목록을 표처럼 보여 주는 도우미: 한 줄(.trow)에 글·작성자·상태·시각·처리 버튼, 계정 조치는 "계정 조치" 버튼으로 줄 아래에 펼친다
+function tableRows(cols, heads, items, build) {
+  const wrap = el('div', { class: 'tbl' }, el('div', { class: 'trow head ' + cols }, ...heads.map((h) => el('span', {}, h))));
+  items.forEach((it) => wrap.appendChild(build(it)));
+  return wrap;
+}
+function opButton(label, onclick, cls = '') { return el('button', { type: 'button', class: 'btn sm ' + cls, onclick }, label); }
+function acctToggle(userId, name, after, panel) {
+  return opButton('계정 조치', () => {
+    if (!panel.dataset.on) { panel.replaceChildren(acctActions(userId, name, after)); panel.dataset.on = '1'; panel.hidden = false; }
+    else { panel.hidden = !panel.hidden; }
+  });
+}
 async function loadReports() {
   const status = document.getElementById('r-status').value, box = document.getElementById('r-list');
   try {
     const { data } = await apiCall('GET', `/admin/reports?limit=50&status=${status}`, undefined, '신고를 불러오지 못했어요');
-    box.replaceChildren(...(data.items.length ? data.items.map((r) => el('div', { class: 'detail', style: 'margin-bottom:8px' },
-      el('b', {}, `${r.target_type === 'post' ? '글' : '댓글'} · ${r.title}`), r.auto_hidden ? el('span', { class: 'st wait', style: 'margin-left:6px' }, '자동 숨김') : '', el('br'),
-      `${r.author_nickname} · 신고 ${r.report_count}건 (${Object.entries(r.reasons).map(([k, v]) => `${REASON[k] || k} ${v}`).join(', ')}) · ${kst(r.last_reported_at)}`,
-      el('div', { style: 'white-space:pre-wrap; word-break:break-all; margin:8px 0' }, r.preview),
-      status === 'pending'
-        ? el('div', {}, ...['hide', 'delete', 'dismiss'].map((a) => el('button', { type: 'button', class: 'btn', style: 'margin-right:6px', onclick: async () => {
-            try { await apiCall('POST', `/admin/reports/${r.target_type}/${encodeURIComponent(r.target_id)}/action`, { action: a }, '처리하지 못했어요'); say(`${ACT[a]} 처리했어요`, 'ok'); loadReports(); }
-            catch (e) { say(friendlyError(e), 'err'); } } }, ACT[a])))
-        : el('div', { class: 'meta' }, `처리: ${ACT[r.action] || r.action || ''}`),
-      r.author_user_id ? acctActions(r.author_user_id, r.author_nickname, loadReports) : ''))
-      : [el('p', { class: 'meta' }, '신고가 없어요.')]));
+    if (!data.items.length) { box.replaceChildren(el('p', { class: 'meta' }, '신고가 없어요.')); return; }
+    box.replaceChildren(tableRows('cols-r', ['글 · 댓글', '작성자', '신고', '시각', status === 'pending' ? '처리' : '처리 결과'], data.items, (r) => {
+      const panel = el('div', { class: 'trow tacct', hidden: true });
+      const doAct = (a) => async () => {
+        try { await apiCall('POST', `/admin/reports/${r.target_type}/${encodeURIComponent(r.target_id)}/action`, { action: a }, '처리하지 못했어요'); say(`${ACT[a]} 처리했어요`, 'ok'); loadReports(); }
+        catch (e) { say(friendlyError(e), 'err'); }
+      };
+      const ops = el('div', { class: 'ops' },
+        ...(status === 'pending' ? ['hide', 'delete', 'dismiss'].map((a) => opButton(ACT[a], doAct(a), a === 'delete' ? 'danger' : '')) : [el('span', { class: 'sm' }, ACT[r.action] || r.action || '')]),
+        r.author_user_id ? acctToggle(r.author_user_id, r.author_nickname, loadReports, panel) : '');
+      return el('div', {},
+        el('div', { class: 'trow cols-r' },
+          el('div', { class: 'tt' }, el('b', {}, `${r.target_type === 'post' ? '글' : '댓글'} · ${r.title}`, r.auto_hidden ? el('span', { class: 'st wait', style: 'margin-left:6px' }, '자동 숨김') : ''), el('span', { class: 'pv' }, r.preview)),
+          el('span', {}, r.author_nickname),
+          el('span', {}, `${r.report_count}건`, el('br'), el('span', { class: 'sm' }, Object.entries(r.reasons).map(([k, v]) => `${REASON[k] || k} ${v}`).join(', '))),
+          el('span', { class: 'sm' }, kst(r.last_reported_at)),
+          ops),
+        panel);
+    }));
   } catch (e) { box.replaceChildren(el('p', { class: 'meta' }, friendlyError(e))); }
 }
 document.getElementById('r-load').addEventListener('click', loadReports);
@@ -653,21 +689,32 @@ async function loadPosts(reset) {
   if (q) qs.set('q', q);
   try {
     const { data } = await apiCall('GET', `/admin/community/posts?${qs}`, undefined, '글을 불러오지 못했어요');
-    const rows = data.items.map((r) => {
+    if (!data.items.length && reset) { box.replaceChildren(el('p', { class: 'meta' }, '글이 없어요.')); poOffset = 0; more.hidden = true; return; }
+    const table = tableRows('cols-p', ['글', '작성자', '상태', '작성 시각', '처리'], data.items, (r) => {
       const acts = r.status === 'visible' ? ['hide', 'delete'] : r.status === 'hidden' ? ['restore', 'delete'] : [];
-      return el('div', { class: 'detail', style: 'margin-bottom:8px' },
-        el('b', {}, r.title), el('span', { class: 'st ' + (r.status === 'visible' ? 'done' : 'wait'), style: 'margin-left:6px' }, PO_STATE[r.status] || r.status), el('br'),
-        `${r.author_nickname} · ${kst(r.created_at)}${r.pending_reports ? ` · 처리 안 한 신고 ${r.pending_reports}건` : ''}`,
-        el('div', { style: 'white-space:pre-wrap; word-break:break-all; margin:8px 0' }, r.preview),
-        acts.length ? el('div', {}, ...acts.map((a) => el('button', { type: 'button', class: 'btn' + (a === 'delete' ? ' danger' : ''), style: 'margin-right:6px', onclick: async () => {
-          if (a === 'delete' && !window.confirm('글을 삭제할까요? 내용과 사진이 지워지고 되돌릴 수 없어요.')) return;
-          try { await apiCall('POST', `/admin/community/posts/${encodeURIComponent(r.post_id)}/action`, { action: a }, '처리하지 못했어요'); say(`${PO_ACT[a]} 처리했어요`, 'ok'); loadPosts(true); }
-          catch (e) { say(friendlyError(e), 'err'); } } }, PO_ACT[a]))) : el('div', { class: 'meta' }, '삭제된 글이에요.'),
-        r.author_user_id ? acctActions(r.author_user_id, r.author_nickname, () => loadPosts(true)) : '');
+      const panel = el('div', { class: 'trow tacct', hidden: true });
+      const doAct = (a) => async () => {
+        if (a === 'delete' && !window.confirm('글을 삭제할까요? 내용과 사진이 지워지고 되돌릴 수 없어요.')) return;
+        try { await apiCall('POST', `/admin/community/posts/${encodeURIComponent(r.post_id)}/action`, { action: a }, '처리하지 못했어요'); say(`${PO_ACT[a]} 처리했어요`, 'ok'); loadPosts(true); }
+        catch (e) { say(friendlyError(e), 'err'); }
+      };
+      const ops = el('div', { class: 'ops' },
+        ...(acts.length ? acts.map((a) => opButton(PO_ACT[a], doAct(a), a === 'delete' ? 'danger' : '')) : [el('span', { class: 'sm' }, '삭제된 글이에요')]),
+        r.author_user_id ? acctToggle(r.author_user_id, r.author_nickname, () => loadPosts(true), panel) : '');
+      return el('div', {},
+        el('div', { class: 'trow cols-p' },
+          el('div', { class: 'tt' }, el('b', {}, r.title), el('span', { class: 'pv' }, r.preview)),
+          el('span', {}, r.author_nickname),
+          el('span', {}, el('span', { class: 'st ' + (r.status === 'visible' ? 'done' : 'wait') }, PO_STATE[r.status] || r.status), r.pending_reports ? el('span', { class: 'sm', style: 'display:block; margin-top:4px' }, `처리 안 한 신고 ${r.pending_reports}건`) : ''),
+          el('span', { class: 'sm' }, kst(r.created_at)),
+          ops),
+        panel);
     });
     if (reset) box.replaceChildren();
-    if (!rows.length && reset) box.replaceChildren(el('p', { class: 'meta' }, '글이 없어요.'));
-    else rows.forEach((n) => box.appendChild(n));
+    // 더 보기로 이어 붙일 때는 새 표 대신 새 줄만 이어 붙인다
+    const existing = box.querySelector('.tbl');
+    if (existing) [...table.children].slice(1).forEach((row) => existing.appendChild(row));
+    else box.appendChild(table);
     poOffset += data.items.length;
     more.hidden = poOffset >= (data.total || 0);
   } catch (e) { box.replaceChildren(el('p', { class: 'meta' }, friendlyError(e))); more.hidden = true; }

@@ -7,13 +7,15 @@
 <link rel="stylesheet" href="assets/style.css">
 <style>
   .screen{gap:14px}
-  .ring{display:flex; flex-direction:column; align-items:center; gap:16px; background:var(--cream); border-radius:28px; padding:22px 20px 20px}
+  .ring{display:flex; flex-direction:column; align-items:center; gap:10px; background:var(--cream); border-radius:28px; padding:18px 20px 18px}
+  .ring .pr{display:flex; align-items:center; gap:14px; width:100%}
   .ring .top{display:flex; align-items:baseline; justify-content:space-between; width:100%}
   .ring .top b{font-size:14px; color:#4A5C6D}
   .ring .top span{font-size:13px; color:var(--muted)}
   .ring .t{font-size:17px; font-weight:800; text-align:center; line-height:1.4}
-  .ring svg,.ring img{width:184px; height:184px; image-rendering:pixelated}
-  .ring .cnt{display:flex; flex-direction:column; align-items:center; gap:4px}
+  .ring svg,.ring img{width:92px; height:92px; image-rendering:pixelated}
+  .ring .dish{margin:10px 12px 10px 10px}
+  .ring .cnt{display:flex; flex-direction:column; align-items:flex-start; gap:4px; flex:1; min-width:0}
   .ring .cnt b{font-size:20px; font-weight:800; letter-spacing:-.3px}
   .ring .cnt b small{font-size:15px; color:var(--muted); font-weight:700}
   .ring .cnt span{font-size:14px; color:#4A5C6D}
@@ -57,7 +59,7 @@
   .mrow.done .ck i{background:var(--accent)}
   .mrow .q{font-size:13px; color:var(--body)}
   .answers{display:flex; flex-wrap:wrap; gap:8px}
-  .answers button{height:40px; padding:0 14px; border-radius:20px; border:1px solid var(--sage); background:#fff; color:var(--ink); font-size:14px}
+  .answers button{height:44px; padding:0 14px; border-radius:20px; border:1px solid var(--sage); background:#fff; color:var(--ink); font-size:14px}
   .answers button.on{border-color:var(--accent-light); background:var(--accent-light); color:#1E3246; font-weight:700}
   .answers input{width:120px; height:40px; border-radius:20px; border:1px solid var(--sage); padding:0 14px; font:inherit; font-size:14px}
   .logged{font-size:12px; font-weight:700}
@@ -130,7 +132,7 @@ function showError(msg) { const el = document.getElementById('err'); el.style.di
 
 function pieSvg(n, done) {
   const k = Math.min(3, Math.round(3 * done / Math.max(1, n)));   // 시안의 파이 그림은 3조각 기준
-  return `<img src="assets/img/pie${k}.png" alt="파이 ${n}조각 중 ${done}조각을 구웠어요">`;
+  return pieDish(`<img src="assets/img/pie${k}.png" alt="파이 ${n}조각 중 ${done}조각을 구웠어요">`, k > 0);
 }
 
 function ringHtml() {
@@ -144,9 +146,7 @@ function ringHtml() {
   const dayNo = Math.min(28, cycle.day_number);
   return `<div class="ring">
     <div class="top"><b>${cycle.cycle_number}차 · ${cycle.week_number}주차</b><span>연속 ${streak}일</span></div>
-    <span class="t">챌린지를 완료해서<br>파이를 구워봐요!</span>
-    ${pieSvg(n, done)}
-    <div class="cnt"><b>${done}개 구웠어요 <small>/ ${n}</small></b><span>${sub}</span></div>
+    <div class="pr">${pieSvg(n, done)}<div class="cnt"><b>${done}개 구웠어요 <small>/ ${n}</small></b><span>${sub}</span></div></div>
     <div class="prog"><div><span>4주 진행</span><span><b style="color:var(--ink)">${dayNo}</b> / 28일</span></div><div class="bar"><i style="width:${Math.round(dayNo / 28 * 100)}%"></i></div></div>
   </div>`;
 }
@@ -274,8 +274,19 @@ async function record(code, answer, quantity) {
   try {
     await apiRecordChallengeLog(code, answer, quantity);
     partialFor = null;
+    const doneBefore = new Set([...document.querySelectorAll('.mrow.done .nm')].map(n => n.textContent));
+    const pieBefore = (document.querySelector('.ring .cnt b') || {}).textContent;
     cycle = await apiGetCurrentCycle();  // 달성률·연속 기록일을 서버 값으로 다시 그림
+    // 파이 개수·연속 일수(오늘 완료 수)와 배지도 새 값으로 (안 그러면 체크해도 파이가 그대로다)
+    await Promise.all([
+      apiCall('GET', '/home/summary', undefined, '').then(r => summary = r.data).catch(() => {}),
+      apiCall('GET', '/badges', undefined, '').then(r => badges = r.data).catch(() => {}),
+    ]);
     render();
+    // 방금 체크한 미션의 동그라미와, 파이 개수가 늘었으면 파이가 톡 튀어 오른다
+    document.querySelectorAll('.mrow.done').forEach(r => { if (!doneBefore.has(r.querySelector('.nm').textContent)) r.querySelector('.ck i').classList.add('pop'); });
+    const pieNow = (document.querySelector('.ring .cnt b') || {}).textContent;
+    if (pieBefore && pieNow && pieBefore !== pieNow) { const d = document.querySelector('.ring .dish'); if (d) d.classList.add('bump'); }
   } catch (e) { showError(friendlyError(e)); }
 }
 

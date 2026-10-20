@@ -44,7 +44,7 @@ const day = (iso) => {
   const list = await fetchNotices();
   document.getElementById('screen').innerHTML = bar + (list.length
     ? `<div class="list">${list.map(n => `<div class="ntc"><div class="top">${seen.has(n.notice_id) ? '' : '<span class="new">NEW</span>'}<span class="d">${day(n.starts_at)}</span></div><div class="t">${esc(n.title)}</div><div class="b">${esc(n.body)}</div></div>`).join('')}</div>`
-    : '<p class="hint">게시 중인 공지가 없어요.</p>');
+    : '<div class="empty">게시 중인 공지가 없어요.</div>');
   markNoticesSeen(list);   // 열어서 봤으니 파란 점과 새 공지 표시는 다음부터 사라진다
 })();
 </script>

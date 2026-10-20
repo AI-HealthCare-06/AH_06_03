@@ -116,11 +116,14 @@ document.getElementById('submit-btn').addEventListener('click', async () => {
   errEl.style.display = 'none';
   btn.disabled = true;
   btn.textContent = '분석하는 중...';
+  const building = progressOverlay('내 12주 계획을<br>만드는 중이에요', '답해 주신 내용으로 분석하고<br>4주 일정을 맞추고 있어요');
   try {
     const result = await apiRequestPrediction(profile, elig, health, survey);
     localStorage.setItem('paeon-prediction', JSON.stringify(result.data));
-    window.location.href = 'result.html';
+    await building.finish();
+    window.location.replace('plan.html');   // 분석이 끝나면 12주 계획을 먼저 보여 준다
   } catch (e) {
+    building.cancel();
     errEl.textContent = friendlyError(e);
     errEl.style.display = 'block';
     btn.disabled = false;

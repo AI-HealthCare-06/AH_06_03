@@ -108,7 +108,7 @@ function render() {
     ${state.err ? `<p class="err">${esc(state.err)}</p>` : ''}
     ${state.list === null ? '<p class="hint">불러오는 중...</p>'
       : items.length ? `<div class="list">${items.map(i => `<button type="button" class="inq" data-id="${esc(i.inquiry_id)}"><span class="top">${tag(i)}<span class="d">${day(i.created_at)}</span></span><span class="t">${esc(i.title)}</span>${i.body ? `<span class="pv">${esc(i.body)}</span>` : ''}</button>`).join('')}</div>`
-      : (FROM_BELL ? '<p class="hint">새 알림이 없어요.</p>' : '<p class="hint">남긴 문의가 없어요.</p>')}
+      : (FROM_BELL ? '<div class="empty">새 알림이 없어요.</div>' : '<div class="empty">남긴 문의가 없어요.<br>궁금한 점은 아래 버튼으로 남겨 주세요.</div>')}
     <div class="bar"><button type="button" class="cta" id="q-new">＋ 문의 작성하기</button></div>`;
   document.getElementById('q-new').addEventListener('click', () => { state.view = 'new'; state.err = ''; state.notice = ''; render(); });
   $screen.querySelectorAll('.inq').forEach(b => b.addEventListener('click', () => open(b.dataset.id)));

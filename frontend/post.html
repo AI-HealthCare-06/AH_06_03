@@ -104,13 +104,13 @@ async function onLike() {
 }
 async function onDelete() {
   if (!(await confirmDialog('글을 삭제할까요?', '댓글과 좋아요도 함께 사라져요.', '삭제'))) return;
-  try { await apiCall('DELETE', '/community/posts/' + id, undefined, '삭제하지 못했어요'); location.href = 'feed.html'; } catch (e) { showErr(friendlyError(e)); }
+  try { await apiCall('DELETE', '/community/posts/' + id, undefined, '삭제하지 못했어요'); location.replace(document.getElementById('back').href); } catch (e) { showErr(friendlyError(e)); }
 }
 async function report(path, reason) {
   try {
     await apiCall('POST', '/community/' + path + '/report', { reason }, '신고하지 못했어요');
     await confirmDialog('신고했어요', '운영팀이 확인해요. 알려 주셔서 고마워요.', '확인');
-    if (path.startsWith('posts/')) location.href = document.getElementById('back').href; else loadComments();   // 신고한 글·댓글은 내 목록에서 바로 빠진다
+    if (path.startsWith('posts/')) location.replace(document.getElementById('back').href); else loadComments();   // 신고한 글·댓글은 내 목록에서 바로 빠진다
   } catch (e) { showErr(e.code === 'ALREADY_REPORTED' ? '이미 신고했어요.' : friendlyError(e)); }
 }
 function showErr(m) { $('err').textContent = m; $('err').hidden = false; }
