@@ -10,6 +10,7 @@
   --sky:#AACDDC; --accent-light:#81A6C6; --notice:#E4F0F5; --cream-2:#F3E3D0;
 }
 :root{
+  --accent-text:#3F6C94; /* 밝은 바탕 위 파랑 글자용 (대비 4.5:1 이상) */
   --ink:#243749; --muted:#5A6B7A; --faint:#7A8A98; --body:#3B5063;
   --surface:#FFFFFF; --surface-2:var(--cream);
   --line:var(--sage-light); --line-soft:var(--track);
@@ -41,11 +42,11 @@ input::placeholder,textarea::placeholder{color:#A9B3BC; font-weight:500; opacity
 
 /* 상단 바 */
 .picker{position:sticky; top:0; z-index:50; background:#fff; max-width:430px; margin:0 auto; height:64px; padding:0 8px 0 20px; display:flex; align-items:center; gap:8px}
-.picker .brand{font-weight:800; font-size:20px; letter-spacing:3px; color:var(--ink); display:flex; align-items:center; gap:6px; text-decoration:none}
+.picker .brand{min-height:44px; font-weight:800; font-size:20px; letter-spacing:3px; color:var(--ink); display:flex; align-items:center; gap:6px; text-decoration:none}
 .picker .brand svg{display:none}
 .hdr-right{margin-left:auto; display:flex; align-items:center; gap:2px}
 .picker .hdr-logout{border:1px solid var(--sage); background:#fff; color:var(--ink); border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer; margin-right:8px}
-.hdr-pie{height:32px; padding:0 12px; border-radius:16px; background:var(--cream); display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:800; text-decoration:none; color:var(--ink)}
+.hdr-pie{height:40px; padding:0 14px; border-radius:20px; background:var(--cream); display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:800; text-decoration:none; color:var(--ink)}
 .hdr-pie .pie-coin{width:26px; height:auto}
 .hdr-bell{position:relative; width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--ink); text-decoration:none}
 /* 파이 접시: 픽셀 파이 아래에 가는 선으로 그린 접시, 구운 파이에서는 김이 올라온다 */
@@ -94,12 +95,12 @@ input::placeholder,textarea::placeholder{color:#A9B3BC; font-weight:500; opacity
 .card{border:1px solid var(--line); border-radius:20px; padding:18px; background:#fff}
 .card.soft{background:var(--cream); border-color:var(--cream)}
 .chips{display:flex; gap:8px; flex-wrap:wrap}
-.chip{height:36px; padding:0 16px; border-radius:18px; border:1px solid var(--sage); background:#fff; color:var(--body); font-size:13px; display:inline-flex; align-items:center; text-decoration:none; cursor:pointer}
+.chip{height:40px; padding:0 16px; border-radius:18px; border:1px solid var(--sage); background:#fff; color:var(--body); font-size:13px; display:inline-flex; align-items:center; text-decoration:none; cursor:pointer}
 .chip.on{background:var(--accent-light); border-color:var(--accent-light); color:#1E3246; font-weight:700}
 .row{display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:56px; border-top:1px solid var(--line); text-decoration:none; color:inherit}
 .row:last-child{border-bottom:1px solid var(--line)}
 .ctag{height:18px; padding:0 7px; border-radius:9px; font-size:11px; font-weight:800; display:inline-flex; align-items:center; flex:none}
-.ctag.fixed{background:#5C86AC; color:#fff}
+.ctag.fixed{background:#4A7599; color:#fff}
 .ctag.selected{background:var(--cream-2); color:#6B4A22}
 .ctag.party{background:#A9D6C2; color:#0F2E20}
 .ctag.common{background:#243749; color:#fff}

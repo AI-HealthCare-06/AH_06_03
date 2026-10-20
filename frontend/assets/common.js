@@ -315,7 +315,7 @@ const setAdviceAck = (v) => { try { v ? localStorage.setItem('paeon-advice-ack',
 function adviceBannerHtml(pred, health) {
   const title = adviceTitle(pred, health);
   if (!title) return '';
-  return `<div class="callout" id="advice-banner" style="border-color:var(--risk); position:relative; padding-right:34px"><button type="button" aria-label="닫기" onclick="document.getElementById('advice-banner').remove()" style="position:absolute; top:8px; right:10px; border:0; background:none; font-size:18px; line-height:1; color:var(--muted); cursor:pointer">×</button><b>${title}</b><br>가까운 의료기관에서 상담을 받아 보세요. <a href="guide.html" style="color:var(--sage-deep); font-weight:700">검사 · 상담 안내 보기</a>
+  return `<div class="callout" id="advice-banner" style="border-color:var(--risk); position:relative; padding-right:44px"><button type="button" aria-label="닫기" onclick="document.getElementById('advice-banner').remove()" style="position:absolute; top:0; right:0; width:44px; height:44px; border:0; background:none; font-size:20px; line-height:1; color:var(--muted); cursor:pointer">×</button><b>${title}</b><br>가까운 의료기관에서 상담을 받아 보세요. <a href="guide.html" style="color:var(--accent-text); font-weight:700; display:inline-block; padding:8px 0">검사 · 상담 안내 보기</a>
     <label style="display:flex; gap:8px; align-items:flex-start; margin-top:10px; font-size:12.5px; line-height:1.5; cursor:pointer"><input type="checkbox" ${adviceAcked() ? 'checked' : ''} onchange="setAdviceAck(this.checked)" style="margin-top:3px"><span>${ADVICE_ACK_TEXT}</span></label></div>`;
 }
 
