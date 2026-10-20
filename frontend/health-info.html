@@ -28,6 +28,15 @@
   .or i{flex:1; height:1px; background:var(--line)}
   .head h1{margin:0; font-size:28px; font-weight:800; letter-spacing:-.7px; line-height:1.3}
   .head p{margin:10px 0 0; font-size:14px; color:var(--body); line-height:1.6}
+  .prog{display:flex; align-items:center; gap:12px; font-size:13px; font-weight:700; color:var(--body)}
+  .prog i{flex:1; height:6px; border-radius:3px; background:var(--line); overflow:hidden}
+  .prog i b{display:block; height:100%; border-radius:3px; background:var(--accent); transition:width .2s}
+  .bar .off{display:none !important}
+  .step{display:none; flex-direction:column; gap:16px}
+  .step.on{display:flex}
+  .step .field label{font-size:15px}
+  .sumrow.go{cursor:pointer}
+  .sumrow.go .vv::after{content:" ›"; color:var(--muted); font-weight:400}
   .bar{position:sticky; bottom:84px; background:#fff; padding:12px 0; display:flex; flex-direction:column; gap:10px; z-index:5}
   .bar .cta,.bar .ghost{height:56px; font-size:17px; border-radius:28px; margin:0}
 </style>
@@ -53,8 +62,10 @@
           </div>
 
           <form id="health-form" class="screen">
-            <div class="page-bar"><a class="back" href="dashboard.html" aria-label="뒤로"><span data-icon="back"></span></a></div>
-            <div class="head"><h1>건강정보를<br>입력해 볼까요</h1></div>
+            <div class="page-bar"><a class="back" id="step-back" href="dashboard.html" aria-label="뒤로"><span data-icon="back"></span></a></div>
+            <div class="prog"><span id="prog-t"></span><i><b id="prog-b"></b></i></div>
+            <div class="head"><h1 id="step-title"></h1></div>
+            <div id="steps"></div>
             <div id="ocr-card">
               <div class="hd">
                 <span class="ic"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg></span>
@@ -69,7 +80,6 @@
             </div>
             <div class="or"><i></i>또는 아래에서 직접 입력<i></i></div>
 
-            <p class="sect">기본 정보</p>
             <div class="grid2">
               <div class="field">
                 <label for="sex">성별</label>
@@ -90,7 +100,6 @@
               </div>
             </div>
 
-            <p class="sect">필수 항목</p>
             <div class="grid2">
               <div class="field">
                 <label for="sbp">수축기 혈압 (mmHg)</label>
@@ -195,7 +204,6 @@
               <div class="field"></div>
             </div>
 
-            <p class="sect">선택 항목</p>
             <div class="grid2">
               <div class="field">
                 <label for="glucose">공복혈당 (mg/dL)</label>
@@ -203,16 +211,17 @@
               </div>
             </div>
 
-            <p class="tip">허리둘레·한 번 음주량은 나와 비슷한 사람들과 비교할 때 써요.</p>
+            <p class="tip" id="waist-tip">허리둘레·한 번 음주량은 나와 비슷한 사람들과 비교할 때 써요.</p>
 
             <p id="form-err" class="err" style="display:none"></p>
 
-            <div class="privacy">
+            <div class="privacy" id="privacy-note">
               <span>🔒</span>
               <span>입력하신 건강정보는 위험 신호 분석과 챌린지 추천에만 씁니다. 다른 용도로 쓰거나 제3자에게 제공하지 않습니다.</span>
             </div>
 
-            <div class="bar"><button type="submit" id="submit-btn" class="cta">생활습관 설문으로</button></div>
+            <div class="sum-card" id="review-rows" style="display:none"></div>
+            <div class="bar"><button type="button" id="step-skip" class="ghost off">건너뛰기</button><button type="button" id="step-next" class="cta">다음</button><button type="submit" id="submit-btn" class="cta off">생활습관 설문으로</button></div>
           </form>
     </div>
   </div>
@@ -288,25 +297,30 @@ function optionLabel(selectId, value) {
   return opt ? opt.textContent : value;
 }
 
-function renderSummary(health) {
+// [이름, 값, 고칠 때 가는 단계]
+function summaryRows(health) {
   const rows = [
-    ['성별', optionLabel('sex', health.sex)],
-    ['키 / 몸무게', `${health.height_cm}cm / ${health.weight_kg}kg`],
-    ['혈압', `${health.sbp}/${health.dbp} mmHg`],
-    ['허리둘레', `${health.waist_cm}cm`],
-    ['일반담배', optionLabel('smoking', smokingUi(health))],
-    ['전자담배', health.ecig ? optionLabel('ecig', health.ecig) : '입력 안 함'],
-    ['음주 빈도(최근 1년)', optionLabel('drink-freq', health.drink_freq)],
+    ['성별', optionLabel('sex', health.sex), 0],
+    ['키 / 몸무게', `${health.height_cm}cm / ${health.weight_kg}kg`, 1],
+    ['혈압', `${health.sbp}/${health.dbp} mmHg`, 2],
+    ['허리둘레', `${health.waist_cm}cm`, 3],
+    ['일반담배', optionLabel('smoking', smokingUi(health)), 4],
+    ['전자담배', health.ecig ? optionLabel('ecig', health.ecig) : '입력 안 함', 4],
+    ['음주 빈도(최근 1년)', optionLabel('drink-freq', health.drink_freq), 5],
   ];
-  if (health.drink_amount) rows.push(['한 번 음주량', optionLabel('drink-amount', health.drink_amount)]);
+  if (health.drink_amount) rows.push(['한 번 음주량', optionLabel('drink-amount', health.drink_amount), 5]);
   rows.push(
-    ['당뇨병 여부', optionLabel('diabetes', health.diabetes)],
-    ['고혈압 진단·치료 상태', optionLabel('htn-status', health.htn_status)],
-    ['총콜레스테롤', health.total_chol != null ? `${health.total_chol} mg/dL` : '입력 안 함'],
-    ['부모 고혈압 가족력', optionLabel('parent-htn', health.parent_htn)],
-    ['공복혈당', health.fasting_glucose != null ? `${health.fasting_glucose} mg/dL` : '입력 안 함'],
+    ['당뇨병 여부', optionLabel('diabetes', health.diabetes), 6],
+    ['고혈압 진단·치료 상태', optionLabel('htn-status', health.htn_status), 6],
+    ['부모 고혈압 가족력', optionLabel('parent-htn', health.parent_htn), 6],
+    ['총콜레스테롤', health.total_chol != null ? `${health.total_chol} mg/dL` : '입력 안 함', 7],
+    ['공복혈당', health.fasting_glucose != null ? `${health.fasting_glucose} mg/dL` : '입력 안 함', 7],
   );
-  document.getElementById('summary-rows').innerHTML = rows.map(([lb, vv]) => `<div class="sumrow"><span class="lb">${lb}</span><span class="vv">${vv}</span></div>`).join('');
+  return rows;
+}
+
+function renderSummary(health) {
+  document.getElementById('summary-rows').innerHTML = summaryRows(health).map(([lb, vv]) => `<div class="sumrow"><span class="lb">${lb}</span><span class="vv">${vv}</span></div>`).join('');
 
   const cta = document.getElementById('summary-cta');
   if (localStorage.getItem('paeon-survey')) {
@@ -347,21 +361,43 @@ function showSummary() {
 function showForm() {
   summaryView.style.display = 'none';
   form.style.display = 'flex';
+  goStep(0);
 }
 
 document.getElementById('edit-btn').addEventListener('click', () => {
   fillForm(JSON.parse(localStorage.getItem('paeon-health')));
   showForm();
+  goStep(REVIEW);
 });
 
-const existingHealth = JSON.parse(localStorage.getItem('paeon-health') || 'null');
-if (existingHealth) showSummary();
+// ---- 질문을 묶음(단계)으로 하나씩 보여 준다. 입력칸은 그대로고 화면에만 나눠 담는다.
+const STEPS = [
+  { title: '성별을 알려 주세요', ids: ['sex'], intro: true },
+  { title: '키와 몸무게를 알려 주세요', ids: ['height', 'weight'] },
+  { title: '혈압을 알려 주세요', ids: ['sbp', 'dbp'] },
+  { title: '허리둘레를 알려 주세요', ids: ['waist'], tip: true },
+  { title: '흡연 여부를 알려 주세요', ids: ['smoking', 'ecig'] },
+  { title: '음주 습관을 알려 주세요', ids: ['drink-freq', 'drink-amount'] },
+  { title: '병력과 가족력을 알려 주세요', ids: ['diabetes', 'htn-status', 'parent-htn'] },
+  { title: '선택 항목이에요', ids: ['total-chol', 'glucose'], optional: true },
+];
+const REVIEW = STEPS.length;
+const stepsBox = document.getElementById('steps');
+const reviewBox = document.getElementById('review-rows');
+let stepIdx = 0, backToReview = false;
+STEPS.forEach((st) => {
+  const box = document.createElement('div');
+  box.className = 'step';
+  if (st.intro) { box.appendChild(document.getElementById('ocr-card')); box.appendChild(document.querySelector('.or')); }
+  st.ids.forEach((id) => box.appendChild(document.getElementById(id).closest('.field')));
+  if (st.tip) box.appendChild(document.getElementById('waist-tip'));
+  st.box = box;
+  stepsBox.appendChild(box);
+});
+document.querySelectorAll('.grid2, .sect').forEach((n) => n.remove());
 
-form.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  clearError();
-
-  const payload = {
+function currentPayload() {
+  return {
     sex: document.getElementById('sex').value,
     height_cm: Number(document.getElementById('height').value),
     weight_kg: Number(document.getElementById('weight').value),
@@ -378,8 +414,70 @@ form.addEventListener('submit', async (event) => {
     total_chol: document.getElementById('total-chol').value ? Number(document.getElementById('total-chol').value) : null,
     parent_htn: document.getElementById('parent-htn').value,
     fasting_glucose: document.getElementById('glucose').value ? Number(document.getElementById('glucose').value) : null,
-    recorded_at: existingHealth ? existingHealth.recorded_at : localIso(new Date()),
   };
+}
+
+function goStep(i, fromReview) {
+  stepIdx = i; backToReview = !!fromReview;
+  clearError();
+  const review = i === REVIEW;
+  STEPS.forEach((st, k) => st.box.classList.toggle('on', k === i));
+  reviewBox.style.display = review ? 'block' : 'none';
+  document.getElementById('privacy-note').style.display = review ? 'flex' : 'none';
+  document.getElementById('step-title').innerHTML = review ? '입력한 내용을<br>확인해 주세요' : STEPS[i].title;
+  document.getElementById('prog-t').textContent = review ? '확인' : `${i + 1} / ${STEPS.length}`;
+  document.getElementById('prog-b').style.width = `${((review ? STEPS.length : i + 1) / STEPS.length) * 100}%`;
+  if (review) {
+    reviewBox.innerHTML = summaryRows(currentPayload()).map(([lb, vv, k]) => `<div class="sumrow go" data-go="${k}"><span class="lb">${lb}</span><span class="vv">${vv}</span></div>`).join('');
+  }
+  document.getElementById('step-next').classList.toggle('off', review);
+  document.getElementById('step-next').textContent = backToReview ? '확인' : '다음';
+  document.getElementById('submit-btn').classList.toggle('off', !review);
+  document.getElementById('step-skip').classList.toggle('off', review || !STEPS[i].optional || backToReview);
+  window.scrollTo(0, 0);
+  if (!review) { const f = STEPS[i].box.querySelector('input'); if (f) f.focus({ preventScroll: true }); }
+}
+
+function stepValid() {
+  for (const id of STEPS[stepIdx].ids) {
+    const el = document.getElementById(id);
+    if (el.offsetParent !== null && !el.checkValidity()) { el.reportValidity(); return false; }
+  }
+  return true;
+}
+function goNext() {
+  if (!stepValid()) return;
+  if (backToReview) goStep(REVIEW);
+  else goStep(stepIdx + 1);
+}
+document.getElementById('step-next').addEventListener('click', goNext);
+form.addEventListener('keydown', (e) => {   // 숨겨진 제출 버튼에 기대지 않고 Enter로 다음 질문으로
+  if (e.key === 'Enter' && e.target.tagName === 'INPUT' && stepIdx < REVIEW) { e.preventDefault(); goNext(); }
+});
+document.getElementById('step-skip').addEventListener('click', () => {
+  STEPS[stepIdx].ids.forEach((id) => { document.getElementById(id).value = ''; });
+  goStep(stepIdx + 1);
+});
+document.getElementById('step-back').addEventListener('click', (e) => {
+  if (stepIdx === REVIEW) { e.preventDefault(); goStep(REVIEW - 1); }
+  else if (backToReview) { e.preventDefault(); goStep(REVIEW); }
+  else if (stepIdx > 0) { e.preventDefault(); goStep(stepIdx - 1); }
+});
+reviewBox.addEventListener('click', (e) => {
+  const row = e.target.closest('[data-go]');
+  if (row) goStep(Number(row.dataset.go), true);
+});
+goStep(0);
+
+const existingHealth = JSON.parse(localStorage.getItem('paeon-health') || 'null');
+if (existingHealth) showSummary();
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (stepIdx < REVIEW) { goNext(); return; }   // 입력 중 Enter는 다음 질문으로
+  clearError();
+
+  const payload = { ...currentPayload(), recorded_at: existingHealth ? existingHealth.recorded_at : localIso(new Date()) };
 
   if (!payload.sex) return showError('성별을 선택해주세요');
 
