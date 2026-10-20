@@ -19,10 +19,10 @@
     },
     "expected_model_a": {
       "model_code": "MODEL_A",
-      "model_version": "0.1.1",
+      "model_version": "0.2.0",
       "status": "completed",
       "skip_reason": null,
-      "probability": 0.150995,
+      "probability": 0.014932,
       "factors": [
         {
           "code": "male",
@@ -114,9 +114,9 @@
         "display_rank": 2
       },
       "missing_features": [],
-      "risk_level": "borderline",
-      "percentile": null,
-      "vascular_age": 48.7
+      "percentile": 14,
+      "risk_level": "normal",
+      "vascular_age": 52.6
     },
     "expected_model_b": {
       "model_code": "MODEL_B",
@@ -262,10 +262,10 @@
     },
     "expected_model_a": {
       "model_code": "MODEL_A",
-      "model_version": "0.1.1",
+      "model_version": "0.2.0",
       "status": "completed",
       "skip_reason": null,
-      "probability": 0.019097,
+      "probability": 0.001252,
       "factors": [
         {
           "code": "BMI",
@@ -315,9 +315,9 @@
       "top_risk_factor": null,
       "top_modifiable_factor": null,
       "missing_features": [],
+      "percentile": 56,
       "risk_level": "normal",
-      "percentile": null,
-      "vascular_age": 23.6
+      "vascular_age": 34.4
     },
     "expected_model_b": {
       "model_code": "MODEL_B",
@@ -410,10 +410,10 @@
     },
     "expected_model_a": {
       "model_code": "MODEL_A",
-      "model_version": "0.1.1",
+      "model_version": "0.2.0",
       "status": "completed",
       "skip_reason": null,
-      "probability": 0.758454,
+      "probability": 0.211121,
       "factors": [
         {
           "code": "age",
@@ -538,8 +538,8 @@
         "display_rank": 4
       },
       "missing_features": [],
+      "percentile": 1,
       "risk_level": "high",
-      "percentile": null,
       "vascular_age": 90
     },
     "expected_model_b": {
@@ -569,10 +569,10 @@
     },
     "expected_model_a": {
       "model_code": "MODEL_A",
-      "model_version": "0.1.1",
+      "model_version": "0.2.0",
       "status": "completed",
       "skip_reason": null,
-      "probability": 0.128651,
+      "probability": 0.009415,
       "factors": [
         {
           "code": "age",
@@ -653,9 +653,9 @@
         "display_rank": 3
       },
       "missing_features": [],
-      "risk_level": "borderline",
-      "percentile": null,
-      "vascular_age": 54.3
+      "percentile": 22,
+      "risk_level": "normal",
+      "vascular_age": 60.1
     },
     "expected_model_b": {
       "model_code": "MODEL_B",
@@ -684,7 +684,7 @@
     },
     "expected_model_a": {
       "model_code": "MODEL_A",
-      "model_version": "0.1.1",
+      "model_version": "0.2.0",
       "status": "skipped",
       "skip_reason": "age_out_of_range"
     },
@@ -832,10 +832,10 @@
     },
     "expected_model_a": {
       "model_code": "MODEL_A",
-      "model_version": "0.1.1",
+      "model_version": "0.2.0",
       "status": "completed",
       "skip_reason": null,
-      "probability": 0.055298,
+      "probability": 0.003754,
       "factors": [
         {
           "code": "BMI",
@@ -885,9 +885,9 @@
       "top_risk_factor": null,
       "top_modifiable_factor": null,
       "missing_features": [],
+      "percentile": 17,
       "risk_level": "normal",
-      "percentile": null,
-      "vascular_age": 40.3
+      "vascular_age": 49.6
     },
     "expected_model_b": {
       "model_code": "MODEL_B",
