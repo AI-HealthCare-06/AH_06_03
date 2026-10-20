@@ -304,6 +304,18 @@ function addPasswordToggles(root = document) {
 
 document.addEventListener('DOMContentLoaded', () => { renderHeader(); renderNav(); addPasswordToggles(); document.querySelectorAll('[data-icon]').forEach(e => { e.innerHTML = ICON[e.dataset.icon] || ''; }); });
 
+// 모델 A v0.2.0: 서버가 주는 확률(0~1 소수)을 "%"로, 소수 첫째 자리까지 보여 준다. 값이 없으면 ''.
+// 범주(양호·주의·높음)는 서버가 주는 risk_level을 그대로 쓰고 화면에서 확률로 다시 가르지 않는다.
+function probText(p) { return typeof p === 'number' && isFinite(p) ? (p * 100).toFixed(1) + '%' : ''; }
+// "같은 성별·연령대 상위 N%" (참고용 보조 문구. 범주 판정에는 쓰지 않는다). 값이 없으면 ''.
+function percentileText(pc) { return typeof pc === 'number' && isFinite(pc) ? `같은 성별·연령대 상위 ${Math.max(1, Math.round(pc))}%` : ''; }
+const PROB_NOTE = '일본 동맥경화학회 기준을 참고한 구간이며 한국인 자료로 검증된 진단 기준이 아닙니다. 의학적 진단·치료를 대신하지 않습니다.';
+const AGE_NOTE = '혈관 나이는 같은 성별·연령대 한국 성인 평균을 기준으로 한 추정치예요.';
+// 확률 근거 안내: 평소에는 접혀 있고 버튼을 누르면 펼쳐진다
+function probNoteHtml(withAge) {
+  return `<div class="pnote"><button type="button" aria-expanded="false" onclick="const p = this.nextElementSibling; p.hidden = !p.hidden; this.setAttribute('aria-expanded', String(!p.hidden)); this.textContent = p.hidden ? '확률 근거 보기' : '확률 근거 닫기'">확률 근거 보기</button><p hidden>${PROB_NOTE}${withAge ? '<br>' + AGE_NOTE : ''}</p></div>`;
+}
+
 // 모델 B: 서버가 주는 similarity_level(similar / slightly_different / different)을 말로만 보여 준다. 화면에서 기준값을 계산하지 않는다.
 // 값이 아직 없으면(서버 미지원) 판정 문장은 빼고 설명만 보인다.
 const SIM_NOW = { similar: '혈압이 정상인 사람들과 비슷한 편이에요', slightly_different: '혈압이 정상인 사람들과 조금 달라요', different: '혈압이 정상인 사람들과 많이 달라요' };

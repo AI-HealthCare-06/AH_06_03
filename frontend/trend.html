@@ -144,7 +144,7 @@ function lineChart({ points, W, H, ref, refLabel, color, labelFont, big }) {
 }
 
 const row = (label, a, b) => `<div class="rw"><span>${label}</span><span class="v">${a != null && a !== '' ? `<em>${esc(a)} →</em>` : ''}<b>${esc(b)}</b></div>`;
-const riskText = (m, k) => m && m[k] ? RISK[m[k]] || '—' : '—';
+const riskText = (m, k) => m && m[k] ? (RISK[m[k]] || '—') + (probText(m[k.replace('risk_level', 'probability')]) ? ` (${probText(m[k.replace('risk_level', 'probability')])})` : '') : '—';
 const modelA = (rv) => (rv.models || []).find(m => m.model_code === 'MODEL_A');
 
 let DATA = null, SEL = 'start';
