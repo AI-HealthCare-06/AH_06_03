@@ -13,14 +13,18 @@
   .dots i{width:8px; height:8px; border-radius:4px; background:var(--sage-light)}
   .dots i:first-child{background:var(--sage-deep)}
   .stage{position:relative; width:100%}
-  .carousel{width:100%; display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; border-radius:24px; border:1px solid var(--line); background:var(--cream)}
+  .carousel{width:100%; display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; border-radius:28px; background:var(--cream)}
   .carousel::-webkit-scrollbar{display:none}
-  .slide{flex:none; width:100%; scroll-snap-align:center; display:flex; flex-direction:column}
-  .slide img{display:block; width:100%; height:380px; object-fit:cover; object-position:top; background:#fff}
-  .slide .cap{padding:12px 56px 14px; text-align:center; display:flex; flex-direction:column; gap:2px; background:var(--cream)}
-  .slide .cap b{font-size:16px; font-weight:800}
+  .slide{flex:none; width:100%; scroll-snap-align:center; display:flex; flex-direction:column; align-items:center; padding-top:22px}
+  /* 아이폰 틀: 위만 보이고 아래는 배경색으로 자연스럽게 사라진다 */
+  .phone{position:relative; width:78%; border:7px solid #1D1D1F; border-bottom:0; border-radius:38px 38px 0 0; background:#fff; overflow:hidden; box-sizing:border-box; -webkit-mask-image:linear-gradient(to bottom,#000 42%,transparent 90%); mask-image:linear-gradient(to bottom,#000 42%,transparent 90%)}
+  .phone::before{content:""; position:absolute; top:8px; left:50%; width:70px; height:20px; border-radius:10px; background:#1D1D1F; transform:translateX(-50%); z-index:2}
+  .phone .scr{padding-top:32px; background:#fff}
+  .phone img{display:block; width:100%; height:auto}
+  .slide .cap{margin-top:-30px; position:relative; z-index:1; padding:0 56px 18px; text-align:center; display:flex; flex-direction:column; gap:2px}
+  .slide .cap b{font-size:17px; font-weight:800}
   .slide .cap span{font-size:13px; color:var(--body); line-height:1.5}
-  .arrow{position:absolute; top:170px; width:36px; height:36px; border-radius:50%; border:1px solid var(--sage); background:rgba(255,255,255,.94); color:var(--ink); display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; z-index:2}
+  .arrow{position:absolute; top:150px; width:36px; height:36px; border-radius:50%; border:1px solid var(--sage); background:rgba(255,255,255,.94); color:var(--ink); display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; z-index:2}
   .arrow.l{left:-14px} .arrow.r{right:-14px}
   .arrow svg{width:16px; height:16px}
   .headline{padding-top:28px; text-align:center; font-size:24px; font-weight:800; letter-spacing:-.5px; line-height:1.4}
@@ -47,7 +51,7 @@
           <div class="dots"><i></i><i></i><i></i><i></i><i></i></div>
           <div class="stage">
             <button type="button" class="arrow l" id="prev" aria-label="이전 장면"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg></button>
-            <div class="carousel" id="carousel" aria-label="서비스 소개"><div class="slide"><img src="assets/intro/intro-1.jpg" alt="건강정보 입력 화면: 혈압을 입력하는 단계" width="390" height="450" loading="eager"><div class="cap"><b>건강정보 입력</b><span>혈압·허리둘레 같은 검진 수치를 입력해요</span></div></div><div class="slide"><img src="assets/intro/intro-2.jpg" alt="생활습관 설문 화면" width="390" height="450" loading="lazy"><div class="cap"><b>생활습관 설문</b><span>식사·운동 습관에 가볍게 답해요</span></div></div><div class="slide"><img src="assets/intro/intro-3.jpg" alt="분석 결과 화면: 10년 내 심장 혈관 건강 신호" width="390" height="450" loading="lazy"><div class="cap"><b>위험 신호 확인</b><span>10년 내 심장 혈관 건강 신호를 확인해요</span></div></div><div class="slide"><img src="assets/intro/intro-4.jpg" alt="챌린지 화면: 파이와 이번 주 달력" width="390" height="450" loading="lazy"><div class="cap"><b>12주 챌린지</b><span>4주씩 3번, 미션을 하며 파이를 구워요</span></div></div><div class="slide"><img src="assets/intro/intro-5.jpg" alt="캘린더와 일기 화면" width="390" height="450" loading="lazy"><div class="cap"><b>캘린더</b><span>하루 기록을 모아 변화를 봐요</span></div></div></div>
+            <div class="carousel" id="carousel" aria-label="서비스 소개"><div class="slide"><div class="phone"><div class="scr"><img src="assets/intro/intro-1.jpg" alt="건강정보 입력 화면: 혈압을 입력하는 단계" loading="eager"></div></div><div class="cap"><b>건강정보 입력</b><span>혈압·허리둘레 같은 검진 수치를 입력해요</span></div></div><div class="slide"><div class="phone"><div class="scr"><img src="assets/intro/intro-2.jpg" alt="생활습관 설문 화면" loading="lazy"></div></div><div class="cap"><b>생활습관 설문</b><span>식사·운동 습관에 가볍게 답해요</span></div></div><div class="slide"><div class="phone"><div class="scr"><img src="assets/intro/intro-3.jpg" alt="분석 결과 화면: 10년 내 심장 혈관 건강 신호" loading="lazy"></div></div><div class="cap"><b>위험 신호 확인</b><span>10년 내 심장 혈관 건강 신호를 확인해요</span></div></div><div class="slide"><div class="phone"><div class="scr"><img src="assets/intro/intro-4.jpg" alt="챌린지 화면: 파이와 이번 주 달력" loading="lazy"></div></div><div class="cap"><b>12주 챌린지</b><span>4주씩 3번, 미션을 하며 파이를 구워요</span></div></div><div class="slide"><div class="phone"><div class="scr"><img src="assets/intro/intro-5.jpg" alt="캘린더와 일기 화면" loading="lazy"></div></div><div class="cap"><b>캘린더</b><span>하루 기록을 모아 변화를 봐요</span></div></div></div>
             <button type="button" class="arrow r" id="next" aria-label="다음 장면"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></button>
           </div>
         </div>
