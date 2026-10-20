@@ -12,7 +12,7 @@ from app.core.db.databases import async_get_db
 from app.core.errors import AppError
 from app.repositories import user_repository
 from app.schemas.admin import (
-    AdminCategory, AdminMission, AdminUserDetail, AdminUserList, AuditLogItem, CategoryPatch, ChallengeStats, MissionPatch,
+    AdminCategory, AdminMission, AdminUserDetail, AdminUserEmail, AdminUserList, AuditLogItem, CategoryPatch, ChallengeStats, MissionPatch,
     PurgeRequest, PurgeResult,
 )
 from app.schemas.common import DataResponse
@@ -67,6 +67,12 @@ async def list_users(
 @router.get("/users/{user_id}", response_model=DataResponse[AdminUserDetail])
 async def user_detail(user_id: str, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
     return DataResponse(data=await admin_users_service.user_detail(db, admin, user_id))
+
+
+@router.get("/users/{user_id}/email", response_model=DataResponse[AdminUserEmail])
+async def user_email(user_id: str, admin: str = Depends(require_admin), db: AsyncSession = Depends(async_get_db)):
+    """가린 이메일을 풀어 전체를 보여 준다. 볼 때마다 관리자 기록(user_email_view)에 남는다."""
+    return DataResponse(data=AdminUserEmail(email=await admin_users_service.reveal_email(db, admin, user_id)))
 
 
 @router.post("/purge", response_model=DataResponse[PurgeResult])
