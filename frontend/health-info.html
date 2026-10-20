@@ -189,7 +189,7 @@
               </div>
 
               <div class="field">
-                <label for="total-chol">총콜레스테롤 (mg/dL) · 선택</label>
+                <label for="total-chol">총콜레스테롤 (mg/dL)</label>
                 <input id="total-chol" type="number">
                 <p class="hint" style="margin:4px 0 0">모르면 비워 두세요. 중앙값(234)으로 대신해 분석해요.</p>
               </div>
@@ -210,8 +210,6 @@
                 <input id="glucose" type="number">
               </div>
             </div>
-
-            <p class="tip" id="waist-tip">허리둘레·한 번 음주량은 나와 비슷한 사람들과 비교할 때 써요.</p>
 
             <p id="form-err" class="err" style="display:none"></p>
 
@@ -375,7 +373,7 @@ const STEPS = [
   { title: '성별을 알려 주세요', ids: ['sex'], intro: true },
   { title: '키와 몸무게를 알려 주세요', ids: ['height', 'weight'] },
   { title: '혈압을 알려 주세요', ids: ['sbp', 'dbp'] },
-  { title: '허리둘레를 알려 주세요', ids: ['waist'], tip: true },
+  { title: '허리둘레를 알려 주세요', ids: ['waist'] },
   { title: '흡연 여부를 알려 주세요', ids: ['smoking', 'ecig'] },
   { title: '음주 습관을 알려 주세요', ids: ['drink-freq', 'drink-amount'] },
   { title: '병력과 가족력을 알려 주세요', ids: ['diabetes', 'htn-status', 'parent-htn'] },
@@ -390,7 +388,6 @@ STEPS.forEach((st) => {
   box.className = 'step';
   if (st.intro) { box.appendChild(document.getElementById('ocr-card')); box.appendChild(document.querySelector('.or')); }
   st.ids.forEach((id) => box.appendChild(document.getElementById(id).closest('.field')));
-  if (st.tip) box.appendChild(document.getElementById('waist-tip'));
   st.box = box;
   stepsBox.appendChild(box);
 });
