@@ -158,7 +158,7 @@ if (!pred) {
     : aHtml + advice + aRest + bHtml;
 
   const miss = (pred.model_a.missing_features || []).includes('totChol');
-  html += `<div class="notes">${miss ? '<div>총콜레스테롤은 입력하지 않아서 학습 데이터의 중앙값(234)으로 대신해 계산했어요. 이 값은 내 실제 수치가 아니에요.</div>' : ''}<div>진단이 아닌 참고 정보입니다. AI가 분석한 참고 정보이며, 정확한 진단은 의사에게 문의하세요.</div></div>
+  html += `<div class="notes">${miss ? '<div>총콜레스테롤은 입력하지 않아서 학습 데이터의 중앙값(234)으로 대신해 계산했어요. 이 값은 내 실제 수치가 아니에요.</div>' : ''}<div>진단이 아닌 참고 정보입니다. 정확한 판단은 의료진과 상담하세요.</div></div>
     <a class="cta" style="height:56px; border-radius:28px; font-size:17px" href="${localStorage.getItem('paeon-cycle') ? 'challenge-progress.html' : 'challenges.html'}">${localStorage.getItem('paeon-cycle') ? '내 챌린지 보기' : '챌린지 시작하기'}</a>`;
 
   screen.innerHTML = html;

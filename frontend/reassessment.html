@@ -132,7 +132,7 @@ function reviewHtml(rv) {
   // 모델 A는 위험 범주로, 모델 B는 판정 없이 "닮은 정도"의 방향만 보여준다 (데이터_특성 §2.1: B 확률로 판정 금지)
   const models = modelANoticeHtml(rv.models) + rv.models.filter(m => m.comparable).map(m => {
     if (m.model_code === 'MODEL_A') {
-      return `<div class="mrow"><span>10년 내 심장 혈관 건강 신호</span><span>${RISK[m.before_risk_level]}${probText(m.before_probability) ? ` (${probText(m.before_probability)})` : ''} → <b>${RISK[m.after_risk_level]}${probText(m.after_probability) ? ` (${probText(m.after_probability)})` : ''}</b></span></div>`;
+      return `<div class="mrow"><span>10년 내 심장 혈관 건강 신호</span><span>${RISK[m.before_risk_level]}${probText(m.before_probability) ? ` (${probText(m.before_probability)})` : ''} → <b>${RISK[m.after_risk_level]}${probText(m.after_probability) ? ` (${probText(m.after_probability)})` : ''}</b></span></div>${probText(m.before_probability) || probText(m.after_probability) ? probNoteHtml(false, true) : ''}`;
     }
     // 서버가 주는 3단계(similar / slightly_different / different)를 말로만 비교한다. 숫자·막대는 쓰지 않는다.
     const chg = simChangeText(m.before_similarity_level, m.after_similarity_level);

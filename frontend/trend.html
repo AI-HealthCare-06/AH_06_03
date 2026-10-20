@@ -192,7 +192,7 @@ function startPane(reviews) {
   if (!f) return '';
   const b = f.before || {}, a = modelA(f);
   return `<div class="ch"><div class="l1"><span>처음 입력한 값</span><span class="tag">시작</span></div><span class="l2">${esc(b.examination_date || '').replace(/-/g, '.')} 입력</span></div>
-    <div class="rows">${row('혈압', '', bpText(b) === '—' ? '—' : bpText(b) + ' mmHg')}${row('체중', '', unit(b.weight_kg, 'kg'))}${row('허리둘레', '', unit(b.waist_cm, 'cm'))}${row('건강 신호', '', riskText(a, 'before_risk_level'))}</div>`;
+    <div class="rows">${row('혈압', '', bpText(b) === '—' ? '—' : bpText(b) + ' mmHg')}${row('체중', '', unit(b.weight_kg, 'kg'))}${row('허리둘레', '', unit(b.waist_cm, 'cm'))}${row('건강 신호', '', riskText(a, 'before_risk_level'))}</div>${a && probText(a.before_probability) ? probNoteHtml(false, true) : ''}`;
 }
 
 function cyclePane(rv) {
@@ -240,12 +240,13 @@ function renderCompare(rv) {
       ${[['혈압', bpText(b), bpText(a)], ['체중', unit(b.weight_kg, 'kg'), unit(a.weight_kg, 'kg')], ['허리둘레', unit(b.waist_cm, 'cm'), unit(a.waist_cm, 'cm')], ['챌린지 달성률', '—', rate]]
         .concat(cmpA ? [['건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')]] : [])
         .map(r => `<div class="rw"><span>${r[0]}</span><span>${esc(r[1])}</span><span>${esc(r[2])}</span></div>`).join('')}</div>
+    ${cmpA && (probText(m.before_probability) || probText(m.after_probability)) ? probNoteHtml(false, true) : ''}
     <div class="hab"><div class="t">습관 변화</div>
       <div class="rw"><span>흡연</span><span>${SMOKING[b.smoking] || '—'} → <b>${SMOKING[a.smoking] || '—'}</b></span></div>
       <div class="rw"><span>음주</span><span>${DRINK[b.drink_freq] || '—'} → <b>${DRINK[a.drink_freq] || '—'}</b></span></div></div>
     ${modelANoticeHtml(rv.models)}
     ${chg ? `<div class="simbox"><span class="a">혈압이 정상인 사람들의 전체 자료와 비교했어요</span><span class="b">${chg}</span><span class="a">허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</span></div>` : ''}
-    <div class="small" style="font-size:13px; line-height:1.7">진단이 아닌 참고 정보입니다. AI가 분석한 참고 정보이며, 정확한 진단은 의사에게 문의하세요.</div>
+    <div class="small" style="font-size:13px; line-height:1.7">진단이 아닌 참고 정보입니다. 정확한 판단은 의료진과 상담하세요.</div>
     ${rv.cycle_number < rv.total_cycles ? `<a class="cta" style="height:56px; border-radius:28px; font-size:17px" href="challenges.html">${rv.cycle_number + 1}차 챌린지 시작하기</a>` : ''}
     <a class="ghost" href="twelve-weeks.html">12주 기록 보기</a>`;
   $('cmp-back').addEventListener('click', (e) => { e.preventDefault(); renderList(); window.scrollTo(0, 0); });

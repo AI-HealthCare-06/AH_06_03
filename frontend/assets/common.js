@@ -312,8 +312,8 @@ function percentileText(pc) { return typeof pc === 'number' && isFinite(pc) ? `�
 const PROB_NOTE = '일본 동맥경화학회 기준을 참고한 구간이며 한국인 자료로 검증된 진단 기준이 아닙니다. 의학적 진단·치료를 대신하지 않습니다.';
 const AGE_NOTE = '혈관 나이는 같은 성별·연령대 한국 성인 평균을 기준으로 한 추정치예요.';
 // 확률 근거 안내: 평소에는 접혀 있고 버튼을 누르면 펼쳐진다
-function probNoteHtml(withAge) {
-  return `<div class="pnote"><button type="button" aria-expanded="false" onclick="const p = this.nextElementSibling; p.hidden = !p.hidden; this.setAttribute('aria-expanded', String(!p.hidden)); this.textContent = p.hidden ? '확률 근거 보기' : '확률 근거 닫기'">확률 근거 보기</button><p hidden>${PROB_NOTE}${withAge ? '<br>' + AGE_NOTE : ''}</p></div>`;
+function probNoteHtml(withAge, caption) {
+  return `<div class="pnote">${caption ? '<div class="pcap">확률은 생활습관 관리용 참고 신호예요</div>' : ''}<button type="button" aria-expanded="false" onclick="const p = this.nextElementSibling; p.hidden = !p.hidden; this.setAttribute('aria-expanded', String(!p.hidden)); this.textContent = p.hidden ? '확률 근거 보기' : '확률 근거 닫기'">확률 근거 보기</button><p hidden>${PROB_NOTE}${withAge ? '<br>' + AGE_NOTE : ''}</p></div>`;
 }
 
 // 모델 B: 서버가 주는 similarity_level(similar / slightly_different / different)을 말로만 보여 준다. 화면에서 기준값을 계산하지 않는다.

@@ -60,6 +60,7 @@ input::placeholder,textarea::placeholder{color:#A9B3BC; font-weight:500; opacity
 .prob{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap}
 .prob b{font-size:22px; font-weight:800; letter-spacing:-.3px}
 .prob span{font-size:13px; color:var(--muted)}
+.pnote .pcap{font-size:13px; color:var(--muted); margin-top:6px}
 .pnote button{min-height:44px; padding:0; border:0; background:none; font:inherit; font-size:13px; font-weight:700; color:var(--accent-text); text-decoration:underline; cursor:pointer}
 .pnote p{margin:0 0 4px; padding:12px 14px; border-radius:12px; background:var(--cream); font-size:13px; line-height:1.6; color:var(--body)}
 .pnote p[hidden]{display:none}

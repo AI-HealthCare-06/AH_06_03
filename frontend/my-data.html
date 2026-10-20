@@ -117,6 +117,7 @@ function predictionRows(p) {
       r.push(row('10년 내 심장 혈관 건강 신호', (L.risk[a.risk_level] || esc(a.risk_level)) + (probText(a.probability) ? ` · ${probText(a.probability)}` : '')));
       if (percentileText(a.percentile)) r.push(row('같은 성별·연령대 비교(참고용)', percentileText(a.percentile).replace('같은 성별·연령대 ', '')));
       if (a.vascular_age != null) r.push(row('혈관 나이(추정치)', `${a.vascular_age}세`));
+      if (probText(a.probability)) r.push(probNoteHtml(a.vascular_age != null, true));
     } else r.push(row('10년 내 심장 혈관 건강 신호', '계산 대상이 아니에요'));
   }
   const b = p.model_b;
@@ -148,7 +149,7 @@ document.getElementById('doc').innerHTML = `
   ${section('생활습관 설문', surveyRows(read('paeon-survey')))}
   ${section('분석 결과', predictionRows(read('paeon-prediction')))}
   ${section('챌린지', challengeRows(read('paeon-cycle'), read('paeon-progress')))}
-  <p class="foot">진단이 아닌 참고 정보입니다. AI가 분석한 참고 정보이며, 정확한 진단은 의사에게 문의하세요.<br>이 기기에 저장된 값이에요. 서버 원본은 마이페이지의 "원본 데이터 내려받기(JSON)"로 받아요.</p>
+  <p class="foot">진단이 아닌 참고 정보입니다. 정확한 판단은 의료진과 상담하세요.<br>이 기기에 저장된 값이에요. 서버 원본은 마이페이지의 "원본 데이터 내려받기(JSON)"로 받아요.</p>
   <div class="actions no-print">
     <a class="ghost" href="mypage.html">돌아가기</a>
     <button type="button" class="cta" id="print-btn">PDF로 저장</button>
