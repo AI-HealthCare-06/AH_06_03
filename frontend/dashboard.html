@@ -10,6 +10,7 @@
   .home h1{font-size:24px; line-height:1.35; letter-spacing:-.5px; padding-bottom:4px}
   .ring{display:flex; flex-direction:column; gap:18px; background:var(--cream); border-radius:28px; padding:22px 22px 20px; text-decoration:none}
   .ring .t{font-size:15px; font-weight:800}
+  .ring .go{align-self:flex-end; font-size:14px; font-weight:800; color:var(--ink)}
   .ring .mid{display:flex; align-items:center; gap:20px}
   .ring .mid svg,.ring .mid img{width:123px; height:123px; flex:none; image-rendering:pixelated}
   .ring .mid .tx{flex:1; display:flex; flex-direction:column; gap:4px}
@@ -171,6 +172,7 @@ function ringHtml() {
     <span class="t">챌린지를 완료해서 파이를 구워봐요!</span>
     <div class="mid">${pieSvg(n, todaySet)}<div class="tx"><span class="lb">연속 달성</span><span class="big">${streak}일째</span><span class="sub">${sub}</span></div></div>
     <div class="week">${week}</div>
+    <span class="go">오늘 챌린지 하러 가기 ›</span>
   </a>`;
 }
 

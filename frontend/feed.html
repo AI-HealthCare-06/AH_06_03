@@ -9,6 +9,9 @@
   .tabs{display:flex; border-bottom:1px solid var(--line); margin:0 -20px; padding:0 20px}
   .tabs a,.tabs button,.tabs span{flex:1; height:46px; border:0; border-bottom:3px solid transparent; margin-bottom:-1px; background:none; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--muted); text-decoration:none}
   .tabs .on{color:var(--ink); font-weight:800; border-bottom-color:var(--ink)}
+  .nudge{margin-top:12px; border:1px dashed var(--sage); border-radius:20px; padding:20px; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; font-size:14px; color:var(--body); line-height:1.6}
+  .nudge svg{color:var(--accent)}
+  .nudge a{height:44px; padding:0 22px; border-radius:22px; background:var(--accent-light); color:#1E3246; font-weight:800; font-size:15px; display:inline-flex; align-items:center; text-decoration:none}
   .cats{display:flex; gap:8px; overflow-x:auto; padding:14px 0 6px; margin:0 -20px; padding-left:20px; padding-right:20px; scrollbar-width:none}
   .cats::-webkit-scrollbar{display:none}
   .cats .chip{flex:none}
@@ -109,7 +112,8 @@ function hydratePhotos(root) {
 }
 function renderList() {
   const el = document.getElementById('list');
-  el.innerHTML = st.items.length ? st.items.map(postHtml).join('') : '<div class="empty">아직 글이 없어요.<br>첫 글을 남겨 보세요.</div>';
+  const NUDGE = (t) => `<div class="nudge"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></svg><span>${t}</span><a href="write.html">글쓰기</a></div>`;
+  el.innerHTML = st.items.length ? st.items.map(postHtml).join('') + (!st.q && st.items.length < 4 ? NUDGE('이야기가 더 모이면 좋아요.<br>오늘 챌린지 이야기를 남겨 보세요.') : '') : (st.q ? '<div class="empty">찾는 글이 없어요.</div>' : NUDGE('아직 글이 없어요.<br>첫 이야기를 남겨 보세요.'));
   document.getElementById('more').hidden = st.items.length >= st.total;
   hydrateAvatars(el, 40); hydratePhotos(el);
 }

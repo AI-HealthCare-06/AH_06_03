@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PAEON — 내 기록</title>
+<title>PAEON — 내 변화</title>
 <link rel="stylesheet" href="assets/style.css">
 <style>
   .screen{gap:20px}
@@ -154,7 +154,7 @@ function renderList() {
   const { cycles, reviews } = DATA;
   const pts = bpPoints(reviews);
   const pending = reviews.filter(r => !r.reassessed && r.cycle_status !== 'active' && r.cycle_status !== 'stopped').pop();
-  let html = '<div class="h1">내 기록</div>';
+  let html = '<div class="h1">내 변화</div>';
 
   if (pts.length) {
     const last = pts[pts.length - 1], dl = last.v - pts[0].v;

@@ -53,6 +53,7 @@ input::placeholder,textarea::placeholder{color:#A9B3BC; font-weight:500; opacity
 .dish::before{content:""; position:absolute; inset:-11%; border-radius:50%; background:#fff; border:1.5px solid #D2C4B4; box-shadow:inset 0 0 0 6px #fff, inset 0 0 0 7.5px #E6DBCD}
 .dish > img{position:relative}
 .dish .steam{position:absolute; left:50%; top:-19%; width:36% !important; height:auto !important; transform:translateX(-50%); fill:none; stroke:#5C86AC; stroke-width:1.7; stroke-linecap:round; opacity:.6}
+.fade-r{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 36px),transparent); mask-image:linear-gradient(to right,#000 calc(100% - 36px),transparent)}
 .hdr-bell .dot{position:absolute; top:11px; right:11px; width:8px; height:8px; border-radius:50%; background:#2F7DE1; box-shadow:0 0 0 1.5px #fff}
 .hdr-bell .badge{position:absolute; top:6px; right:5px; min-width:16px; height:16px; border-radius:8px; background:var(--accent); color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; padding:0 4px}
 .page-bar{display:flex; align-items:center; gap:4px; min-height:56px; margin:0 -12px 4px}
