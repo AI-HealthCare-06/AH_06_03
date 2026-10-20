@@ -10,14 +10,15 @@
   .rule{background:var(--notice); border-radius:22px; padding:18px 20px; display:flex; flex-direction:column; gap:6px; color:#234257}
   .rule b{font-size:20px; font-weight:800; line-height:1.4}
   .rule span{font-size:14px; line-height:1.65}
-  .plan{border:1px solid var(--line); border-radius:22px; padding:6px 18px}
-  .rnd{display:flex; gap:14px; padding:16px 0; border-top:1px solid var(--line)}
-  .rnd:first-child{border-top:0}
-  .rnd .no{width:34px; height:34px; border-radius:17px; background:var(--accent-light); color:#1E3246; font-weight:800; display:flex; align-items:center; justify-content:center; flex:none}
-  .rnd .tx{display:flex; flex-direction:column; gap:3px}
-  .rnd .tx b{font-size:16px; font-weight:800}
-  .rnd .tx .d{font-size:13px; color:var(--muted)}
-  .rnd .tx .s{font-size:14px; color:var(--body); line-height:1.6}
+  .plan{border:1px solid var(--line); border-radius:22px; padding:22px 20px 8px; display:flex; flex-direction:column}
+  .plan .hd{font-size:13px; font-weight:800; color:var(--muted); margin-bottom:16px}
+  .rnd{position:relative; display:flex; flex-direction:column; gap:3px; padding:0 0 22px 32px}
+  .rnd::before{content:""; position:absolute; left:8px; top:20px; bottom:-2px; width:2px; background:var(--line)}
+  .rnd:last-child::before{display:none}
+  .rnd i{position:absolute; left:0; top:2px; width:18px; height:18px; border-radius:50%; box-sizing:border-box; border:2px solid var(--accent-light); background:#fff}
+  .rnd.first i{background:var(--accent); border-color:var(--accent)}
+  .rnd b{font-size:16px; font-weight:800; line-height:1.4}
+  .rnd .s{font-size:14px; color:var(--body); line-height:1.6}
   .sig{border:1px solid var(--line); border-radius:22px; padding:16px 18px; display:flex; justify-content:space-between; align-items:center; gap:12px; font-size:14px}
   .sig b{font-size:17px; font-weight:800}
   .foot{font-size:13px; color:var(--muted); line-height:1.65; margin:0}
@@ -36,7 +37,7 @@
         <div class="page-bar"><a class="back" href="dashboard.html" aria-label="뒤로"><span data-icon="back"></span></a></div>
         <div class="head"><h1>내 12주 계획</h1></div>
         <div class="rule"><b>12주 = 4주씩 3번</b><span>4주가 끝날 때마다 바뀐 항목만 다시 입력해 처음과 비교해요.</span></div>
-        <div class="plan" id="rounds"></div>
+        <div class="plan"><span class="hd">12주 일정 <em id="when" style="font-style:normal; font-weight:400"></em></span><div id="rounds"></div></div>
         <div class="sig" id="signal" hidden></div>
         <p class="foot">진단이 아닌 참고 정보입니다. 정확한 판단은 의료진과 상담하세요.</p>
         <div class="bar">
@@ -60,12 +61,14 @@ const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); r
 
 const started = !!(cycle && cycle.startedOn);
 const base = started ? new Date(cycle.startedOn + 'T00:00:00') : new Date(); base.setHours(0, 0, 0, 0);
-const STEP = ['처음 상태에서 시작해요', '바뀐 점을 이어서 확인해요', '12주를 마무리해요'];
-document.getElementById('rounds').innerHTML = [0, 1, 2].map((k) => {
-  const from = addDays(base, k * 28), to = addDays(base, k * 28 + 27);
-  return `<div class="rnd"><span class="no">${k + 1}</span><div class="tx"><b>${k + 1}차 · 4주</b><span class="d">${md(from)} ~ ${md(to)}</span><span class="s">${STEP[k]}. 끝나면 다시 입력해요.</span></div></div>`;
-}).join('');
-if (!started) document.querySelector('.rule span').textContent += ' 날짜는 오늘 시작한다고 보고 계산했어요.';
+const POINTS = [
+  [0, started ? md(base) + ' · 시작' : '오늘 · 시작', '첫 번째 4주 챌린지를 시작해요'],
+  [28, md(addDays(base, 28)) + ' · 1차 재입력', '바뀐 항목만 다시 입력해 처음과 비교해요'],
+  [56, md(addDays(base, 56)) + ' · 2차 재입력', '이어서 세 번째 4주를 시작해요'],
+  [84, md(addDays(base, 84)) + ' · 12주 완료', '세 번의 4주를 마치고 전체 변화를 한눈에 봐요'],
+];
+document.getElementById('rounds').innerHTML = POINTS.map(([, t, s], k) => `<div class="rnd${k === 0 ? ' first' : ''}"><i></i><b>${t}</b><span class="s">${s}</span></div>`).join('');
+if (!started) document.getElementById('when').textContent = '· 오늘 기준 계산';
 
 const a = pred && pred.model_a && pred.model_a.status === 'completed' ? pred.model_a : null;
 const sig = document.getElementById('signal');
