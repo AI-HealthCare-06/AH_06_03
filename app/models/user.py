@@ -1,7 +1,10 @@
 from datetime import date,datetime
 
-from sqlalchemy import CHAR, Date, DateTime, Enum, ForeignKey, String
+from sqlalchemy import CHAR, Date, DateTime, Enum, ForeignKey, Index, String
+from sqlalchemy.ext.hybrid import Comparator, hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core import pii
 from uuid6 import uuid7
 
 from app.core.db.databases import Base
@@ -12,18 +15,58 @@ def new_id() -> str:
     """새 번호를 만든다. CHAR(36) 칸에 넣을 수 있게 글자로 바꾼다. """
     return str(uuid7())
 
+class _EmailComparator(Comparator):
+    """쿼리에서 User.email == "a@b.kr" 라고 쓰면 찾기용 지문 비교(User.email_hash == 지문)로 바꾼다.
+    잠근 이메일은 부분 검색·정렬을 할 수 없으므로, 그런 연산은 조용히 틀리지 않게 바로 오류를 낸다."""
+
+    def __eq__(self, other):
+        return self.__clause_element__() == pii.email_hash(other)
+
+    def __ne__(self, other):
+        return self.__clause_element__() != pii.email_hash(other)
+
+    def in_(self, others):
+        return self.__clause_element__().in_([pii.email_hash(o) for o in others])
+
+    def operate(self, op, *other, **kwargs):
+        raise NotImplementedError("이메일은 암호화되어 있어 정확히 같은 이메일(==, !=, in_)로만 찾을 수 있습니다.")
+
+
 # 회원 카트 표
 class User(Base, TimestampMixin):
     __tablename__="users"
+    __table_args__=(Index("uq_users_email_hash", "email_hash", unique=True),)
 
     user_id: Mapped[str]=mapped_column(CHAR(36), primary_key=True, default=new_id)
-    email: Mapped[str]=mapped_column(String(255), unique=True, nullable=False)
+    # 이메일은 잠가서(email_enc) 저장하고, 로그인·중복 확인은 찾기용 지문(email_hash)으로 한다 (app/core/pii.py).
+    # 코드에서는 user.email로 읽고 쓰면 두 칸이 같이 채워진다. 이메일로 찾을 때는 User.email_hash == pii.email_hash(이메일).
+    email_enc: Mapped[str]=mapped_column(pii.EncryptedText, nullable=False)
+    email_hash: Mapped[str]=mapped_column(CHAR(64), nullable=False)   # 고유 인덱스 uq_users_email_hash (마이그레이션 3583058d4b4f)
+    # 옛 평문 이메일 칸. 새로 쓰지 않고(항상 비움), 확인이 끝나면 다음 마이그레이션에서 지운다.
+    legacy_email: Mapped[str | None]=mapped_column("email", String(255), unique=True, nullable=True)
     password_hash: Mapped[str]=mapped_column(String(255), nullable=False)
     status: Mapped[str]=mapped_column(
         Enum("active", "deleted", "pending_guardian", name="user_status"), nullable=False, default="active"
     )
     deleted_at: Mapped[datetime | None]=mapped_column(DateTime, nullable=True)
     suspended_until: Mapped[datetime | None]=mapped_column(DateTime, nullable=True)   # 이 시각(UTC)까지 이용 정지. 영구 정지는 9999-12-31
+
+    @hybrid_property
+    def email(self) -> str:
+        return self.email_enc
+
+    @email.inplace.setter
+    def _email_setter(self, value: str) -> None:
+        """정리한 이메일을 잠그고 지문도 같이 바꾼다. 옛 평문 칸은 비운다(탈퇴 익명화 때도 지문이 새 값으로 바뀌어 같은 이메일로 재가입 가능)."""
+        norm = pii.normalize_email(value)
+        self.email_enc = norm
+        self.email_hash = pii.email_hash(norm)
+        self.legacy_email = None
+
+    @email.inplace.comparator
+    @classmethod
+    def _email_comparator(cls) -> "_EmailComparator":
+        return _EmailComparator(cls.email_hash)
 
 # 보호자 정보 추가 표
 class GuardianConsentVerification(Base):

@@ -4,11 +4,12 @@ from datetime import date,datetime
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import pii
 from app.models.user import User, UserProfile, UserSession, GuardianConsentVerification
 
-# 이메일로 회원 찾기
+# 이메일로 회원 찾기 (이메일은 잠가 두므로 찾기용 지문으로 찾는다. 대소문자·앞뒤 공백은 지문 전에 정리됨)
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
-    result=await db.execute(select(User).where(User.email == email))
+    result=await db.execute(select(User).where(User.email_hash == pii.email_hash(email)))
     return result.scalar_one_or_none()
 
 # 회원 카드와 프로필 같이 만들기

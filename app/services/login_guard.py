@@ -14,6 +14,7 @@ uvicorn을 여러 프로세스로 늘리면 횟수가 프로세스마다 따로 
 from collections import deque
 from datetime import datetime, timedelta
 
+from app.core import pii
 from app.core.config import settings
 from app.core.errors import AppError
 from app.core.security import utcnow
@@ -49,7 +50,7 @@ def _tidy(book: dict[str, deque[datetime]], now: datetime) -> None:
 def check(email: str, ip: str | None) -> None:
     """막혀 있으면 TOO_MANY. 비밀번호를 확인하기 전에 부른다."""
     now = utcnow()
-    if _recent(_by_email, email.strip().lower(), now) >= MAX_PER_ACCOUNT:
+    if _recent(_by_email, pii.normalize_email(email), now) >= MAX_PER_ACCOUNT:
         raise TOO_MANY
     if ip and _recent(_by_ip, ip, now) >= settings.LOGIN_MAX_FAILS_PER_IP:
         raise TOO_MANY
@@ -57,7 +58,7 @@ def check(email: str, ip: str | None) -> None:
 
 def record_failure(email: str, ip: str | None) -> None:
     now = utcnow()
-    _by_email.setdefault(email.strip().lower(), deque()).append(now)
+    _by_email.setdefault(pii.normalize_email(email), deque()).append(now)
     if ip:
         _by_ip.setdefault(ip, deque()).append(now)
     _tidy(_by_email, now)
@@ -66,7 +67,7 @@ def record_failure(email: str, ip: str | None) -> None:
 
 def record_success(email: str) -> None:
     """로그인에 성공하면 그 이메일의 틀린 횟수를 지운다 (IP 쪽 횟수는 그대로)."""
-    _by_email.pop(email.strip().lower(), None)
+    _by_email.pop(pii.normalize_email(email), None)
 
 
 def reset() -> None:

@@ -4,6 +4,7 @@ from datetime import date, timedelta
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import pii
 from app.core.config import settings
 from app.core.errors import AppError
 from app.core.security import (
@@ -46,7 +47,7 @@ async def signup(
 
     agreed_policies = await consent_service.check_signup_consents(db, consents)   # 화면이 보낸 동의 값 검사 (계정을 만들기 전에)
 
-    email = email.lower()
+    email = pii.normalize_email(email)
     if await user_repository.get_user_by_email(db, email):
         raise AppError(409, "AUTH_EMAIL_DUPLICATED", "이미 가입된 이메일입니다.")
 
@@ -84,7 +85,7 @@ async def _issue_tokens(db: AsyncSession, user_id: str) -> TokenResult:
 
 async def login(db: AsyncSession, email: str, password: str, ip: str | None = None) -> TokenResult:
     login_guard.check(email, ip)                                    # 여러 번 틀렸으면 잠시 막는다 (비밀번호 확인 전)
-    user = await user_repository.get_user_by_email(db, email.lower())
+    user = await user_repository.get_user_by_email(db, email)
     if user is None:
         await verify_password_async(password, DUMMY_PASSWORD_HASH)  # 없는 이메일도 같은 시간 걸리게
         login_guard.record_failure(email, ip)
