@@ -279,8 +279,8 @@ async function record(code, answer, quantity) {
     if (saved && saved.autofilled) {   // 체험 모드: 서버가 3일치 기록으로 나머지 4주를 채우고 사이클을 끝냈다
       const cid = cycle.cycle_id;
       cacheCycle(null);
-      const shape = { steady: '꾸준히 한 4주', wobble: '중간에 흔들린 4주', fade: '후반에 놓친 4주' }[saved.autofill_pattern] || '실제와 비슷한 4주';
-      await noticeDialog('체험용으로 4주가 지난 것으로 처리했어요', `실제 4주는 이렇게 흔들리는 경우가 많아서<br>나머지 날을 "${shape}" 모습의<br>가상 기록으로 채웠어요.<br>방금 남긴 3일 기록과는 상관없이 정해져요.<br><br>이제 4주 재입력으로 전·후 변화를 볼 수 있어요.`, '재입력하러 가기');
+      const shape = DEMO_FILL_NAME[saved.autofill_pattern] || '실제와 비슷한 패턴';
+      await noticeDialog('체험용으로 4주가 지난 것으로 처리했어요', `실제 4주는 흔들리는 경우가 많아서<br>세 가지 패턴<br>(${DEMO_FILL_ALL}) 중<br><b>"${shape}"</b>으로 배정되어 나머지 날을 채웠어요.<br>방금 남긴 3일 기록과는 상관없이 정해져요.<br><br>이제 4주 재입력으로 전·후 변화를 볼 수 있어요.`, '재입력하러 가기');
       location.replace('reassessment.html?cycle=' + encodeURIComponent(cid));
       return;
     }
