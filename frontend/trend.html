@@ -179,7 +179,7 @@ function renderList() {
     $('app').innerHTML = html;
     return;
   }
-  html += `<div class="tabs" id="tabs"><button type="button" data-k="start" class="${SEL === 'start' ? 'on' : ''}">시작</button>${[1, 2, 3].map(n => { const r = reviews.find(x => x.cycle_number === n); return r ? `<button type="button" data-k="${esc(r.cycle_id)}" class="${SEL === r.cycle_id ? 'on' : ''}">${n}차</button>` : `<button type="button" disabled style="opacity:.45">${n}차</button>`; }).join('')}</div>`;
+  html += `<div class="tabs" id="tabs">${[1, 2, 3].map(n => { const r = reviews.find(x => x.cycle_number === n); return r ? `<button type="button" data-k="${esc(r.cycle_id)}" class="${SEL === r.cycle_id ? 'on' : ''}">${n}차</button>` : `<button type="button" disabled style="opacity:.45">${n}차</button>`; }).join('')}</div>`;
   html += SEL === 'start' ? startPane(reviews) : cyclePane(reviews.find(r => r.cycle_id === SEL));
   html += twelveSection(cycles);
   html += '</div>';

@@ -91,8 +91,10 @@
       <div class="screen">
         <div id="err" class="callout" style="display:none"></div>
         <div id="ring-wrap"></div>
-        <div id="bp-section"></div>
-        <div id="badge-slot"></div>
+        <div id="info-row" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; align-items:stretch">
+          <div id="bp-section" style="display:flex"></div>
+          <div id="badge-slot" style="display:flex"></div>
+        </div>
         <div id="week-strip"></div>
         <div id="day-detail"></div>
         <div id="together"></div>
@@ -248,10 +250,10 @@ function partyRowHtml() {
 
 function badgeRowHtml() {
   if (!badges) return '';
-  const next = badges.next ? ` · 다음은 ${esc(badges.next.label)}` : '';
-  return `<a href="badges.html" style="display:flex; align-items:center; gap:12px; padding:14px 16px; margin-top:12px; border:1px solid var(--line); border-radius:20px; text-decoration:none; color:inherit">
-    <div style="display:flex"><span style="width:36px;height:36px;border-radius:18px;background:#AACDDC;border:2px solid #fff"></span><span style="width:36px;height:36px;border-radius:18px;background:#F3E3D0;border:2px solid #fff;margin-left:-10px"></span><span style="width:36px;height:36px;border-radius:18px;background:#81A6C6;border:2px solid #fff;margin-left:-10px"></span></div>
-    <span style="flex:1; font-size:14px; font-weight:700">모은 배지 ${badges.earned_count}개<span style="font-weight:400; color:var(--muted)"> / ${badges.total}${next}</span></span>${CHEV}</a>`;
+  const next = badges.next ? `다음은 ${esc(badges.next.label)}` : '';
+  return `<a href="badges.html" style="flex:1; display:flex; flex-direction:column; gap:6px; padding:12px 14px; border:1px solid var(--line); border-radius:16px; text-decoration:none; color:inherit; font-size:13px; line-height:1.5">
+    <b style="font-size:14px">모은 배지 ${badges.earned_count}개 <span style="font-weight:400; color:var(--muted)">/ ${badges.total}</span></b>
+    <span style="color:var(--muted)">${next}</span></a>`;
 }
 
 function togetherHtml() {
@@ -266,7 +268,7 @@ function togetherHtml() {
 // 혈압은 미션이 아니라 시작·4주 재입력 때만 재요 (가이드 §5.3). 주간 혈압 기록은 없음
 function bpSectionHtml() {
   const end = new Date(cycle.ended_on + 'T00:00:00');
-  return `<div class="callout"><b>혈압은 4주마다 재요</b><br>이번 4주는 <b>${end.getMonth() + 1}월 ${end.getDate()}일</b>에 끝나요</div>`;
+  return `<div style="flex:1; display:flex; flex-direction:column; gap:6px; padding:12px 14px; background:var(--notice, #E4F0F5); border-radius:16px; font-size:13px; line-height:1.5"><b style="font-size:14px">혈압은 4주마다 재요</b><span>${end.getMonth() + 1}월 ${end.getDate()}일에 끝나요</span></div>`;
 }
 
 async function record(code, answer, quantity) {
