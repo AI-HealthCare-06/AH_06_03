@@ -360,7 +360,12 @@ function showForm() {
   goStep(0);
 }
 
-document.getElementById('edit-btn').addEventListener('click', () => {
+// 챌린지를 시작한 뒤에는 처음 입력(전·후 비교의 기준)을 고칠 수 없다(서버 409 HEALTH_RECORD_LOCKED).
+const LOCK_TITLE = '처음 입력은 고칠 수 없어요';
+const LOCK_MSG = '챌린지를 시작한 뒤에는 처음 입력한 건강정보를 고칠 수 없어요. 처음 값은 4주·12주 변화를 비교하는 기준이에요. 요즘 수치는 주간 혈압 기록이나 4주 재입력에 남겨 주세요.';
+
+document.getElementById('edit-btn').addEventListener('click', async () => {
+  if (localStorage.getItem('paeon-cycle')) { await confirmDialog(LOCK_TITLE, LOCK_MSG, '확인'); return; }
   fillForm(JSON.parse(localStorage.getItem('paeon-health')));
   showForm();
   goStep(REVIEW);
@@ -509,9 +514,10 @@ form.addEventListener('submit', async (event) => {
       document.getElementById('success-modal').style.display = 'flex';
     }
   } catch (e) {
-    showError(e.message);
     submitBtn.disabled = false;
     submitBtn.textContent = '생활습관 설문으로';
+    if (e.code === 'HEALTH_RECORD_LOCKED') { showSummary(); await confirmDialog(LOCK_TITLE, LOCK_MSG, '확인'); return; }
+    showError(e.message);
   }
 });
 </script>
