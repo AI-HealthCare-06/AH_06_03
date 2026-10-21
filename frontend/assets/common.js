@@ -284,6 +284,21 @@ function confirmDialog(title, message, okLabel = '확인', options) {
   });
 }
 
+// 안내만 하는 창: 확인 버튼 하나(취소 없음). 닫으면 resolve된다.
+function noticeDialog(title, message, okLabel = '확인') {
+  return new Promise(resolve => {
+    const wrap = document.createElement('div');
+    wrap.className = 'confirm-backdrop';
+    wrap.innerHTML = `<div class="confirm-card" role="dialog" aria-modal="true" aria-label="${title}">
+      <b>${title}</b><p>${message}</p>
+      <div class="confirm-actions"><button type="button" class="cta" data-act="ok">${okLabel}</button></div></div>`;
+    const done = () => { wrap.remove(); resolve(true); };
+    wrap.addEventListener('click', (e) => { if (e.target.dataset.act === 'ok') done(); });
+    document.body.appendChild(wrap);
+    wrap.querySelector('[data-act="ok"]').focus();
+  });
+}
+
 // 비밀번호 칸 오른쪽에 "보기" 버튼을 붙인다. 나중에 그려지는 칸은 addPasswordToggles(그 영역)를 다시 부른다.
 function addPasswordToggles(root = document) {
   root.querySelectorAll('input[type=password]').forEach(input => {

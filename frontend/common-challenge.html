@@ -96,7 +96,7 @@ function fail(e) {
   const el = document.getElementById('e');
   if (e.code === 'NICKNAME_REQUIRED') { location.href = 'nickname.html?next=common-challenges.html'; return; }
   const m = ERR[e.code] || friendlyError(e);
-  if (el) { el.textContent = m; el.hidden = false; } else confirmDialog('안내', m, '확인');
+  if (el) { el.textContent = m; el.hidden = false; } else noticeDialog('안내', m, '확인');
 }
 async function join() { try { await apiCall('POST', '/common-challenges/' + id + '/join', undefined, '참여하지 못했어요'); await load(); } catch (e) { fail(e); } }
 async function certify() {
