@@ -503,6 +503,7 @@ async def get_review(db: AsyncSession, user_id: str, cycle_id: str) -> ReviewRes
         waist_limit=rules.waist_limit(sex),
         models=models,
         bp_note=BP_NOTE,
+        demo_fill=await demo_autofill_service.pattern_of(db, cycle.cycle_id),
     )
 
 async def get_program_review(db: AsyncSession, user_id: str) -> ProgramReviewResult:

@@ -149,3 +149,20 @@ async def test_처음_입력이_여러_번이어도_채울_때_오류가_나지_
             assert r.status_code in (201, 409), r.text
         r = await log_day(client, h)
     assert r["autofilled"] is True          # 500이 나지 않고 정상으로 채워짐
+
+
+async def test_비교_화면_응답에_채운_패턴이_들어간다(client, db_session, today, monkeypatch):
+    monkeypatch.setattr(settings, "DEMO_AUTOFILL", True)
+    monkeypatch.setattr(demo_autofill_service, "pick_pattern", lambda _cid: "wobble")
+    h, cid, _ = await start_and_log_days(client, db_session, today, 3)
+    await client.post(f"/v1/challenges/cycles/{cid}/reassessment", json=BODY, headers=h)
+    rv = (await client.get(f"/v1/challenges/cycles/{cid}/review", headers=h)).json()["data"]
+    assert rv["demo_fill"] == "wobble"
+
+
+async def test_자동_채움이_없던_사이클은_표시가_없다(client, db_session, today):
+    h, cid, _ = await start_and_log_days(client, db_session, today, 3)      # DEMO_AUTOFILL 꺼짐
+    today["d"] = DAY1 + timedelta(days=28)
+    await client.post(f"/v1/challenges/cycles/{cid}/reassessment", json=BODY, headers=h)
+    rv = (await client.get(f"/v1/challenges/cycles/{cid}/review", headers=h)).json()["data"]
+    assert rv["demo_fill"] is None

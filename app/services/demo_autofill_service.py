@@ -61,6 +61,13 @@ def pick_pattern(cycle_id: str) -> str:
     return list(PATTERNS)[sum(ord(c) for c in cycle_id) % len(PATTERNS)]
 
 
+async def pattern_of(db: AsyncSession, cycle_id: str) -> str | None:
+    """이 사이클에 자동 채움 기록이 있으면 그때 쓴 패턴 이름, 없으면 None (비교 화면에서 가상 기록이 섞였다고 알리는 데 쓴다)."""
+    missions = await challenge_repository.get_cycle_missions(db, cycle_id)
+    logs = await challenge_repository.get_logs(db, [cc.cycle_challenge_id for cc, _ in missions])
+    return pick_pattern(cycle_id) if any(l.note == MARK for l in logs) else None
+
+
 async def maybe_autofill(db: AsyncSession, cycle: ChallengeCycle) -> str | None:
     """채웠으면 쓴 패턴 이름. 꺼져 있거나 기록한 날이 모자라거나 이미 채웠으면 None."""
     if not settings.DEMO_AUTOFILL:

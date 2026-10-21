@@ -201,6 +201,7 @@ class ReviewResult(BaseModel):
     waist_limit: int
     models: list[ModelChange]
     bp_note: str
+    demo_fill: str | None = None  # 체험 자동 채움 패턴(steady/wobble/fade). 가상 기록이 섞인 사이클이면 값이 있다
 
 class ProgramCheckpoint(Snapshot):
     """12주 중 한 시점의 측정값 (0주=처음 입력, 4·8·12주=각 사이클 끝 재입력)."""
