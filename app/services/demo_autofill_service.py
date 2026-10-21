@@ -3,7 +3,7 @@
 채운 기록은 note에 MARK를 남겨 구분한다(사이클·기록은 탈퇴·동의 철회 때 함께 지워진다)."""
 from datetime import timedelta
 
-from sqlalchemy import update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -11,7 +11,7 @@ from app.core.security import utcnow
 from app.models.challenge import ChallengeCycle
 from app.models.health import HealthRecord
 from app.repositories import challenge_repository
-from app.services import challenge_rules as rules, challenge_service
+from app.services import challenge_reward_service, challenge_rules as rules, challenge_service
 
 MARK = "[체험 자동 채움]"
 MIN_DAYS = 3        # 기록한 날이 이만큼 되면 채운다
@@ -43,17 +43,24 @@ async def maybe_autofill(db: AsyncSession, cycle: ChallengeCycle) -> bool:
     days = {l.log_date for l in logs}
     if len(days) < MIN_DAYS:
         return False
+    # 그날 미션을 모두 기록했을 때만 채운다(첫 미션만 체크했는데 사이클이 끝나 버리면 나머지 미션을 못 하므로)
+    today_logged = {l.cycle_challenge_id for l in logs if l.log_date == challenge_service.today_kst()}
+    if any(cc.cycle_challenge_id not in today_logged for cc, _ in missions):
+        return False
 
     # 오늘이 마지막 날인 28일 구간으로 사이클을 옮긴다(기록한 날은 모두 이 구간 안).
     today, now = challenge_service.today_kst(), utcnow()
     cycle.started_on, cycle.ended_on = today - timedelta(days=CYCLE_DAYS - 1), today
-    await db.execute(  # 4주 재입력이 찾는 기준 건강기록(시작일 이전 입력)이 옮긴 시작일보다 늦지 않게 맞춘다
-        update(HealthRecord)
-        .where(HealthRecord.user_id == cycle.user_id, HealthRecord.cycle_id.is_(None),
-               HealthRecord.input_type.in_(["initial", "interim_reassessment", "full_reassessment"]),
-               HealthRecord.examination_date > cycle.started_on)
-        .values(examination_date=cycle.started_on)
-    )
+    # 4주 재입력이 찾는 기준 건강기록(시작일 이전 입력)이 옮긴 시작일보다 늦지 않게, 가장 이른 처음 입력 하나만 시작일로 당긴다.
+    # (여러 건을 같은 날짜로 모으면 사용자·종류·날짜 중복 제약에 걸리므로 하나만 옮긴다.)
+    recs = (await db.execute(
+        select(HealthRecord).where(
+            HealthRecord.user_id == cycle.user_id, HealthRecord.cycle_id.is_(None),
+            HealthRecord.input_type.in_(["initial", "interim_reassessment", "full_reassessment"]),
+        ).order_by(HealthRecord.examination_date)
+    )).scalars().all()
+    if recs and recs[0].examination_date > cycle.started_on:
+        recs[0].examination_date = cycle.started_on
 
     span = [cycle.started_on + timedelta(days=i) for i in range(CYCLE_DAYS)]
     sex = await challenge_service._sex(db, cycle.user_id)
@@ -72,5 +79,7 @@ async def maybe_autofill(db: AsyncSession, cycle: ChallengeCycle) -> bool:
                 v = _failed_values(ch.challenge_code, sex, cc.target_config)
             challenge_repository.add_log(db, cc.cycle_challenge_id, d, {**v, "note": MARK}, now)
     await db.flush()
+    for d in span:      # 채운 날도 기록 보상(그날 모두 완료 +5, 5일마다 +10)을 준다 — 배지만 차고 파이는 모자라 보이지 않게
+        await challenge_reward_service.reward_after_log(db, cycle.user_id, d)
     await challenge_service.finalize_cycle(db, cycle)
     return True
