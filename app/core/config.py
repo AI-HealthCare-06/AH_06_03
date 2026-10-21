@@ -1,6 +1,3 @@
-import logging
-import secrets
-
 from pydantic_settings import BaseSettings
 
 
@@ -11,10 +8,13 @@ class Settings(BaseSettings):
     DB_PORT: str = "3306"
     DB_NAME: str = "paeon"
     # 로그인 토큰 (NFR-SEC-002). 실제 값은 .env에만 적는다.
-    JWT_SECRET: str = "change-me-jwt-secret"
+    JWT_SECRET: str = "change-me-jwt-secret"   # 기본값이면 서버가 안 켜진다 (check_required_secrets)
     JWT_ALGORITHM: str = "HS256"
     # 보호자 정보 암호화 열쇠 (Fernet). 실제 값은 .env에만 적는다.
     GUARDIAN_ENC_KEY: str = ""
+    # 개인정보 컬럼 암호화 키 (app/core/pii.py). 보호자 키와 따로 둔다. 실제 값은 .env에만 적는다.
+    PII_ENC_KEY: str = ""     # 잠그기(Fernet). 잃으면 잠근 값을 다시 열 수 없음
+    PII_HASH_KEY: str = ""    # 이메일 찾기용 지문(HMAC). 잃으면 아무도 로그인할 수 없음
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 14
     # 관리자 이메일 목록 (쉼표로 구분). 비어 있으면 아무도 관리자가 아니다. 실제 값은 .env에만 적는다.
@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     LOGIN_MAX_FAILS_PER_IP: int = 50
     # 운영 알림(신고 누적 자동 숨김 등)을 보낼 디스코드 웹후크 주소. 비우면 보내지 않는다. 실제 값은 .env에만 적는다.
     ADMIN_ALERT_WEBHOOK: str = ""
+    # 지인 체험 전용: 3일치 챌린지 기록을 남기면 나머지 4주를 같은 비율로 채우고 사이클을 끝낸다. 정식 배포에서는 꺼 둔다(0).
+    DEMO_AUTOFILL: bool = False
 
     @property
     def admin_email_set(self) -> set[str]:
@@ -34,11 +36,13 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-# 로그인 서명 키가 .env에 없거나 저장소에 공개된 기본값이면 그대로 쓰지 않는다.
-# 기본값으로 서명하면 누구나 아무 계정(관리자 포함)의 토큰을 만들 수 있기 때문이다.
-# 대신 실행할 때마다 임의 키를 만든다: 재시작하면 모두 다시 로그인해야 하지만 위조는 불가능하다.
-# (uvicorn 프로세스가 하나라 한 번 만든 키를 모든 요청이 같이 쓴다. 운영 서버는 .env에 진짜 키가 있어 해당 없음)
 DEFAULT_JWT_SECRET = "change-me-jwt-secret"
-if settings.JWT_SECRET in ("", DEFAULT_JWT_SECRET):
-    settings.JWT_SECRET = secrets.token_hex(32)
-    logging.getLogger(__name__).warning("JWT_SECRET가 .env에 없거나 기본값이라 임시 키를 만들었습니다. 재시작하면 모두 다시 로그인해야 합니다.")
+
+
+def check_required_secrets(s: "Settings" = None) -> None:
+    """서버가 켜질 때 비밀 열쇠가 기본값이면 멈춘다.
+    JWT_SECRET이 누구나 아는 기본값이면 로그인 팔찌를 위조할 수 있어서(아무 회원으로 로그인), 켜지지 않게 막는다."""
+    s = s or settings
+    if not s.JWT_SECRET or s.JWT_SECRET == DEFAULT_JWT_SECRET:
+        raise RuntimeError("JWT_SECRET이 비어 있거나 기본값이에요. 서버 .env에 긴 무작위 값을 넣어 주세요.")
+

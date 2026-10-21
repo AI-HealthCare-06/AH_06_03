@@ -13,6 +13,12 @@ from app import models  # noqa: F401  (테이블 설계도 등록)
 from app.core.db.databases import Base, async_get_db
 from app.core.security import create_access_token
 from app.main import app
+from app.core.config import settings as _settings
+from cryptography.fernet import Fernet as _Fernet
+
+# 개인정보 컬럼 암호화 키 (시험용. 실제 값은 서버 .env에만)
+_settings.PII_ENC_KEY = _settings.PII_ENC_KEY or _Fernet.generate_key().decode()
+_settings.PII_HASH_KEY = _settings.PII_HASH_KEY or "test-pii-hash-key"
 from app.services import login_guard
 from app.models.challenge import Challenge, ChallengeCategory, ChallengeLevel
 from app.models.health import HealthInputSchema, HealthMeasurement, HealthRecord

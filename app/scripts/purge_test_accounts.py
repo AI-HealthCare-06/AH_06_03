@@ -7,12 +7,13 @@
 import argparse
 import asyncio
 
-from sqlalchemy import or_, select
+from sqlalchemy import select
 
 from app.core.config import settings
 
 from app.core.db.databases import async_get_db
 from app.models.user import User
+from app.services.admin_users_service import like_match
 from app.services import account_service
 
 
@@ -25,12 +26,11 @@ def _check_patterns(patterns: list[str]) -> None:
 async def main(patterns: list[str], apply: bool) -> None:
     _check_patterns(patterns)
     async for db in async_get_db():
-        users = (await db.execute(
-            select(User)
-            .where(User.status != "deleted")
-            .where(or_(*[User.email.like(p) for p in patterns]))
-            .order_by(User.email)
+        # 이메일은 잠가 두어 DB에서 패턴으로 찾을 수 없다: 탈퇴 안 한 회원을 꺼내 풀고 파이썬에서 고른다(체험 규모라 충분)
+        candidates = (await db.execute(
+            select(User).where(User.status != "deleted").order_by(User.created_at, User.user_id)
         )).scalars().all()
+        users = [u for u in candidates if any(like_match(p, u.email) for p in patterns)]
 
         print(f"대상 {len(users)}명")
         for u in users:

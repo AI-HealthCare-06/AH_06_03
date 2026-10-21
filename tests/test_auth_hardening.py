@@ -1,11 +1,9 @@
-"""인증·계정 보안 보완 (이슈 #146, API 보안 검사 1묶음)."""
+"""인증·계정 보안 보완 (이슈 #146, API 보안 검사 1묶음). 서명 키 기본값 검사는 #152(test_required_secrets.py)."""
 from datetime import date, datetime, timedelta, timezone
 
-import jwt
 import pytest
 from sqlalchemy import func, select, update
 
-from app.core.config import DEFAULT_JWT_SECRET, settings
 from app.core.security import hash_password
 from app.models.user import User, UserProfile, UserSession
 
@@ -27,16 +25,6 @@ async def login(client) -> dict:
     r = await client.post("/v1/auth/login", json={"email": EMAIL, "password": PW})
     assert r.status_code == 200
     return r.json()["data"]
-
-
-async def test_공개된_기본_서명_키는_쓰지_않는다(client, db_session):
-    assert settings.JWT_SECRET != DEFAULT_JWT_SECRET and len(settings.JWT_SECRET) >= 64
-    uid = await make_user(db_session)
-    now = datetime.now(timezone.utc)
-    forged = jwt.encode({"sub": uid, "type": "access", "iat": now, "exp": now + timedelta(minutes=30)},
-                        DEFAULT_JWT_SECRET, algorithm="HS256")          # 저장소의 기본값으로 위조한 토큰
-    r = await client.get("/v1/users/me", headers={"Authorization": f"Bearer {forged}"})
-    assert r.status_code == 401
 
 
 async def test_탈퇴_비밀번호는_여러_번_틀리면_잠시_막힌다(client, db_session):

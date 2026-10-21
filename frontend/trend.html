@@ -23,7 +23,9 @@
   .sec{display:flex; flex-direction:column; gap:12px}
   .sec .t{font-size:18px; font-weight:800}
   .tabs{display:flex; gap:8px}
-  .tabs button{flex:1; height:44px; border-radius:22px; padding:0; border:1px solid var(--sage); background:#fff; color:#4A5C6D; font-size:15px; font-weight:500}
+  .tabs button{flex:1; height:52px; border-radius:22px; padding:0; border:1px solid var(--sage); background:#fff; color:#4A5C6D; font-size:15px; font-weight:500}
+  .tabs button{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; line-height:1.2}
+  .tabs button small{font-size:11px; font-weight:400; color:inherit; opacity:.75}
   .tabs button.on{background:var(--accent-light); border-color:var(--accent-light); color:#1E3246; font-weight:800}
   .ch{display:flex; flex-direction:column; gap:4px; padding-top:4px}
   .ch .l1{display:flex; align-items:center; justify-content:space-between; font-size:17px; font-weight:800}
@@ -50,7 +52,7 @@
   .wk .tx b em{font-style:normal; font-size:12px; font-weight:700; color:var(--muted)}
   .wk .tx span{font-size:13px; color:var(--muted)}
   .wkhd{display:flex; align-items:baseline; justify-content:space-between}
-  .wkhd a{font-size:13px; font-weight:700; color:#4A5C6D; text-decoration:underline; min-height:32px; display:flex; align-items:center}
+  .wkhd a{font-size:13px; font-weight:700; color:#4A5C6D; text-decoration:underline; min-height:44px; display:flex; align-items:center}
   .small{font-size:12px; color:var(--muted); line-height:1.6}
   /* 전·후 비교 */
   .cmphd .s{font-size:13px; color:var(--muted)}
@@ -148,6 +150,7 @@ const riskText = (m, k) => m && m[k] ? (RISK[m[k]] || '—') + (probText(m[k.rep
 const modelA = (rv) => (rv.models || []).find(m => m.model_code === 'MODEL_A');
 
 let DATA = null, SEL = 'start';
+const RANGE = { 1: '1차<small>0~4주</small>', 2: '2차<small>5~8주</small>', 3: '3차<small>9~12주</small>' };   // 12주 = 4주 × 3번
 const cycleOf = (rv) => DATA.cycles.find(c => c.cycle_id === rv.cycle_id) || {};
 
 function renderList() {
@@ -170,7 +173,7 @@ function renderList() {
     <a href="health-info.html"><span class="ic">${IC('<path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/>')}</span>건강정보 입력</a>
     <a href="plan.html"><span class="ic">${IC('<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 14h4"/>')}</span>내 12주 계획</a>
     <a href="twelve-weeks.html"><span class="ic">${IC('<path d="M6 20V11M12 20V4M18 20v-6"/>')}</span>지난 12주 기록</a>
-    <a href="${pending ? `reassessment.html?cycle=${encodeURIComponent(pending.cycle_id)}` : 'challenge-progress.html'}"><span class="ic">${IC('<path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/>')}</span>4주 재입력</a>
+    <a href="${pending ? `reassessment.html?cycle=${encodeURIComponent(pending.cycle_id)}` : '#'}"${pending ? '' : ` data-notice="${reviews.some(r => r.cycle_status === 'active') ? '아직 4주가 끝나지 않았어요. 끝나면 여기서 다시 입력해요' : '챌린지를 시작하면 4주 뒤에 다시 입력할 수 있어요'}"`}><span class="ic">${IC('<path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/>')}</span>4주 재입력</a>
   </div>`;
 
   html += '<div class="sec"><span class="t">4주 기록</span>';
@@ -179,12 +182,13 @@ function renderList() {
     $('app').innerHTML = html;
     return;
   }
-  html += `<div class="tabs" id="tabs"><button type="button" data-k="start" class="${SEL === 'start' ? 'on' : ''}">시작</button>${reviews.map(r => `<button type="button" data-k="${esc(r.cycle_id)}" class="${SEL === r.cycle_id ? 'on' : ''}">${r.cycle_number}차</button>`).join('')}</div>`;
+  html += `<div class="tabs" id="tabs">${[1, 2, 3].map(n => { const r = reviews.find(x => x.cycle_number === n); return r ? `<button type="button" data-k="${esc(r.cycle_id)}" class="${SEL === r.cycle_id ? 'on' : ''}">${RANGE[n]}</button>` : `<button type="button" disabled style="opacity:.45">${RANGE[n]}</button>`; }).join('')}</div>`;
   html += SEL === 'start' ? startPane(reviews) : cyclePane(reviews.find(r => r.cycle_id === SEL));
   html += twelveSection(cycles);
   html += '</div>';
   $('app').innerHTML = html;
-  $('tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { SEL = b.dataset.k; renderList(); } });
+  $('tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && b.dataset.k) { SEL = b.dataset.k; renderList(); } });
+  document.querySelectorAll('a[data-notice]').forEach(el => el.addEventListener('click', (e) => { e.preventDefault(); toast(el.dataset.notice); }));
 }
 
 function startPane(reviews) {
@@ -209,7 +213,7 @@ function cyclePane(rv) {
   }
   const b = rv.before || {}, a = rv.after || {}, m = modelA(rv), cmpA = m && m.comparable;
   const rate = c.cycle_rate != null ? Math.round(c.cycle_rate * 100) + '%' : '—';
-  return head + `<div class="rows">${row('혈압', bpText(b), bpText(a))}${row('체중', unit(b.weight_kg, 'kg'), unit(a.weight_kg, 'kg'))}${row('허리둘레', unit(b.waist_cm, 'cm'), unit(a.waist_cm, 'cm'))}${row('챌린지 달성률', '', rate)}${cmpA ? row('건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')) : ''}</div>${cmpA && (probText(m.before_probability) || probText(m.after_probability)) ? probNoteHtml(false, true) : ''}
+  return head + demoFillHtml(rv) + `<div class="rows">${row('혈압', bpText(b), bpText(a))}${row('체중', unit(b.weight_kg, 'kg'), unit(a.weight_kg, 'kg'))}${row('허리둘레', unit(b.waist_cm, 'cm'), unit(a.waist_cm, 'cm'))}${row('챌린지 달성률', '', rate)}${cmpA ? row('건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')) : ''}</div>${cmpA && (probText(m.before_probability) || probText(m.after_probability)) ? probNoteHtml(false, true) : ''}
     <div class="two">${DATA.reviews.filter(r => r.reassessed).pop().cycle_id === rv.cycle_id ? '<a class="cta" href="result.html">분석 결과 보기</a>' : ''}<button type="button" class="ghost" id="to-cmp" data-id="${esc(rv.cycle_id)}">전·후 비교</button></div>`;
 }
 
@@ -234,11 +238,13 @@ function renderCompare(rv) {
   const rate = c.cycle_rate != null ? Math.round(c.cycle_rate * 100) + '%' : '—';
   const pts = b.sbp != null && a.sbp != null ? [{ v: b.sbp, d: '시작' }, { v: a.sbp, d: '4주 후' }] : [];
   $('app').innerHTML = `<div class="page-bar" style="margin-bottom:-8px"><a class="back" href="#" id="cmp-back" aria-label="뒤로">${ICON.back}</a><span class="ttl">4주 전·후 비교</span></div>
+    ${demoFillHtml(rv)}
     <div class="cmphd"><span class="s">${rv.cycle_number}차 챌린지${c.started_on ? ' · ' + mdKo(c.started_on) + (c.ended_on ? ' ~ ' + mdKo(c.ended_on) : '') : ''}</span><div class="big">4주 동안<br>이렇게 달라졌어요</div></div>
     ${pts.length ? `<div class="cbox"><div class="hd"><span style="font-size:15px;font-weight:800;color:var(--ink)">수축기 혈압</span><span>mmHg</span></div>${lineChart({ points: pts, W: 310, H: 170, ref: 140, refLabel: '기준 140', color: '#243749', labelFont: 13, big: true })}</div>` : ''}
     <div class="tb"><div class="th"><span>항목</span><span>시작</span><span>4주 후</span></div>
       ${[['혈압', bpText(b), bpText(a)], ['체중', unit(b.weight_kg, 'kg'), unit(a.weight_kg, 'kg')], ['허리둘레', unit(b.waist_cm, 'cm'), unit(a.waist_cm, 'cm')], ['챌린지 달성률', '—', rate]]
         .concat(cmpA ? [['건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')]] : [])
+        .concat(cmpA && typeof m.before_percentile === 'number' && typeof m.after_percentile === 'number' ? [['같은 성별·연령대(참고용)', `상위 ${Math.max(1, Math.round(m.before_percentile))}%`, `상위 ${Math.max(1, Math.round(m.after_percentile))}%`]] : [])
         .map(r => `<div class="rw"><span>${r[0]}</span><span>${esc(r[1])}</span><span>${esc(r[2])}</span></div>`).join('')}</div>
     ${cmpA && (probText(m.before_probability) || probText(m.after_probability)) ? probNoteHtml(false, true) : ''}
     <div class="hab"><div class="t">습관 변화</div>

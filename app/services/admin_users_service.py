@@ -3,11 +3,13 @@
 건강 수치(혈압·몸무게 등)와 일기·사진은 읽지도 돌려주지도 않는다. 조회·삭제는 서버 로그에 남긴다.
 """
 import logging
+import re
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import pii
 from app.core.config import settings
 from app.core.errors import AppError
 from app.core.security import utcnow
@@ -31,6 +33,12 @@ STAGE_TABLES = {          # 단계 → 그 단계를 마쳤다는 증거가 되�
     "eligibility": EligibilityAssessment, "health": HealthRecord, "survey": SurveyInstance,
     "prediction": PredictionJob, "challenge": ChallengeCycle,
 }
+
+
+def like_match(pattern: str, value: str) -> bool:
+    """SQL LIKE 패턴(%=아무 글자 여러 개, _=아무 글자 하나)을 대소문자 구분 없이 맞춰 본다."""
+    regex = "".join(".*" if ch == "%" else "." if ch == "_" else re.escape(ch) for ch in pattern)
+    return re.fullmatch(regex, value, flags=re.IGNORECASE | re.DOTALL) is not None
 
 
 def mask_email(email: str) -> str:
@@ -87,11 +95,13 @@ async def list_users(
     limit: int, offset: int,
 ) -> AdminUserList:
     cond = []
-    if q:
-        cond.append(User.email.ilike(f"%{q.strip()}%"))
+    if q and q.strip():
+        q = q.strip()
+        # 이메일은 잠가 두어 일부 글자로는 찾을 수 없다: 이메일 전체(정확히 일치)나 회원 번호 일부로 찾는다
+        cond.append(User.email_hash == pii.email_hash(q) if "@" in q else User.user_id.like(f"%{q}%"))
     if status in ("active", "deleted"):
         cond.append(User.status == status)
-    users = (await db.execute(select(User).where(*cond).order_by(User.created_at.desc(), User.email))).scalars().all()
+    users = (await db.execute(select(User).where(*cond).order_by(User.created_at.desc(), User.user_id))).scalars().all()
     ids = [u.user_id for u in users]
     stages, consents = await _stages(db, ids), await _health_consent(db, ids)
     rows = [_row(u, stages[u.user_id], consents[u.user_id]) for u in users]
@@ -102,6 +112,16 @@ async def list_users(
     await audit_service.record(db, admin, "users_view", dedupe_seconds=VIEW)
     await db.commit()
     return AdminUserList(total=len(rows), items=rows[offset:offset + limit])
+
+
+async def reveal_email(db: AsyncSession, admin: str, user_id: str) -> str:
+    """관리자가 필요할 때만 전체 이메일을 본다(평소 화면은 가린 이메일). 볼 때마다 관리자 기록에 남긴다."""
+    user = await db.get(User, user_id)
+    if user is None or user.status == "deleted":
+        raise AppError(404, "ADMIN_USER_NOT_FOUND", "가입자를 찾을 수 없습니다.")
+    await audit_service.record(db, admin, "user_email_view", target=user.user_id[-8:])
+    await db.commit()
+    return user.email
 
 
 async def user_detail(db: AsyncSession, admin: str, user_id: str) -> AdminUserDetail:
@@ -138,10 +158,11 @@ async def purge(db: AsyncSession, admin: str, patterns: list[str], apply: bool, 
     """미리보기(apply=False) 또는 실제 탈퇴 처리. 실제로 지울 때는 미리보기에서 본 인원수를 confirm_count로 다시 보내야 한다.
     관리자 계정은 대상에서 뺀다."""
     _check_patterns(patterns)
-    found = (await db.execute(
-        select(User).where(User.status != "deleted").where(or_(*[User.email.ilike(p) for p in patterns])).order_by(User.email)
-    )).scalars().all()
-    users = [u for u in found if u.email.lower() not in settings.admin_email_set]
+    # 이메일은 잠가 두어 DB에서 패턴으로 찾을 수 없다: 탈퇴 안 한 회원을 꺼내 풀고 파이썬에서 패턴으로 고른다(체험 규모라 충분)
+    candidates = (await db.execute(
+        select(User).where(User.status != "deleted").order_by(User.created_at, User.user_id))).scalars().all()
+    found = [u for u in candidates if any(like_match(p, u.email) for p in patterns)]
+    users = [u for u in found if pii.normalize_email(u.email) not in settings.admin_email_set]
     targets = [PurgeTarget(email_masked=mask_email(u.email), status=u.status) for u in users]
     if not apply:
         await audit_service.record(db, admin, "purge_preview", detail=f"패턴 {len(patterns)}개, 대상 {len(users)}명")

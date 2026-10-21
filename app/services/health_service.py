@@ -3,6 +3,8 @@ from datetime import date
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.models.challenge import ChallengeCycle
 
 from app.core.errors import AppError
 from app.core.security import utcnow
@@ -105,12 +107,35 @@ def _bmi_item(items: list[dict]) -> dict | None:
     bmi = weight_kg / (height_m * height_m)
     return {"metric_code": "BMI", "value_num": round(bmi, 1), "unit": "kg/m2", "input_method": "calculated"}
 
+BASIS_TYPES = {"initial", "interim_reassessment", "full_reassessment"}   # 챌린지 사이클의 기준이 될 수 있는 기록
+
+
+async def _is_challenge_basis(db: AsyncSession, user_id: str, record) -> bool:
+    """이 기록이 이미 시작한 챌린지 사이클의 기준인가?
+    사이클의 기준은 '시작일까지의 처음 입력·재평가 중 가장 최근'이라(challenge_repository.get_basis_record),
+    시작일 이전 날짜의 기록은 기준이었거나 기준이 될 수 있었다. 그래서 그런 기록은 고치지 못하게 막는다.
+    사이클을 시작하기 전(분석 결과를 보고 오타를 고치는 경우)과, 시작일 뒤의 재입력은 그대로 고칠 수 있다."""
+    if record.input_type not in BASIS_TYPES:
+        return False
+    started = (await db.execute(
+        select(ChallengeCycle.cycle_id).where(
+            ChallengeCycle.user_id == user_id, ChallengeCycle.started_on >= record.examination_date
+        ).limit(1)
+    )).first()
+    return started is not None
+
+
 async def add_measurements(
     db: AsyncSession, user_id: str, health_record_id: str, items: list[dict]
 ) -> list[MeasurementResult]:
     """물건 넣기. 같은 지표가 다시 오면 새 값으로 바꾼다."""
     # 1. 내 상자인가?
     record = await _get_my_record(db, user_id, health_record_id)
+    # 1-1. 챌린지를 시작한 뒤에는 그 기준이 된 기록을 고칠 수 없다 (4주·12주 전·후 비교의 기준이라서)
+    if await _is_challenge_basis(db, user_id, record):
+        raise AppError(409, "HEALTH_RECORD_LOCKED",
+                       "챌린지를 시작한 뒤에는 처음 입력한 건강정보를 고칠 수 없어요. "
+                       "요즘 수치는 주간 혈압 기록이나 4주 재입력에 남겨 주세요.")
 
     # 2. 값 검사
     checked = [_check_item(item) for item in items]

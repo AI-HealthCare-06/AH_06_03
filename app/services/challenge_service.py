@@ -13,14 +13,15 @@ from app.models.challenge import ChallengeCycle
 from app.repositories import challenge_repository, health_repository, survey_repository, user_repository
 from app.schemas.challenge import (
     AnswerOption, CycleMission, CycleResult, CycleSummary, ExcludedItem, FixedSlot, LogResult, MissionCard,
-    MissionResult, ModelChange, RecommendationResult, ReviewResult, Snapshot, SodiumResult, SurveyNeeded,
-    WeekProgress,
+    MissionResult, ModelChange, ProgramCheckpoint, ProgramCycleRate, ProgramReviewResult, RecommendationResult,
+    ReviewResult, Snapshot, SodiumResult, SurveyNeeded, WeekProgress,
 )
 
 from app.services import challenge_reward_service, challenge_rules as rules
+from app.services import demo_autofill_service
 from app.services import health_service, prediction_job_service
 from app.services.challenge_catalog import (
-    CATEGORY_NAMES, CYCLE_DAYS, KEEP_GOING_MESSAGE, MISSION_COMPLETE_RATE, MISSIONS, PROGRAM_CYCLES,
+    CATEGORY_NAMES, CYCLE_DAYS, CYCLE_WEEKS, KEEP_GOING_MESSAGE, MISSION_COMPLETE_RATE, MISSIONS, PROGRAM_CYCLES,
     SELECTABLE_NOTICE,
 )
 from app.services.model_input import age_on
@@ -151,6 +152,11 @@ async def _finalize_if_ended(db: AsyncSession, cycle: ChallengeCycle, today: dat
     사이클은 미션이 모두 completed면 completed, 아니면 incomplete (REQ-CHAL-007 목표 미달)."""
     if cycle.status != "active" or today <= cycle.ended_on:
         return
+    await finalize_cycle(db, cycle)
+
+
+async def finalize_cycle(db: AsyncSession, cycle: ChallengeCycle) -> None:
+    """진행 중 사이클을 지금 닫는다(달성률 계산은 위와 같다). 체험용 자동 채움도 쓴다."""
     missions = await challenge_repository.get_cycle_missions(db, cycle.cycle_id)
     logs = await challenge_repository.get_logs(db, [cc.cycle_challenge_id for cc, _ in missions])
     all_done = True
@@ -332,7 +338,10 @@ async def record_log(
         raise AppError(409, "CHALLENGE_LOG_DUPLICATED", "오늘 기록이 이미 있습니다. 다시 시도해 주세요.")
     await challenge_reward_service.reward_after_log(db, user_id, today)   # 오늘 모두 완료 +5, 5일마다 +10
     await db.commit()
-    return _log_result(log)
+    result = _log_result(log)
+    result.autofill_pattern = await demo_autofill_service.maybe_autofill(db, cycle)   # 체험 모드(DEMO_AUTOFILL)에서만
+    result.autofilled = result.autofill_pattern is not None
+    return result
 
 async def stop_cycle(db: AsyncSession, user_id: str, reason_code: str | None, note: str | None) -> CycleResult:
     """진행 중인 사이클 중단 (REQ-CHAL-007). 중단한 사이클은 사이클 번호를 쓰지 않는다."""
@@ -421,6 +430,32 @@ def _snapshot(record, m: dict) -> Snapshot:
         drink_amount=code_("ALCOHOL_AMOUNT"),
     )
 
+async def _model_changes(db: AsyncSession, before_p: dict, after_p: dict) -> list[ModelChange]:
+    """모델 A·B 전·후. 버전이 다르면 입력값 사진으로 지금 모델로 다시 계산해서 같은 모델끼리 비교하고,
+    비교할 수 없으면 reason으로 이유를 알린다 (4주 리뷰와 12주 리뷰가 같이 쓴다)."""
+    models = []
+    for code in ("MODEL_A", "MODEL_B"):
+        b = await prediction_job_service.current_version_view(db, before_p.get(code))
+        a = await prediction_job_service.current_version_view(db, after_p.get(code))
+        reason = prediction_job_service.comparison_reason(b, a)
+        models.append(ModelChange(
+            model_code=code,
+            before_status=b.status if b else None, before_risk_level=b.risk_level if b else None,
+            before_probability=b.score if b else None,
+            after_status=a.status if a else None, after_risk_level=a.risk_level if a else None,
+            after_probability=a.score if a else None,
+            model_version=(a or b).model_version if (a or b) else None,
+            comparable=reason is None,
+            reason=reason,
+            before_similarity_level=similarity_level_b(b.score, b.model_version)
+            if b and code == "MODEL_B" and b.status == "completed" else None,
+            after_similarity_level=similarity_level_b(a.score, a.model_version)
+            if a and code == "MODEL_B" and a.status == "completed" else None,
+            before_percentile=getattr(b, "percentile", None) if b and code == "MODEL_A" else None,
+            after_percentile=getattr(a, "percentile", None) if a and code == "MODEL_A" else None,
+        ))
+    return models
+
 
 async def get_review(db: AsyncSession, user_id: str, cycle_id: str) -> ReviewResult:
     """W11-2 전후 비교: 혈압·몸무게·허리둘레·미션 달성률·습관·모델 결과 (같은 모델 버전만)."""
@@ -437,10 +472,11 @@ async def get_review(db: AsyncSession, user_id: str, cycle_id: str) -> ReviewRes
 
     before_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, basis.health_record_id)} if basis else {}
     after_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, after.health_record_id)} if after else {}
-    models = []
+    models = await _model_changes(db, before_p, after_p)
     for code in ("MODEL_A", "MODEL_B"):
-        b, a = before_p.get(code), after_p.get(code)
-        comparable = bool(b and a and b.status == a.status == "completed" and b.model_version == a.model_version)
+        b = await prediction_job_service.current_version_view(db, before_p.get(code))   # 버전이 다르면 지금 모델로 다시 계산
+        a = await prediction_job_service.current_version_view(db, after_p.get(code))
+        reason = prediction_job_service.comparison_reason(b, a)
         models.append(ModelChange(
             model_code=code,
             before_status=b.status if b else None, before_risk_level=b.risk_level if b else None,
@@ -448,7 +484,8 @@ async def get_review(db: AsyncSession, user_id: str, cycle_id: str) -> ReviewRes
             after_status=a.status if a else None, after_risk_level=a.risk_level if a else None,
             after_probability=a.score if a else None,
             model_version=(a or b).model_version if (a or b) else None,
-            comparable=comparable,
+            comparable=reason is None,
+            reason=reason,
             before_similarity_level=similarity_level_b(b.score, b.model_version)
             if b and code == "MODEL_B" and b.status == "completed" else None,
             after_similarity_level=similarity_level_b(a.score, a.model_version)
@@ -465,5 +502,45 @@ async def get_review(db: AsyncSession, user_id: str, cycle_id: str) -> ReviewRes
         normal_weight_range=list(rng) if rng else None,
         waist_limit=rules.waist_limit(sex),
         models=models,
+        bp_note=BP_NOTE,
+        demo_fill=await demo_autofill_service.pattern_of(db, cycle.cycle_id),
+    )
+
+async def get_program_review(db: AsyncSession, user_id: str) -> ProgramReviewResult:
+    """12주 프로그램의 처음(0주) ↔ 지금까지(마지막 재입력) 비교.
+    처음 = 1차 사이클을 시작할 때 기준이 된 건강기록, 마지막 = 지금까지 한 사이클 끝 재입력 중 가장 나중 것(4·8·12주).
+    12주를 다 못 채웠거나 중간에 그만둔 사람도 재입력이 하나라도 있으면 '지금까지'를 보여 준다 (weeks_done).
+    모델 결과는 _model_changes로 같은 모델 버전끼리 비교한다(버전이 다르면 입력값 사진으로 다시 계산, 나이는 처음 나이).
+    재입력이 하나도 없으면 PROGRAM_REVIEW_NOT_READY."""
+    await _current_active(db, user_id)                                  # 끝난 사이클이 있으면 먼저 닫는다
+    cycles = sorted(await challenge_repository.get_cycles(db, user_id), key=lambda c: c.cycle_number)[:PROGRAM_CYCLES]
+    first = cycles[0] if cycles else None
+    basis = await challenge_repository.get_basis_record(db, user_id, first.started_on, first.cycle_id) if first else None
+
+    reassessed = []                                                      # (사이클, 그 사이클 끝 재입력)
+    for c in cycles:
+        r = await challenge_repository.get_reassessment(db, c.cycle_id)
+        if r is not None:
+            reassessed.append((c, r))
+    if basis is None or not reassessed:
+        raise AppError(404, "PROGRAM_REVIEW_NOT_READY", "첫 4주 재입력을 마치면 볼 수 있어요.")
+    last_cycle, final = reassessed[-1]
+
+    before_m = await challenge_repository.get_measurement_map(db, basis.health_record_id)
+    after_m = await challenge_repository.get_measurement_map(db, final.health_record_id)
+    checkpoints = [ProgramCheckpoint(week=0, **_snapshot(basis, before_m).model_dump())]
+    for c, r in reassessed:
+        m = await challenge_repository.get_measurement_map(db, r.health_record_id)
+        checkpoints.append(ProgramCheckpoint(week=c.cycle_number * CYCLE_WEEKS, **_snapshot(r, m).model_dump()))
+
+    rates = {s.cycle_id: s.cycle_rate for s in await list_cycles(db, user_id)}
+    before_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, basis.health_record_id)}
+    after_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, final.health_record_id)}
+    return ProgramReviewResult(
+        weeks_done=last_cycle.cycle_number * CYCLE_WEEKS,
+        before=_snapshot(basis, before_m), after=_snapshot(final, after_m), checkpoints=checkpoints,
+        cycles=[ProgramCycleRate(cycle_number=c.cycle_number, status=c.status, cycle_rate=rates.get(c.cycle_id, 0.0))
+                for c in cycles],
+        models=await _model_changes(db, before_p, after_p),
         bp_note=BP_NOTE,
     )

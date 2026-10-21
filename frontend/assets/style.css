@@ -46,7 +46,7 @@ input::placeholder,textarea::placeholder{color:#A9B3BC; font-weight:500; opacity
 .picker .brand svg{display:none}
 .hdr-right{margin-left:auto; display:flex; align-items:center; gap:2px}
 .picker .hdr-logout{border:1px solid var(--sage); background:#fff; color:var(--ink); border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer; margin-right:8px}
-.hdr-pie{height:40px; padding:0 14px; border-radius:20px; background:var(--cream); display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:800; text-decoration:none; color:var(--ink)}
+.hdr-pie{height:44px; padding:0 14px; border-radius:20px; background:var(--cream); display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:800; text-decoration:none; color:var(--ink)}
 .hdr-pie .pie-coin{width:26px; height:auto}
 .hdr-bell{position:relative; width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--ink); text-decoration:none}
 /* 파이 접시: 픽셀 파이 아래에 가는 선으로 그린 접시, 구운 파이에서는 김이 올라온다 */
@@ -108,7 +108,7 @@ input::placeholder,textarea::placeholder{color:#A9B3BC; font-weight:500; opacity
 .card{border:1px solid var(--line); border-radius:20px; padding:18px; background:#fff}
 .card.soft{background:var(--cream); border-color:var(--cream)}
 .chips{display:flex; gap:8px; flex-wrap:wrap}
-.chip{height:40px; padding:0 16px; border-radius:18px; border:1px solid var(--sage); background:#fff; color:var(--body); font-size:13px; display:inline-flex; align-items:center; text-decoration:none; cursor:pointer}
+.chip{height:44px; padding:0 16px; border-radius:18px; border:1px solid var(--sage); background:#fff; color:var(--body); font-size:13px; display:inline-flex; align-items:center; text-decoration:none; cursor:pointer}
 .chip.on{background:var(--accent-light); border-color:var(--accent-light); color:#1E3246; font-weight:700}
 .row{display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:56px; border-top:1px solid var(--line); text-decoration:none; color:inherit}
 .row:last-child{border-bottom:1px solid var(--line)}
@@ -150,6 +150,10 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .notice-tag{display:inline-block; height:24px; line-height:24px; padding:0 10px; border-radius:12px; background:var(--notice); color:#234257; font-size:12px; font-weight:800; margin-bottom:10px}
 .confirm-card .notice-tag + b{display:block}
 .confirm-card p{font-size:13.5px; line-height:1.6; color:var(--muted); margin:10px 0 18px}
+.confirm-opts{display:flex; flex-direction:column; gap:2px; margin:-6px 0 16px; text-align:left}
+.confirm-opts label{display:flex; align-items:center; gap:10px; min-height:44px; padding:0 8px; border-radius:12px; font-size:14px; cursor:pointer}
+.confirm-opts label:has(input:checked){background:var(--cream)}
+.confirm-opts input{accent-color:var(--accent-text); width:18px; height:18px; margin:0}
 .confirm-actions{display:flex; gap:10px}
 .confirm-actions button{flex:1; margin:0}
 

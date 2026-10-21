@@ -82,8 +82,8 @@ function render() {
       <div class="gt" style="padding:0">건강정보 동의</div>
       <div class="cons">
         <div class="hd"><b>${state.consent ? '동의 중' : '동의 철회됨'}</b>${state.consent && state.consentAt ? `<span class="tag">${state.consentAt} 동의</span>` : ''}</div>
-        ${state.consent ? '<p>철회하면 저장된 건강정보와 파이·배지·파티 기록이 모두 지워져요. 닉네임·글·댓글·캐릭터와 계정은 그대로 남고, 언제든 다시 동의할 수 있어요.</p>'
-          : '<p>저장된 건강정보가 삭제되었고 새 입력과 분석이 멈춥니다. 계정은 유지됩니다. 다시 동의하면 처음부터 입력해요.</p>'}
+        ${state.consent ? '<p>철회하면 서비스를 이용할 수 없고, 저장된 건강정보와 파이·배지·파티 기록이 모두 지워져요. 계정과 닉네임·글·댓글·캐릭터는 남고, 문의와 탈퇴는 할 수 있어요. 언제든 다시 동의하면 이용할 수 있어요.</p>'
+          : '<p>저장된 건강정보가 삭제되었고 서비스를 이용할 수 없어요. 계정은 유지되며, 다시 동의하면 처음부터 입력해 이용할 수 있어요.</p>'}
         ${state.notice ? `<p class="ok" style="font-weight:700">${state.notice}</p>` : ''}
         ${state.err && state.mp !== 'delete' ? `<p class="err">${state.err}</p>` : ''}
         <button type="button" id="toggle-consent" class="btn">${state.consent ? '동의 철회하기' : '동의 다시 하기'}</button>
@@ -209,7 +209,7 @@ function wire() {
   document.querySelectorAll('[data-mp]').forEach(b => b.addEventListener('click', () => { state.mp = state.mp === b.dataset.mp ? null : b.dataset.mp; render(); }));
   document.getElementById('toggle-consent').addEventListener('click', async () => {
     const want = !state.consent;                                   // true = 다시 동의, false = 철회
-    if (!want && !(await confirmDialog('동의를 철회할까요?', '철회하면 저장된 건강정보(성별 포함)가 삭제되고 새 입력과 분석이 중단돼요. 계정은 남고, 다시 동의하면 처음부터 입력해야 해요. 필요하면 먼저 "원본 데이터 내려받기"로 저장해 두세요.', '철회하기'))) return;
+    if (!want && !(await confirmDialog('동의를 철회할까요?', '철회하면 서비스를 이용할 수 없고, 저장된 건강정보(성별 포함)와 파이·배지·파티 기록이 삭제돼요. 계정은 남고, 문의와 탈퇴는 할 수 있어요. 다시 동의하면 처음부터 입력해야 해요. 필요하면 먼저 "원본 데이터 내려받기"로 저장해 두세요.', '철회하기'))) return;
     try {
       let id = state.healthPolicyId;
       if (!id) id = (await apiCall('GET', '/consent-policies/active', undefined, '')).data.find(p => p.policy_type === 'health_data').policy_id;
