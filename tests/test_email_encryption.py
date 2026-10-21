@@ -28,14 +28,16 @@ async def make(Session, email: str, status: str = "active") -> tuple[str, dict]:
 
 async def raw_row(Session, user_id: str):
     async with Session() as s:
-        return (await s.execute(text("SELECT email, email_enc, email_hash FROM users WHERE user_id = :u"),
+        return (await s.execute(text("SELECT email_enc, email_hash FROM users WHERE user_id = :u"),
                                 {"u": user_id})).one()
 
 
 async def test_DB에는_평문_이메일이_남지_않는다(db_session):
     uid, _ = await make(db_session, "  Hong.GilDong@Test.kr ")
-    legacy, enc, h = await raw_row(db_session, uid)
-    assert legacy is None                                    # 옛 평문 칸은 비어 있음
+    enc, h = await raw_row(db_session, uid)
+    async with db_session() as s:                            # 옛 평문 이메일 칸은 아예 없음 (2단계에서 삭제)
+        cols = (await s.execute(text("SELECT * FROM users LIMIT 0"))).keys()
+    assert "email" not in cols
     assert "hong" not in enc.lower() and enc.startswith("gAAAA")   # 잠근 값(Fernet)
     assert h == pii.email_hash("hong.gildong@test.kr")
     async with db_session() as s:
@@ -63,7 +65,7 @@ async def test_탈퇴하면_같은_이메일로_다시_가입할_수_있다(clie
         await account_service.delete_account_data(s, user)          # 탈퇴: 이메일이 익명 값으로 바뀌며 지문도 바뀜
         await s.commit()
         uid = user.user_id
-    _, enc, h = await raw_row(db_session, uid)
+    enc, h = await raw_row(db_session, uid)
     assert h != pii.email_hash("back@test.kr")
     r = await client.post("/v1/auth/signup", json=body(ids, email="back@test.kr"))
     assert r.status_code == 201                                     # 같은 이메일로 재가입
