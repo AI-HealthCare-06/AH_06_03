@@ -14,6 +14,7 @@ from app.core.security import hash_password_async, new_refresh_token, utcnow, ve
 from app.models.deletion import AccountDeletionRequest
 from app.models.health import HealthMeasurement, HealthRecord
 from app.repositories import user_repository
+from app.services import login_guard
 
 KEEP_TABLES = {"users", "account_deletion_requests"}  # 이 둘은 지우지 않는다 (익명화 / 탈퇴 기록)
 
@@ -87,8 +88,12 @@ async def request_deletion(db: AsyncSession, user_id: str, password: str) -> Del
     user = await user_repository.get_user_by_id(db, user_id)
     if user is None or user.status == "deleted":
         raise AppError(401, "AUTH_UNAUTHORIZED", "다시 로그인해 주세요.")
+    # 로그인과 같은 시도 제한: 훔친 접근 토큰으로 탈퇴 API에 비밀번호를 대입해 보는 것을 막는다(맞히면 계정이 지워지므로)
+    login_guard.check(user.email, None)
     if not await verify_password_async(password, user.password_hash):
+        login_guard.record_failure(user.email, None)
         raise AppError(401, "AUTH_INVALID_CREDENTIALS", "비밀번호가 맞지 않습니다.")
+    login_guard.record_success(user.email)
     req = await delete_account_data(db, user)
     await db.commit()
     return _result(req)

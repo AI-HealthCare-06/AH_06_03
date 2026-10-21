@@ -143,6 +143,15 @@ async def refresh(db: AsyncSession, refresh_token: str) -> TokenResult:
 
     # 쓴 쿠폰 버리기 (구멍 뚫기)
     session.revoked_at = now
+    # 보강: 이용할 수 없는 계정에는 새 토큰을 주지 않는다.
+    # 지금도 탈퇴는 세션 표를 지우고 정지는 세션을 끊어서 막히지만, 앞으로 다른 경로가 생겨도 안전하게 한 번 더 확인한다.
+    user = await user_repository.get_user_by_id(db, session.user_id)
+    if user is None or user.status != "active":
+        await db.commit()
+        raise AppError(401, "AUTH_INVALID_REFRESH_TOKEN", "다시 로그인해 주세요.")
+    if suspension.is_suspended(user):
+        await db.commit()
+        suspension.check(user)
     return await _issue_tokens(db, session.user_id)
 
 async def logout(db: AsyncSession, user_id: str, refresh_token: str) -> None:
