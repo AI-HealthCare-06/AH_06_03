@@ -40,9 +40,10 @@
   .tile .trk{height:6px; border-radius:3px; background:#fff; margin:8px 0}
   .tile .trk b{display:block; height:6px; border-radius:3px; background:var(--accent)}
   .tile .ft{font-size:12px; color:#4A5C6D}
-  .shortcut a{display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:20px; background:var(--cream); text-decoration:none; font-size:15px; font-weight:700; color:var(--ink)}
-  .shortcut a span{width:32px; height:32px; display:flex; align-items:center; justify-content:center}
-  .shortcut a::after{content:'›'; margin-left:auto; font-size:20px; color:var(--body)}
+  .hrow{display:flex; align-items:flex-start; justify-content:space-between; gap:12px}
+  .shortcut a{display:flex; flex-direction:column; align-items:center; gap:4px; width:56px; text-decoration:none; font-size:11px; font-weight:700; color:var(--body)}
+  .shortcut a span{width:44px; height:44px; border-radius:14px; background:var(--cream); color:var(--ink); display:flex; align-items:center; justify-content:center}
+  .shortcut a svg{width:22px; height:22px}
   .foot{font-size:12px; color:var(--muted); line-height:1.6; text-align:center; padding-top:2px}
   .state{background:#fff; border:1px solid var(--line); border-radius:20px; padding:24px 20px; display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center}
   .state svg{width:44px; height:44px; color:var(--muted)}
@@ -205,7 +206,8 @@ function tilesHtml() {
 
 function render() {
   const sp = setupProgress();
-  let body = '<h1>오늘도 하나씩,<br>차근차근 해봐요</h1>' + adviceBannerHtml(pred, health);
+  const cal = state === 'empty' || state === 'pending' ? '' : `<div class="shortcut"><a href="calendar-diary.html"><span>${ICON.calendar}</span>캘린더</a></div>`;
+  let body = `<div class="hrow"><h1>오늘도 하나씩,<br>차근차근 해봐요</h1>${cal}</div>` + adviceBannerHtml(pred, health);
 
   if (state === 'empty') {
     body += stateCard(STATE_ICON.doc, '아직 분석 결과가 없어요', '건강정보와 설문을 입력하면 결과를 볼 수 있어요.', '', btn('health-info.html', '입력 시작하기'));
@@ -222,7 +224,6 @@ function render() {
       body += stateCard(STATE_ICON.doc, last ? '12주 계획을 모두 마쳤어요' : `12주 계획 ${cycleNo}/3차가 끝났어요`, '바뀐 항목만 다시 입력하면 비교해 드려요.', '',
         btn(reassessHref, last ? '12주 결과 확인하기' : '4주 결과 확인하기') + (!last && !cycle.cycleId ? btn('challenges.html', `다음 4주 챌린지 시작 (${cycleNo + 1}차)`, 'ghost') : ''));
     }
-    body += `<div class="shortcut"><a href="calendar-diary.html"><span>${ICON.calendar}</span>캘린더</a></div>`;
     if (pred) body += tilesHtml();
     const bpPts = bpPoints(health, progress.bpLog);
     if (bpPts.length > 1) body += `<figure><figcaption>수축기 혈압 · <b>시작과 4주마다 측정</b></figcaption>${bpChart(bpPts)}</figure>`;
