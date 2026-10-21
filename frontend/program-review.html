@@ -130,7 +130,7 @@ const row = (label, a, b) => `<div class="rw"><span>${label}</span><span class="
 const riskText = (m, k) => m && m[k] ? (RISK[m[k]] || '—') + (probText(m[k.replace('risk_level', 'probability')]) ? ` (${probText(m[k.replace('risk_level', 'probability')])})` : '') : '—';
 const modelA = (rv) => (rv.models || []).find(m => m.model_code === 'MODEL_A');
 
-const BACK = '<div class="page-bar" style="margin-bottom:-8px"><a class="back" href="trend.html" aria-label="뒤로">' + ICON.back + '</a><span class="ttl">12주 변화</span></div>';
+const back = (title) => '<div class="page-bar" style="margin-bottom:-8px"><a class="back" href="trend.html" aria-label="뒤로">' + ICON.back + '</a><span class="ttl">' + title + '</span></div>';
 const WEEKS = { 0: '0주', 4: '4주', 8: '8주', 12: '12주' };
 
 function render(rv) {
@@ -140,10 +140,11 @@ function render(rv) {
   const pts = (rv.checkpoints || []).filter(c => c.sbp != null).map(c => ({ v: c.sbp, d: WEEKS[c.week] || c.week + '주' }));
   const pc = cmpA && typeof m.before_percentile === 'number' && typeof m.after_percentile === 'number'
     ? [['같은 성별·연령대(참고용)', `상위 ${Math.max(1, Math.round(m.before_percentile))}%`, `상위 ${Math.max(1, Math.round(m.after_percentile))}%`]] : [];
-  $('app').innerHTML = BACK + `
-    <div class="cmphd"><span class="s">12주 · 처음 입력한 때부터 지금까지</span><div class="big">12주 동안<br>이렇게 달라졌어요</div></div>
+  const wk = rv.weeks_done || 12, done = wk >= 12;      // 3차까지 마쳤으면 12주, 아니면 마지막 재입력까지(지금까지 4·8주)
+  $('app').innerHTML = back(done ? '12주 변화' : `지금까지 ${wk}주`) + `
+    <div class="cmphd"><span class="s">${done ? '12주' : `지금까지 ${wk}주`} · 처음 입력한 때부터</span><div class="big">${done ? '12주 동안' : `${wk}주 동안`}<br>이렇게 달라졌어요</div></div>
     ${pts.length > 1 ? `<div class="cbox"><div class="hd"><span style="font-size:15px;font-weight:800;color:var(--ink)">수축기 혈압</span><span>mmHg</span></div>${lineChart({ points: pts, W: 310, H: 170, ref: 140, refLabel: '기준 140', color: '#243749', labelFont: 13, big: true })}</div>` : ''}
-    <div class="tb"><div class="th"><span>항목</span><span>0주</span><span>12주</span></div>
+    <div class="tb"><div class="th"><span>항목</span><span>0주</span><span>${wk}주</span></div>
       ${[['혈압', bpText(b), bpText(a)], ['체중', unit(b.weight_kg, 'kg'), unit(a.weight_kg, 'kg')], ['허리둘레', unit(b.waist_cm, 'cm'), unit(a.waist_cm, 'cm')]]
         .concat(cmpA ? [['건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')]] : []).concat(pc)
         .map(r => `<div class="rw"><span>${r[0]}</span><span>${esc(r[1])}</span><span>${esc(r[2])}</span></div>`).join('')}</div>
@@ -163,8 +164,8 @@ function render(rv) {
 (async () => {
   try { render((await apiCall('GET', '/challenges/program/review', undefined, '12주 결과를 불러오지 못했습니다')).data); }
   catch (e) {
-    $('app').innerHTML = BACK + (e.code === 'PROGRAM_REVIEW_NOT_READY'
-      ? '<div class="empty"><b>12주를 마치면 볼 수 있어요</b><span>3차 4주 재입력까지 하면 처음과 12주를 한 번에 비교해 드려요.</span><a class="cta" href="trend.html">내 변화로</a></div>'
+    $('app').innerHTML = back('12주 변화') + (e.code === 'PROGRAM_REVIEW_NOT_READY'
+      ? '<div class="empty"><b>첫 4주 재입력을 마치면 볼 수 있어요</b><span>재입력을 마치면 처음과 지금까지를 한 번에 비교해 드려요.</span><a class="cta" href="trend.html">내 변화로</a></div>'
       : `<div class="callout">${esc(friendlyError(e))}</div>`);
   }
 })();
