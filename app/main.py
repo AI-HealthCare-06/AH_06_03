@@ -31,6 +31,7 @@ from app.core.errors import register_error_handlers
 from app.services import admin_registry_service
 from app.apis.character import router as character_router
 from app.apis.party import router as party_router
+from app.core.config import check_required_secrets
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -40,7 +41,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """서버가 켜질 때 관리자 목록의 변화(권한 부여·회수)를 관리자 행위 기록에 남긴다. 실패해도 서버는 켠다."""
+    """서버가 켜질 때 관리자 목록의 변화(권한 부여·회수)를 관리자 행위 기록에남긴다. 실패해도 서버는 켠다."""
+    check_required_secrets()   # 비밀 열쇠가 기본값이면 여기서 멈춘다 (위 '실패해도 켠다'와 달리 반드시 멈춤)
     try:
         async with AsyncSessionLocal() as db:
             await admin_registry_service.sync_admin_log(db)

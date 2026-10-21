@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     DB_PORT: str = "3306"
     DB_NAME: str = "paeon"
     # 로그인 토큰 (NFR-SEC-002). 실제 값은 .env에만 적는다.
-    JWT_SECRET: str = "change-me-jwt-secret"
+    JWT_SECRET: str = "change-me-jwt-secret"   # 기본값이면 서버가 안 켜진다 (check_required_secrets)
     JWT_ALGORITHM: str = "HS256"
     # 보호자 정보 암호화 열쇠 (Fernet). 실제 값은 .env에만 적는다.
     GUARDIAN_ENC_KEY: str = ""
@@ -30,4 +30,14 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+DEFAULT_JWT_SECRET = "change-me-jwt-secret"
+
+
+def check_required_secrets(s: "Settings" = None) -> None:
+    """서버가 켜질 때 비밀 열쇠가 기본값이면 멈춘다.
+    JWT_SECRET이 누구나 아는 기본값이면 로그인 팔찌를 위조할 수 있어서(아무 회원으로 로그인), 켜지지 않게 막는다."""
+    s = s or settings
+    if not s.JWT_SECRET or s.JWT_SECRET == DEFAULT_JWT_SECRET:
+        raise RuntimeError("JWT_SECRET이 비어 있거나 기본값이에요. 서버 .env에 긴 무작위 값을 넣어 주세요.")
 
