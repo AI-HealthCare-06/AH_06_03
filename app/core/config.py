@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     # 보호자 정보 암호화 열쇠 (Fernet). 실제 값은 .env에만 적는다.
     GUARDIAN_ENC_KEY: str = ""
+    # 개인정보 컬럼 암호화 키 (app/core/pii.py). 보호자 키와 따로 둔다. 실제 값은 .env에만 적는다.
+    PII_ENC_KEY: str = ""     # 잠그기(Fernet). 잃으면 잠근 값을 다시 열 수 없음
+    PII_HASH_KEY: str = ""    # 이메일 찾기용 지문(HMAC). 잃으면 아무도 로그인할 수 없음
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 14
     # 관리자 이메일 목록 (쉼표로 구분). 비어 있으면 아무도 관리자가 아니다. 실제 값은 .env에만 적는다.

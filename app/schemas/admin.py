@@ -68,6 +68,10 @@ class AdminConsentItem(BaseModel):
     withdrawn_at: str | None
 
 
+class AdminUserEmail(BaseModel):
+    email: str                  # 전체 이메일 (관리자가 '이메일 보기'를 눌렀을 때만, 볼 때마다 기록됨)
+
+
 class AdminUserDetail(AdminUserRow):
     stages_done: list[str]
     consents: list[AdminConsentItem]
