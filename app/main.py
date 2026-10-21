@@ -31,6 +31,7 @@ from app.core.errors import register_error_handlers
 from app.services import admin_registry_service
 from app.apis.character import router as character_router
 from app.apis.party import router as party_router
+from app.core.config import check_required_secrets
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -40,7 +41,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """서버가 켜질 때 관리자 목록의 변화(권한 부여·회수)를 관리자 행위 기록에 남긴다. 실패해도 서버는 켠다."""
+    """서버가 켜질 때 관리자 목록의 변화(권한 부여·회수)를 관리자 행위 기록에남긴다. 실패해도 서버는 켠다."""
+    check_required_secrets()   # 비밀 열쇠가 기본값이면 여기서 멈춘다 (위 '실패해도 켠다'와 달리 반드시 멈춤)
     try:
         async with AsyncSessionLocal() as db:
             await admin_registry_service.sync_admin_log(db)
@@ -76,16 +78,17 @@ app.include_router(challenge_router, prefix="/v1", dependencies=[Depends(require
 app.include_router(inquiry_router, prefix="/v1")
 app.include_router(notice_router, prefix="/v1")
 app.include_router(notice_admin_router, prefix="/v1")
-app.include_router(pie_router, prefix="/v1")
-app.include_router(community_router, prefix="/v1")
+app.include_router(pie_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
+app.include_router(community_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.include_router(community_admin_router, prefix="/v1")
-app.include_router(common_challenge_router, prefix="/v1")
+# 공통 챌린지 참여·인증은 건강 관련 활동이라, 개인 챌린지·파티처럼 건강정보 동의를 철회했으면 막는다(멘토링 10/20 지적)
+app.include_router(common_challenge_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.include_router(common_challenge_admin_router, prefix="/v1")
 app.include_router(guest_inquiry_router, prefix="/v1")
 app.include_router(admin_router, prefix="/v1")
 app.include_router(admin_overview_router, prefix="/v1")
 app.include_router(home_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
-app.include_router(character_router, prefix="/v1")
+app.include_router(character_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.include_router(party_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.include_router(community_posts_admin_router, prefix="/v1")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")

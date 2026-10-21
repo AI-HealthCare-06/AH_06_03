@@ -162,7 +162,7 @@ class WeeklyBP(BaseModel):
 class ModelChange(BaseModel):
     """모델 결과 변화. comparable=false면 화면에서 이 항목을 표시하지 않는다 (명세 §6.2-2)."""
     comparable: bool
-    reason: str | None  # missing / skipped / model_version_changed
+    reason: str | None  # 비교 못 하는 이유: missing / skipped / model_version_changed (prediction_job_service.comparison_reason)
     before: ModelSummary | None
     after: ModelSummary | None
 

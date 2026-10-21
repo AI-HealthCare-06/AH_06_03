@@ -12,6 +12,10 @@ from app.services import prediction_service
 from app.services.model_input import build_model_input
 from app.ml.predictor import similarity_level_b
 
+from types import SimpleNamespace
+from app.ml import predictor
+from app.models.prediction import PredictionJob
+
 # 4주 재평가에서 다시 받지 않고 직전 값을 쓰는 지표 (ERD v8 health_measurements Note, 명세 §6.1)
 CARRY_FORWARD = ["HEIGHT", "TOTAL_CHOL", "HDL", "FASTING_GLUCOSE", "DIABETES", "HTN_STATUS", "PARENT_HTN"]
 COMPARE_METRICS = ["SBP", "DBP", "WEIGHT", "WAIST"]  # W11-2 혜림 담당 항목 (명세 §6.2-3)
@@ -226,16 +230,45 @@ async def list_history(db: AsyncSession, user_id: str) -> list[PredictionSummary
         for j in jobs
     ]
 
-def _model_change(before, after) -> ModelChange:
-    """같은 모델 버전이고 둘 다 completed일 때만 비교 가능 (명세 §6.2-2, NFR-ARCH-004)."""
+async def current_version_view(db: AsyncSession, p):
+    """저장된 결과의 모델 버전이 지금 모델과 다르면, 그때 넣은 값(input_snapshot)으로 지금 모델로 다시 계산한 값을 돌려준다.
+    전·후 비교를 같은 모델로 하기 위한 것이라 저장하지 않는다. 나이도 그때 넣은 값(최초 분석 나이) 그대로 쓴다.
+    다시 계산할 수 없으면(입력값 사진이 없는 예전 결과, 건너뛴·실패한 결과) 원래 결과를 그대로 돌려준다."""
+    if p is None or p.status != "completed" or p.model_version == predictor.CURRENT_VERSION.get(p.model_code):
+        return p
+    job = await db.get(PredictionJob, p.prediction_job_id)
+    snapshot = job.input_snapshot if job is not None else None
+    if not snapshot:
+        return p
+    res = prediction_service.predict_dict(dict(snapshot))
+    r = res.model_a if p.model_code == "MODEL_A" else res.model_b
+    if r.status != "completed":
+        return p
+    return SimpleNamespace(
+        prediction_job_id=p.prediction_job_id, model_code=p.model_code, model_version=r.model_version,
+        status=r.status, skip_reason=r.skip_reason, score=r.probability, risk_level=r.risk_level,
+        vascular_age=r.vascular_age, percentile=r.percentile,
+    )
+
+
+def comparison_reason(before, after) -> str | None:
+    """전·후를 비교할 수 없는 이유 (비교할 수 있으면 None). 화면이 이유별로 안내 문구를 고른다.
+    - missing: 한쪽 결과가 없음 (예: 이전 분석이 없음)
+    - skipped: 한쪽이 분석 대상이 아니었음 (나이 범위 밖, 진단 등. 자세한 이유는 before/after의 skip_reason)
+    - model_version_changed: 분석 모델이 바뀌었는데, 이전 입력값이 없어 지금 모델로 다시 계산할 수 없음"""
     if before is None or after is None:
-        reason = "missing"
-    elif before.status != "completed" or after.status != "completed":
-        reason = "skipped"
-    elif before.model_version != after.model_version:
-        reason = "model_version_changed"
-    else:
-        reason = None
+        return "missing"
+    if before.status != "completed" or after.status != "completed":
+        return "skipped"
+    if before.model_version != after.model_version:
+        return "model_version_changed"
+    return None
+
+
+def _model_change(before, after) -> ModelChange:
+    """같은 모델 버전이고 둘 다 completed일 때만 비교 가능 (명세 §6.2-2, NFR-ARCH-004).
+    버전이 다르면 부르기 전에 current_version_view로 지금 모델로 맞춰 둔다."""
+    reason = comparison_reason(before, after)
     return ModelChange(
         comparable=reason is None, reason=reason, before=_summary(before), after=_summary(after)
     )
@@ -296,6 +329,10 @@ async def compare_latest(db: AsyncSession, user_id: str) -> ReassessmentCompareR
     )
     p = {(x.prediction_job_id, x.model_code): x for x in preds}
 
+    pa = {code: (await current_version_view(db, p.get((before_job.prediction_job_id, code))),
+                 await current_version_view(db, p.get((after_job.prediction_job_id, code))))
+          for code in ("MODEL_A", "MODEL_B")}   # 버전이 다르면 지금 모델로 다시 계산해서 같은 모델끼리 비교
+
     return ReassessmentCompareResult(
         baseline_job_id=before_job.prediction_job_id,
         interim_job_id=after_job.prediction_job_id,
@@ -303,6 +340,6 @@ async def compare_latest(db: AsyncSession, user_id: str) -> ReassessmentCompareR
         interim_date=a_rec.examination_date,
         measurements=measurements,
         weekly_bp=weekly_bp,
-        model_a=_model_change(p.get((before_job.prediction_job_id, "MODEL_A")), p.get((after_job.prediction_job_id, "MODEL_A"))),
-        model_b=_model_change(p.get((before_job.prediction_job_id, "MODEL_B")), p.get((after_job.prediction_job_id, "MODEL_B"))),
+        model_a=_model_change(*pa["MODEL_A"]),
+        model_b=_model_change(*pa["MODEL_B"]),
     )
