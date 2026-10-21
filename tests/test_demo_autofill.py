@@ -68,3 +68,28 @@ async def test_한_사이클에_한_번만_채운다(client, db_session, today, 
     h, cid, results = await start_and_log_days(client, db_session, today, 3)
     r = await client.put("/v1/challenges/cycles/current/logs/NA-2", json={"answer": "not_added"}, headers=h)
     assert r.status_code == 404      # 이미 끝난 사이클이라 더 기록할 수 없다
+
+
+async def test_28일을_모두_채우고_달성_비율을_따른다(client, db_session, today, monkeypatch):
+    monkeypatch.setattr(settings, "DEMO_AUTOFILL", True)
+    h = await make_user(db_session, measurements=FULL, answers=SURVEY)
+    basis = (await client.get("/v1/health/records", headers=h)).json()["data"][0]["health_record_id"]
+    await client.post("/v1/predictions/jobs", json={"health_record_id": basis, "request_type": "initial"}, headers=h)
+    cid = (await client.post("/v1/challenges/cycles", json={"selected_code": "NA-2"}, headers=h)).json()["data"]["cycle_id"]
+    for i, ans in enumerate(["not_added", "added", "not_added"]):       # 3일 중 2일 완료
+        today["d"] = DAY1 + timedelta(days=i)
+        r = await client.put("/v1/challenges/cycles/current/logs/NA-2", json={"answer": ans}, headers=h)
+    assert r.json()["data"]["autofilled"] is True
+
+    from sqlalchemy import select
+    from app.models.challenge import Challenge, ChallengeLog, CycleChallenge
+    async with db_session() as s:
+        rows = (await s.execute(
+            select(Challenge.challenge_code, ChallengeLog.log_date, ChallengeLog.status)
+            .join(CycleChallenge, CycleChallenge.cycle_challenge_id == ChallengeLog.cycle_challenge_id)
+            .join(Challenge, Challenge.challenge_id == CycleChallenge.challenge_id)
+            .where(CycleChallenge.cycle_id == cid))).all()
+    for code in {c for c, _, _ in rows}:                                  # 모든 미션이 28일 모두 기록을 가진다
+        assert len({d for c, d, _ in rows if c == code}) == 28, code
+    na2 = [st for c, _, st in rows if c == "NA-2"]
+    assert na2.count("completed") == 19 and na2.count("failed") == 9      # 3일 중 2일 → 28일 중 약 19일 완료

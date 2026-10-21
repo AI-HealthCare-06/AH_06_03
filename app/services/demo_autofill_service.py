@@ -1,4 +1,4 @@
-"""체험용 자동 채움: 3일치 기록을 남기면 나머지 4주를 그 달성 비율대로 채우고 사이클을 끝낸다.
+"""체험용 자동 채움: 3일치 기록을 남기면 나머지 4주(28일 모두)를 그 달성 비율대로 완료·못 함으로 채우고 사이클을 끝낸다.
 지인 체험(약 4일)에서 4주 전·후 비교를 보게 하려는 임시 기능이라 DEMO_AUTOFILL=1일 때만 동작한다.
 채운 기록은 note에 MARK를 남겨 구분한다(사이클·기록은 탈퇴·동의 철회 때 함께 지워진다)."""
 from datetime import timedelta
@@ -11,11 +11,25 @@ from app.core.security import utcnow
 from app.models.challenge import ChallengeCycle
 from app.models.health import HealthRecord
 from app.repositories import challenge_repository
-from app.services import challenge_service
+from app.services import challenge_rules as rules, challenge_service
 
 MARK = "[체험 자동 채움]"
 MIN_DAYS = 3        # 기록한 날이 이만큼 되면 채운다
 CYCLE_DAYS = 28
+
+
+# 미션별로 "못 한 날"의 응답: 규칙(evaluate_log)을 거쳐 저장값을 만든다
+FAIL = {"SMK-1": ("smoked", None), "NA-1": ("finished", None), "NA-2": ("added", None), "ACT-2": ("none", None),
+        "ACT-3": ("none", None), "OUT-1": ("not_requested", None), "BRK-1": ("skipped", None), "WT-1": ("no", None),
+        "ACT-1": (None, 0)}
+
+
+def _failed_values(code: str, sex: str, cfg: dict | None) -> dict:
+    answer, quantity = FAIL.get(code, (None, None))
+    if code == "ALC-1":
+        quantity = ((cfg or {}).get("male_max", 2) if sex == "male" else (cfg or {}).get("female_max", 1)) + 1
+    v = rules.evaluate_log(code, answer, quantity, sex, cfg)
+    return {**v, "answer": answer}
 
 
 async def maybe_autofill(db: AsyncSession, cycle: ChallengeCycle) -> bool:
@@ -42,20 +56,21 @@ async def maybe_autofill(db: AsyncSession, cycle: ChallengeCycle) -> bool:
     )
 
     span = [cycle.started_on + timedelta(days=i) for i in range(CYCLE_DAYS)]
-    for cc, _ in missions:
+    sex = await challenge_service._sex(db, cycle.user_id)
+    for cc, ch in missions:
         mine = [l for l in logs if l.cycle_challenge_id == cc.cycle_challenge_id]
         done = [l for l in mine if l.status == "completed"]
-        if not done:
-            continue                                             # 한 번도 못 한 미션은 채우지 않는다(0%로 둔다)
-        template = done[0]
         taken = {l.log_date for l in mine}
         free = [d for d in span if d not in taken]
-        want = min(len(free), max(0, round(len(done) / len(days) * CYCLE_DAYS) - len(done)))
-        for i in range(want):                                    # 빈 날에 고르게 흩뿌려 주마다 비슷하게
-            challenge_repository.add_log(db, cc.cycle_challenge_id, free[i * len(free) // want], {
-                "status": "completed", "answer": template.answer, "quantity": template.quantity,
-                "limit_exceeded": False, "note": MARK,
-            }, now)
+        # 28일 모두 기록을 만든다: 사용자가 해낸 비율만큼은 완료, 나머지는 못 한 날
+        want_done = min(len(free), max(0, round(len(done) / len(days) * CYCLE_DAYS) - len(done))) if done else 0
+        done_days = {free[i * len(free) // want_done] for i in range(want_done)} if want_done else set()
+        for d in free:
+            if d in done_days:
+                v = {"status": "completed", "answer": done[0].answer, "quantity": done[0].quantity, "limit_exceeded": False}
+            else:
+                v = _failed_values(ch.challenge_code, sex, cc.target_config)
+            challenge_repository.add_log(db, cc.cycle_challenge_id, d, {**v, "note": MARK}, now)
     await db.flush()
     await challenge_service.finalize_cycle(db, cycle)
     return True
