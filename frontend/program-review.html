@@ -140,23 +140,27 @@ function render(rv) {
   const pts = (rv.checkpoints || []).filter(c => c.sbp != null).map(c => ({ v: c.sbp, d: WEEKS[c.week] || c.week + '주' }));
   const pc = cmpA && typeof m.before_percentile === 'number' && typeof m.after_percentile === 'number'
     ? [['같은 성별·연령대(참고용)', `상위 ${Math.max(1, Math.round(m.before_percentile))}%`, `상위 ${Math.max(1, Math.round(m.after_percentile))}%`]] : [];
+  const rates = (rv.cycles || []).map(c => c.cycle_rate).filter(v => typeof v === 'number');
+  const avgRate = rates.length ? Math.round(rates.reduce((x, y) => x + y, 0) / rates.length * 100) + '%' : '—';   // 사이클별 달성률 평균
   const wk = rv.weeks_done || 12, done = wk >= 12;      // 3차까지 마쳤으면 12주, 아니면 마지막 재입력까지(지금까지 4·8주)
   $('app').innerHTML = back(done ? '12주 변화' : `지금까지 ${wk}주`) + `
     <div class="cmphd"><span class="s">${done ? '12주' : `지금까지 ${wk}주`} · 처음 입력한 때부터</span><div class="big">${done ? '12주 동안' : `${wk}주 동안`}<br>이렇게 달라졌어요</div></div>
     ${pts.length > 1 ? `<div class="cbox"><div class="hd"><span style="font-size:15px;font-weight:800;color:var(--ink)">수축기 혈압</span><span>mmHg</span></div>${lineChart({ points: pts, W: 310, H: 170, ref: 140, refLabel: '기준 140', color: '#243749', labelFont: 13, big: true })}</div>` : ''}
     <div class="tb"><div class="th"><span>항목</span><span>0주</span><span>${wk}주</span></div>
       ${[['혈압', bpText(b), bpText(a)], ['체중', unit(b.weight_kg, 'kg'), unit(a.weight_kg, 'kg')], ['허리둘레', unit(b.waist_cm, 'cm'), unit(a.waist_cm, 'cm')]]
+        .concat([['챌린지 달성률', '—', avgRate]])
         .concat(cmpA ? [['건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')]] : []).concat(pc)
         .map(r => `<div class="rw"><span>${r[0]}</span><span>${esc(r[1])}</span><span>${esc(r[2])}</span></div>`).join('')}</div>
     ${cmpA && (probText(m.before_probability) || probText(m.after_probability)) ? probNoteHtml(false, true) : ''}
     <div class="hab"><div class="t">습관 변화</div>
       <div class="rw"><span>흡연</span><span>${SMOKING[b.smoking] || '—'} → <b>${SMOKING[a.smoking] || '—'}</b></span></div>
       <div class="rw"><span>음주</span><span>${DRINK[b.drink_freq] || '—'} → <b>${DRINK[a.drink_freq] || '—'}</b></span></div></div>
-    ${(rv.cycles || []).length ? `<div class="hab rates"><div class="t">4주마다 챌린지 달성률</div>${rv.cycles.map(c => `<div class="rw"><span>${c.cycle_number}차</span><span>${Math.round((c.cycle_rate || 0) * 100)}%</span></div>`).join('')}</div>` : ''}
+    ${(rv.cycles || []).length > 1 ? `<div class="hab rates"><div class="t">4주마다 챌린지 달성률</div>${rv.cycles.map(c => `<div class="rw"><span>${c.cycle_number}차</span><span>${Math.round((c.cycle_rate || 0) * 100)}%</span></div>`).join('')}</div>` : ''}
     ${modelANoticeHtml(rv.models)}
     ${chg ? `<div class="simbox"><span class="a">혈압이 정상인 사람들의 전체 자료와 비교했어요</span><span class="b">${chg}</span><span class="a">허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</span></div>` : ''}
     ${rv.bp_note ? `<div class="small" style="font-size:13px; line-height:1.7">${esc(rv.bp_note)}</div>` : ''}
     <div class="small" style="font-size:13px; line-height:1.7">진단이 아닌 참고 정보입니다. 정확한 판단은 의료진과 상담하세요.</div>
+    ${done ? '' : `<a class="cta" style="height:56px; border-radius:28px; font-size:17px" href="challenges.html">${wk / 4 + 1}차 챌린지 시작하기</a>`}
     <a class="ghost" href="twelve-weeks.html">12주 기록 보기</a>`;
   window.scrollTo(0, 0);
 }

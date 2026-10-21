@@ -372,7 +372,8 @@ function adviceBannerHtml(pred, health) {
 // 모델 A 버전이 바뀌어 전·후를 비교할 수 없을 때(comparable=false, 둘 다 분석 완료) 비교 줄 대신 안내한다. 오류가 아니다.
 function modelANoticeHtml(models) {
   const a = (models || []).find(m => m.model_code === 'MODEL_A');
-  return a && !a.comparable && a.before_status === 'completed' && a.after_status === 'completed'
+  const changed = a && !a.comparable && (a.reason === 'model_version_changed' || (!a.reason && a.before_status === 'completed' && a.after_status === 'completed'));
+  return changed
     ? '<p class="hint" style="margin:0 0 8px">모델이 업데이트되어 이번에는 비교하지 않아요. 다음 4주부터 비교해요.</p>' : '';
 }
 

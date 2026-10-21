@@ -243,6 +243,7 @@ function renderCompare(rv) {
     <div class="tb"><div class="th"><span>항목</span><span>시작</span><span>4주 후</span></div>
       ${[['혈압', bpText(b), bpText(a)], ['체중', unit(b.weight_kg, 'kg'), unit(a.weight_kg, 'kg')], ['허리둘레', unit(b.waist_cm, 'cm'), unit(a.waist_cm, 'cm')], ['챌린지 달성률', '—', rate]]
         .concat(cmpA ? [['건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')]] : [])
+        .concat(cmpA && typeof m.before_percentile === 'number' && typeof m.after_percentile === 'number' ? [['같은 성별·연령대(참고용)', `상위 ${Math.max(1, Math.round(m.before_percentile))}%`, `상위 ${Math.max(1, Math.round(m.after_percentile))}%`]] : [])
         .map(r => `<div class="rw"><span>${r[0]}</span><span>${esc(r[1])}</span><span>${esc(r[2])}</span></div>`).join('')}</div>
     ${cmpA && (probText(m.before_probability) || probText(m.after_probability)) ? probNoteHtml(false, true) : ''}
     <div class="hab"><div class="t">습관 변화</div>
