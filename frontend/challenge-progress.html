@@ -269,7 +269,8 @@ function togetherHtml() {
 // 혈압은 미션이 아니라 시작·4주 재입력 때만 재요 (가이드 §5.3). 주간 혈압 기록은 없음
 function bpSectionHtml() {
   const end = new Date(cycle.ended_on + 'T00:00:00');
-  return `<div style="flex:1; display:flex; flex-direction:column; gap:6px; padding:12px 14px; background:var(--notice, #E4F0F5); border-radius:16px; font-size:13px; line-height:1.5"><b style="font-size:14px">혈압은 4주마다 재요</b><span>${end.getMonth() + 1}월 ${end.getDate()}일에 끝나요</span></div>`;
+  const left = Math.max(0, Math.ceil((end - new Date(new Date().toDateString())) / 864e5));
+  return `<div style="flex:1; display:flex; flex-direction:column; gap:6px; padding:12px 14px; background:var(--notice, #E4F0F5); border-radius:16px; font-size:13px; line-height:1.5"><b style="font-size:14px">혈압은 4주마다 재요</b><span>${end.getMonth() + 1}월 ${end.getDate()}일에 끝나요</span><b style="margin-top:auto; font-size:22px; letter-spacing:-.3px">${left > 0 ? `${left}일` : '오늘'}<span style="font-size:13px; font-weight:400"> ${left > 0 ? '남았어요' : '다시 재요'}</span></b></div>`;
 }
 
 async function record(code, answer, quantity) {
