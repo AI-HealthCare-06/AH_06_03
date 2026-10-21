@@ -214,7 +214,7 @@ function render() {
     body += stateCard(STATE_ICON.doc, '입력을 이어서 마무리해 주세요', '네 단계를 마치면 결과를 볼 수 있어요.', segs, btn(sp.next ? sp.next.href : 'review.html', '이어서 하기'));
   } else {
     if (state === 'active') body += ringHtml();
-    else if (state === 'ready' && doneCycles >= 3) body += stateCard(STATE_ICON.doc, '12주를 모두 마쳤어요!', '지난 기록에서 처음과 달라진 점을 볼 수 있어요.', '', btn('twelve-weeks.html', '12주 기록 보기'));
+    else if (state === 'ready' && doneCycles >= 3) body += stateCard(STATE_ICON.doc, '12주를 모두 마쳤어요!', '지난 기록에서 처음과 달라진 점을 볼 수 있어요.', '', btn('program-review.html', '12주 결과 보기') + btn('twelve-weeks.html', '12주 기록 보기', 'ghost'));
     else if (state === 'ready' && doneCycles > 0) body += stateCard(STATE_ICON.doc, `${['', '첫', '두'][doneCycles]} 번째 4주를 마쳤어요!`, `이제 ${['', '두', '한'][doneCycles]} 번(${(3 - doneCycles) * 4}주) 남았어요.`, '', btn('challenges.html', `${doneCycles + 1}차 4주 챌린지 시작`));
     else if (state === 'ready') body += stateCard(STATE_ICON.doc, '분석이 끝났어요', '결과에 맞는 챌린지를 골라요.<br><b style="font-size:17px;color:var(--ink)">12주 = 4주씩 3번</b>', '', btn('challenges.html', '4주 챌린지 시작'));
     else {

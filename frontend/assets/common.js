@@ -213,7 +213,7 @@ function loggedIn(){ return !!PaeonTokens.access(); }
 
 // 하단 탭 5개. 챌린지는 진행 중인 사이클이 있으면 수행 화면, 없으면 시작 화면으로 간다.
 const NAV_ITEMS = [
-  { icon: ICON.record, label: '내 변화', href: 'trend.html', pages: ['trend.html', 'twelve-weeks.html', 'reassessment.html'] },
+  { icon: ICON.record, label: '내 변화', href: 'trend.html', pages: ['trend.html', 'twelve-weeks.html', 'reassessment.html', 'program-review.html'] },
   { icon: ICON.challenge, label: '챌린지', href: localStorage.getItem('paeon-cycle') ? 'challenge-progress.html' : 'challenges.html', pages: ['challenges.html', 'challenge-progress.html', 'badges.html'] },
   { icon: ICON.home, label: '홈', href: 'dashboard.html', pages: ['dashboard.html', 'plan.html', 'health-info.html', 'survey.html', 'review.html', 'result.html', 'calendar-diary.html'] },
   { icon: ICON.community, label: '커뮤니티', href: 'feed.html', pages: ['feed.html', 'write.html', 'post.html', 'nickname.html', 'common-challenges.html', 'common-challenge.html', 'party.html', 'party-start.html', 'party-create.html', 'party-home.html'] },

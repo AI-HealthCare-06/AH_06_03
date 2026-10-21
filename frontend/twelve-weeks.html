@@ -81,7 +81,7 @@ function render() {
   const list = filtered();
   $('count').textContent = list.length;
   const chev = ICON.chevron;
-  $('list').innerHTML = list.length ? list.map(p => '<a class="it' + (p.running ? ' run' : '') + '" href="' + (p.running ? 'challenge-progress.html' : 'trend.html') + '"><div class="tx"><b>' + p.n + '번째 12주 <em>· ' + (p.running ? '진행 중' : '완료') + '</em></b><span>' + fmt(p.start) + ' ~ ' + (p.end ? fmt(p.end) : '진행 중') + '</span><span>' + (p.running ? Math.min(3, p.doneCycles + 1) + '차 4주 진행 중' : (p.rate !== null ? '평균 달성률 ' + p.rate + '%' : '')) + '</span></div>' + chev + '</a>').join('')
+  $('list').innerHTML = list.length ? list.map(p => '<a class="it' + (p.running ? ' run' : '') + '" href="' + (p.running ? 'challenge-progress.html' : 'program-review.html') + '"><div class="tx"><b>' + p.n + '번째 12주 <em>· ' + (p.running ? '진행 중' : '완료') + '</em></b><span>' + fmt(p.start) + ' ~ ' + (p.end ? fmt(p.end) : '진행 중') + '</span><span>' + (p.running ? Math.min(3, p.doneCycles + 1) + '차 4주 진행 중' : (p.rate !== null ? '평균 달성률 ' + p.rate + '%' : '')) + '</span></div>' + chev + '</a>').join('')
     : '<div class="empty">이 기간에는 12주 기록이 없어요.</div>';
 }
 (async () => {
