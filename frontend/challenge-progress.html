@@ -280,7 +280,7 @@ async function record(code, answer, quantity) {
       const cid = cycle.cycle_id;
       cacheCycle(null);
       const pn = DEMO_FILL_NAME[saved.autofill_pattern] || '';
-      await noticeDialog('4주 체험 결과를 준비했어요', '<span style="display:block;text-wrap:balance;margin-top:10px">체험판에서는 직접 기록하신 3일을 제외한 나머지 기간을 가상 기록으로 채웠어요.</span>'+(pn ? '<span style="display:block;text-wrap:balance;margin-top:10px">이번 체험에는 <b>‘'+pn+'’</b> 패턴이 적용됐어요. 패턴은 실제 기록과 무관하게 미리 배정돼요.</span>' : '')+'<span style="display:block;text-wrap:balance;margin-top:10px">따라서 달성률에는 가상 기록이 포함되어 있으며, 실제 참여 결과를 의미하지 않아요.</span><span style="display:block;text-wrap:balance;margin-top:10px">이제 현재 상태를 입력하고 4주&nbsp;전후의 변화를 확인해 보세요!</span>', '지금 상태 입력하기');
+      await noticeDialog('4주 체험 결과를 준비했어요', '<span style="display:block;text-wrap:balance;margin-top:10px">체험판에서는 직접 기록하신 날을 제외한 나머지 기간을 가상 기록으로 채웠어요.</span>'+(pn ? '<span style="display:block;text-wrap:balance;margin-top:10px">이번 체험에는 <b>‘'+pn+'’</b> 패턴이 적용됐어요. 패턴은 실제 기록과 무관하게 미리 배정돼요.</span>' : '')+'<span style="display:block;text-wrap:balance;margin-top:10px">따라서 달성률에는 가상 기록이 포함되어 있으며, 실제 참여 결과를 의미하지 않아요.</span><span style="display:block;text-wrap:balance;margin-top:10px">이제 현재 상태를 입력하고 4주&nbsp;전후의 변화를 확인해 보세요!</span>', '지금 상태 입력하기');
       location.replace('reassessment.html?cycle=' + encodeURIComponent(cid));
       return;
     }
