@@ -46,7 +46,7 @@ input::placeholder,textarea::placeholder{color:#A9B3BC; font-weight:500; opacity
 .picker .brand svg{display:none}
 .hdr-right{margin-left:auto; display:flex; align-items:center; gap:2px}
 .picker .hdr-logout{border:1px solid var(--sage); background:#fff; color:var(--ink); border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer; margin-right:8px}
-.hdr-pie{height:40px; padding:0 14px; border-radius:20px; background:var(--cream); display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:800; text-decoration:none; color:var(--ink)}
+.hdr-pie{height:44px; padding:0 14px; border-radius:20px; background:var(--cream); display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:800; text-decoration:none; color:var(--ink)}
 .hdr-pie .pie-coin{width:26px; height:auto}
 .hdr-bell{position:relative; width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:var(--ink); text-decoration:none}
 /* 파이 접시: 픽셀 파이 아래에 가는 선으로 그린 접시, 구운 파이에서는 김이 올라온다 */
@@ -108,7 +108,7 @@ input::placeholder,textarea::placeholder{color:#A9B3BC; font-weight:500; opacity
 .card{border:1px solid var(--line); border-radius:20px; padding:18px; background:#fff}
 .card.soft{background:var(--cream); border-color:var(--cream)}
 .chips{display:flex; gap:8px; flex-wrap:wrap}
-.chip{height:40px; padding:0 16px; border-radius:18px; border:1px solid var(--sage); background:#fff; color:var(--body); font-size:13px; display:inline-flex; align-items:center; text-decoration:none; cursor:pointer}
+.chip{height:44px; padding:0 16px; border-radius:18px; border:1px solid var(--sage); background:#fff; color:var(--body); font-size:13px; display:inline-flex; align-items:center; text-decoration:none; cursor:pointer}
 .chip.on{background:var(--accent-light); border-color:var(--accent-light); color:#1E3246; font-weight:700}
 .row{display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:56px; border-top:1px solid var(--line); text-decoration:none; color:inherit}
 .row:last-child{border-bottom:1px solid var(--line)}
