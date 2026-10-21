@@ -23,7 +23,9 @@
   .sec{display:flex; flex-direction:column; gap:12px}
   .sec .t{font-size:18px; font-weight:800}
   .tabs{display:flex; gap:8px}
-  .tabs button{flex:1; height:44px; border-radius:22px; padding:0; border:1px solid var(--sage); background:#fff; color:#4A5C6D; font-size:15px; font-weight:500}
+  .tabs button{flex:1; height:52px; border-radius:22px; padding:0; border:1px solid var(--sage); background:#fff; color:#4A5C6D; font-size:15px; font-weight:500}
+  .tabs button{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; line-height:1.2}
+  .tabs button small{font-size:11px; font-weight:400; color:inherit; opacity:.75}
   .tabs button.on{background:var(--accent-light); border-color:var(--accent-light); color:#1E3246; font-weight:800}
   .ch{display:flex; flex-direction:column; gap:4px; padding-top:4px}
   .ch .l1{display:flex; align-items:center; justify-content:space-between; font-size:17px; font-weight:800}
@@ -148,6 +150,7 @@ const riskText = (m, k) => m && m[k] ? (RISK[m[k]] || '—') + (probText(m[k.rep
 const modelA = (rv) => (rv.models || []).find(m => m.model_code === 'MODEL_A');
 
 let DATA = null, SEL = 'start';
+const RANGE = { 1: '1차<small>0~4주</small>', 2: '2차<small>5~8주</small>', 3: '3차<small>9~12주</small>' };   // 12주 = 4주 × 3번
 const cycleOf = (rv) => DATA.cycles.find(c => c.cycle_id === rv.cycle_id) || {};
 
 function renderList() {
@@ -179,7 +182,7 @@ function renderList() {
     $('app').innerHTML = html;
     return;
   }
-  html += `<div class="tabs" id="tabs">${[1, 2, 3].map(n => { const r = reviews.find(x => x.cycle_number === n); return r ? `<button type="button" data-k="${esc(r.cycle_id)}" class="${SEL === r.cycle_id ? 'on' : ''}">${n}차</button>` : `<button type="button" disabled style="opacity:.45">${n}차</button>`; }).join('')}</div>`;
+  html += `<div class="tabs" id="tabs">${[1, 2, 3].map(n => { const r = reviews.find(x => x.cycle_number === n); return r ? `<button type="button" data-k="${esc(r.cycle_id)}" class="${SEL === r.cycle_id ? 'on' : ''}">${RANGE[n]}</button>` : `<button type="button" disabled style="opacity:.45">${RANGE[n]}</button>`; }).join('')}</div>`;
   html += SEL === 'start' ? startPane(reviews) : cyclePane(reviews.find(r => r.cycle_id === SEL));
   html += twelveSection(cycles);
   html += '</div>';
