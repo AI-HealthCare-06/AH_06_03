@@ -93,7 +93,7 @@ $('save').addEventListener('click', async () => {
       if (!i.owned) { const d = (await apiCall('POST', '/characters/items/buy', { item_key: s + ':' + i.key }, '구매하지 못했어요')).data; st.slots = d.slots; st.balance = d.balance; }
     }
     await apiCall('PUT', '/characters/me', st.view, '저장하지 못했어요');
-    await confirmDialog('저장했어요', '내 캐릭터를 바꿨어요.', '확인');
+    await noticeDialog('저장했어요', '내 캐릭터를 바꿨어요.', '확인');
     render();
   } catch (e) {
     $('err').textContent = e.code === 'PIE_NOT_ENOUGH' ? '파이가 모자라요.' : friendlyError(e);

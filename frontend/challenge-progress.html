@@ -279,8 +279,8 @@ async function record(code, answer, quantity) {
     if (saved && saved.autofilled) {   // 체험 모드: 서버가 3일치 기록으로 나머지 4주를 채우고 사이클을 끝냈다
       const cid = cycle.cycle_id;
       cacheCycle(null);
-      const shape = { steady: '꾸준히 한 4주', wobble: '중간에 흔들린 4주', fade: '후반에 놓친 4주' }[saved.autofill_pattern] || '실제와 비슷한 4주';
-      await confirmDialog('체험용으로 4주가 지난 것으로 처리했어요', `실제 4주는 이렇게 흔들리는 경우가 많아서, 나머지 날을 "${shape}" 모습의 가상 기록으로 채웠어요. 방금 남긴 3일 기록과는 상관없이 정해져요. 이제 4주 재입력으로 전·후 변화를 볼 수 있어요.`, '재입력하러 가기');
+      const pn = DEMO_FILL_NAME[saved.autofill_pattern] || '';
+      await noticeDialog('4주 체험 결과를 준비했어요', '<span style="display:block;text-wrap:balance;margin-top:10px">체험판에서는 직접 기록하신 3일을 제외한 나머지 기간을 가상 기록으로 채웠어요.</span>'+(pn ? '<span style="display:block;text-wrap:balance;margin-top:10px">이번 체험에는 <b>‘'+pn+'’</b> 패턴이 적용됐어요. 패턴은 실제 기록과 무관하게 미리 배정돼요.</span>' : '')+'<span style="display:block;text-wrap:balance;margin-top:10px">따라서 달성률에는 가상 기록이 포함되어 있으며, 실제 참여 결과를 의미하지 않아요.</span><span style="display:block;text-wrap:balance;margin-top:10px">이제 현재 상태를 입력하고 4주&nbsp;전후의 변화를 확인해 보세요!</span>', '지금 상태 입력하기');
       location.replace('reassessment.html?cycle=' + encodeURIComponent(cid));
       return;
     }

@@ -109,7 +109,7 @@ async function onDelete() {
 async function report(path, reason) {
   try {
     await apiCall('POST', '/community/' + path + '/report', { reason }, '신고하지 못했어요');
-    await confirmDialog('신고했어요', '운영팀이 확인해요. 알려 주셔서 고마워요.', '확인');
+    await noticeDialog('신고했어요', '운영팀이 확인해요. 알려 주셔서 고마워요.', '확인');
     if (path.startsWith('posts/')) location.replace(document.getElementById('back').href); else loadComments();   // 신고한 글·댓글은 내 목록에서 바로 빠진다
   } catch (e) { showErr(e.code === 'ALREADY_REPORTED' ? '이미 신고했어요.' : friendlyError(e)); }
 }
