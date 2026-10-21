@@ -170,7 +170,7 @@ function renderList() {
     <a href="health-info.html"><span class="ic">${IC('<path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/>')}</span>건강정보 입력</a>
     <a href="plan.html"><span class="ic">${IC('<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 14h4"/>')}</span>내 12주 계획</a>
     <a href="twelve-weeks.html"><span class="ic">${IC('<path d="M6 20V11M12 20V4M18 20v-6"/>')}</span>지난 12주 기록</a>
-    <a href="${pending ? `reassessment.html?cycle=${encodeURIComponent(pending.cycle_id)}` : 'challenge-progress.html'}"><span class="ic">${IC('<path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/>')}</span>4주 재입력</a>
+    <a href="${pending ? `reassessment.html?cycle=${encodeURIComponent(pending.cycle_id)}` : '#'}"${pending ? '' : ` data-notice="${reviews.some(r => r.cycle_status === 'active') ? '아직 4주가 끝나지 않았어요. 끝나면 여기서 다시 입력해요' : '챌린지를 시작하면 4주 뒤에 다시 입력할 수 있어요'}"`}><span class="ic">${IC('<path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/>')}</span>4주 재입력</a>
   </div>`;
 
   html += '<div class="sec"><span class="t">4주 기록</span>';
@@ -179,12 +179,13 @@ function renderList() {
     $('app').innerHTML = html;
     return;
   }
-  html += `<div class="tabs" id="tabs"><button type="button" data-k="start" class="${SEL === 'start' ? 'on' : ''}">시작</button>${reviews.map(r => `<button type="button" data-k="${esc(r.cycle_id)}" class="${SEL === r.cycle_id ? 'on' : ''}">${r.cycle_number}차</button>`).join('')}</div>`;
+  html += `<div class="tabs" id="tabs"><button type="button" data-k="start" class="${SEL === 'start' ? 'on' : ''}">시작</button>${[1, 2, 3].map(n => { const r = reviews.find(x => x.cycle_number === n); return r ? `<button type="button" data-k="${esc(r.cycle_id)}" class="${SEL === r.cycle_id ? 'on' : ''}">${n}차</button>` : `<button type="button" disabled style="opacity:.45">${n}차</button>`; }).join('')}</div>`;
   html += SEL === 'start' ? startPane(reviews) : cyclePane(reviews.find(r => r.cycle_id === SEL));
   html += twelveSection(cycles);
   html += '</div>';
   $('app').innerHTML = html;
-  $('tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { SEL = b.dataset.k; renderList(); } });
+  $('tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && b.dataset.k) { SEL = b.dataset.k; renderList(); } });
+  document.querySelectorAll('a[data-notice]').forEach(el => el.addEventListener('click', (e) => { e.preventDefault(); toast(el.dataset.notice); }));
 }
 
 function startPane(reviews) {
