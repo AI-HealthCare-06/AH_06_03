@@ -28,6 +28,13 @@
     }
     handle {
         root * /srv/frontend
+        # 앱(Capacitor) 프로젝트 파일은 화면이 아니라서 밖으로 내보내지 않음 (API 보안 검사)
+        @notweb path /android/* /ios/* /package.json /package-lock.json /capacitor.config.json
+        respond @notweb 404
+        # 화면 파일(html·js·css)은 쓸 때마다 바뀌었는지 서버에 확인하게 함(no-cache).
+        # 안 바뀌었으면 304로 짧게 끝나고, 배포 직후 예전 파일을 써서 화면이 깨지는 일을 막음 (10/21 팀 요청)
+        @pages path / *.html *.js *.css
+        header @pages Cache-Control "no-cache"
         file_server
     }
 }
