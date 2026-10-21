@@ -172,8 +172,11 @@ class ModelChange(BaseModel):
     after_probability: float | None
     model_version: str | None
     comparable: bool  # 둘 다 완료 + 같은 모델 버전일 때만 비교 표시 (NFR-ARCH-004)
+    reason: str | None = None  # 비교 못 하는 이유: missing / skipped / model_version_changed
     before_similarity_level: str | None = None
     after_similarity_level: str | None = None
+    before_percentile: float | None = None     # 모델 A: 같은 성별·연령대 상위 N% (참고용)
+    after_percentile: float | None = None
 
 
 class MissionResult(BaseModel):
@@ -195,4 +198,25 @@ class ReviewResult(BaseModel):
     normal_weight_range: list[int] | None  # [하한, 상한] kg (키 기준 BMI 18.5~22.9)
     waist_limit: int
     models: list[ModelChange]
+    bp_note: str
+
+class ProgramCheckpoint(Snapshot):
+    """12주 중 한 시점의 측정값 (0주=처음 입력, 4·8·12주=각 사이클 끝 재입력)."""
+    week: int
+
+
+class ProgramCycleRate(BaseModel):
+    cycle_number: int
+    status: str
+    cycle_rate: float           # 그 사이클 미션 달성률 (0~1)
+
+
+class ProgramReviewResult(BaseModel):
+    """12주 프로그램의 처음(0주) ↔ 지금까지(마지막 재입력) 비교. 모델 결과는 같은 모델 버전으로 다시 계산한 값끼리 비교한다."""
+    weeks_done: int                      # 지금까지 몇 주인지: 4 / 8 / 12 (화면 제목 "지금까지 N주")
+    before: Snapshot                     # 0주 (처음 입력)
+    after: Snapshot                      # 12주 (3차 사이클 끝 재입력)
+    checkpoints: list[ProgramCheckpoint]  # 혈압 선 그래프용 0·4·8·12주 (재입력이 없는 시점은 빠짐)
+    cycles: list[ProgramCycleRate]       # 1·2·3차 달성률
+    models: list[ModelChange]            # 모델 A·B 처음 ↔ 12주 (comparable=false면 reason으로 이유)
     bp_note: str
