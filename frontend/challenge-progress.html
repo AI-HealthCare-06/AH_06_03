@@ -252,6 +252,7 @@ function badgeRowHtml() {
   if (!badges) return '';
   const next = badges.next ? `다음은 ${esc(badges.next.label)}` : '';
   return `<a href="badges.html" style="flex:1; display:flex; flex-direction:column; gap:6px; padding:12px 14px; border:1px solid var(--line); border-radius:16px; text-decoration:none; color:inherit; font-size:13px; line-height:1.5">
+    <div style="display:flex; align-items:center">${['#AACDDC', '#F2DCC8', '#81A6C6'].map((c, i) => `<span style="width:26px; height:26px; border-radius:13px; margin-left:${i ? -8 : 0}px; border:2px solid #fff; box-sizing:border-box; ${i < badges.earned_count ? `background:${c}` : 'background:#E6DBCD'}"></span>`).join('')}</div>
     <b style="font-size:14px">모은 배지 ${badges.earned_count}개 <span style="font-weight:400; color:var(--muted)">/ ${badges.total}</span></b>
     <span style="color:var(--muted)">${next}</span></a>`;
 }
