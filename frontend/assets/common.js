@@ -369,6 +369,13 @@ function adviceBannerHtml(pred, health) {
   return adviceAcked() ? adviceCompactHtml() : adviceFullHtml(title);
 }
 
+// 체험 모드: 서버가 3일치 기록 뒤 나머지를 가상 기록으로 채운 사이클이면(demo_fill) 비교 화면에서 그 사실과 패턴을 알린다.
+const DEMO_FILL_TEXT = { steady: '꾸준히 한 4주', wobble: '중간에 흔들린 4주', fade: '후반에 놓친 4주' };
+function demoFillHtml(rv) {
+  const t = rv && rv.demo_fill && DEMO_FILL_TEXT[rv.demo_fill];
+  return t ? `<div class="callout"><b>체험용 가상 기록이 섞여 있어요</b><br>실제 4주는 이렇게 흔들리는 경우가 많아서, 이 4주는 "${t}" 모습으로 채웠어요. 직접 남긴 3일 기록과는 상관없이 정해져요.</div>` : '';
+}
+
 // 모델 A 버전이 바뀌어 전·후를 비교할 수 없을 때(comparable=false, 둘 다 분석 완료) 비교 줄 대신 안내한다. 오류가 아니다.
 function modelANoticeHtml(models) {
   const a = (models || []).find(m => m.model_code === 'MODEL_A');

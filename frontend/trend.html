@@ -213,7 +213,7 @@ function cyclePane(rv) {
   }
   const b = rv.before || {}, a = rv.after || {}, m = modelA(rv), cmpA = m && m.comparable;
   const rate = c.cycle_rate != null ? Math.round(c.cycle_rate * 100) + '%' : '—';
-  return head + `<div class="rows">${row('혈압', bpText(b), bpText(a))}${row('체중', unit(b.weight_kg, 'kg'), unit(a.weight_kg, 'kg'))}${row('허리둘레', unit(b.waist_cm, 'cm'), unit(a.waist_cm, 'cm'))}${row('챌린지 달성률', '', rate)}${cmpA ? row('건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')) : ''}</div>${cmpA && (probText(m.before_probability) || probText(m.after_probability)) ? probNoteHtml(false, true) : ''}
+  return head + demoFillHtml(rv) + `<div class="rows">${row('혈압', bpText(b), bpText(a))}${row('체중', unit(b.weight_kg, 'kg'), unit(a.weight_kg, 'kg'))}${row('허리둘레', unit(b.waist_cm, 'cm'), unit(a.waist_cm, 'cm'))}${row('챌린지 달성률', '', rate)}${cmpA ? row('건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')) : ''}</div>${cmpA && (probText(m.before_probability) || probText(m.after_probability)) ? probNoteHtml(false, true) : ''}
     <div class="two">${DATA.reviews.filter(r => r.reassessed).pop().cycle_id === rv.cycle_id ? '<a class="cta" href="result.html">분석 결과 보기</a>' : ''}<button type="button" class="ghost" id="to-cmp" data-id="${esc(rv.cycle_id)}">전·후 비교</button></div>`;
 }
 
@@ -238,6 +238,7 @@ function renderCompare(rv) {
   const rate = c.cycle_rate != null ? Math.round(c.cycle_rate * 100) + '%' : '—';
   const pts = b.sbp != null && a.sbp != null ? [{ v: b.sbp, d: '시작' }, { v: a.sbp, d: '4주 후' }] : [];
   $('app').innerHTML = `<div class="page-bar" style="margin-bottom:-8px"><a class="back" href="#" id="cmp-back" aria-label="뒤로">${ICON.back}</a><span class="ttl">4주 전·후 비교</span></div>
+    ${demoFillHtml(rv)}
     <div class="cmphd"><span class="s">${rv.cycle_number}차 챌린지${c.started_on ? ' · ' + mdKo(c.started_on) + (c.ended_on ? ' ~ ' + mdKo(c.ended_on) : '') : ''}</span><div class="big">4주 동안<br>이렇게 달라졌어요</div></div>
     ${pts.length ? `<div class="cbox"><div class="hd"><span style="font-size:15px;font-weight:800;color:var(--ink)">수축기 혈압</span><span>mmHg</span></div>${lineChart({ points: pts, W: 310, H: 170, ref: 140, refLabel: '기준 140', color: '#243749', labelFont: 13, big: true })}</div>` : ''}
     <div class="tb"><div class="th"><span>항목</span><span>시작</span><span>4주 후</span></div>
