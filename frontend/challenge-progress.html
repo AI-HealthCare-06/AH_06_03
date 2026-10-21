@@ -279,8 +279,7 @@ async function record(code, answer, quantity) {
     if (saved && saved.autofilled) {   // 체험 모드: 서버가 3일치 기록으로 나머지 4주를 채우고 사이클을 끝냈다
       const cid = cycle.cycle_id;
       cacheCycle(null);
-      const shape = DEMO_FILL_NAME[saved.autofill_pattern] || '실제와 비슷한 패턴';
-      await noticeDialog('체험용으로 4주가 지난 것으로 처리했어요', `실제 4주는 흔들리는 경우가 많아서<br>세 가지 패턴<br>(${DEMO_FILL_ALL}) 중<br><b>"${shape}"</b>으로 배정되어 나머지 날을 채웠어요.<br>방금 남긴 3일 기록과는 상관없이 정해져요.<br><br>이제 4주 재입력으로 전·후 변화를 볼 수 있어요.`, '재입력하러 가기');
+      await noticeDialog('체험판에서는 4주 체험을 미리 적용해 보여드려요.', '체험판은 최근 3일간의 기록을 바탕으로 나머지 기간을 보완해, 4주간의 변화를 미리 확인할 수 있도록 구성했어요.<br><br>실제 4주 동안 사용했을 때의 결과와는 차이가 있을 수 있어요.', '결과 확인하기');
       location.replace('reassessment.html?cycle=' + encodeURIComponent(cid));
       return;
     }
