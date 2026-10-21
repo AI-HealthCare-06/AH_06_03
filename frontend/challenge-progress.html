@@ -272,7 +272,14 @@ function bpSectionHtml() {
 async function record(code, answer, quantity) {
   showError('');
   try {
-    await apiRecordChallengeLog(code, answer, quantity);
+    const saved = await apiRecordChallengeLog(code, answer, quantity);
+    if (saved && saved.autofilled) {   // 체험 모드: 서버가 3일치 기록으로 나머지 4주를 채우고 사이클을 끝냈다
+      const cid = cycle.cycle_id;
+      cacheCycle(null);
+      await confirmDialog('체험용으로 4주가 지난 것으로 처리했어요', '지금까지 3일치 기록을 바탕으로 나머지 날을 같은 비율로 채웠어요. 이제 4주 재입력으로 전·후 변화를 볼 수 있어요. 채운 기록은 체험용 가상 데이터예요.', '재입력하러 가기');
+      location.replace('reassessment.html?cycle=' + encodeURIComponent(cid));
+      return;
+    }
     partialFor = null;
     const doneBefore = new Set([...document.querySelectorAll('.mrow.done .nm')].map(n => n.textContent));
     const pieBefore = (document.querySelector('.ring .cnt b') || {}).textContent;
