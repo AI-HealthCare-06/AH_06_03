@@ -212,7 +212,8 @@ class ProgramCycleRate(BaseModel):
 
 
 class ProgramReviewResult(BaseModel):
-    """12주 처음(0주) ↔ 마지막(12주) 비교. 모델 결과는 같은 모델 버전으로 다시 계산한 값끼리 비교한다."""
+    """12주 프로그램의 처음(0주) ↔ 지금까지(마지막 재입력) 비교. 모델 결과는 같은 모델 버전으로 다시 계산한 값끼리 비교한다."""
+    weeks_done: int                      # 지금까지 몇 주인지: 4 / 8 / 12 (화면 제목 "지금까지 N주")
     before: Snapshot                     # 0주 (처음 입력)
     after: Snapshot                      # 12주 (3차 사이클 끝 재입력)
     checkpoints: list[ProgramCheckpoint]  # 혈압 선 그래프용 0·4·8·12주 (재입력이 없는 시점은 빠짐)

@@ -65,6 +65,7 @@ async def test_12주를_마치면_처음과_12주를_같은_모델로_비교한�
     r = await client.get("/v1/challenges/program/review", headers=h)
     assert r.status_code == 200, r.text
     d = r.json()["data"]
+    assert d["weeks_done"] == 12
     assert (d["before"]["sbp"], d["after"]["sbp"]) == (150, 135)
     assert [c["week"] for c in d["checkpoints"]] == [0, 4, 8, 12]               # 혈압 선 그래프 4점
     assert [c["sbp"] for c in d["checkpoints"]] == [150, 145, 140, 135]
@@ -74,7 +75,17 @@ async def test_12주를_마치면_처음과_12주를_같은_모델로_비교한�
     assert a["before_probability"] != 0.9 and a["before_probability"] > a["after_probability"]
 
 
-async def test_12주를_못_채우면_아직_볼_수_없다(client, db_session):
-    h = await _user(db_session, 2)
+async def test_12주를_못_채워도_지금까지를_보여_준다(client, db_session):
+    h = await _user(db_session, 1)                                              # 1차 재입력만 함 (중단·미완료)
+    r = await client.get("/v1/challenges/program/review", headers=h)
+    assert r.status_code == 200, r.text
+    d = r.json()["data"]
+    assert d["weeks_done"] == 4
+    assert [c["week"] for c in d["checkpoints"]] == [0, 4]
+    assert (d["before"]["sbp"], d["after"]["sbp"]) == (150, 145)
+
+
+async def test_재입력이_하나도_없으면_아직_볼_수_없다(client, db_session):
+    h = await _user(db_session, 0)
     r = await client.get("/v1/challenges/program/review", headers=h)
     assert r.status_code == 404 and r.json()["error"]["code"] == "PROGRAM_REVIEW_NOT_READY"

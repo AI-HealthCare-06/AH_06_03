@@ -52,7 +52,7 @@ async def get_program_review(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(async_get_db),
 ):
-    """12주 처음(0주) ↔ 마지막(12주) 비교. 3차 4주 재입력까지 마쳐야 볼 수 있다."""
+    """12주 프로그램의 처음(0주) ↔ 지금까지(마지막 재입력) 비교. 재입력이 하나도 없으면 404."""
     return DataResponse(data=await challenge_service.get_program_review(db, user_id))
 
 @router.get("/challenges/cycles/{cycle_id}", response_model=DataResponse[CycleResult])

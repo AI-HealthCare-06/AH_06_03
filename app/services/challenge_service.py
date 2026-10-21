@@ -496,37 +496,41 @@ async def get_review(db: AsyncSession, user_id: str, cycle_id: str) -> ReviewRes
         bp_note=BP_NOTE,
     )
 
-# ---------------------------------------------------------------- 12주 처음 ↔ 마지막 비교
 async def get_program_review(db: AsyncSession, user_id: str) -> ProgramReviewResult:
-    """12주(4주 × 3번)를 마친 사람의 처음(0주) ↔ 12주 비교.
-    처음 = 1차 사이클을 시작할 때 기준이 된 건강기록, 12주 = 3차 사이클 끝 재입력.
+    """12주 프로그램의 처음(0주) ↔ 지금까지(마지막 재입력) 비교.
+    처음 = 1차 사이클을 시작할 때 기준이 된 건강기록, 마지막 = 지금까지 한 사이클 끝 재입력 중 가장 나중 것(4·8·12주).
+    12주를 다 못 채웠거나 중간에 그만둔 사람도 재입력이 하나라도 있으면 '지금까지'를 보여 준다 (weeks_done).
     모델 결과는 _model_changes로 같은 모델 버전끼리 비교한다(버전이 다르면 입력값 사진으로 다시 계산, 나이는 처음 나이).
-    3차 사이클 재입력까지 마쳐야 볼 수 있다(12주를 못 채운 경우는 PROGRAM_REVIEW_NOT_READY)."""
+    재입력이 하나도 없으면 PROGRAM_REVIEW_NOT_READY."""
     await _current_active(db, user_id)                                  # 끝난 사이클이 있으면 먼저 닫는다
-    cycles = sorted(await challenge_repository.get_cycles(db, user_id), key=lambda c: c.cycle_number)
-    last = next((c for c in cycles if c.cycle_number == PROGRAM_CYCLES), None)
-    final = await challenge_repository.get_reassessment(db, last.cycle_id) if last else None
-    first = next((c for c in cycles if c.cycle_number == 1), None)
+    cycles = sorted(await challenge_repository.get_cycles(db, user_id), key=lambda c: c.cycle_number)[:PROGRAM_CYCLES]
+    first = cycles[0] if cycles else None
     basis = await challenge_repository.get_basis_record(db, user_id, first.started_on, first.cycle_id) if first else None
-    if final is None or basis is None:
-        raise AppError(404, "PROGRAM_REVIEW_NOT_READY", "12주(3차 4주 재입력)까지 마치면 볼 수 있어요.")
+
+    reassessed = []                                                      # (사이클, 그 사이클 끝 재입력)
+    for c in cycles:
+        r = await challenge_repository.get_reassessment(db, c.cycle_id)
+        if r is not None:
+            reassessed.append((c, r))
+    if basis is None or not reassessed:
+        raise AppError(404, "PROGRAM_REVIEW_NOT_READY", "첫 4주 재입력을 마치면 볼 수 있어요.")
+    last_cycle, final = reassessed[-1]
 
     before_m = await challenge_repository.get_measurement_map(db, basis.health_record_id)
     after_m = await challenge_repository.get_measurement_map(db, final.health_record_id)
     checkpoints = [ProgramCheckpoint(week=0, **_snapshot(basis, before_m).model_dump())]
-    for c in cycles[:PROGRAM_CYCLES]:
-        r = await challenge_repository.get_reassessment(db, c.cycle_id)
-        if r is not None:
-            m = await challenge_repository.get_measurement_map(db, r.health_record_id)
-            checkpoints.append(ProgramCheckpoint(week=c.cycle_number * CYCLE_WEEKS, **_snapshot(r, m).model_dump()))
+    for c, r in reassessed:
+        m = await challenge_repository.get_measurement_map(db, r.health_record_id)
+        checkpoints.append(ProgramCheckpoint(week=c.cycle_number * CYCLE_WEEKS, **_snapshot(r, m).model_dump()))
 
     rates = {s.cycle_id: s.cycle_rate for s in await list_cycles(db, user_id)}
     before_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, basis.health_record_id)}
     after_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, final.health_record_id)}
     return ProgramReviewResult(
+        weeks_done=last_cycle.cycle_number * CYCLE_WEEKS,
         before=_snapshot(basis, before_m), after=_snapshot(final, after_m), checkpoints=checkpoints,
         cycles=[ProgramCycleRate(cycle_number=c.cycle_number, status=c.status, cycle_rate=rates.get(c.cycle_id, 0.0))
-                for c in cycles[:PROGRAM_CYCLES]],
+                for c in cycles],
         models=await _model_changes(db, before_p, after_p),
         bp_note=BP_NOTE,
     )
