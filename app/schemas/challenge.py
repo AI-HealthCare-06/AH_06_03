@@ -172,6 +172,7 @@ class ModelChange(BaseModel):
     after_probability: float | None
     model_version: str | None
     comparable: bool  # 둘 다 완료 + 같은 모델 버전일 때만 비교 표시 (NFR-ARCH-004)
+    reason: str | None = None  # 비교 못 하는 이유: missing / skipped / model_version_changed
     before_similarity_level: str | None = None
     after_similarity_level: str | None = None
 

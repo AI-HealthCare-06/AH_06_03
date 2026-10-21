@@ -22,6 +22,8 @@ import paeon_models
 SPEC_A=json.loads(paeon_models.SPEC_A.read_text(encoding="utf-8"))
 SPEC_B=json.loads(paeon_models.SPEC_B.read_text(encoding="utf-8"))
 
+CURRENT_VERSION = {"MODEL_A": SPEC_A.get("version"), "MODEL_B": SPEC_B.get("version")}
+
 def run_model_a(user:dict) -> dict:
     """모델 A를 실행하고 결과를 반환한다"""
     return paeon_models.predict_model_a(user, spec=SPEC_A)
