@@ -360,7 +360,12 @@ function showForm() {
   goStep(0);
 }
 
-document.getElementById('edit-btn').addEventListener('click', () => {
+// 챌린지를 시작한 뒤에는 처음 입력(전·후 비교의 기준)을 고칠 수 없다(서버 409 HEALTH_RECORD_LOCKED).
+const LOCK_TITLE = '처음 입력은 고칠 수 없어요';
+const LOCK_MSG = '챌린지를 시작한 뒤에는 처음 입력한 건강정보를 고칠 수 없어요. 처음 값은 4주·12주 변화를 비교하는 기준이에요. 요즘 수치는 주간 혈압 기록이나 4주 재입력에 남겨 주세요.';
+
+document.getElementById('edit-btn').addEventListener('click', async () => {
+  if (localStorage.getItem('paeon-cycle')) { await confirmDialog(LOCK_TITLE, LOCK_MSG, '확인'); return; }
   fillForm(JSON.parse(localStorage.getItem('paeon-health')));
   showForm();
   goStep(REVIEW);
@@ -467,6 +472,27 @@ goStep(0);
 const existingHealth = JSON.parse(localStorage.getItem('paeon-health') || 'null');
 if (existingHealth) showSummary();
 
+// 이미 분석한 사람이 값을 고쳐 저장하면, 새 값으로 다시 분석할지 묻는다(안 하면 결과는 예전 값 그대로).
+async function offerReanalysis(before, after) {
+  const L = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+  const same = (k) => JSON.stringify(before[k]) === JSON.stringify(after[k]);
+  if (!L('paeon-prediction') || Object.keys(after).filter(k => k !== 'recorded_at').every(same)) return;
+  if (!(await confirmDialog('새 값으로 다시 분석할까요?', '고친 값이 저장됐어요. 다시 분석하지 않으면 결과 화면은 예전 값 기준으로 남아 있어요.', '다시 분석하기'))) return;
+  const building = progressOverlay('분석을 다시<br>하는 중이에요', '바뀐 정보로 결과를 새로 계산하고 있어요');
+  try {
+    const r = await apiRequestPrediction(L('paeon-profile'), L('paeon-eligibility'), L('paeon-health'), L('paeon-survey'));
+    localStorage.setItem('paeon-prediction', JSON.stringify(r.data));
+    await building.finish();
+    location.href = 'result.html';
+  } catch (e) { building.cancel(); showError(friendlyError(e)); }
+}
+
+// 확인 화면에서 저장할 때 비어 있는 필수 칸(예전에 만든 기록 등)이 있으면 브라우저가 말없이 막으므로, 그 칸의 단계로 보내서 알려 준다.
+form.addEventListener('invalid', (e) => {
+  const k = STEPS.findIndex(st => st.box.contains(e.target));
+  if (k >= 0 && stepIdx !== k) { goStep(k, true); setTimeout(() => e.target.reportValidity(), 0); }
+}, true);
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (stepIdx < REVIEW) { goNext(); return; }   // 입력 중 Enter는 다음 질문으로
@@ -483,13 +509,15 @@ form.addEventListener('submit', async (event) => {
     localStorage.setItem('paeon-health', JSON.stringify(payload));
     if (existingHealth) {
       showSummary();
+      await offerReanalysis(existingHealth, payload);
     } else {
       document.getElementById('success-modal').style.display = 'flex';
     }
   } catch (e) {
-    showError(e.message);
     submitBtn.disabled = false;
     submitBtn.textContent = '생활습관 설문으로';
+    if (e.code === 'HEALTH_RECORD_LOCKED') { showSummary(); await confirmDialog(LOCK_TITLE, LOCK_MSG, '확인'); return; }
+    showError(e.message);
   }
 });
 </script>

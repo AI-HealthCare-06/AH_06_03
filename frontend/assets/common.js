@@ -213,7 +213,7 @@ function loggedIn(){ return !!PaeonTokens.access(); }
 
 // 하단 탭 5개. 챌린지는 진행 중인 사이클이 있으면 수행 화면, 없으면 시작 화면으로 간다.
 const NAV_ITEMS = [
-  { icon: ICON.record, label: '내 변화', href: 'trend.html', pages: ['trend.html', 'twelve-weeks.html', 'reassessment.html'] },
+  { icon: ICON.record, label: '내 변화', href: 'trend.html', pages: ['trend.html', 'twelve-weeks.html', 'reassessment.html', 'program-review.html'] },
   { icon: ICON.challenge, label: '챌린지', href: localStorage.getItem('paeon-cycle') ? 'challenge-progress.html' : 'challenges.html', pages: ['challenges.html', 'challenge-progress.html', 'badges.html'] },
   { icon: ICON.home, label: '홈', href: 'dashboard.html', pages: ['dashboard.html', 'plan.html', 'health-info.html', 'survey.html', 'review.html', 'result.html', 'calendar-diary.html'] },
   { icon: ICON.community, label: '커뮤니티', href: 'feed.html', pages: ['feed.html', 'write.html', 'post.html', 'nickname.html', 'common-challenges.html', 'common-challenge.html', 'party.html', 'party-start.html', 'party-create.html', 'party-home.html'] },
@@ -262,14 +262,20 @@ function setupProgress() {
 }
 
 // "정말 할까요?" 확인 창. 확인하면 true, 취소(버튼·바깥 클릭·Esc)하면 false로 끝나는 Promise를 돌려준다.
-function confirmDialog(title, message, okLabel = '확인') {
+// options = [[코드, 라벨], ...]를 주면 선택지를 같이 보여 주고, 확인하면 {code}(고르지 않으면 null)를, 취소하면 false를 돌려준다.
+function confirmDialog(title, message, okLabel = '확인', options) {
   return new Promise(resolve => {
     const wrap = document.createElement('div');
     wrap.className = 'confirm-backdrop';
     wrap.innerHTML = `<div class="confirm-card" role="dialog" aria-modal="true" aria-label="${title}">
       <b>${title}</b><p>${message}</p>
+      ${options ? `<div class="confirm-opts">${options.map(o => `<label><input type="radio" name="confirm-opt" value="${o[0]}"><span>${o[1]}</span></label>`).join('')}</div>` : ''}
       <div class="confirm-actions"><button type="button" class="ghost" data-act="no">취소</button><button type="button" class="cta" data-act="yes">${okLabel}</button></div></div>`;
-    const done = (v) => { document.removeEventListener('keydown', onKey); wrap.remove(); resolve(v); };
+    const done = (v) => {
+      const picked = wrap.querySelector('input[name="confirm-opt"]:checked');
+      document.removeEventListener('keydown', onKey); wrap.remove();
+      resolve(options && v ? { code: picked ? picked.value : null } : v);
+    };
     const onKey = (e) => { if (e.key === 'Escape') done(false); };
     wrap.addEventListener('click', (e) => { if (e.target === wrap) done(false); else if (e.target.dataset.act) done(e.target.dataset.act === 'yes'); });
     document.addEventListener('keydown', onKey);
@@ -363,10 +369,18 @@ function adviceBannerHtml(pred, health) {
   return adviceAcked() ? adviceCompactHtml() : adviceFullHtml(title);
 }
 
+// 체험 모드: 서버가 3일치 기록 뒤 나머지를 가상 기록으로 채운 사이클이면(demo_fill) 비교 화면에서 그 사실과 패턴을 알린다.
+const DEMO_FILL_TEXT = { steady: '꾸준히 한 4주', wobble: '중간에 흔들린 4주', fade: '후반에 놓친 4주' };
+function demoFillHtml(rv) {
+  const t = rv && rv.demo_fill && DEMO_FILL_TEXT[rv.demo_fill];
+  return t ? `<div class="callout"><b>체험용 가상 기록이 섞여 있어요</b><br>실제 4주는 이렇게 흔들리는 경우가 많아서, 이 4주는 "${t}" 모습으로 채웠어요. 직접 남긴 3일 기록과는 상관없이 정해져요.</div>` : '';
+}
+
 // 모델 A 버전이 바뀌어 전·후를 비교할 수 없을 때(comparable=false, 둘 다 분석 완료) 비교 줄 대신 안내한다. 오류가 아니다.
 function modelANoticeHtml(models) {
   const a = (models || []).find(m => m.model_code === 'MODEL_A');
-  return a && !a.comparable && a.before_status === 'completed' && a.after_status === 'completed'
+  const changed = a && !a.comparable && (a.reason === 'model_version_changed' || (!a.reason && a.before_status === 'completed' && a.after_status === 'completed'));
+  return changed
     ? '<p class="hint" style="margin:0 0 8px">모델이 업데이트되어 이번에는 비교하지 않아요. 다음 4주부터 비교해요.</p>' : '';
 }
 
