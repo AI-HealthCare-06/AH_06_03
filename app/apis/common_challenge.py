@@ -1,11 +1,12 @@
-"""공통 챌린지. 이용자용(router)은 참여·인증·순위 조회, 관리자용(admin_router)은 만들기·고치기·순위 확정.
-
-건강정보 동의와 상관없이 로그인한 회원이면 쓸 수 있다. 관리자 구분은 app/apis/admin.py의 require_admin을 그대로 쓴다.
+"""
+목록·상세는 로그인한 회원이면 볼 수 있다. 참여·인증은 건강정보 동의가 필요하다
+(동의를 철회하면 참여·인증 기록을 지우므로, 로그인이 남아 있어도 다시 쌓이지 않게 막는다).
 """
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.apis.consent import require_health_consent
 
 from app.apis.admin import require_admin
 from app.apis.deps import get_current_user_id
@@ -34,12 +35,12 @@ async def challenge_detail(challenge_id: str, user_id: str = Depends(get_current
     return DataResponse(data=await svc.detail(db, user_id, challenge_id))
 
 
-@router.post("/{challenge_id}/join", status_code=status.HTTP_201_CREATED, response_model=DataResponse[JoinResult])
+@router.post("/{challenge_id}/join", status_code=status.HTTP_201_CREATED, response_model=DataResponse[JoinResult], dependencies=[Depends(require_health_consent)])
 async def join(challenge_id: str, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)):
     return DataResponse(data=await svc.join(db, user_id, challenge_id))
 
 
-@router.post("/{challenge_id}/certify", status_code=status.HTTP_201_CREATED, response_model=DataResponse[CertifyResult])
+@router.post("/{challenge_id}/certify", status_code=status.HTTP_201_CREATED, response_model=DataResponse[CertifyResult], dependencies=[Depends(require_health_consent)])
 async def certify(
     challenge_id: str, req: CertifyRequest | None = None,
     user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db),
