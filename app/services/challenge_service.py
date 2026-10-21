@@ -13,14 +13,14 @@ from app.models.challenge import ChallengeCycle
 from app.repositories import challenge_repository, health_repository, survey_repository, user_repository
 from app.schemas.challenge import (
     AnswerOption, CycleMission, CycleResult, CycleSummary, ExcludedItem, FixedSlot, LogResult, MissionCard,
-    MissionResult, ModelChange, RecommendationResult, ReviewResult, Snapshot, SodiumResult, SurveyNeeded,
-    WeekProgress,
+    MissionResult, ModelChange, ProgramCheckpoint, ProgramCycleRate, ProgramReviewResult, RecommendationResult,
+    ReviewResult, Snapshot, SodiumResult, SurveyNeeded, WeekProgress,
 )
 
 from app.services import challenge_reward_service, challenge_rules as rules
 from app.services import health_service, prediction_job_service
 from app.services.challenge_catalog import (
-    CATEGORY_NAMES, CYCLE_DAYS, KEEP_GOING_MESSAGE, MISSION_COMPLETE_RATE, MISSIONS, PROGRAM_CYCLES,
+    CATEGORY_NAMES, CYCLE_DAYS, CYCLE_WEEKS, KEEP_GOING_MESSAGE, MISSION_COMPLETE_RATE, MISSIONS, PROGRAM_CYCLES,
     SELECTABLE_NOTICE,
 )
 from app.services.model_input import age_on
@@ -421,6 +421,32 @@ def _snapshot(record, m: dict) -> Snapshot:
         drink_amount=code_("ALCOHOL_AMOUNT"),
     )
 
+async def _model_changes(db: AsyncSession, before_p: dict, after_p: dict) -> list[ModelChange]:
+    """모델 A·B 전·후. 버전이 다르면 입력값 사진으로 지금 모델로 다시 계산해서 같은 모델끼리 비교하고,
+    비교할 수 없으면 reason으로 이유를 알린다 (4주 리뷰와 12주 리뷰가 같이 쓴다)."""
+    models = []
+    for code in ("MODEL_A", "MODEL_B"):
+        b = await prediction_job_service.current_version_view(db, before_p.get(code))
+        a = await prediction_job_service.current_version_view(db, after_p.get(code))
+        reason = prediction_job_service.comparison_reason(b, a)
+        models.append(ModelChange(
+            model_code=code,
+            before_status=b.status if b else None, before_risk_level=b.risk_level if b else None,
+            before_probability=b.score if b else None,
+            after_status=a.status if a else None, after_risk_level=a.risk_level if a else None,
+            after_probability=a.score if a else None,
+            model_version=(a or b).model_version if (a or b) else None,
+            comparable=reason is None,
+            reason=reason,
+            before_similarity_level=similarity_level_b(b.score, b.model_version)
+            if b and code == "MODEL_B" and b.status == "completed" else None,
+            after_similarity_level=similarity_level_b(a.score, a.model_version)
+            if a and code == "MODEL_B" and a.status == "completed" else None,
+            before_percentile=getattr(b, "percentile", None) if b and code == "MODEL_A" else None,
+            after_percentile=getattr(a, "percentile", None) if a and code == "MODEL_A" else None,
+        ))
+    return models
+
 
 async def get_review(db: AsyncSession, user_id: str, cycle_id: str) -> ReviewResult:
     """W11-2 전후 비교: 혈압·몸무게·허리둘레·미션 달성률·습관·모델 결과 (같은 모델 버전만)."""
@@ -437,7 +463,7 @@ async def get_review(db: AsyncSession, user_id: str, cycle_id: str) -> ReviewRes
 
     before_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, basis.health_record_id)} if basis else {}
     after_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, after.health_record_id)} if after else {}
-    models = []
+    models = await _model_changes(db, before_p, after_p)
     for code in ("MODEL_A", "MODEL_B"):
         b = await prediction_job_service.current_version_view(db, before_p.get(code))   # 버전이 다르면 지금 모델로 다시 계산
         a = await prediction_job_service.current_version_view(db, after_p.get(code))
@@ -467,5 +493,40 @@ async def get_review(db: AsyncSession, user_id: str, cycle_id: str) -> ReviewRes
         normal_weight_range=list(rng) if rng else None,
         waist_limit=rules.waist_limit(sex),
         models=models,
+        bp_note=BP_NOTE,
+    )
+
+# ---------------------------------------------------------------- 12주 처음 ↔ 마지막 비교
+async def get_program_review(db: AsyncSession, user_id: str) -> ProgramReviewResult:
+    """12주(4주 × 3번)를 마친 사람의 처음(0주) ↔ 12주 비교.
+    처음 = 1차 사이클을 시작할 때 기준이 된 건강기록, 12주 = 3차 사이클 끝 재입력.
+    모델 결과는 _model_changes로 같은 모델 버전끼리 비교한다(버전이 다르면 입력값 사진으로 다시 계산, 나이는 처음 나이).
+    3차 사이클 재입력까지 마쳐야 볼 수 있다(12주를 못 채운 경우는 PROGRAM_REVIEW_NOT_READY)."""
+    await _current_active(db, user_id)                                  # 끝난 사이클이 있으면 먼저 닫는다
+    cycles = sorted(await challenge_repository.get_cycles(db, user_id), key=lambda c: c.cycle_number)
+    last = next((c for c in cycles if c.cycle_number == PROGRAM_CYCLES), None)
+    final = await challenge_repository.get_reassessment(db, last.cycle_id) if last else None
+    first = next((c for c in cycles if c.cycle_number == 1), None)
+    basis = await challenge_repository.get_basis_record(db, user_id, first.started_on, first.cycle_id) if first else None
+    if final is None or basis is None:
+        raise AppError(404, "PROGRAM_REVIEW_NOT_READY", "12주(3차 4주 재입력)까지 마치면 볼 수 있어요.")
+
+    before_m = await challenge_repository.get_measurement_map(db, basis.health_record_id)
+    after_m = await challenge_repository.get_measurement_map(db, final.health_record_id)
+    checkpoints = [ProgramCheckpoint(week=0, **_snapshot(basis, before_m).model_dump())]
+    for c in cycles[:PROGRAM_CYCLES]:
+        r = await challenge_repository.get_reassessment(db, c.cycle_id)
+        if r is not None:
+            m = await challenge_repository.get_measurement_map(db, r.health_record_id)
+            checkpoints.append(ProgramCheckpoint(week=c.cycle_number * CYCLE_WEEKS, **_snapshot(r, m).model_dump()))
+
+    rates = {s.cycle_id: s.cycle_rate for s in await list_cycles(db, user_id)}
+    before_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, basis.health_record_id)}
+    after_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, final.health_record_id)}
+    return ProgramReviewResult(
+        before=_snapshot(basis, before_m), after=_snapshot(final, after_m), checkpoints=checkpoints,
+        cycles=[ProgramCycleRate(cycle_number=c.cycle_number, status=c.status, cycle_rate=rates.get(c.cycle_id, 0.0))
+                for c in cycles[:PROGRAM_CYCLES]],
+        models=await _model_changes(db, before_p, after_p),
         bp_note=BP_NOTE,
     )
