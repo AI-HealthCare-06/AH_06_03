@@ -1,4 +1,5 @@
-"""체험용 자동 채움: 3일치 기록을 남기면 나머지 4주(28일 모두)를 그 달성 비율대로 완료·못 함으로 채우고 사이클을 끝낸다.
+"""체험용 자동 채움: 3일치 기록을 남기면 나머지 4주(28일 모두)를 세 가지 패턴(꾸준함 / 중간에 흔들림 / 후반에 놓침) 중 하나로 채우고 사이클을 끝낸다.
+사용자의 3일 비율은 따르지 않는다(3일을 다 한 사람이 모두 "완주"로만 나오면 못 한 날·미완료 화면을 아무도 못 보므로). 패턴은 사이클 번호표로 정해 같은 사이클은 늘 같은 패턴이다.
 지인 체험(약 4일)에서 4주 전·후 비교를 보게 하려는 임시 기능이라 DEMO_AUTOFILL=1일 때만 동작한다.
 채운 기록은 note에 MARK를 남겨 구분한다(사이클·기록은 탈퇴·동의 철회 때 함께 지워진다)."""
 from datetime import timedelta
@@ -32,21 +33,49 @@ def _failed_values(code: str, sex: str, cfg: dict | None) -> dict:
     return {**v, "answer": answer}
 
 
-async def maybe_autofill(db: AsyncSession, cycle: ChallengeCycle) -> bool:
-    """채웠으면 True. 꺼져 있거나 기록한 날이 모자라거나 이미 채웠으면 False."""
+# 미션별로 "한 날"의 응답
+SUCCESS = {"SMK-1": ("not_smoked", None), "NA-1": ("left", None), "NA-2": ("not_added", None), "ACT-2": ("30plus", None),
+           "ACT-3": ("all", None), "OUT-1": ("requested", None), "BRK-1": ("ate", None), "WT-1": ("yes", None)}
+
+
+def _done_values(code: str, sex: str, cfg: dict | None) -> dict:
+    answer, quantity = SUCCESS.get(code, (None, None))
+    if code == "ALC-1":
+        quantity = 0
+    elif code == "ACT-1":
+        quantity = (cfg or {}).get("steps_target", 0)
+    v = rules.evaluate_log(code, answer, quantity, sex, cfg)
+    return {**v, "answer": answer}
+
+
+# 4주(주마다 7일) 동안 주별로 해낸 날의 비율. 실제 4주는 이렇게 흔들리는 경우가 많다.
+PATTERNS = {
+    "steady": [0.95, 0.9, 0.9, 0.95],    # 꾸준함: 거의 매일
+    "wobble": [1.0, 0.6, 0.5, 0.9],      # 중간에 흔들림: 2~3주차에 줄었다가 회복
+    "fade": [1.0, 0.75, 0.4, 0.15],      # 후반에 놓침: 갈수록 줄어듦
+}
+
+
+def pick_pattern(cycle_id: str) -> str:
+    """사이클 번호표로 패턴을 정한다(무작위처럼 골고루, 같은 사이클은 늘 같은 패턴)."""
+    return list(PATTERNS)[sum(ord(c) for c in cycle_id) % len(PATTERNS)]
+
+
+async def maybe_autofill(db: AsyncSession, cycle: ChallengeCycle) -> str | None:
+    """채웠으면 쓴 패턴 이름. 꺼져 있거나 기록한 날이 모자라거나 이미 채웠으면 None."""
     if not settings.DEMO_AUTOFILL:
-        return False
+        return None
     missions = await challenge_repository.get_cycle_missions(db, cycle.cycle_id)
     logs = await challenge_repository.get_logs(db, [cc.cycle_challenge_id for cc, _ in missions])
     if any(l.note == MARK for l in logs):
-        return False
+        return None
     days = {l.log_date for l in logs}
     if len(days) < MIN_DAYS:
-        return False
+        return None
     # 그날 미션을 모두 기록했을 때만 채운다(첫 미션만 체크했는데 사이클이 끝나 버리면 나머지 미션을 못 하므로)
     today_logged = {l.cycle_challenge_id for l in logs if l.log_date == challenge_service.today_kst()}
     if any(cc.cycle_challenge_id not in today_logged for cc, _ in missions):
-        return False
+        return None
 
     # 오늘이 마지막 날인 28일 구간으로 사이클을 옮긴다(기록한 날은 모두 이 구간 안).
     today, now = challenge_service.today_kst(), utcnow()
@@ -64,22 +93,20 @@ async def maybe_autofill(db: AsyncSession, cycle: ChallengeCycle) -> bool:
 
     span = [cycle.started_on + timedelta(days=i) for i in range(CYCLE_DAYS)]
     sex = await challenge_service._sex(db, cycle.user_id)
+    pattern = pick_pattern(cycle.cycle_id)
     for cc, ch in missions:
-        mine = [l for l in logs if l.cycle_challenge_id == cc.cycle_challenge_id]
-        done = [l for l in mine if l.status == "completed"]
-        taken = {l.log_date for l in mine}
-        free = [d for d in span if d not in taken]
-        # 28일 모두 기록을 만든다: 사용자가 해낸 비율만큼은 완료, 나머지는 못 한 날
-        want_done = min(len(free), max(0, round(len(done) / len(days) * CYCLE_DAYS) - len(done))) if done else 0
-        done_days = {free[i * len(free) // want_done] for i in range(want_done)} if want_done else set()
-        for d in free:
-            if d in done_days:
-                v = {"status": "completed", "answer": done[0].answer, "quantity": done[0].quantity, "limit_exceeded": False}
-            else:
-                v = _failed_values(ch.challenge_code, sex, cc.target_config)
-            challenge_repository.add_log(db, cc.cycle_challenge_id, d, {**v, "note": MARK}, now)
+        mine = {l.log_date: l for l in logs if l.cycle_challenge_id == cc.cycle_challenge_id}
+        for w, rate in enumerate(PATTERNS[pattern]):
+            week = span[w * 7:(w + 1) * 7]
+            have = sum(1 for d in week if d in mine and mine[d].status == "completed")
+            free = [d for d in week if d not in mine]
+            need = min(len(free), max(0, round(rate * 7) - have))
+            done_days = {free[k * len(free) // need] for k in range(need)} if need else set()
+            for d in free:                      # 빈 날은 모두 기록을 만든다: 해낸 날 또는 못 한 날
+                v = _done_values(ch.challenge_code, sex, cc.target_config) if d in done_days                     else _failed_values(ch.challenge_code, sex, cc.target_config)
+                challenge_repository.add_log(db, cc.cycle_challenge_id, d, {**v, "note": MARK}, now)
     await db.flush()
     for d in span:      # 채운 날도 기록 보상(그날 모두 완료 +5, 5일마다 +10)을 준다 — 배지만 차고 파이는 모자라 보이지 않게
         await challenge_reward_service.reward_after_log(db, cycle.user_id, d)
     await challenge_service.finalize_cycle(db, cycle)
-    return True
+    return pattern

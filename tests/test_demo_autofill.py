@@ -4,7 +4,7 @@ from datetime import date, timedelta
 import pytest
 
 from app.core.config import settings
-from app.services import challenge_service
+from app.services import challenge_service, demo_autofill_service
 from tests.conftest import make_user
 from tests.test_challenge_api import DAY1, FULL, SURVEY
 
@@ -55,21 +55,30 @@ async def test_꺼져_있으면_3일치를_남겨도_채우지_않는다(client,
     assert (await client.get("/v1/challenges/cycles/current", headers=h)).status_code == 200   # 아직 진행 중
 
 
-async def test_켜져_있으면_3일째_기록에서_채우고_사이클이_끝난다(client, db_session, today, monkeypatch):
+@pytest.mark.parametrize("pattern,status", [("steady", "completed"), ("wobble", "incomplete"), ("fade", "incomplete")])
+async def test_패턴대로_채우고_사이클이_끝난다(client, db_session, today, monkeypatch, pattern, status):
     monkeypatch.setattr(settings, "DEMO_AUTOFILL", True)
+    monkeypatch.setattr(demo_autofill_service, "pick_pattern", lambda _cid: pattern)
     h, cid, results = await start_and_log_days(client, db_session, today, 3)
     assert [r["autofilled"] for r in results] == [False, False, True]
+    assert results[-1]["autofill_pattern"] == pattern
 
-    # 사이클이 닫히고(진행 중 없음), 채운 날을 포함해 NA-2가 달성 기준을 넘는다
+    # 사이클이 닫힌다(진행 중 없음). 꾸준함은 완주, 흔들림·후반 놓침은 미완료로 끝난다
     assert (await client.get("/v1/challenges/cycles/current", headers=h)).status_code == 404
     detail = (await client.get(f"/v1/challenges/cycles/{cid}", headers=h)).json()["data"]
-    assert detail["status"] == "completed"       # 3일 모두 완료했으니 나머지도 완료로 채워져 4주 완주
+    assert detail["status"] == status
     assert detail["ended_on"] == (DAY1 + timedelta(days=2)).isoformat()      # 오늘(3일째)이 마지막 날
     assert date.fromisoformat(detail["started_on"]) == DAY1 + timedelta(days=2) - timedelta(days=27)
 
     # 4주 재입력과 전·후 비교가 바로 열린다
     r = await client.post(f"/v1/challenges/cycles/{cid}/reassessment", json=BODY, headers=h)
     assert r.status_code == 201, r.text
+
+
+def test_패턴은_사이클마다_골고루_정해지고_같은_사이클은_늘_같다():
+    ids = [f"01a15c31-{i:04d}" for i in range(60)]
+    assert {demo_autofill_service.pick_pattern(c) for c in ids} == set(demo_autofill_service.PATTERNS)
+    assert demo_autofill_service.pick_pattern(ids[0]) == demo_autofill_service.pick_pattern(ids[0])
 
 
 async def test_한_사이클에_한_번만_채운다(client, db_session, today, monkeypatch):
@@ -79,21 +88,16 @@ async def test_한_사이클에_한_번만_채운다(client, db_session, today, 
     assert r.status_code == 404      # 이미 끝난 사이클이라 더 기록할 수 없다
 
 
-async def test_28일을_모두_채우고_달성_비율을_따른다(client, db_session, today, monkeypatch):
+async def test_28일을_모두_채우고_흔들림_패턴은_주별로_줄었다_회복한다(client, db_session, today, monkeypatch):
     monkeypatch.setattr(settings, "DEMO_AUTOFILL", True)
-    h = await make_user(db_session, measurements=FULL, answers=SURVEY)
-    basis = (await client.get("/v1/health/records", headers=h)).json()["data"][0]["health_record_id"]
-    await client.post("/v1/predictions/jobs", json={"health_record_id": basis, "request_type": "initial"}, headers=h)
-    cid = (await client.post("/v1/challenges/cycles", json={"selected_code": "NA-2"}, headers=h)).json()["data"]["cycle_id"]
-    day_answers = [ANSWERS, {**ANSWERS, "NA-2": "added"}, ANSWERS]       # NA-2만 3일 중 2일 완료
-    for i, ans in enumerate(day_answers):
-        today["d"] = DAY1 + timedelta(days=i)
-        r = await log_day(client, h, ans)
-    assert r["autofilled"] is True
+    monkeypatch.setattr(demo_autofill_service, "pick_pattern", lambda _cid: "wobble")
+    h, cid, results = await start_and_log_days(client, db_session, today, 3)
+    assert results[-1]["autofilled"] is True
 
     from sqlalchemy import select
-    from app.models.challenge import Challenge, ChallengeLog, CycleChallenge
+    from app.models.challenge import Challenge, ChallengeLog, CycleChallenge, ChallengeCycle
     async with db_session() as s:
+        start = (await s.execute(select(ChallengeCycle.started_on).where(ChallengeCycle.cycle_id == cid))).scalar_one()
         rows = (await s.execute(
             select(Challenge.challenge_code, ChallengeLog.log_date, ChallengeLog.status)
             .join(CycleChallenge, CycleChallenge.cycle_challenge_id == ChallengeLog.cycle_challenge_id)
@@ -101,8 +105,12 @@ async def test_28일을_모두_채우고_달성_비율을_따른다(client, db_s
             .where(CycleChallenge.cycle_id == cid))).all()
     for code in {c for c, _, _ in rows}:                                  # 모든 미션이 28일 모두 기록을 가진다
         assert len({d for c, d, _ in rows if c == code}) == 28, code
-    na2 = [st for c, _, st in rows if c == "NA-2"]
-    assert na2.count("completed") == 19 and na2.count("failed") == 9      # 3일 중 2일 → 28일 중 약 19일 완료
+    done_by_week = [0, 0, 0, 0]
+    for c, d, st in rows:
+        if c == "NA-2" and st == "completed":
+            done_by_week[(d - start).days // 7] += 1
+    # 흔들림: 1주차 7, 2주차 4, 3주차 4(반올림 3.5), 4주차는 실제로 한 3일이 들어 있어 6 안팎
+    assert done_by_week[0] == 7 and done_by_week[1] < 7 and done_by_week[2] < done_by_week[0] and done_by_week[3] > done_by_week[2], done_by_week
 
 
 async def test_첫_미션만_기록한_3일째에는_채우지_않고_모두_기록하면_채운다(client, db_session, today, monkeypatch):
@@ -120,6 +128,7 @@ async def test_첫_미션만_기록한_3일째에는_채우지_않고_모두_기
 
 async def test_채운_날에도_파이_보상을_준다(client, db_session, today, monkeypatch):
     monkeypatch.setattr(settings, "DEMO_AUTOFILL", True)
+    monkeypatch.setattr(demo_autofill_service, "pick_pattern", lambda _cid: "steady")
     h, cid, _ = await start_and_log_days(client, db_session, today, 3)
     pie = (await client.get("/v1/pie", headers=h)).json()["data"]
     balance = pie.get("balance", pie.get("count", pie.get("total")))

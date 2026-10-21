@@ -339,7 +339,8 @@ async def record_log(
     await challenge_reward_service.reward_after_log(db, user_id, today)   # 오늘 모두 완료 +5, 5일마다 +10
     await db.commit()
     result = _log_result(log)
-    result.autofilled = await demo_autofill_service.maybe_autofill(db, cycle)   # 체험 모드(DEMO_AUTOFILL)에서만
+    result.autofill_pattern = await demo_autofill_service.maybe_autofill(db, cycle)   # 체험 모드(DEMO_AUTOFILL)에서만
+    result.autofilled = result.autofill_pattern is not None
     return result
 
 async def stop_cycle(db: AsyncSession, user_id: str, reason_code: str | None, note: str | None) -> CycleResult:
