@@ -18,6 +18,7 @@ from app.schemas.challenge import (
 )
 
 from app.services import challenge_reward_service, challenge_rules as rules
+from app.services import demo_autofill_service
 from app.services import health_service, prediction_job_service
 from app.services.challenge_catalog import (
     CATEGORY_NAMES, CYCLE_DAYS, CYCLE_WEEKS, KEEP_GOING_MESSAGE, MISSION_COMPLETE_RATE, MISSIONS, PROGRAM_CYCLES,
@@ -151,6 +152,11 @@ async def _finalize_if_ended(db: AsyncSession, cycle: ChallengeCycle, today: dat
     사이클은 미션이 모두 completed면 completed, 아니면 incomplete (REQ-CHAL-007 목표 미달)."""
     if cycle.status != "active" or today <= cycle.ended_on:
         return
+    await finalize_cycle(db, cycle)
+
+
+async def finalize_cycle(db: AsyncSession, cycle: ChallengeCycle) -> None:
+    """진행 중 사이클을 지금 닫는다(달성률 계산은 위와 같다). 체험용 자동 채움도 쓴다."""
     missions = await challenge_repository.get_cycle_missions(db, cycle.cycle_id)
     logs = await challenge_repository.get_logs(db, [cc.cycle_challenge_id for cc, _ in missions])
     all_done = True
@@ -332,7 +338,10 @@ async def record_log(
         raise AppError(409, "CHALLENGE_LOG_DUPLICATED", "오늘 기록이 이미 있습니다. 다시 시도해 주세요.")
     await challenge_reward_service.reward_after_log(db, user_id, today)   # 오늘 모두 완료 +5, 5일마다 +10
     await db.commit()
-    return _log_result(log)
+    result = _log_result(log)
+    result.autofill_pattern = await demo_autofill_service.maybe_autofill(db, cycle)   # 체험 모드(DEMO_AUTOFILL)에서만
+    result.autofilled = result.autofill_pattern is not None
+    return result
 
 async def stop_cycle(db: AsyncSession, user_id: str, reason_code: str | None, note: str | None) -> CycleResult:
     """진행 중인 사이클 중단 (REQ-CHAL-007). 중단한 사이클은 사이클 번호를 쓰지 않는다."""
@@ -494,6 +503,7 @@ async def get_review(db: AsyncSession, user_id: str, cycle_id: str) -> ReviewRes
         waist_limit=rules.waist_limit(sex),
         models=models,
         bp_note=BP_NOTE,
+        demo_fill=await demo_autofill_service.pattern_of(db, cycle.cycle_id),
     )
 
 async def get_program_review(db: AsyncSession, user_id: str) -> ProgramReviewResult:

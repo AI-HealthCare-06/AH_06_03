@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     LOGIN_MAX_FAILS_PER_IP: int = 50
     # 운영 알림(신고 누적 자동 숨김 등)을 보낼 디스코드 웹후크 주소. 비우면 보내지 않는다. 실제 값은 .env에만 적는다.
     ADMIN_ALERT_WEBHOOK: str = ""
+    # 지인 체험 전용: 3일치 챌린지 기록을 남기면 나머지 4주를 같은 비율로 채우고 사이클을 끝낸다. 정식 배포에서는 꺼 둔다(0).
+    DEMO_AUTOFILL: bool = False
 
     @property
     def admin_email_set(self) -> set[str]:
