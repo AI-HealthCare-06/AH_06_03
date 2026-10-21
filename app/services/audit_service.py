@@ -7,9 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import utcnow
 from app.models.admin_audit import AdminAuditLog
 from app.schemas.admin import AuditLogItem
+from app.services.admin_registry_service import GRANT, REVOKE
 
 VIEW_DEDUPE_SECONDS = 600
-RETENTION_DAYS = 730   # 관리자 접속 기록은 2년 보관하고, 새 기록을 남길 때 그보다 오래된 기록을 지운다
+RETENTION_DAYS = 730          # 관리자 행위 기록은 2년 보관하고, 새 기록을 남길 때 그보다 오래된 기록을 지운다
+# 관리자 권한 부여·회수 기록은 3년: 개인정보의 안전성 확보조치 기준이 개인정보취급자의 접근 권한
+# 부여·변경·말소 내역을 최소 3년 보관하라고 함 (2026-10-20 멘토링·팀 점검에서 확인)
+GRANT_RETENTION_DAYS = 1095
+GRANT_ACTIONS = (GRANT, REVOKE)
 
 
 async def record(
@@ -18,7 +23,10 @@ async def record(
 ) -> bool:
     """기록을 더한다 (commit은 부르는 쪽에서). 막 같은 기록을 남겼다면 건너뛰고 False를 돌려준다."""
     now = utcnow()
-    await db.execute(delete(AdminAuditLog).where(AdminAuditLog.created_at < now - timedelta(days=RETENTION_DAYS)))
+    await db.execute(delete(AdminAuditLog).where(
+        AdminAuditLog.created_at < now - timedelta(days=RETENTION_DAYS), AdminAuditLog.action.not_in(GRANT_ACTIONS)))
+    await db.execute(delete(AdminAuditLog).where(
+        AdminAuditLog.created_at < now - timedelta(days=GRANT_RETENTION_DAYS), AdminAuditLog.action.in_(GRANT_ACTIONS)))
     if dedupe_seconds:
         last = (await db.execute(
             select(func.max(AdminAuditLog.created_at))
