@@ -278,3 +278,25 @@ async def test_관리자가_문의를_지울_수_있다(client, db_session):
     assert (await client.delete(f"/v1/admin/inquiries/{iid}", headers=admin)).status_code == 404
     async with db_session() as s:
         assert (await s.execute(select(Inquiry))).scalars().all() == []
+
+async def test_동의를_철회하면_로그인이_남아_있어도_참여와_인증을_막는다(client, db_session):
+    from app.core.security import utcnow as _now
+    from app.models.consent import ConsentPolicy, UserConsent
+    _, admin = await make(client, db_session, ADMIN)
+    uid, u = await make(client, db_session, "u@test.kr", "철회자")
+    cid = (await open_challenge(client, admin))["challenge_id"]
+    assert (await client.post(f"/v1/common-challenges/{cid}/join", headers=u)).status_code == 201
+    async with db_session() as s:                                   # 건강정보 동의를 철회한 상태로 만든다 (팔찌는 그대로)
+        now = _now()
+        health = ConsentPolicy(policy_type="health_data", version="v4", purpose_text="a", collection_items="b",
+                               retention_policy="c", withdrawal_method="d", third_party_notice="e", published_at=now)
+        s.add(health)
+        await s.flush()
+        s.add(UserConsent(user_id=uid, policy_id=health.policy_id, status="withdrawn", consented_at=now, withdrawn_at=now))
+        await s.commit()
+    for path, body in ((f"/v1/common-challenges/{cid}/join", None), (f"/v1/common-challenges/{cid}/certify", {"steps": 8000})):
+        r = await client.post(path, json=body, headers=u)
+        assert r.status_code == 403 and r.json()["error"]["code"] == "CONSENT_WITHDRAWN"
+    assert (await client.get("/v1/common-challenges", headers=u)).status_code == 200           # 목록·상세는 볼 수 있다
+    assert (await client.get(f"/v1/common-challenges/{cid}", headers=u)).status_code == 200
+    assert (await client.get("/v1/users/me", headers=u)).status_code == 200                    # 로그인은 그대로
