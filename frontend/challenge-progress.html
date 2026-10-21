@@ -317,6 +317,7 @@ function render() {
   wireEvents();
 }
 
+const STOP_REASONS = [['no_time', '시간이 없어서'], ['too_hard', '너무 어려워서'], ['not_helpful', '도움이 안 되는 것 같아서'], ['want_result', '내 변화를 먼저 보고 싶어서'], ['other', '기타']];
 async function main() {
   try { cycle = await apiGetCurrentCycle(); }
   catch (e) { showError(friendlyError(e)); return; }
@@ -352,8 +353,9 @@ async function main() {
   ]).then(render);
   document.getElementById('stop-wrap').style.display = 'flex';
   document.getElementById('stop-btn').addEventListener('click', async () => {
-    if (!(await confirmDialog('챌린지를 중단할까요?', '지금까지 기록은 남아요. 중단하면 새 챌린지를 다시 고를 수 있어요.', '중단하기'))) return;
-    try { await apiStopCycle(); location.replace('challenges.html'); } catch (e) { showError(friendlyError(e)); }
+    const r = await confirmDialog('챌린지를 중단할까요?', '지금까지 기록은 남아요. 중단하면 새 챌린지를 다시 고를 수 있어요. 이유를 알려 주시면 더 나은 서비스를 만드는 데 도움이 돼요. (선택)', '중단하기', STOP_REASONS);
+    if (!r) return;
+    try { await apiStopCycle(r.code); location.replace('challenges.html'); } catch (e) { showError(friendlyError(e)); }
   });
 }
 

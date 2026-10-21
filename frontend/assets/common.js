@@ -262,14 +262,20 @@ function setupProgress() {
 }
 
 // "정말 할까요?" 확인 창. 확인하면 true, 취소(버튼·바깥 클릭·Esc)하면 false로 끝나는 Promise를 돌려준다.
-function confirmDialog(title, message, okLabel = '확인') {
+// options = [[코드, 라벨], ...]를 주면 선택지를 같이 보여 주고, 확인하면 {code}(고르지 않으면 null)를, 취소하면 false를 돌려준다.
+function confirmDialog(title, message, okLabel = '확인', options) {
   return new Promise(resolve => {
     const wrap = document.createElement('div');
     wrap.className = 'confirm-backdrop';
     wrap.innerHTML = `<div class="confirm-card" role="dialog" aria-modal="true" aria-label="${title}">
       <b>${title}</b><p>${message}</p>
+      ${options ? `<div class="confirm-opts">${options.map(o => `<label><input type="radio" name="confirm-opt" value="${o[0]}"><span>${o[1]}</span></label>`).join('')}</div>` : ''}
       <div class="confirm-actions"><button type="button" class="ghost" data-act="no">취소</button><button type="button" class="cta" data-act="yes">${okLabel}</button></div></div>`;
-    const done = (v) => { document.removeEventListener('keydown', onKey); wrap.remove(); resolve(v); };
+    const done = (v) => {
+      const picked = wrap.querySelector('input[name="confirm-opt"]:checked');
+      document.removeEventListener('keydown', onKey); wrap.remove();
+      resolve(options && v ? { code: picked ? picked.value : null } : v);
+    };
     const onKey = (e) => { if (e.key === 'Escape') done(false); };
     wrap.addEventListener('click', (e) => { if (e.target === wrap) done(false); else if (e.target.dataset.act) done(e.target.dataset.act === 'yes'); });
     document.addEventListener('keydown', onKey);
