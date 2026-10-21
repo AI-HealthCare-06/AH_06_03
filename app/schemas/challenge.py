@@ -88,6 +88,7 @@ class LogResult(BaseModel):
     quantity: float | None
     limit_exceeded: bool
     warning: str | None = None  # 절주 초과 경고 (REQ-CHAL-010)
+    autofilled: bool = False  # 체험 모드(DEMO_AUTOFILL)에서 3일치 기록으로 나머지 4주를 채웠다
 
 
 class WeekProgress(BaseModel):
