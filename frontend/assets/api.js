@@ -35,7 +35,7 @@ var PaeonTokens = window.PaeonTokens || (window.PaeonTokens = (function () {
 // 로컬(5500 포트)에서 열면 내 컴퓨터 서버, 아니면 배포 서버
 const API_BASE = ['5500'].includes(location.port) ? 'http://127.0.0.1:8000/v1' : 'https://54-116-113-17.sslip.io/v1';
 const USE_MOCK = true;
-// predict·auth·health·survey는 서버 연결됨. USE_MOCK(OCR 등 아직 서버 없는 것)만 true
+// predict·auth·health·survey는 서버 연결됨. USE_MOCK(아직 서버 없는 것)만 true
 const USE_MOCK_PREDICT = false;
 const USE_MOCK_AUTH = false;
 const USE_MOCK_HEALTH = false;
@@ -197,30 +197,6 @@ async function apiSubmitHealthRecord(payload) {
   }
   try { localStorage.setItem('paeon-health-record-id', id); } catch (e) {}
   return { data: { health_record_id: id } };
-}
-
-// 검진 결과지 사진 → Clova OCR → OpenAI 구조화. 혜림님이 백엔드 엔드포인트 만들면 USE_MOCK 끄기.
-async function apiOcrHealthRecord(file) {
-  if (USE_MOCK) {
-    console.log('[MOCK] apiOcrHealthRecord', file && file.name);
-    await sleep(1200);
-    return {
-      data: {
-        fields: { height_cm: 172, weight_kg: 78, waist_cm: 88, sbp: 138, dbp: 86, total_chol: 210 },
-        missing: ['fasting_glucose'],
-      },
-    };
-  }
-  const form = new FormData();
-  form.append('image', file);
-  const res = await fetch(`${API_BASE}/health/records/ocr`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${getAccessToken()}` },
-    body: form,
-  });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.error?.message || '인식에 실패했습니다');
-  return body;
 }
 
 function getAccessToken() {
