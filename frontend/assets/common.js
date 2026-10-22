@@ -416,9 +416,9 @@ function demoFillHtml(rv) {
 function demoSurveyHtml() {
   return `<div class="callout"><b>체험 소감을 남겨 주세요</b><br>결과를 보신 느낌을 알려 주시면 서비스를 고치는 데 큰 도움이 돼요.<br><a href="${DEMO_SURVEY_URL}" target="_blank" rel="noopener" style="display:inline-block; margin-top:8px; font-weight:700; color:var(--accent-d, #5C86AC)">설문 참여하기 ›</a></div>`;
 }
-// 체험이 끝났는데 3일 기록을 채우지 못해(또는 중단해) 4주 결과가 없는 사람에게 보여 주는 안내
+// 체험이 끝났는데 4주 결과를 받지 못한 사람(3일 미달·중단, 3일을 채웠지만 결과 보기를 안 누른 사람)에게 보여 주는 안내
 function demoEndedHtml() {
-  return `<div class="callout"><b>체험 기간이 끝났어요.</b><br>3일 기록을 채우지 못해 4주 결과는 없어요. 설문에 참여해 주시면 큰 도움이 돼요.<br><a href="${DEMO_SURVEY_URL}" target="_blank" rel="noopener" style="display:inline-block; margin-top:8px; font-weight:700; color:var(--accent-d, #5C86AC)">설문 참여하기 ›</a></div>`;
+  return `<div class="callout"><b>체험 기간이 끝났어요.</b><br>체험 기간이 끝나 4주 결과는 없어요. 설문에 참여해 주시면 큰 도움이 돼요.<br><a href="${DEMO_SURVEY_URL}" target="_blank" rel="noopener" style="display:inline-block; margin-top:8px; font-weight:700; color:var(--accent-d, #5C86AC)">설문 참여하기 ›</a></div>`;
 }
 // 서버가 4주를 채웠을 때: 안내창을 보여 주고 4주 재입력 화면으로 보낸다.
 async function showDemoResult(cycleId, pattern) {
