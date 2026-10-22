@@ -160,7 +160,6 @@ function row(label, b, a, unit) {
   return `<span>${label}</span><span class="v">${f(b)}</span><span class="arrow">→</span><span class="v">${f(a)}</span>`;
 }
 
-const SIM_LEVEL = { similar: '비슷한 편이에요', slightly_different: '조금 달라요', different: '많이 달라요' };
 function reviewHtml(rv) {
   const b = rv.before || {}, a = rv.after || {};
   const bp = (x) => x.sbp ? `${x.sbp}/${x.dbp}` : null;

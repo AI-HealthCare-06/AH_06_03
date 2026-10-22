@@ -339,6 +339,18 @@ function probNoteHtml(withAge, caption) {
   return `<div class="pnote"><div class="prow">${caption ? '<span class="pcap">확률은 생활습관 관리용 참고 신호예요</span>' : ''}${btn}</div><p hidden>${PROB_NOTE}${withAge ? '<br>' + AGE_NOTE : ''}</p></div>`;
 }
 
+// 모델 B 단계 이름(서버 similarity_level)
+const SIM_LEVEL = { similar: '비슷한 편이에요', slightly_different: '조금 달라요', different: '많이 달라요' };
+// 모델 B 비교 칸(내 변화 탭·12주 결과): 소제목 → 처음: ○○ → (4주 후|지금): ○○ → 변화 칩 → 안내 → 비교 기준. 4주 재입력 화면과 같은 구성이다.
+function simBoxHtml(m, afterLabel, chg) {
+  const from = SIM_LEVEL[m.before_similarity_level], to = SIM_LEVEL[m.after_similarity_level];
+  return `<div class="simbox">
+    <span class="t">생활습관·체형 비교 (혈압이 정상인 사람들과)</span>
+    ${from && to ? `<span class="s">처음: ${from} → ${afterLabel}: <b>${to}</b></span>` : ''}
+    ${chg ? `<span class="b">${chg}</span>` : ''}
+    <span class="a">허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</span></div>${simBasisHtml()}`;
+}
+
 // 모델 B "비교 기준": 확률 근거처럼 접었다 펼친다(처음 결과·4주 비교 화면)
 const SIM_BASIS = '혈압이 정상인 한국 성인(국민건강영양조사 2022~2024)과 나이, 성별, BMI, 허리둘레, 부모님 고혈압, 흡연, 음주를 비교했어요.<br>혈압이 정상인 사람들 중 가운데쯤이면 ‘비슷한 편’, 4명 중 3명 안쪽이면 ‘조금 달라요’, 그보다 다르면 ‘많이 달라요’로 보여 드려요.<br>진단이 아니라, 생활습관과 체형을 돌아보는 참고 정보예요.';
 function simBasisHtml() {
