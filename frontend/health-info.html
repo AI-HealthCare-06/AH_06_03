@@ -14,18 +14,8 @@
   .modal-backdrop{position:fixed; inset:0; background:rgba(56,64,56,.45); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100}
   .modal-card{background:#fff; border-radius:20px; padding:24px 22px; max-width:340px; width:100%; text-align:center; box-shadow:0 12px 30px rgba(56,64,56,.2)}
   .modal-card b{font-size:15px}
-  #ocr-card{background:var(--cream); border-radius:24px; padding:22px 20px; display:flex; flex-direction:column; gap:14px; border:0}
-  #ocr-card .hd{display:flex; align-items:center; gap:14px}
-  #ocr-card .ic{width:56px; height:56px; border-radius:18px; background:#fff; color:var(--muted); display:flex; align-items:center; justify-content:center; flex:none}
-  #ocr-card .soon{height:20px; padding:0 8px; border-radius:10px; background:var(--line); color:var(--body); font-size:12px; font-weight:800; display:inline-flex; align-items:center; align-self:flex-start}
-  #ocr-card .tt{font-size:16px; font-weight:800; line-height:1.35}
-  #ocr-card .hint{margin:0; font-size:13px; color:var(--body); line-height:1.6}
-  #ocr-card label.ghost{background:var(--line); border:0; height:48px; color:var(--muted); cursor:not-allowed}
-  #ocr-result .callout{margin-top:4px}
   .grid2{grid-template-columns:1fr; gap:16px}
   .grid2 > .field:empty{display:none}
-  .or{display:flex; align-items:center; gap:12px; color:var(--muted); font-size:13px}
-  .or i{flex:1; height:1px; background:var(--line)}
   .head h1{margin:0; font-size:28px; font-weight:800; letter-spacing:-.7px; line-height:1.3}
   .head p{margin:10px 0 0; font-size:14px; color:var(--body); line-height:1.6}
   .prog{display:flex; align-items:center; gap:12px; font-size:13px; font-weight:700; color:var(--body)}
@@ -66,18 +56,6 @@
             <div class="prog"><span id="prog-t"></span><i><b id="prog-b"></b></i></div>
             <div class="head"><h1 id="step-title"></h1></div>
             <div id="steps"></div>
-            <div id="ocr-card">
-              <div class="hd">
-                <span class="ic"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg></span>
-                <div style="display:flex; flex-direction:column; gap:6px"><span class="soon">준비 중</span><span class="tt">검진 결과지 사진으로<br>빠르게 입력</span></div>
-              </div>
-              <label class="ghost">
-                <span id="ocr-label-text">사진 올리기 (준비 중)</span>
-                <input type="file" accept="image/*" id="ocr-input" style="display:none" disabled>
-              </label>
-              <div id="ocr-result"></div>
-            </div>
-            <div class="or"><i></i>또는 아래에서 직접 입력<i></i></div>
 
             <div class="grid2">
               <div class="field">
@@ -257,37 +235,6 @@ const smokingUi = (h) => (h.smoking === 'current' ? (h.smoking_freq === 'sometim
 function showError(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
 function clearError() { errEl.style.display = 'none'; }
 
-const OCR_FIELD_MAP = { height_cm: 'height', weight_kg: 'weight', waist_cm: 'waist', sbp: 'sbp', dbp: 'dbp', total_chol: 'total-chol', fasting_glucose: 'glucose' };
-const OCR_FIELD_LABEL = { height_cm: '키', weight_kg: '몸무게', waist_cm: '허리둘레', sbp: '수축기 혈압', dbp: '이완기 혈압', total_chol: '총콜레스테롤', fasting_glucose: '공복혈당' };
-const ocrInput = document.getElementById('ocr-input');
-const ocrLabelText = document.getElementById('ocr-label-text');
-const ocrResult = document.getElementById('ocr-result');
-
-ocrInput.addEventListener('change', async () => {
-  const file = ocrInput.files[0];
-  if (!file) return;
-  ocrLabelText.textContent = '읽는 중...';
-  ocrResult.innerHTML = '';
-  try {
-    const res = await apiOcrHealthRecord(file);
-    const { fields, missing } = res.data;
-    let filledCount = 0;
-    Object.entries(fields).forEach(([key, val]) => {
-      const elId = OCR_FIELD_MAP[key];
-      if (elId && val != null) { document.getElementById(elId).value = val; filledCount++; }
-    });
-    const missingNames = (missing || []).map(k => OCR_FIELD_LABEL[k]).filter(Boolean);
-    ocrResult.innerHTML = missingNames.length
-      ? `<div class="callout"><b>${filledCount}개 항목을 채웠습니다</b><br>${missingNames.join(', ')}은(는) 직접 입력해주세요</div>`
-      : `<div class="callout"><b>${filledCount}개 항목을 채웠습니다</b><br>값을 확인하고 필요하면 수정해주세요</div>`;
-  } catch (e) {
-    ocrResult.innerHTML = `<div class="callout" style="border-color:var(--danger)"><b><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px; "><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.5v.5"/></svg> 인식할 수 없는 서식입니다</b><br>글자가 흐리거나 잘린 것 같아요. 아래에서 직접 입력해주세요</div>`;
-  } finally {
-    ocrLabelText.textContent = '사진 올리기 (준비 중)';
-    ocrInput.value = '';
-  }
-});
-
 function optionLabel(selectId, value) {
   const opt = Array.from(document.getElementById(selectId).options).find(o => o.value === String(value));
   return opt ? opt.textContent : value;
@@ -373,7 +320,7 @@ document.getElementById('edit-btn').addEventListener('click', async () => {
 
 // ---- 질문을 묶음(단계)으로 하나씩 보여 준다. 입력칸은 그대로고 화면에만 나눠 담는다.
 const STEPS = [
-  { title: '성별을 알려 주세요', ids: ['sex'], intro: true },
+  { title: '성별을 알려 주세요', ids: ['sex'] },
   { title: '키와 몸무게를 알려 주세요', ids: ['height', 'weight'] },
   { title: '혈압을 알려 주세요', ids: ['sbp', 'dbp'] },
   { title: '허리둘레를 알려 주세요', ids: ['waist'] },
@@ -389,7 +336,6 @@ let stepIdx = 0, backToReview = false;
 STEPS.forEach((st) => {
   const box = document.createElement('div');
   box.className = 'step';
-  if (st.intro) { box.appendChild(document.getElementById('ocr-card')); box.appendChild(document.querySelector('.or')); }
   st.ids.forEach((id) => box.appendChild(document.getElementById(id).closest('.field')));
   st.box = box;
   stepsBox.appendChild(box);
