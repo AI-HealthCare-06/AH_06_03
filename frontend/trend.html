@@ -233,38 +233,9 @@ function twelveSection(cycles) {
     ${ps.slice(0, 3).map(p => `<a class="wk${p.running ? ' run' : ''}" href="${p.running ? 'challenge-progress.html' : 'twelve-weeks.html'}"><div class="tx"><b>${p.n}번째 12주 <em>· ${p.running ? '진행 중' : '완료'}</em></b><span>${mdKo(p.start)}${p.end ? ' ~ ' + mdKo(p.end) : ' 시작'} · ${p.running ? `4주 ${p.done}번 마침` : p.rate != null ? `평균 달성률 ${p.rate}%` : ''}</span></div>${p.running ? '' : ICON.chevron}</a>`).join('')}</div>`;
 }
 
-function renderCompare(rv) {
-  const c = cycleOf(rv), b = rv.before || {}, a = rv.after || {}, m = modelA(rv), cmpA = m && m.comparable;
-  const mB = (rv.models || []).find(x => x.model_code === 'MODEL_B' && x.comparable);
-  const chg = mB ? simChangeText(mB.before_similarity_level, mB.after_similarity_level) : '';
-  const rate = c.cycle_rate != null ? Math.round(c.cycle_rate * 100) + '%' : '—';
-  const pts = b.sbp != null && a.sbp != null ? [{ v: b.sbp, d: '시작' }, { v: a.sbp, d: '4주 후' }] : [];
-  $('app').innerHTML = `<div class="page-bar" style="margin-bottom:-8px"><a class="back" href="#" id="cmp-back" aria-label="뒤로">${ICON.back}</a><span class="ttl">4주 전·후 비교</span></div>
-    ${demoFillHtml(rv)}
-    <div class="cmphd"><span class="s">${rv.cycle_number}차 챌린지${c.started_on ? ' · ' + mdKo(c.started_on) + (c.ended_on ? ' ~ ' + mdKo(c.ended_on) : '') : ''}</span><div class="big">4주 동안<br>이렇게 달라졌어요</div></div>
-    ${pts.length ? `<div class="cbox"><div class="hd"><span style="font-size:15px;font-weight:800;color:var(--ink)">수축기 혈압</span><span>mmHg</span></div>${lineChart({ points: pts, W: 310, H: 170, ref: 140, refLabel: '기준 140', color: '#243749', labelFont: 13, big: true })}</div>` : ''}
-    <div class="tb"><div class="th"><span>항목</span><span>시작</span><span>4주 후</span></div>
-      ${[['혈압', bpText(b), bpText(a)], ['체중', unit(b.weight_kg, 'kg'), unit(a.weight_kg, 'kg')], ['허리둘레', unit(b.waist_cm, 'cm'), unit(a.waist_cm, 'cm')], ['챌린지 달성률', '—', rate]]
-        .concat(cmpA ? [['건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')]] : [])
-        .concat(cmpA && typeof m.before_percentile === 'number' && typeof m.after_percentile === 'number' ? [['같은 성별·연령대(참고용)', `상위 ${Math.max(1, Math.round(m.before_percentile))}%`, `상위 ${Math.max(1, Math.round(m.after_percentile))}%`]] : [])
-        .map(r => `<div class="rw"><span>${r[0]}</span><span>${esc(r[1])}</span><span>${esc(r[2])}</span></div>`).join('')}</div>
-    ${cmpA && (probText(m.before_probability) || probText(m.after_probability)) ? probNoteHtml(false, true) : ''}
-    <div class="hab"><div class="t">습관 변화</div>
-      <div class="rw"><span>흡연</span><span>${SMOKING[b.smoking] || '—'} → <b>${SMOKING[a.smoking] || '—'}</b></span></div>
-      <div class="rw"><span>음주</span><span>${DRINK[b.drink_freq] || '—'} → <b>${DRINK[a.drink_freq] || '—'}</b></span></div></div>
-    ${modelANoticeHtml(rv.models)}
-    ${mB ? simBoxHtml(mB, '4주 후', chg) : ''}
-    <div class="small" style="font-size:13px; line-height:1.7">진단이 아닌 참고 정보입니다. 정확한 판단은 의료진과 상담하세요.</div>
-    ${demoSurveyHtml(rv)}
-    ${rv.cycle_number < rv.total_cycles ? `<a class="cta" style="height:56px; border-radius:28px; font-size:17px" href="challenges.html">${rv.cycle_number + 1}차 챌린지 시작하기</a>` : ''}
-    <a class="ghost" href="twelve-weeks.html">12주 기록 보기</a>`;
-  $('cmp-back').addEventListener('click', (e) => { e.preventDefault(); renderList(); window.scrollTo(0, 0); });
-  window.scrollTo(0, 0);
-}
-
 document.addEventListener('click', (e) => {
   const b = e.target.closest('#to-cmp');
-  if (b && DATA) renderCompare(DATA.reviews.find(r => r.cycle_id === b.dataset.id));
+  if (b) location.href = 'reassessment.html?cycle=' + encodeURIComponent(b.dataset.id);   // 4주를 마치고 바로 보는 결과 화면과 같은 화면
 });
 
 (async () => {
