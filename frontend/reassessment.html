@@ -172,6 +172,7 @@ function reviewHtml(rv) {
       ${from && to ? `<p class="bsim">처음: ${from} → 4주 후: <b>${to}</b></p>` : ''}
       ${chg ? `<div class="chip">${chg}</div>` : ''}
       <p class="bnote" style="word-break:keep-all; text-wrap:balance">허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</p>
+      ${simBasisHtml()}
     </div>`;
   }).join('');
   return demoFillHtml(rv) + `

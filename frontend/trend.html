@@ -251,7 +251,7 @@ function renderCompare(rv) {
       <div class="rw"><span>흡연</span><span>${SMOKING[b.smoking] || '—'} → <b>${SMOKING[a.smoking] || '—'}</b></span></div>
       <div class="rw"><span>음주</span><span>${DRINK[b.drink_freq] || '—'} → <b>${DRINK[a.drink_freq] || '—'}</b></span></div></div>
     ${modelANoticeHtml(rv.models)}
-    ${chg ? `<div class="simbox"><span class="a">혈압이 정상인 사람들의 전체 자료와 비교했어요</span><span class="b">${chg}</span><span class="a">허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</span></div>` : ''}
+    ${chg ? `<div class="simbox"><span class="a">혈압이 정상인 사람들의 전체 자료와 비교했어요</span><span class="b">${chg}</span><span class="a">허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</span></div>${simBasisHtml()}` : ''}
     <div class="small" style="font-size:13px; line-height:1.7">진단이 아닌 참고 정보입니다. 정확한 판단은 의료진과 상담하세요.</div>
     ${rv.cycle_number < rv.total_cycles ? `<a class="cta" style="height:56px; border-radius:28px; font-size:17px" href="challenges.html">${rv.cycle_number + 1}차 챌린지 시작하기</a>` : ''}
     <a class="ghost" href="twelve-weeks.html">12주 기록 보기</a>`;

@@ -339,6 +339,14 @@ function probNoteHtml(withAge, caption) {
   return `<div class="pnote"><div class="prow">${caption ? '<span class="pcap">확률은 생활습관 관리용 참고 신호예요</span>' : ''}${btn}</div><p hidden>${PROB_NOTE}${withAge ? '<br>' + AGE_NOTE : ''}</p></div>`;
 }
 
+// 모델 B "비교 기준": 확률 근거처럼 접었다 펼친다(처음 결과·4주 비교 화면)
+const SIM_BASIS = '혈압이 정상인 한국 성인(국민건강영양조사 2022~2024)과 나이, 성별, BMI, 허리둘레, 부모님 고혈압, 흡연, 음주를 비교했어요.<br>혈압이 정상인 사람들 중 가운데쯤이면 ‘비슷한 편’, 4명 중 3명 안쪽이면 ‘조금 달라요’, 그보다 다르면 ‘많이 달라요’로 보여 드려요.<br>진단이 아니라, 생활습관과 체형을 돌아보는 참고 정보예요.';
+function simBasisHtml() {
+  const chev = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6"/></svg>';
+  const btn = `<button type="button" aria-expanded="false" onclick="const p = this.closest('.pnote').querySelector('p'); p.hidden = !p.hidden; this.setAttribute('aria-expanded', String(!p.hidden))">비교 기준${chev}</button>`;
+  return `<div class="pnote"><div class="prow">${btn}</div><p hidden>${SIM_BASIS}</p></div>`;
+}
+
 // 모델 B: 서버가 주는 similarity_level(similar / slightly_different / different)을 말로만 보여 준다. 화면에서 기준값을 계산하지 않는다.
 // 값이 아직 없으면(서버 미지원) 판정 문장은 빼고 설명만 보인다.
 const SIM_NOW = { similar: '혈압이 정상인 사람들과 비슷한 편이에요', slightly_different: '혈압이 정상인 사람들과 조금 달라요', different: '혈압이 정상인 사람들과 많이 달라요' };
