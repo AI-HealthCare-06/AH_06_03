@@ -527,24 +527,6 @@ async def get_review(db: AsyncSession, user_id: str, cycle_id: str) -> ReviewRes
     before_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, basis.health_record_id)} if basis else {}
     after_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, after.health_record_id)} if after else {}
     models = await _model_changes(db, before_p, after_p)
-    for code in ("MODEL_A", "MODEL_B"):
-        b = await prediction_job_service.current_version_view(db, before_p.get(code))   # 버전이 다르면 지금 모델로 다시 계산
-        a = await prediction_job_service.current_version_view(db, after_p.get(code))
-        reason = prediction_job_service.comparison_reason(b, a)
-        models.append(ModelChange(
-            model_code=code,
-            before_status=b.status if b else None, before_risk_level=b.risk_level if b else None,
-            before_probability=b.score if b else None,
-            after_status=a.status if a else None, after_risk_level=a.risk_level if a else None,
-            after_probability=a.score if a else None,
-            model_version=(a or b).model_version if (a or b) else None,
-            comparable=reason is None,
-            reason=reason,
-            before_similarity_level=similarity_level_b(b.score, b.model_version)
-            if b and code == "MODEL_B" and b.status == "completed" else None,
-            after_similarity_level=similarity_level_b(a.score, a.model_version)
-            if a and code == "MODEL_B" and a.status == "completed" else None,
-        ))
 
     return ReviewResult(
         cycle_id=cycle.cycle_id, cycle_number=cycle.cycle_number, total_cycles=PROGRAM_CYCLES,

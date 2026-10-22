@@ -286,3 +286,11 @@ def test_DEMO_AUTOFILL_END_형식이_틀리면_경고하고_무시한다(monkeyp
     assert settings.demo_end is None
     monkeypatch.setattr(settings, "DEMO_AUTOFILL_END", "2026-10-25")
     assert settings.demo_end == date(2026, 10, 25)
+
+
+async def test_비교_화면의_모델_결과는_모델마다_한_번씩만_나온다(client, db_session, today, monkeypatch):
+    monkeypatch.setattr(settings, "DEMO_AUTOFILL", True)
+    h, cid, _ = await start_and_log_days(client, db_session, today, 3)
+    await client.post(f"/v1/challenges/cycles/{cid}/reassessment", json=BODY, headers=h)
+    rv = (await client.get(f"/v1/challenges/cycles/{cid}/review", headers=h)).json()["data"]
+    assert [m["model_code"] for m in rv["models"]] == ["MODEL_A", "MODEL_B"], rv["models"]      # 이전에는 같은 모델이 두 번씩 나왔다
