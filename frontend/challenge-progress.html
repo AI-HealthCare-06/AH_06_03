@@ -91,6 +91,7 @@
       <div class="screen">
         <div id="err" class="callout" style="display:none"></div>
         <div id="ring-wrap"></div>
+        <div id="demo-block"></div>
         <div id="info-row" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; align-items:stretch">
           <div id="bp-section" style="display:flex"></div>
           <div id="badge-slot" style="display:flex"></div>
@@ -221,7 +222,8 @@ function missionCardHtml(m, d, editable) {
 
 function dayDetailHtml() {
   const dt = dateForIdx(selectedIdx), d = iso(dt);
-  const editable = cycle.status === 'active' && selectedIdx === todayIdx();
+  const closed = cycle.demo && cycle.demo.phase === 'finish_only';
+  const editable = cycle.status === 'active' && selectedIdx === todayIdx() && !closed;
   let hint = '';
   if (selectedIdx < todayIdx()) hint = '<p class="hint-day">지난 기록은 볼 수만 있어요</p>';
   else if (selectedIdx > todayIdx()) hint = '<p class="hint-day">아직 오지 않은 날짜예요</p>';
@@ -276,12 +278,10 @@ async function record(code, answer, quantity) {
   showError('');
   try {
     const saved = await apiRecordChallengeLog(code, answer, quantity);
-    if (saved && saved.autofilled) {   // 체험 모드: 서버가 3일치 기록으로 나머지 4주를 채우고 사이클을 끝냈다
+    if (saved && saved.autofilled) {   // 체험 모드: 서버가 3일 기록으로 나머지 4주를 채우고 사이클을 끝냈다
       const cid = cycle.cycle_id;
       cacheCycle(null);
-      const pn = DEMO_FILL_NAME[saved.autofill_pattern] || '';
-      await noticeDialog('4주 체험 결과를 준비했어요', '<span style="display:block;text-wrap:balance;margin-top:10px">체험판에서는 직접 기록하신 3일을 제외한 나머지 기간을 가상 기록으로 채웠어요.</span>'+(pn ? '<span style="display:block;text-wrap:balance;margin-top:10px">이번 체험에는 <b>‘'+pn+'’</b> 패턴이 적용됐어요. 패턴은 실제 기록과 무관하게 미리 배정돼요.</span>' : '')+'<span style="display:block;text-wrap:balance;margin-top:10px">따라서 달성률에는 가상 기록이 포함되어 있으며, 실제 참여 결과를 의미하지 않아요.</span><span style="display:block;text-wrap:balance;margin-top:10px">이제 현재 상태를 입력하고 4주&nbsp;전후의 변화를 확인해 보세요!</span>', '지금 상태 입력하기');
-      location.replace('reassessment.html?cycle=' + encodeURIComponent(cid));
+      await showDemoResult(cid, saved.autofill_pattern);
       return;
     }
     partialFor = null;
@@ -298,10 +298,42 @@ async function record(code, answer, quantity) {
     document.querySelectorAll('.mrow.done').forEach(r => { if (!doneBefore.has(r.querySelector('.nm').textContent)) r.querySelector('.ck i').classList.add('pop'); });
     const pieNow = (document.querySelector('.ring .cnt b') || {}).textContent;
     if (pieBefore && pieNow && pieBefore !== pieNow) { const d = document.querySelector('.ring .dish'); if (d) d.classList.add('bump'); }
+  } catch (e) {
+    showError(friendlyError(e));
+    if (e.code === 'DEMO_RECORDING_CLOSED') { try { cycle = await apiGetCurrentCycle(); render(); } catch (e2) { /* 안내만 */ } }
+  }
+}
+
+async function finishDemo() {
+  showError('');
+  const d = cycle.demo;
+  let confirm = false;
+  if (d.phase === 'finish_today' && d.unlogged_today > 0) {
+    const ok = await confirmDialog('기록하지 않은 미션이 있어요', '마치면 이 챌린지에는 더 기록할 수 없어요.<br>오늘 남은 미션은 기록하지 않고 마칠까요?', '그래도 마치기', undefined, '기록하러 가기');
+    if (!ok) return;
+    confirm = true;
+  }
+  const btn = document.getElementById('demo-finish');
+  if (btn) btn.disabled = true;   // 빠르게 두 번 눌러도 한 번만 보낸다
+  try {
+    const cid = cycle.cycle_id;
+    const r = await apiDemoFinish(confirm);
+    await showDemoResult(r.cycle_id || cid, r.autofill_pattern);
   } catch (e) { showError(friendlyError(e)); }
+  finally { if (btn) btn.disabled = false; }
+}
+
+function demoBlockHtml() {
+  const d = cycle.demo;
+  if (!d || cycle.status !== 'active') return '';
+  if (d.phase === 'finish_today') return `<div class="callout" style="margin-top:12px"><b>오늘이 3번째 기록일이에요</b><br>마치면 나머지 기간을 채워 4주 결과를 보여 드려요. 이 챌린지에는 더 기록할 수 없어요.</div><button type="button" class="cta" id="demo-finish" style="margin-top:10px">오늘 기록 마치고 4주 결과 보기</button>`;
+  if (d.phase === 'finish_only') return `<div class="callout" style="margin-top:12px"><b>체험 기록은 3일까지예요</b><br>결과 보기를 눌러 4주 결과를 확인해 주세요.</div><button type="button" class="cta" id="demo-finish" style="margin-top:10px">4주 결과 보기</button>`;
+  return `<p class="hint-day" style="margin-top:12px">체험: 서로 다른 3일을 기록하면 4주 결과를 볼 수 있어요 (${d.record_days}/3일)</p>`;
 }
 
 function wireEvents() {
+  const fin = document.getElementById('demo-finish');
+  if (fin) fin.addEventListener('click', finishDemo);
   document.querySelectorAll('.week .d[data-idx]').forEach(el => el.addEventListener('click', () => { selectedIdx = Number(el.dataset.idx); render(); }));
   const prev = document.getElementById('wk-prev');
   if (prev) prev.addEventListener('click', () => { weekOffset = Math.max(0, weekOffset - 1); render(); });
@@ -321,6 +353,7 @@ function wireEvents() {
 
 function render() {
   document.getElementById('ring-wrap').innerHTML = ringHtml();
+  document.getElementById('demo-block').innerHTML = demoBlockHtml();
   document.getElementById('week-strip').innerHTML = weekStripHtml();
   document.getElementById('day-detail').innerHTML = dayDetailHtml();
   document.getElementById('together').innerHTML = togetherHtml();
@@ -333,6 +366,12 @@ const STOP_REASONS = [['no_time', '시간이 없어서'], ['too_hard', '너무 �
 async function main() {
   try { cycle = await apiGetCurrentCycle(); }
   catch (e) { showError(friendlyError(e)); return; }
+  const ds = await apiDemoStatus();
+  if (ds && ds.ended && !ds.has_result) {   // 체험이 끝났는데 3일을 못 채웠거나 중단해 4주 결과가 없다
+    document.getElementById('info-row').style.display = 'none';
+    document.getElementById('day-detail').innerHTML = demoEndedHtml();
+    return;
+  }
   if (!cycle) {
     // 진행 중인 사이클이 없음: 방금 4주가 끝났으면 안내, 아니면 선택 화면으로
     let last = null;
