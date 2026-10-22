@@ -263,14 +263,14 @@ function setupProgress() {
 
 // "정말 할까요?" 확인 창. 확인하면 true, 취소(버튼·바깥 클릭·Esc)하면 false로 끝나는 Promise를 돌려준다.
 // options = [[코드, 라벨], ...]를 주면 선택지를 같이 보여 주고, 확인하면 {code}(고르지 않으면 null)를, 취소하면 false를 돌려준다.
-function confirmDialog(title, message, okLabel = '확인', options) {
+function confirmDialog(title, message, okLabel = '확인', options, cancelLabel = '취소') {
   return new Promise(resolve => {
     const wrap = document.createElement('div');
     wrap.className = 'confirm-backdrop';
     wrap.innerHTML = `<div class="confirm-card" role="dialog" aria-modal="true" aria-label="${title}">
       <b>${title}</b><p>${message}</p>
       ${options ? `<div class="confirm-opts">${options.map(o => `<label><input type="radio" name="confirm-opt" value="${o[0]}"><span>${o[1]}</span></label>`).join('')}</div>` : ''}
-      <div class="confirm-actions"><button type="button" class="ghost" data-act="no">취소</button><button type="button" class="cta" data-act="yes">${okLabel}</button></div></div>`;
+      <div class="confirm-actions"><button type="button" class="ghost" data-act="no">${cancelLabel}</button><button type="button" class="cta" data-act="yes">${okLabel}</button></div></div>`;
     const done = (v) => {
       const picked = wrap.querySelector('input[name="confirm-opt"]:checked');
       document.removeEventListener('keydown', onKey); wrap.remove();
@@ -330,13 +330,32 @@ document.addEventListener('DOMContentLoaded', () => { renderHeader(); renderNav(
 function probText(p) { return typeof p === 'number' && isFinite(p) ? (p * 100).toFixed(1) + '%' : ''; }
 // "같은 성별·연령대 상위 N%" (참고용 보조 문구. 범주 판정에는 쓰지 않는다). 값이 없으면 ''.
 function percentileText(pc) { return typeof pc === 'number' && isFinite(pc) ? `같은 성별·연령대 상위 ${Math.max(1, Math.round(pc))}%` : ''; }
-const PROB_NOTE = '일본 동맥경화학회 기준을 참고한 구간이며 한국인 자료로 검증된 진단 기준이 아닙니다. 의학적 진단·치료를 대신하지 않습니다.';
-const AGE_NOTE = '혈관 나이는 같은 성별·연령대 한국 성인 평균을 기준으로 한 추정치예요.';
+const PROB_NOTE = '10년 안에 관상동맥질환이 생길 가능성을 미국 Framingham 모델로 계산하고 한국인 평균에 맞춰 보정한 값이에요. 2% 미만 양호, 2~9% 주의, 9% 이상 높음 구간은 일본 동맥경화학회 기준을 참고했어요. 한국인 자료로 검증된 진단 기준이 아니며, 의학적 진단·치료를 대신하지 않아요. 혈관 나이는 같은 성별·연령대 한국 성인 평균을 기준으로 한 추정치예요.';
 // 확률 근거 안내: 평소에는 접혀 있고 버튼을 누르면 펼쳐진다
 function probNoteHtml(withAge, caption) {
   const chev = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6"/></svg>';
   const btn = `<button type="button" aria-expanded="false" onclick="const p = this.closest('.pnote').querySelector('p'); p.hidden = !p.hidden; this.setAttribute('aria-expanded', String(!p.hidden))">확률 근거${chev}</button>`;
-  return `<div class="pnote"><div class="prow">${caption ? '<span class="pcap">확률은 생활습관 관리용 참고 신호예요</span>' : ''}${btn}</div><p hidden>${PROB_NOTE}${withAge ? '<br>' + AGE_NOTE : ''}</p></div>`;
+  return `<div class="pnote"><div class="prow">${caption ? '<span class="pcap">확률은 생활습관 관리용 참고 신호예요</span>' : ''}${btn}</div><p hidden>${PROB_NOTE}</p></div>`;
+}
+
+// 모델 B 단계 이름(서버 similarity_level)
+const SIM_LEVEL = { similar: '비슷한 편이에요', slightly_different: '조금 달라요', different: '많이 달라요' };
+// 모델 B 비교 칸(내 변화 탭·12주 결과): 소제목 → 처음: ○○ → (4주 후|지금): ○○ → 변화 칩 → 안내 → 비교 기준. 4주 재입력 화면과 같은 구성이다.
+function simBoxHtml(m, afterLabel, chg) {
+  const from = SIM_LEVEL[m.before_similarity_level], to = SIM_LEVEL[m.after_similarity_level];
+  return `<div class="simbox">
+    <span class="t">생활습관·체형 비교 (혈압이 정상인 사람들과)</span>
+    ${from && to ? `<span class="s">처음: ${from} → ${afterLabel}: <b>${to}</b></span>` : ''}
+    ${chg ? `<span class="b">${chg}</span>` : ''}
+    <span class="a">허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</span></div>${simBasisHtml()}`;
+}
+
+// 모델 B "비교 기준": 확률 근거처럼 접었다 펼친다(처음 결과·4주 비교 화면)
+const SIM_BASIS = '혈압이 정상인 한국 성인(국민건강영양조사 2022~2024)과 나이, 성별, BMI, 허리둘레, 부모님 고혈압, 흡연, 음주를 비교했어요.<br>혈압이 정상인 사람들 중 가운데쯤이면 ‘비슷한 편’, 4명 중 3명 안쪽이면 ‘조금 달라요’, 그보다 다르면 ‘많이 달라요’로 보여 드려요.<br>진단이 아니라, 생활습관과 체형을 돌아보는 참고 정보예요.';
+function simBasisHtml() {
+  const chev = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6"/></svg>';
+  const btn = `<button type="button" aria-expanded="false" onclick="const p = this.closest('.pnote').querySelector('p'); p.hidden = !p.hidden; this.setAttribute('aria-expanded', String(!p.hidden))">비교 기준${chev}</button>`;
+  return `<div class="pnote"><div class="prow">${btn}</div><p hidden>${SIM_BASIS}</p></div>`;
 }
 
 // 모델 B: 서버가 주는 similarity_level(similar / slightly_different / different)을 말로만 보여 준다. 화면에서 기준값을 계산하지 않는다.
@@ -384,12 +403,32 @@ function adviceBannerHtml(pred, health) {
   return adviceAcked() ? adviceCompactHtml() : adviceFullHtml(title);
 }
 
-// 체험 모드: 서버가 3일치 기록 뒤 나머지를 가상 기록으로 채운 사이클이면(demo_fill) 비교 화면에서 그 사실과 패턴을 알린다.
+// 체험 모드: 서버가 3일 기록 뒤 나머지를 가상 기록으로 채운다. 패턴은 채운 순서대로 돌아가며 배정된다(코드: steady/wobble/fade). 후반에 놓침의 판정은 미완료다.
 const DEMO_FILL_NAME = { steady: '꾸준함', wobble: '중간에 흔들림', fade: '후반에 놓침' };
-const DEMO_FILL_ALL = Object.values(DEMO_FILL_NAME).join(' · ');
+const DEMO_FILL_ALL = Object.values(DEMO_FILL_NAME).join(' / ');
+const DEMO_SURVEY_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdtcpL88OAx2zzD8Gx0ujL_BAGgB-OsSLedmYa_u15tV3DYMQ/viewform';
 function demoFillHtml(rv) {
   const t = rv && rv.demo_fill && DEMO_FILL_NAME[rv.demo_fill];
-  return t ? `<div class="callout"><b>체험용 가상 기록이 섞여 있어요</b><br>실제 4주는 흔들리는 경우가 많아서, 가상 기록은 세 가지 패턴(${DEMO_FILL_ALL}) 중 <b>"${t}"</b>으로 배정되어 채워졌어요. 직접 남긴 3일 기록과는 상관없이 정해져요.</div>` : '';
+  return t ? `<div class="callout"><b>체험용 가상 기록이 섞여 있어요</b><br>직접 기록하신 3일을 제외한 나머지 기간은 가상 기록이에요. 이번 체험에는 <b>"${t}"</b> 패턴이 적용됐어요(${DEMO_FILL_ALL} 중 하나). 패턴은 실제 기록과 무관하게 미리 배정돼요.<br>따라서 달성률에는 가상 기록이 포함되어 있으며, 실제 참여 결과를 의미하지 않아요.</div>` : '';
+}
+// 4주를 마치고 결과(전·후 비교)를 보는 모든 사람에게 화면 맨 아래에서 소감 설문을 안내한다(체험 결과 유무·패턴과 상관없이).
+function demoSurveyHtml() {
+  return `<div class="callout"><b>체험 소감을 남겨 주세요</b><br>결과를 보신 느낌을 알려 주시면 서비스를 고치는 데 큰 도움이 돼요.<br><a href="${DEMO_SURVEY_URL}" target="_blank" rel="noopener" style="display:inline-block; margin-top:8px; font-weight:700; color:var(--accent-d, #5C86AC)">설문 참여하기 ›</a></div>`;
+}
+// 체험이 끝났는데 4주 결과를 받지 못한 사람(3일 미달·중단, 3일을 채웠지만 결과 보기를 안 누른 사람)에게 보여 주는 안내
+function demoEndedHtml() {
+  return `<div class="callout"><b>체험 기간이 끝났어요. 함께해 주셔서 감사해요!</b><br>체험 기간이 끝나서 이번에는 4주 결과를 보여 드릴 수 없어요. 써 보신 느낌을 설문으로 남겨 주시면 서비스를 더 좋게 만드는 데 큰 도움이 돼요.<br><a href="${DEMO_SURVEY_URL}" target="_blank" rel="noopener" style="display:inline-block; margin-top:8px; font-weight:700; color:var(--accent-d, #5C86AC)">설문 참여하기 ›</a></div>`;
+}
+// 서버가 4주를 채웠을 때: 안내창을 보여 주고 4주 재입력 화면으로 보낸다.
+async function showDemoResult(cycleId, pattern) {
+  const pn = DEMO_FILL_NAME[pattern] || '';
+  const P = (t) => `<span style="display:block;text-wrap:balance;margin-top:10px">${t}</span>`;
+  await noticeDialog('4주 체험 결과를 준비했어요',
+    P('체험판에서는 직접 기록하신 3일을 제외한 나머지 기간을 가상 기록으로 채웠어요.')
+    + (pn ? P(`이번 체험에는 <b>‘${pn}’</b> 패턴이 적용됐어요. 패턴은 실제 기록과 무관하게 미리 배정돼요.`) : '')
+    + P('따라서 달성률에는 가상 기록이 포함되어 있으며, 실제 참여 결과를 의미하지 않아요.')
+    + P('이제 현재 상태를 입력하고 4주&nbsp;전후의 변화를 확인해 보세요!'), '지금 상태 입력하기');
+  location.replace('reassessment.html?cycle=' + encodeURIComponent(cycleId));
 }
 
 // 모델 A 버전이 바뀌어 전·후를 비교할 수 없을 때(comparable=false, 둘 다 분석 완료) 비교 줄 대신 안내한다. 오류가 아니다.

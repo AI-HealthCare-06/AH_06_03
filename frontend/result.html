@@ -149,6 +149,7 @@ if (!pred) {
       <div class="desc">혈압이 정상인 사람들의 전체 자료와 비교했어요. 허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</div>
       ${SIM_NOW[b.similarity_level] ? `<div class="simnow">지금 내 몸 상태는 ${SIM_NOW[b.similarity_level]}</div>` : ''}
       ${SIM_NOW[b.similarity_level] ? `<div class="three">${Object.keys(SIM_LABEL).map(k => `<span class="${k === b.similarity_level ? 'on' : ''}">${SIM_LABEL[k]}</span>`).join('')}</div>` : ''}
+      ${simBasisHtml()}
       </div>
       ${factorBlock('MODEL_B', b, aHtml ? '비교에 쓰인 요인' : '바꿀 수 있는 요인')}`;
   }

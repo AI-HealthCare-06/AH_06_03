@@ -18,10 +18,13 @@
   .field input{font-weight:800; font-size:18px; border-radius:14px; border:2px solid transparent}
   .field input:focus{outline:0; border-color:var(--ink)}
   .field select{border-radius:14px}
-  .cmp{display:grid; grid-template-columns:1fr auto auto auto; gap:8px 12px; align-items:center; font-size:14px; background:#fff; border:1px solid var(--line); border-radius:16px; padding:14px 16px}
-  .cmp .h{font-size:12px; color:var(--muted); font-weight:700}
-  .cmp .v{font-weight:800; text-align:right}
-  .cmp .arrow{color:var(--muted)}
+  .same{display:flex; align-items:center; gap:8px; margin-top:6px; font-size:14px; font-weight:500; color:var(--body); min-height:32px}
+  .same input{width:20px; height:20px; margin:0}
+  .same em{font-style:normal; color:var(--muted)}
+  .cmp{display:grid; grid-template-columns:1fr 76px 16px 76px; gap:6px 8px; align-items:center; font-size:14px; background:#fff; border:1px solid var(--line); border-radius:16px; padding:14px 16px}
+  .cmp .h{font-size:12px; color:var(--muted); font-weight:700; text-align:center; line-height:1.2}
+  .cmp .v{font-weight:800; text-align:center}
+  .cmp .arrow{color:var(--muted); text-align:center}
   .note{font-size:12px; color:var(--muted); line-height:1.6}
   .mrow{display:flex; justify-content:space-between; font-size:14px; min-height:44px; align-items:center; border-bottom:1px solid var(--line)}
   .mrow:last-child{border-bottom:none}
@@ -29,6 +32,9 @@
   .bcmp{padding:6px 4px 2px; text-align:center}
   .bcmp .bt{font-size:13.5px; line-height:1.6; color:var(--ink); font-weight:700; margin:0 0 10px}
   .bcmp .chip{display:inline-block; height:auto; margin-top:10px; padding:8px 22px; border-radius:22px; background:var(--cream); border:0; color:var(--ink); font-size:16px; line-height:1.4; font-weight:800}
+  .subsect{font-size:16px; font-weight:800; margin:10px 0 -8px; color:var(--ink)}
+  .bcmp .bsim{font-size:15px; line-height:1.6; color:var(--ink); margin:0}
+  .bcmp .pnote{margin:0 -4px}   /* 확률 근거 상자와 같은 너비·글자 크기·왼쪽 정렬 */
   .bcmp .bnote{font-size:12px; line-height:1.7; color:var(--muted); margin:12px 0 0}
 </style>
 </head>
@@ -63,7 +69,12 @@ const DRINK = { never_lifetime: '안 마심', none_past_year: '4주간 안 마�
 function showError(msg) { const el = document.getElementById('err'); el.style.display = msg ? 'block' : 'none'; el.textContent = msg || ''; }
 const cycleId = new URLSearchParams(location.search).get('cycle');
 
+const AMOUNT = { '1_2': '1–2잔', '3_4': '3–4잔', '5_6': '5–6잔', '7_9': '7–9잔', '10plus': '10잔 이상' };
+let BEFORE = {};   // 처음(0주) 입력값. "변화 없음"을 누르면 이 값을 그대로 쓴다
+const same = (id, text) => `<label class="same"><input type="checkbox" id="${id}"> 변화 없음 <em>(${text})</em></label>`;
+
 function formHtml() {
+  const b = BEFORE;
   return `
   <p class="sect">혈압</p>
   <div class="guide">
@@ -79,24 +90,43 @@ function formHtml() {
   </div>
   <p class="sect">몸</p>
   <div class="grid2">
-    <div class="field"><label for="weight">몸무게 (kg)</label><input id="weight" type="number" step="0.1" min="30" max="200"></div>
-    <div class="field"><label for="waist">허리둘레 (cm, 선택)</label><input id="waist" type="number" step="0.1" min="50" max="150"></div>
+    <div class="field"><label for="weight">몸무게 (kg)</label><input id="weight" type="number" step="0.1" min="30" max="200">${b.weight_kg != null ? same('weight-same', `처음 ${b.weight_kg}kg`) : ''}</div>
+    <div class="field"><label for="waist">허리둘레 (cm, 선택)</label><input id="waist" type="number" step="0.1" min="50" max="150">${b.waist_cm != null ? same('waist-same', `처음 ${b.waist_cm}cm`) : ''}</div>
   </div>
   <p class="sect">흡연 · 음주</p>
   <div class="field"><label for="smoking">현재 일반담배를 피우십니까?</label>
     <select id="smoking"><option value="">선택</option><option value="current">매일 피움</option><option value="current">가끔 피움</option>
-      <option value="former">과거엔 피웠으나, 현재 피우지 않음</option><option value="never">피운 적 없음</option></select></div>
+      <option value="former">과거엔 피웠으나, 현재 피우지 않음</option><option value="never">피운 적 없음</option></select>${b.smoking ? same('smoking-same', `처음 ${SMOKING[b.smoking] || ''}`) : ''}</div>
   <div class="field"><label for="dfreq">최근 4주 동안 술을 얼마나 자주 마십니까?</label>
     <select id="dfreq"><option value="">선택</option><option value="never_lifetime">평생 술을 마셔 본 적 없음</option>
       <option value="none_past_year">최근 4주간 전혀 마시지 않았다</option><option value="lt_monthly">한 달에 1번 미만</option>
       <option value="monthly">한 달에 1번 정도</option><option value="2_4_per_month">한 달에 2–4번</option>
-      <option value="2_3_per_week">일주일에 2–3번 정도</option><option value="4plus_per_week">일주일에 4번 이상</option></select></div>
+      <option value="2_3_per_week">일주일에 2–3번 정도</option><option value="4plus_per_week">일주일에 4번 이상</option></select>${b.drink_freq ? same('drink-same', `처음 ${DRINK[b.drink_freq] || ''}${b.drink_amount ? ' · 한 번에 ' + (AMOUNT[b.drink_amount] || '') : ''}`) : ''}</div>
   <div class="field" id="damount-box" style="display:none"><label for="damount">최근 4주 동안 한 번에 술을 얼마나 마십니까?</label>
     <select id="damount"><option value="">선택</option><option value="1_2">1–2잔</option><option value="3_4">3–4잔</option>
       <option value="5_6">5–6잔</option><option value="7_9">7–9잔</option><option value="10plus">10잔 이상</option></select>
 </div>
   <p class="hint" style="font-size:13px">키·콜레스테롤·진단·가족력은 처음 값을 그대로 써요.</p>
   <button type="button" id="submit" class="cta" style="height:56px; font-size:17px">다음 · 생활습관 설문</button>`;
+}
+
+// "변화 없음": 누르면 처음 값을 채우고 그 칸을 잠근다(다시 누르면 풀린다)
+function wireSame() {
+  const link = (boxId, apply) => {
+    const box = document.getElementById(boxId);
+    if (!box) return;
+    box.addEventListener('change', () => apply(box.checked));
+  };
+  const num = (inputId, v) => (on) => { const i = document.getElementById(inputId); i.disabled = on; if (on) i.value = v; else i.value = ''; };
+  link('weight-same', num('weight', BEFORE.weight_kg));
+  link('waist-same', num('waist', BEFORE.waist_cm));
+  link('smoking-same', (on) => { const e = document.getElementById('smoking'); e.disabled = on; e.value = on ? BEFORE.smoking : ''; });
+  link('drink-same', (on) => {
+    const f = document.getElementById('dfreq'), a = document.getElementById('damount');
+    f.disabled = a.disabled = on;
+    f.value = on ? BEFORE.drink_freq : ''; a.value = on ? (BEFORE.drink_amount || '') : '';
+    f.dispatchEvent(new Event('change'));
+  });
 }
 
 function avg(a, b) { return b ? Math.round((a + b) / 2 * 10) / 10 : a; }
@@ -107,6 +137,12 @@ function collect() {
   const sbp1 = n('sbp1'), dbp1 = n('dbp1'), weight = n('weight'), smoking = s('smoking'), dfreq = s('dfreq');
   if (!sbp1 || !dbp1) throw new Error('첫 번째 혈압을 입력해 주세요.');
   if (!weight) throw new Error('몸무게를 입력해 주세요.');
+  if (sbp1 <= dbp1) throw new Error('수축기 혈압은 이완기 혈압보다 높아야 해요.');
+  // 칸에 정해 둔 범위(min·max)를 벗어난 값은 막는다(이 화면은 form이 아니라 브라우저가 대신 막아 주지 않는다)
+  for (const id of ['sbp1', 'dbp1', 'sbp2', 'dbp2', 'weight', 'waist']) {
+    const el = document.getElementById(id);
+    if (el.value !== '' && !el.checkValidity()) throw new Error(`${el.labels && el.labels[0] ? el.labels[0].textContent.replace(/\s*\(.*\)\s*$/, '') : '입력값'}은 ${el.min}~${el.max} 사이로 입력해 주세요.`);
+  }
   if (!smoking || !dfreq) throw new Error('흡연과 음주 문항을 골라 주세요.');
   const drinks = !['never_lifetime', 'none_past_year'].includes(dfreq);
   if (drinks && !s('damount')) throw new Error('한 번 음주량을 골라 주세요.');
@@ -130,18 +166,25 @@ function reviewHtml(rv) {
   const bp = (x) => x.sbp ? `${x.sbp}/${x.dbp}` : null;
   const range = rv.normal_weight_range ? `키 기준 정상 체중 ${rv.normal_weight_range[0]}–${rv.normal_weight_range[1]}kg · 허리둘레 기준 ${rv.waist_limit}cm 미만` : '';
   // 모델 A는 위험 범주로, 모델 B는 판정 없이 "닮은 정도"의 방향만 보여준다 (데이터_특성 §2.1: B 확률로 판정 금지)
-  const models = modelANoticeHtml(rv.models) + rv.models.filter(m => m.comparable).map(m => {
+  const byModel = { MODEL_A: modelANoticeHtml(rv.models), MODEL_B: '' };   // 모델마다 따로 카드로 보여 준다(번호 없이 두 칸)
+  rv.models.filter(m => m.comparable).forEach(m => {
+    byModel[m.model_code] += (() => {
     if (m.model_code === 'MODEL_A') {
-      return `<div class="mrow"><span>10년 내 심장 혈관 건강 신호</span><span>${RISK[m.before_risk_level]}${probText(m.before_probability) ? ` (${probText(m.before_probability)})` : ''} → <b>${RISK[m.after_risk_level]}${probText(m.after_probability) ? ` (${probText(m.after_probability)})` : ''}</b></span></div>${probText(m.before_probability) || probText(m.after_probability) ? probNoteHtml(false, true) : ''}`;
+      return `<div class="mrow"><span>처음 → 4주 후</span><span>${RISK[m.before_risk_level]}${probText(m.before_probability) ? ` (${probText(m.before_probability)})` : ''} → <b>${RISK[m.after_risk_level]}${probText(m.after_probability) ? ` (${probText(m.after_probability)})` : ''}</b></span></div>${probText(m.before_probability) || probText(m.after_probability) ? probNoteHtml(false, true) : ''}`;
     }
     // 서버가 주는 3단계(similar / slightly_different / different)를 말로만 비교한다. 숫자·막대는 쓰지 않는다.
     const chg = simChangeText(m.before_similarity_level, m.after_similarity_level);
+    const lv = (k) => SIM_LEVEL[k] || null;
+    const from = lv(m.before_similarity_level), to = lv(m.after_similarity_level);
     return `<div class="bcmp">
-      <p class="bt">나와 비슷한 사람들과 비교했어요</p>
+      <p class="bt">혈압이 정상인 사람들과 비교했어요</p>
+      ${from && to ? `<p class="bsim">처음: ${from} → 4주 후: <b>${to}</b></p>` : ''}
       ${chg ? `<div class="chip">${chg}</div>` : ''}
-      <p class="bnote" style="word-break:keep-all; text-wrap:balance">혈압이 정상인 사람들의 전체 자료와 비교했어요. 허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</p>
+      <p class="bnote" style="word-break:keep-all; text-wrap:balance">허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</p>
+      ${simBasisHtml()}
     </div>`;
-  }).join('');
+    })();
+  });
   return demoFillHtml(rv) + `
   <p class="sect">혈압 · 몸 변화</p>
   <div class="cmp">
@@ -159,8 +202,10 @@ function reviewHtml(rv) {
     <div class="mrow"><span>흡연</span><span>${SMOKING[b.smoking] || '—'} → <b>${SMOKING[a.smoking] || '—'}</b></span></div>
     <div class="mrow"><span>음주</span><span>${DRINK[b.drink_freq] || '—'} → <b>${DRINK[a.drink_freq] || '—'}</b></span></div>
   </div>
-  ${models ? `<p class="sect">분석 결과 변화</p><div class="cmp" style="display:block">${models}
-    </div>` : ''}
+  ${byModel.MODEL_A || byModel.MODEL_B ? `<p class="sect">분석 결과 변화</p>
+  ${byModel.MODEL_A ? `<p class="subsect">심장 혈관 건강 신호</p><div class="cmp" style="display:block">${byModel.MODEL_A}</div>` : ''}
+  ${byModel.MODEL_B ? `<p class="subsect">생활습관·체형 비교</p><div class="cmp" style="display:block">${byModel.MODEL_B}</div>` : ''}` : ''}
+  ${demoSurveyHtml(rv)}
   ${rv.cycle_number < rv.total_cycles
     ? `<a class="cta" style="height:56px; font-size:17px" href="challenges.html">${rv.cycle_number + 1}차 챌린지 시작하기</a>`
     : `<div class="callout"><b>12주 챌린지를 모두 마쳤어요!</b></div>`}`;
@@ -187,7 +232,9 @@ async function main() {
   lede.textContent = `${rv.cycle_number}차 4주가 끝났어요.
 지금 상태를 적어 주세요`;
   document.getElementById('sub').hidden = false;
+  BEFORE = rv.before || {};
   body.innerHTML = formHtml();
+  wireSame();
   const dfreq = document.getElementById('dfreq');
   dfreq.addEventListener('change', () => {
     document.getElementById('damount-box').style.display = ['', 'never_lifetime', 'none_past_year'].includes(dfreq.value) ? 'none' : 'flex';
@@ -212,6 +259,7 @@ async function main() {
         const res = (await apiCall('POST', `/challenges/cycles/${encodeURIComponent(cycleId)}/reassessment`, { measurements: draft.measurements }, '저장하지 못했습니다')).data;
         try { sessionStorage.removeItem('paeon-reassess-draft'); } catch (e) {}
         await building.finish();
+        building.cancel();   // 화면을 옮기지 않으므로 덮개를 걷어야 결과가 보인다
         lede.textContent = `${res.cycle_number}차 4주 동안의 변화예요.`;
         body.innerHTML = reviewHtml(res);
         history.replaceState(null, '', `reassessment.html?cycle=${encodeURIComponent(cycleId)}`);
@@ -220,7 +268,7 @@ async function main() {
         building.cancel();
         lede.textContent = `${rv.cycle_number}차 4주가 끝났어요.
 지금 상태를 적어 주세요`;
-        document.getElementById('sub').hidden = false; body.innerHTML = formHtml();
+        document.getElementById('sub').hidden = false; body.innerHTML = formHtml(); wireSame();
         showError(friendlyError(e));
       }
     }

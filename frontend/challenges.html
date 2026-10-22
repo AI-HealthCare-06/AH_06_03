@@ -95,6 +95,12 @@ async function main() {
     if (await apiGetCurrentCycle()) { location.replace('challenge-progress.html'); return; }
   } catch (e) { showError(friendlyError(e)); return; }
 
+  const ds = await apiDemoStatus();
+  if (ds && ds.ended && !ds.has_result) {   // 체험이 끝났는데 3일을 못 채웠거나 중단해 4주 결과가 없다
+    document.querySelector('.screen').innerHTML = demoEndedHtml();
+    return;
+  }
+
   try { (await apiCall('GET', '/challenges/participants', undefined, '')).data.forEach(x => counts[x.challenge_code] = x.participants); } catch (e) { /* 참여 인원은 없어도 진행 */ }
   let rec;
   try { rec = await apiGetChallengeRecommendations(); }
