@@ -448,8 +448,11 @@ async def submit_reassessment(db: AsyncSession, user_id: str, cycle_id: str, exa
     if freq in health_service.NON_DRINKER and "ALCOHOL_AMOUNT" in codes:
         raise AppError(422, "HEALTH_ALCOHOL_AMOUNT_NOT_ALLOWED", "술을 마시지 않으면 음주량은 보내지 않습니다.")
 
-    if await challenge_repository.get_basis_record(db, user_id, cycle.started_on, cycle.cycle_id) is None:
+    basis = await challenge_repository.get_basis_record(db, user_id, cycle.started_on, cycle.cycle_id)
+    if basis is None:
         raise AppError(409, "HEALTH_RECORD_REQUIRED", "처음 입력한 건강정보가 없습니다.")
+    first = await challenge_repository.get_measurement_map(db, basis.health_record_id)    # 키는 처음 값을 그대로 쓴다
+    health_service.check_consistency(checked, {k: m.value_num for k, m in first.items() if k == "HEIGHT" and m.value_num is not None})
     schema = await health_repository.get_active_schema(db)
     if schema is None:
         raise AppError(500, "HEALTH_SCHEMA_NOT_FOUND", "입력 양식 설정이 없습니다. 관리자에게 문의해 주세요.")
@@ -527,24 +530,6 @@ async def get_review(db: AsyncSession, user_id: str, cycle_id: str) -> ReviewRes
     before_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, basis.health_record_id)} if basis else {}
     after_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, after.health_record_id)} if after else {}
     models = await _model_changes(db, before_p, after_p)
-    for code in ("MODEL_A", "MODEL_B"):
-        b = await prediction_job_service.current_version_view(db, before_p.get(code))   # 버전이 다르면 지금 모델로 다시 계산
-        a = await prediction_job_service.current_version_view(db, after_p.get(code))
-        reason = prediction_job_service.comparison_reason(b, a)
-        models.append(ModelChange(
-            model_code=code,
-            before_status=b.status if b else None, before_risk_level=b.risk_level if b else None,
-            before_probability=b.score if b else None,
-            after_status=a.status if a else None, after_risk_level=a.risk_level if a else None,
-            after_probability=a.score if a else None,
-            model_version=(a or b).model_version if (a or b) else None,
-            comparable=reason is None,
-            reason=reason,
-            before_similarity_level=similarity_level_b(b.score, b.model_version)
-            if b and code == "MODEL_B" and b.status == "completed" else None,
-            after_similarity_level=similarity_level_b(a.score, a.model_version)
-            if a and code == "MODEL_B" and a.status == "completed" else None,
-        ))
 
     return ReviewResult(
         cycle_id=cycle.cycle_id, cycle_number=cycle.cycle_number, total_cycles=PROGRAM_CYCLES,

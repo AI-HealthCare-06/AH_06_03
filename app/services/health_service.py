@@ -32,10 +32,30 @@ METRICS = {
     "ALCOHOL_AMOUNT":  ("code", {"1_2", "3_4", "5_6", "7_9", "10plus"}),
 }
 
-NUM_RANGES = {  # 비현실적인 값 막기 (예: 화면에서 빈칸이 0으로 넘어오는 경우)
+NUM_RANGES = {  # 비현실적인 값 막기 (예: 화면에서 빈칸이 0으로 넘어오는 경우, 키 300cm·몸무게 500kg 같은 장난 입력)
+    "HEIGHT": (100, 230),
+    "WEIGHT": (20, 300),
+    "WAIST": (40, 200),
+    "SBP": (60, 260),
+    "DBP": (30, 160),
     "TOTAL_CHOL": (50, 600),
+    "HDL": (10, 150),
     "FASTING_GLUCOSE": (30, 600),
 }
+
+
+def check_consistency(checked: list[dict], known: dict[str, float] | None = None) -> None:
+    """값끼리 맞는지 본다(범위 안이어도 말이 안 되는 조합 막기). known은 이미 저장돼 있던 값(이번에 안 보낸 지표)이다.
+    - 수축기 혈압은 이완기 혈압보다 높아야 한다
+    - 키·몸무게로 계산한 BMI가 10~60이어야 한다"""
+    v = dict(known or {})
+    v.update({c["metric_code"]: c["value_num"] for c in checked if c.get("value_num") is not None})
+    if v.get("SBP") is not None and v.get("DBP") is not None and v["SBP"] <= v["DBP"]:
+        raise AppError(422, "HEALTH_VALUE_INCONSISTENT", "수축기 혈압은 이완기 혈압보다 높아야 해요. 두 값을 다시 확인해 주세요.")
+    if v.get("HEIGHT") and v.get("WEIGHT"):
+        bmi = v["WEIGHT"] / (v["HEIGHT"] / 100) ** 2
+        if not (10 <= bmi <= 60):
+            raise AppError(422, "HEALTH_VALUE_INCONSISTENT", "키와 몸무게를 같이 보면 현실적이지 않아요. 두 값을 다시 확인해 주세요.")
 
 
 NON_DRINKER = {"never_lifetime", "none_past_year"}  # 이 값이면 음주량(ALCOHOL_AMOUNT)을 묻지 않음 (명세 §1.1 H4)
@@ -144,6 +164,7 @@ async def add_measurements(
         raise AppError(422, "HEALTH_METRIC_DUPLICATED", "한 번에 같은 지표를 두 번 보냈습니다.")
 
     existing = await health_repository.get_measurements(db, record.health_record_id)
+    check_consistency(checked, {m.metric_code: m.value_num for m in existing if m.value_num is not None and m.metric_code != "BMI"})
 
     # 3-1. 안 마시는 사람인가? (이번에 보낸 음주 빈도가 있으면 그것, 없으면 상자에 있던 것)
     new_freq = next((c["value_code"] for c in checked if c["metric_code"] == "ALCOHOL_FREQ"), None)
