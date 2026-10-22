@@ -23,6 +23,7 @@ class HomeSummary(BaseModel):
     week: list[WeekDay]         # 이번 주 월~일
     today_done: int             # 오늘 구운 파이 조각
     today_total: int            # 오늘 파이 전체 조각 (진행 중인 미션 수, 사이클이 없으면 0)
+    today: date | None = None   # 서버가 정한 오늘(한국 날짜). 화면이 이 날짜로 오늘 요일을 표시한다
 
 
 @router.get("/home/summary", response_model=DataResponse[HomeSummary])

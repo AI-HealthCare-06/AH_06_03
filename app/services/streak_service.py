@@ -88,6 +88,7 @@ async def home_summary(db: AsyncSession, user_id: str, today: date) -> dict:
         "week": week,
         "today_done": today_done,
         "today_total": today_total,
+        "today": today,
     }
 
 async def participant_counts(db: AsyncSession) -> list[dict]:
