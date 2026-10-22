@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     DEMO_AUTOFILL: bool = False
     # 체험 마지막 날(YYYY-MM-DD). 이 날이 지나면 자동 채움을 멈추고, 화면은 3일을 못 채운 사람에게 체험 종료 안내를 보여 준다. 비우면 끝나지 않는다.
     DEMO_AUTOFILL_END: str = ""
+    # 팀 사전 점검 전용(로컬·임시 서버): 서버의 "오늘"을 이만큼 앞당긴다(1이면 내일, 2면 모레). 지인이 쓰는 서버에서는 반드시 0(기본값)으로 둔다.
+    DEMO_DAY_OFFSET: int = 0
 
     @property
     def demo_end(self):

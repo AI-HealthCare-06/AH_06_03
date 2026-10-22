@@ -33,8 +33,8 @@ ALC_WARNING = "오늘은 권장량을 넘었어요. 건강을 위해서는 술�
 
 
 def today_kst() -> date:
-    """사용자 기준 날짜 (한국 시간)."""
-    return (utcnow() + timedelta(hours=9)).date()
+    """사용자 기준 날짜 (한국 시간). DEMO_DAY_OFFSET이 있으면 그만큼 앞당긴다(팀 사전 점검용, 기본 0)."""
+    return (utcnow() + timedelta(hours=9, days=settings.DEMO_DAY_OFFSET)).date()
 
 
 # ---------------------------------------------------------------- 카드
