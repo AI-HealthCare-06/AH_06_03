@@ -60,8 +60,8 @@ ORDER = list(PATTERNS)         # 채운 순서대로 돌아가며 배정
 
 
 def week_goal(pattern: str, days: int, weekly_target: int) -> int:
-    """그 주에 해낸 날 수. 꾸준함·중간에 흔들림은 표대로, 후반에 놓침은 주간 목표가 작은 미션이 완주로 나오지 않게 목표의 days/7로 줄인다."""
-    return min(days, round(days / 7 * weekly_target)) if pattern == "fade" else days
+    """그 주에 해낸 날 수. 패턴 표의 숫자 그대로다(미션의 주간 목표와 상관없이)."""
+    return days
 
 
 def split_note(note: str | None) -> str | None:
