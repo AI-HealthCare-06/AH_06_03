@@ -135,6 +135,12 @@ function collect() {
   const sbp1 = n('sbp1'), dbp1 = n('dbp1'), weight = n('weight'), smoking = s('smoking'), dfreq = s('dfreq');
   if (!sbp1 || !dbp1) throw new Error('첫 번째 혈압을 입력해 주세요.');
   if (!weight) throw new Error('몸무게를 입력해 주세요.');
+  if (sbp1 <= dbp1) throw new Error('수축기 혈압은 이완기 혈압보다 높아야 해요.');
+  // 칸에 정해 둔 범위(min·max)를 벗어난 값은 막는다(이 화면은 form이 아니라 브라우저가 대신 막아 주지 않는다)
+  for (const id of ['sbp1', 'dbp1', 'sbp2', 'dbp2', 'weight', 'waist']) {
+    const el = document.getElementById(id);
+    if (el.value !== '' && !el.checkValidity()) throw new Error(`${el.labels && el.labels[0] ? el.labels[0].textContent.replace(/\s*\(.*\)\s*$/, '') : '입력값'}은 ${el.min}~${el.max} 사이로 입력해 주세요.`);
+  }
   if (!smoking || !dfreq) throw new Error('흡연과 음주 문항을 골라 주세요.');
   const drinks = !['never_lifetime', 'none_past_year'].includes(dfreq);
   if (drinks && !s('damount')) throw new Error('한 번 음주량을 골라 주세요.');
