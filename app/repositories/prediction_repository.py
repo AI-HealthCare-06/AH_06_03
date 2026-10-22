@@ -97,12 +97,14 @@ async def is_record_used(db: AsyncSession, health_record_id: str) -> bool:
     return result.scalar_one_or_none() is not None
 
 async def get_first_snapshot(db: AsyncSession, user_id: str) -> dict | None:
-    """📸 이 사람이 처음 예측할 때 찍어 둔 입력값 (4주 재평가 나이 고정용)."""
+    """📸 챌린지의 기준이 된 처음 예측의 입력값 (4주 재평가 나이 고정용).
+    처음 입력을 여러 번 했으면 가장 최근 것이 기준이다. 맨 처음 것을 쓰면 예전에 잘못 넣은 생년월일의 나이가 그대로 남는다."""
     result = await db.execute(
         select(PredictionJob.input_snapshot)
         .where(PredictionJob.user_id == user_id)
+        .where(PredictionJob.request_type == "initial")
         .where(PredictionJob.input_snapshot.is_not(None))
-        .order_by(PredictionJob.requested_at.asc())
+        .order_by(PredictionJob.requested_at.desc())
         .limit(1)
     )
     return result.scalar_one_or_none()
