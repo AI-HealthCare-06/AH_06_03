@@ -212,6 +212,7 @@ async function main() {
         const res = (await apiCall('POST', `/challenges/cycles/${encodeURIComponent(cycleId)}/reassessment`, { measurements: draft.measurements }, '저장하지 못했습니다')).data;
         try { sessionStorage.removeItem('paeon-reassess-draft'); } catch (e) {}
         await building.finish();
+        building.cancel();   // 화면을 옮기지 않으므로 덮개를 걷어야 결과가 보인다
         lede.textContent = `${res.cycle_number}차 4주 동안의 변화예요.`;
         body.innerHTML = reviewHtml(res);
         history.replaceState(null, '', `reassessment.html?cycle=${encodeURIComponent(cycleId)}`);
