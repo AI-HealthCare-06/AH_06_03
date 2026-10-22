@@ -46,9 +46,10 @@ def test_drinker_needs_3_or_more_per_occasion():
     assert r.classify(facts(drink_freq="none_past_year", drink_amount="5_6"))["drinker"] is False
 
 
-def test_smoker_is_cigarette_only():
+def test_smoker_is_cigarette_or_ecig():
     assert r.classify(facts(smoking="current"))["smoker"] is True
-    assert r.classify(facts(smoking="never", ecig="daily"))["smoker"] is False
+    assert r.classify(facts(smoking="never", ecig="daily"))["smoker"] is True       # 전자담배를 매일·가끔 쓰면 금연 대상
+    assert r.classify(facts(smoking="never", ecig="none"))["smoker"] is False
 
 
 def test_overweight_from_height_weight():

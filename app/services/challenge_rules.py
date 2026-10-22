@@ -89,7 +89,7 @@ def classify(f: UserFacts) -> dict:
     c: dict = {}
 
     if f.smoking is not None:
-        c["smoker"] = f.smoking == "current"
+        c["smoker"] = f.smoking == "current" or f.ecig in ("daily", "occasional")   # 일반담배를 피우거나 전자담배를 쓰면 금연 대상
     if f.drink_freq is not None:
         drinks = f.drink_freq not in ("never_lifetime", "none_past_year")
         c["drinker"] = drinks and f.drink_amount in ("3_4", "5_6", "7_9", "10plus")
