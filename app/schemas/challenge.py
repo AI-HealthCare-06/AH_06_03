@@ -89,7 +89,7 @@ class LogResult(BaseModel):
     limit_exceeded: bool
     warning: str | None = None  # 절주 초과 경고 (REQ-CHAL-010)
     autofilled: bool = False  # 체험 모드(DEMO_AUTOFILL)에서 3일치 기록으로 나머지 4주를 채웠다
-    autofill_pattern: str | None = None  # 채운 패턴: steady(꾸준함) / wobble(중간에 흔들림) / fade(후반에 놓침)
+    autofill_pattern: str | None = None  # 채운 패턴: steady(꾸준함) / wobble(흔들림) / fade(미완료)
 
 
 class WeekProgress(BaseModel):
@@ -113,6 +113,26 @@ class CycleMission(BaseModel):
     logs: list[LogResult]
 
 
+class DemoInfo(BaseModel):
+    """체험(DEMO_AUTOFILL) 중 진행 중인 사이클의 상태. 체험이 꺼져 있으면 CycleResult.demo는 None."""
+    record_days: int  # 기록한 날 수
+    phase: str  # recording(기록 중) / finish_today(3번째 기록일: 오늘 마치고 결과 보기) / finish_only(3번째 기록일이 지남: 결과 보기만)
+    unlogged_today: int  # 오늘 아직 기록하지 않은 미션 수
+
+
+class DemoStatus(BaseModel):
+    enabled: bool
+    ended: bool  # 체험 마지막 날이 지났다
+    ends_on: date | None
+    has_result: bool  # 자동 채움으로 4주 결과를 받은 사이클이 있다
+
+
+class DemoFinishRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    confirm: bool = False  # 오늘 기록하지 않은 미션이 남아 있어도 마친다
+
+
 class CycleResult(BaseModel):
     cycle_id: str
     cycle_number: int
@@ -124,6 +144,7 @@ class CycleResult(BaseModel):
     day_number: int  # 1~28 (종료 후에는 28)
     week_number: int  # 1~4
     missions: list[CycleMission]
+    demo: DemoInfo | None = None
 
 
 class CycleSummary(BaseModel):
@@ -201,7 +222,7 @@ class ReviewResult(BaseModel):
     waist_limit: int
     models: list[ModelChange]
     bp_note: str
-    demo_fill: str | None = None  # 체험 자동 채움 패턴(steady/wobble/fade). 가상 기록이 섞인 사이클이면 값이 있다
+    demo_fill: str | None = None  # 체험 자동 채움 패턴(steady 꾸준함/wobble 흔들림/fade 미완료). 가상 기록이 섞인 사이클이면 값이 있다
 
 class ProgramCheckpoint(Snapshot):
     """12주 중 한 시점의 측정값 (0주=처음 입력, 4·8·12주=각 사이클 끝 재입력)."""

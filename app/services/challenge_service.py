@@ -11,8 +11,9 @@ from app.core.errors import AppError
 from app.core.security import utcnow
 from app.models.challenge import ChallengeCycle
 from app.repositories import challenge_repository, health_repository, survey_repository, user_repository
+from app.core.config import settings
 from app.schemas.challenge import (
-    AnswerOption, CycleMission, CycleResult, CycleSummary, ExcludedItem, FixedSlot, LogResult, MissionCard,
+    AnswerOption, CycleMission, CycleResult, CycleSummary, DemoInfo, DemoStatus, ExcludedItem, FixedSlot, LogResult, MissionCard,
     MissionResult, ModelChange, ProgramCheckpoint, ProgramCycleRate, ProgramReviewResult, RecommendationResult,
     ReviewResult, Snapshot, SodiumResult, SurveyNeeded, WeekProgress,
 )
@@ -247,7 +248,18 @@ async def _cycle_result(db: AsyncSession, cycle: ChallengeCycle, sex: str, today
     order = {"fixed": 0, "replacement": 0, "selected": 1}
     items.sort(key=lambda i: order[i.selection_type])
 
+    demo = None
+    if settings.DEMO_AUTOFILL and cycle.status == "active" and not demo_autofill_service.ended(today):
+        days = {l.log_date for l in logs}
+        logged_today = {l.cycle_challenge_id for l in logs if l.log_date == today}
+        phase = "recording"
+        if len(days) >= demo_autofill_service.MIN_DAYS:
+            phase = "finish_today" if today in days else "finish_only"
+        demo = DemoInfo(record_days=len(days), phase=phase,
+                        unlogged_today=sum(1 for cc, _ in missions if cc.cycle_challenge_id not in logged_today))
+
     return CycleResult(
+        demo=demo,
         cycle_id=cycle.cycle_id, cycle_number=cycle.cycle_number, total_cycles=PROGRAM_CYCLES,
         status=cycle.status, started_on=cycle.started_on, ended_on=cycle.ended_on, today=today,
         day_number=day, week_number=rules.week_of(cycle.started_on, cycle.started_on + timedelta(days=day - 1)),
@@ -322,6 +334,10 @@ async def record_log(
         raise AppError(422, "CHALLENGE_LOG_INVALID", str(e))
 
     today, now = today_kst(), utcnow()
+    if settings.DEMO_AUTOFILL and not demo_autofill_service.ended(today):
+        _, _, days = await demo_autofill_service.record_days(db, cycle)
+        if today not in days and len(days) >= demo_autofill_service.MIN_DAYS:
+            raise AppError(409, "DEMO_RECORDING_CLOSED", "체험 기록은 3일까지예요. 결과 보기를 눌러 4주 결과를 확인해 주세요.")
     log = await challenge_repository.get_log(db, cc.cycle_challenge_id, today)
     if log is None:
         log = challenge_repository.add_log(
@@ -342,6 +358,36 @@ async def record_log(
     result.autofill_pattern = await demo_autofill_service.maybe_autofill(db, cycle)   # 체험 모드(DEMO_AUTOFILL)에서만
     result.autofilled = result.autofill_pattern is not None
     return result
+
+async def finish_demo(db: AsyncSession, user_id: str, confirm: bool) -> LogResult | dict:
+    """체험: "오늘 기록 마치고 4주 결과 보기". 기록한 날이 3일이어야 하고, 오늘 기록하지 않은 미션이 있으면 confirm이 있어야 한다."""
+    today = today_kst()
+    if not settings.DEMO_AUTOFILL or demo_autofill_service.ended(today):
+        raise AppError(409, "DEMO_NOT_AVAILABLE", "체험 기간이 끝났거나 체험 기능이 꺼져 있습니다.")
+    cycle = await _current_active(db, user_id)
+    if cycle is None:
+        raise AppError(404, "CHALLENGE_CYCLE_NOT_FOUND", "진행 중인 챌린지가 없습니다.")
+    missions, logs, days = await demo_autofill_service.record_days(db, cycle)
+    if len(days) < demo_autofill_service.MIN_DAYS:
+        raise AppError(409, "DEMO_NOT_READY", "서로 다른 3일을 기록하면 결과를 볼 수 있어요.")
+    logged_today = {l.cycle_challenge_id for l in logs if l.log_date == today}
+    if today in days and not confirm and any(cc.cycle_challenge_id not in logged_today for cc, _ in missions):
+        raise AppError(409, "DEMO_MISSIONS_UNLOGGED", "오늘 기록하지 않은 미션이 있어요.")
+    pattern = await demo_autofill_service.maybe_autofill(db, cycle, finish=True)
+    return {"cycle_id": cycle.cycle_id, "autofill_pattern": pattern}
+
+
+async def demo_status(db: AsyncSession, user_id: str) -> DemoStatus:
+    """체험 종료 안내용: 체험이 끝났는지, 이 사용자가 자동 채움 결과를 받았는지."""
+    today = today_kst()
+    has_result = False
+    for cycle in await challenge_repository.get_cycles(db, user_id):
+        if await demo_autofill_service.pattern_of(db, cycle.cycle_id):
+            has_result = True
+            break
+    return DemoStatus(enabled=settings.DEMO_AUTOFILL, ended=demo_autofill_service.ended(today),
+                      ends_on=settings.demo_end, has_result=has_result)
+
 
 async def stop_cycle(db: AsyncSession, user_id: str, reason_code: str | None, note: str | None) -> CycleResult:
     """진행 중인 사이클 중단 (REQ-CHAL-007). 중단한 사이클은 사이클 번호를 쓰지 않는다."""
