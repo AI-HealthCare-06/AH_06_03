@@ -393,6 +393,13 @@ df -h /                        # 정리 후 남은 용량 확인
 - 원인: nano로 고치다 붙여넣은 블록이 다른 서비스 안으로 섞임.
 - 조치: 파일 전체를 `cat > file << 'EOF' ... EOF`로 통째로 다시 쓰기.
 
+### 이미 쓰던 DB에 옛 브랜치를 올리면 500 (`Unknown column 'users.email'`, 2026-10-22 테스트 서버)
+- 증상: 로그인·문의 목록·4주 재입력 화면이 500. 로그에 `1054 Unknown column 'users.email'`, alembic은 `Can't locate revision identified by '1a9a51da1d1a'`.
+- 원인: DB는 #159(옛 평문 `users.email` 칸 삭제)까지 올라갔는데, #159 전에 갈라진 브랜치 코드를 올려서 코드가 없는 칸을 찾음. 자동 시험은 매번 새 DB를 만들어 잡지 못함.
+- 조치: 브랜치에 최신 main을 합치고 테스트 DB를 새로 만듦(`down -v`는 테스트 서버에서만). `alembic stamp`로 번호만 바꾸는 건 구조가 그대로라 쓰지 않음.
+- 예방: 쓰던 DB에서 브랜치를 바꾸기 전에 `alembic current`(DB)와 `alembic heads`(코드)를 비교. `current`가 `Can't locate revision`이면 코드가 뒤처진 것이니 main부터 합침.
+- 자세한 기록: `docs/트러블슈팅_테스트서버_마이그레이션_1022.md`
+
 ### 서버 재부팅(Stop → Start) 후
 - `restart: unless-stopped` 덕분에 컨테이너가 자동으로 올라옴(2026-10-08 재부팅에서 1분 안에 healthy 확인). 그래도 `sudo docker compose ps`로 확인.
 - Elastic IP라 주소는 그대로(`54.116.113.17`).
