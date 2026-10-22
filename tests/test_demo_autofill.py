@@ -294,3 +294,12 @@ async def test_비교_화면의_모델_결과는_모델마다_한_번씩만_나�
     await client.post(f"/v1/challenges/cycles/{cid}/reassessment", json=BODY, headers=h)
     rv = (await client.get(f"/v1/challenges/cycles/{cid}/review", headers=h)).json()["data"]
     assert [m["model_code"] for m in rv["models"]] == ["MODEL_A", "MODEL_B"], rv["models"]      # 이전에는 같은 모델이 두 번씩 나왔다
+
+
+async def test_4주_재입력도_수축기가_이완기보다_낮으면_막는다(client, db_session, today, monkeypatch):
+    monkeypatch.setattr(settings, "DEMO_AUTOFILL", True)
+    h, cid, _ = await start_and_log_days(client, db_session, today, 3)
+    bad = {"measurements": [m for m in BODY["measurements"] if m["metric_code"] not in ("SBP", "DBP")] +
+           [{"metric_code": "SBP", "value_num": 90}, {"metric_code": "DBP", "value_num": 120}]}
+    r = await client.post(f"/v1/challenges/cycles/{cid}/reassessment", json=bad, headers=h)
+    assert r.status_code == 422 and r.json()["error"]["code"] == "HEALTH_VALUE_INCONSISTENT", r.text

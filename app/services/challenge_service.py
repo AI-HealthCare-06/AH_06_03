@@ -448,8 +448,11 @@ async def submit_reassessment(db: AsyncSession, user_id: str, cycle_id: str, exa
     if freq in health_service.NON_DRINKER and "ALCOHOL_AMOUNT" in codes:
         raise AppError(422, "HEALTH_ALCOHOL_AMOUNT_NOT_ALLOWED", "술을 마시지 않으면 음주량은 보내지 않습니다.")
 
-    if await challenge_repository.get_basis_record(db, user_id, cycle.started_on, cycle.cycle_id) is None:
+    basis = await challenge_repository.get_basis_record(db, user_id, cycle.started_on, cycle.cycle_id)
+    if basis is None:
         raise AppError(409, "HEALTH_RECORD_REQUIRED", "처음 입력한 건강정보가 없습니다.")
+    first = await challenge_repository.get_measurement_map(db, basis.health_record_id)    # 키는 처음 값을 그대로 쓴다
+    health_service.check_consistency(checked, {k: m.value_num for k, m in first.items() if k == "HEIGHT" and m.value_num is not None})
     schema = await health_repository.get_active_schema(db)
     if schema is None:
         raise AppError(500, "HEALTH_SCHEMA_NOT_FOUND", "입력 양식 설정이 없습니다. 관리자에게 문의해 주세요.")
