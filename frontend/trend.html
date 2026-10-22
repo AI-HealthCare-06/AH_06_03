@@ -149,7 +149,7 @@ const row = (label, a, b) => `<div class="rw"><span>${label}</span><span class="
 const riskText = (m, k) => m && m[k] ? (RISK[m[k]] || '—') + (probText(m[k.replace('risk_level', 'probability')]) ? ` (${probText(m[k.replace('risk_level', 'probability')])})` : '') : '—';
 const modelA = (rv) => (rv.models || []).find(m => m.model_code === 'MODEL_A');
 
-let DATA = null, SEL = 'start';
+let DATA = null, SEL = 'start', DEMO_ENDED = false;
 const RANGE = { 1: '1차<small>0~4주</small>', 2: '2차<small>5~8주</small>', 3: '3차<small>9~12주</small>' };   // 12주 = 4주 × 3번
 const cycleOf = (rv) => DATA.cycles.find(c => c.cycle_id === rv.cycle_id) || {};
 
@@ -157,7 +157,7 @@ function renderList() {
   const { cycles, reviews } = DATA;
   const pts = bpPoints(reviews);
   const pending = reviews.filter(r => !r.reassessed && r.cycle_status !== 'active' && r.cycle_status !== 'stopped').pop();
-  let html = '<div class="h1">내 변화</div>';
+  let html = '<div class="h1">내 변화</div>' + (DEMO_ENDED ? demoEndedHtml() : '');
 
   if (pts.length) {
     const last = pts[pts.length - 1], dl = last.v - pts[0].v;
@@ -251,7 +251,7 @@ function renderCompare(rv) {
       <div class="rw"><span>흡연</span><span>${SMOKING[b.smoking] || '—'} → <b>${SMOKING[a.smoking] || '—'}</b></span></div>
       <div class="rw"><span>음주</span><span>${DRINK[b.drink_freq] || '—'} → <b>${DRINK[a.drink_freq] || '—'}</b></span></div></div>
     ${modelANoticeHtml(rv.models)}
-    ${chg ? `<div class="simbox"><span class="a">혈압이 정상인 사람들의 전체 자료와 비교했어요</span><span class="b">${chg}</span><span class="a">허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</span></div>` : ''}
+    ${chg ? `<div class="simbox"><span class="a">혈압이 정상인 사람들의 전체 자료와 비교했어요</span><span class="b">${chg}</span><span class="a">허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</span></div>${simBasisHtml()}` : ''}
     <div class="small" style="font-size:13px; line-height:1.7">진단이 아닌 참고 정보입니다. 정확한 판단은 의료진과 상담하세요.</div>
     ${rv.cycle_number < rv.total_cycles ? `<a class="cta" style="height:56px; border-radius:28px; font-size:17px" href="challenges.html">${rv.cycle_number + 1}차 챌린지 시작하기</a>` : ''}
     <a class="ghost" href="twelve-weeks.html">12주 기록 보기</a>`;
@@ -269,6 +269,8 @@ document.addEventListener('click', (e) => {
   catch (e) { $('app').innerHTML = '<div class="callout"><b>불러오지 못했어요</b><br>잠시 뒤 다시 열어 주세요.</div>'; return; }
   const last = DATA.reviews.filter(r => r.reassessed).pop();
   SEL = last ? last.cycle_id : 'start';
+  const ds = await apiDemoStatus();
+  DEMO_ENDED = !!(ds && ds.ended && !ds.has_result);   // 체험이 끝났는데 4주 결과가 없는 사람
   renderList();
 })();
 </script>

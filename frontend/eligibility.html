@@ -94,6 +94,29 @@
 <script>
 let emerAck = false;
 
+// 가입한 생년월일로 만 나이를 계산해 맞는 나이 범위를 미리 고르고 바꿀 수 없게 한다(스스로 고른 값이 생년월일과 어긋나지 않게)
+function ageBandOf(birth) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(birth || '');
+  if (!m) return null;
+  const now = new Date();
+  let age = now.getFullYear() - Number(m[1]);
+  if (now.getMonth() + 1 < Number(m[2]) || (now.getMonth() + 1 === Number(m[2]) && now.getDate() < Number(m[3]))) age--;
+  if (age < 19) return 'under19';
+  return age >= 32 && age <= 70 ? 'in' : 'bOnly';
+}
+(async () => {
+  let birth = null;
+  try { birth = (JSON.parse(localStorage.getItem('paeon-profile') || 'null') || {}).birth; } catch (e) { /* 아래에서 서버에서 받아 본다 */ }
+  if (!birth) { try { birth = (await apiGetMe()).birth_date; } catch (e) { /* 못 받으면 직접 고르게 둔다 */ } }
+  const band = ageBandOf(birth);
+  if (!band) return;
+  const pick = document.querySelector(`input[name="age-band"][value="${band}"]`);
+  pick.checked = true;
+  document.querySelectorAll('#age-band-row .opt').forEach(o => { o.dataset.on = o.querySelector('input').checked ? '1' : '0'; });   // 아래 change 처리보다 먼저 실행될 수 있어 직접 표시한다
+  document.querySelectorAll('input[name="age-band"]').forEach(i => { i.disabled = true; });
+  document.querySelector('#age-band-row').nextElementSibling.textContent = '가입하신 생년월일 기준으로 골라 두었어요 · 만 19세 이상 이용 가능 · 위험 신호 분석은 만 32~70세만';
+})();
+
 function val(name) {
   const el = document.querySelector(`input[name="${name}"]:checked`);
   return el ? el.value : null;

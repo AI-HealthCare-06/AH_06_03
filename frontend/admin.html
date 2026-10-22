@@ -455,19 +455,6 @@ async function loadUsers(offset) {
   } catch (e) { say(friendlyError(e), 'err'); }
 }
 
-// 평소에는 가린 이메일만 보이고, 필요할 때만 전체를 본다(볼 때마다 관리자 기록에 '회원 이메일 전체 보기'로 남음)
-function revealBtn(d) {
-  const b = el('button', { type: 'button', class: 'btn', style: 'margin-left:6px' }, '이메일 보기');
-  b.addEventListener('click', async () => {
-    try {
-      const { data } = await apiCall('GET', `/admin/users/${encodeURIComponent(d.user_id)}/email`, undefined, '이메일을 불러오지 못했어요');
-      document.getElementById('u-email').textContent = `${data.email} (${d.user_id_short})`;
-      b.remove();
-    } catch (e) { say(friendlyError(e), 'err'); }
-  });
-  return b;
-}
-
 async function showUser(id) {
   try {
     const { data: d } = await apiCall('GET', `/admin/users/${encodeURIComponent(id)}`, undefined, '상세를 불러오지 못했어요');
@@ -475,7 +462,7 @@ async function showUser(id) {
       ? d.consents.map((c) => `${POLICY_LABEL[c.policy_type] || c.policy_type} ${c.version} · ${c.status === 'agreed' ? '동의' : '철회'} (${c.consented_at}${c.withdrawn_at ? ` → 철회 ${c.withdrawn_at}` : ''})`)
       : ['동의 기록 없음'];
     const box = el('div', { class: 'detail' },
-      el('b', { id: 'u-email' }, `${d.email_masked} (${d.user_id_short})`), ' ', d.status === 'active' ? revealBtn(d) : '', el('br'),
+      el('b', {}, `${d.email_masked} (${d.user_id_short})`), el('br'),
       `상태 ${d.status === 'active' ? '이용 중' : '탈퇴'} · 가입 ${d.joined_at}`, el('br'),
       `진행 단계: ${d.stages_done.map((s) => STAGE_LABEL[s] || s).join(' → ')}`, el('br'),
       d.suspended_until ? el('b', { style: 'color:#B0543F' }, `이용 정지 중 · ${d.suspended_until.startsWith('9999') ? '무기한' : d.suspended_until.slice(0, 10) + '까지'}`) : '', d.suspended_until ? el('br') : '',
@@ -552,7 +539,7 @@ async function loadStats() {
 }
 load();
 
-const ACTION_LABEL = { users_view: '가입자 목록 열람', user_detail_view: '가입자 상세 열람', user_email_view: '회원 이메일 전체 보기', purge_preview: '삭제 미리보기', purge_apply: '계정 일괄 삭제', catalog_view: '미션 목록 열람', stats_view: '통계 열람', audit_view: '기록 열람', category_update: '카테고리 변경', mission_update: '미션 변경', admin_granted: '관리자 권한 부여', admin_revoked: '관리자 권한 회수', inquiries_view: '문의 목록 열람', inquiry_view: '문의 열람', inquiry_answer: '문의 답변', guest_inquiries_view: '비회원 문의 목록 열람', guest_inquiry_view: '비회원 문의 열람', guest_inquiry_answer: '비회원 문의 답변', overview_view: '운영 현황 열람', overview_csv_export: '집계 CSV 내려받기', notice_create: '공지 작성', notice_update: '공지 수정', community_reports_view: '커뮤니티 신고 목록 열람', community_report_hide: '커뮤니티 글·댓글 숨김', community_report_delete: '커뮤니티 글·댓글 삭제', community_report_dismiss: '커뮤니티 신고 문제 없음 처리', common_challenges_view: '공통 챌린지 목록 열람', common_challenge_create: '공통 챌린지 만들기', common_challenge_update: '공통 챌린지 수정', common_challenge_delete: '공통 챌린지 삭제', inquiry_delete: '문의 삭제', guest_inquiry_delete: '비회원 문의 삭제', user_suspend: '회원 이용 정지', user_unsuspend: '회원 정지 해제', user_delete: '회원 삭제', common_challenge_finalize: '공통 챌린지 순위 확정', community_auto_hide: '신고 누적 자동 숨김', community_posts_view: '커뮤니티 전체 글 열람', community_post_hide: '커뮤니티 글 숨김(직접)', community_post_delete: '커뮤니티 글 삭제(직접)', community_post_restore: '커뮤니티 글 다시 보이기(직접)' };
+const ACTION_LABEL = { users_view: '가입자 목록 열람', user_detail_view: '가입자 상세 열람', purge_preview: '삭제 미리보기', purge_apply: '계정 일괄 삭제', catalog_view: '미션 목록 열람', stats_view: '통계 열람', audit_view: '기록 열람', category_update: '카테고리 변경', mission_update: '미션 변경', admin_granted: '관리자 권한 부여', admin_revoked: '관리자 권한 회수', inquiries_view: '문의 목록 열람', inquiry_view: '문의 열람', inquiry_answer: '문의 답변', guest_inquiries_view: '비회원 문의 목록 열람', guest_inquiry_view: '비회원 문의 열람', guest_inquiry_answer: '비회원 문의 답변', overview_view: '운영 현황 열람', overview_csv_export: '집계 CSV 내려받기', notice_create: '공지 작성', notice_update: '공지 수정', community_reports_view: '커뮤니티 신고 목록 열람', community_report_hide: '커뮤니티 글·댓글 숨김', community_report_delete: '커뮤니티 글·댓글 삭제', community_report_dismiss: '커뮤니티 신고 문제 없음 처리', common_challenges_view: '공통 챌린지 목록 열람', common_challenge_create: '공통 챌린지 만들기', common_challenge_update: '공통 챌린지 수정', common_challenge_delete: '공통 챌린지 삭제', inquiry_delete: '문의 삭제', guest_inquiry_delete: '비회원 문의 삭제', user_suspend: '회원 이용 정지', user_unsuspend: '회원 정지 해제', user_delete: '회원 삭제', common_challenge_finalize: '공통 챌린지 순위 확정', community_auto_hide: '신고 누적 자동 숨김', community_posts_view: '커뮤니티 전체 글 열람', community_post_hide: '커뮤니티 글 숨김(직접)', community_post_delete: '커뮤니티 글 삭제(직접)', community_post_restore: '커뮤니티 글 다시 보이기(직접)' };
 
 function kst(iso) {
   const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + 'Z');   // 서버 시각은 UTC

@@ -646,6 +646,18 @@ async function apiRecordChallengeLog(code, answer, quantity) {
   return (await apiCall('PUT', `/challenges/cycles/current/logs/${encodeURIComponent(code)}`, payload, '기록을 저장하지 못했습니다')).data;
 }
 
+// 체험: 기록한 날이 3일이면 나머지 4주를 채우고 끝낸다("결과 보기"). 오늘 기록하지 않은 미션이 있으면 confirm=true가 필요하다.
+async function apiDemoFinish(confirm) {
+  const r = (await apiCall('POST', '/challenges/cycles/current/demo-finish', { confirm: !!confirm }, '결과를 만들지 못했습니다')).data;
+  cacheCycle(null);
+  return r;
+}
+
+// 체험이 끝났는지·4주 결과를 받았는지(종료 안내용). 못 불러오면 null.
+async function apiDemoStatus() {
+  try { return (await apiCall('GET', '/challenges/demo', undefined, '')).data; } catch (e) { return null; }
+}
+
 async function apiStopCycle(reasonCode) {
   const cycle = (await apiCall('POST', '/challenges/cycles/current/stop', { reason_code: reasonCode || null }, '챌린지를 중단하지 못했습니다')).data;
   cacheCycle(null);
