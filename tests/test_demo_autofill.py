@@ -172,14 +172,12 @@ async def test_자동_채움이_없던_사이클은_표시가_없다(client, db_
     assert rv["demo_fill"] is None
 
 
-def test_후반에_놓침은_주간_목표가_5_7인_미션에서_목표_미달이고_나머지_패턴은_완주다():
+def test_후반에_놓침은_주간_목표가_3_5_7인_미션_모두_목표_미달이고_나머지_패턴은_완주다():
     for pattern, days in demo_autofill_service.PATTERNS.items():
         for target in (3, 5, 7):
             done = [demo_autofill_service.week_goal(pattern, d, target) for d in days]
             done[3] = max(done[3], 3)                      # 4주차에는 직접 한 3일이 들어 있다
             rate = sum(min(x, target) / target for x in done) / 4
-            if pattern == "fade" and target == 3:
-                continue                                   # 주 3회 미션은 후반에 놓침이어도 완주로 나온다(표의 숫자 그대로)
             assert (rate >= 0.8) == (pattern != "fade"), (pattern, target, done, rate)
 
 

@@ -54,7 +54,7 @@ def _done_values(code: str, sex: str, cfg: dict | None) -> dict:
 PATTERNS = {
     "steady": [7, 7, 7, 7],    # 꾸준함: 매일
     "wobble": [7, 6, 6, 7],    # 중간에 흔들림: 2·3주차만 주 6일
-    "fade": [7, 4, 2, 1],      # 후반에 놓침: 갈수록 줄어듦
+    "fade": [7, 2, 1, 1],      # 후반에 놓침: 갈수록 줄어듦(주 3회 미션 하나만 가진 사람도 미완료가 되도록 낮춘 값)
 }
 ORDER = list(PATTERNS)         # 채운 순서대로 돌아가며 배정
 
