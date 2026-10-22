@@ -42,8 +42,6 @@ class User(Base, TimestampMixin):
     # 코드에서는 user.email로 읽고 쓰면 두 칸이 같이 채워진다. 이메일로 찾을 때는 User.email_hash == pii.email_hash(이메일).
     email_enc: Mapped[str]=mapped_column(pii.EncryptedText, nullable=False)
     email_hash: Mapped[str]=mapped_column(CHAR(64), nullable=False)   # 고유 인덱스 uq_users_email_hash (마이그레이션 3583058d4b4f)
-    # 옛 평문 이메일 칸. 새로 쓰지 않고(항상 비움), 확인이 끝나면 다음 마이그레이션에서 지운다.
-    legacy_email: Mapped[str | None]=mapped_column("email", String(255), unique=True, nullable=True)
     password_hash: Mapped[str]=mapped_column(String(255), nullable=False)
     status: Mapped[str]=mapped_column(
         Enum("active", "deleted", "pending_guardian", name="user_status"), nullable=False, default="active"
@@ -57,11 +55,10 @@ class User(Base, TimestampMixin):
 
     @email.inplace.setter
     def _email_setter(self, value: str) -> None:
-        """정리한 이메일을 잠그고 지문도 같이 바꾼다. 옛 평문 칸은 비운다(탈퇴 익명화 때도 지문이 새 값으로 바뀌어 같은 이메일로 재가입 가능)."""
+        """정리한 이메일을 잠그고 지문도 같이 바꾼다(탈퇴 익명화 때도 지문이 새 값으로 바뀌어 같은 이메일로 재가입 가능)."""
         norm = pii.normalize_email(value)
         self.email_enc = norm
         self.email_hash = pii.email_hash(norm)
-        self.legacy_email = None
 
     @email.inplace.comparator
     @classmethod
