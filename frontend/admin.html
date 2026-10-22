@@ -164,6 +164,7 @@
       <button type="button" data-t="logs">열람 기록</button>
       <button type="button" data-t="inquiries">문의</button>
       <button type="button" data-t="guest">비회원 문의</button>
+      <button type="button" data-t="notices">공지</button>
       <button type="button" data-t="reports">신고</button>
       <button type="button" data-t="posts">글 관리</button>
       <button type="button" data-t="purge">테스트 계정 삭제</button>
@@ -268,6 +269,18 @@
             <button type="button" class="btn" id="cc-add">챌린지 열기</button>
           </div>
           <div id="cc-list" style="margin-top:12px"></div>
+        </section>
+
+        <section id="sec-notices" hidden>
+          <div class="notice">올린 공지는 이용자 화면의 <b>홈 팝업, 종 알림, 공지사항</b>에 바로 보여요. 시각은 <b>한국 시각</b>으로 넣어요.</div>
+          <div class="detail" style="display:grid; gap:6px">
+            <input id="n-title" maxlength="100" placeholder="제목 (100자까지)">
+            <textarea id="n-body" maxlength="2000" rows="5" placeholder="내용 (2000자까지)"></textarea>
+            <label>시작 <input id="n-from" type="datetime-local"> <span class="meta">비우면 지금부터</span></label>
+            <label>끝 <input id="n-to" type="datetime-local"> <span class="meta">비우면 내릴 때까지 계속</span></label>
+            <button type="button" class="btn" id="n-add">공지 올리기</button>
+          </div>
+          <div id="n-list" style="margin-top:12px"></div>
         </section>
 
         <section id="sec-purge" hidden>
@@ -406,7 +419,7 @@ async function load(keepMessage) {
 }
 
 // ---- 탭 ----
-const sections = { mission: document.getElementById('sec-mission'), users: document.getElementById('sec-users'), stats: document.getElementById('sec-stats'), logs: document.getElementById('sec-logs'), inquiries: document.getElementById('sec-inquiries'), guest: document.getElementById('sec-guest'), reports: document.getElementById('sec-reports'), posts: document.getElementById('sec-posts'), cc: document.getElementById('sec-cc'), purge: document.getElementById('sec-purge') };
+const sections = { mission: document.getElementById('sec-mission'), users: document.getElementById('sec-users'), stats: document.getElementById('sec-stats'), logs: document.getElementById('sec-logs'), inquiries: document.getElementById('sec-inquiries'), guest: document.getElementById('sec-guest'), reports: document.getElementById('sec-reports'), posts: document.getElementById('sec-posts'), cc: document.getElementById('sec-cc'), notices: document.getElementById('sec-notices'), purge: document.getElementById('sec-purge') };
 document.getElementById('tabs').addEventListener('click', (ev) => {
   const t = ev.target.dataset && ev.target.dataset.t;
   if (!t) return;
@@ -423,6 +436,7 @@ document.getElementById('tabs').addEventListener('click', (ev) => {
   if (t === 'reports') loadReports();
   if (t === 'posts') loadPosts(true);
   if (t === 'cc') loadCc();
+  if (t === 'notices') loadNotices();
 });
 
 // ---- 가입자 ----
@@ -785,6 +799,74 @@ function ccCard(c) {
   card.append(acts);
   return card;
 }
+// ---- 공지 ----
+const NOTICE_STATUS = { upcoming: '예정', active: '게시 중', ended: '종료' };
+// 시각 칸(datetime-local)은 한국 시각이라, 시간대(+09:00)를 붙여 보낸다. 서버가 UTC로 바꿔 저장한다. 비우면 null
+function noticeTime(v) { return v ? `${v}:00+09:00` : null; }
+// 서버 시각(UTC)을 시각 칸에 넣을 한국 시각으로
+function toKstInput(iso) {
+  if (!iso) return '';
+  const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + 'Z');
+  return new Date(d.getTime() + 9 * 3600 * 1000).toISOString().slice(0, 16);
+}
+async function loadNotices() {
+  const box = document.getElementById('n-list');
+  try {
+    const { data } = await apiCall('GET', '/admin/notices?limit=50', undefined, '공지를 불러오지 못했어요');
+    box.replaceChildren(...(data.length ? data.map(noticeCard) : [el('p', { class: 'meta' }, '아직 올린 공지가 없어요.')]));
+  } catch (e) { box.replaceChildren(el('p', { class: 'meta' }, friendlyError(e))); }
+}
+function noticeCard(n) {
+  const card = el('div', { class: 'detail', style: 'margin-bottom:10px' });
+  const url = `/admin/notices/${encodeURIComponent(n.notice_id)}`;
+  const show = () => {
+    const ops = el('div', { style: 'display:flex; gap:6px; flex-wrap:wrap; margin-top:6px' }, opButton('수정', edit));
+    if (n.status !== 'ended') ops.appendChild(opButton('지금 내리기', async () => {
+      if (!window.confirm(`"${n.title}" 공지를 지금 내릴까요? 이용자 화면에서 바로 사라져요.`)) return;
+      try { await apiCall('PATCH', url, { end_now: true }, '내리지 못했어요'); say('공지를 내렸어요', 'ok'); loadNotices(); }
+      catch (e) { say(friendlyError(e), 'err'); }
+    }, 'danger'));
+    card.replaceChildren(
+      el('div', {}, el('b', {}, `[${NOTICE_STATUS[n.status] || n.status}] `), el('b', {}, n.title)),
+      el('p', { class: 'meta' }, `${kst(n.starts_at)} ~ ${n.ends_at ? kst(n.ends_at) : '계속'} · ${n.created_by}`),
+      el('p', { style: 'white-space:pre-wrap; margin:6px 0' }, n.body),
+      ops);
+  };
+  const edit = () => {
+    const t = el('input', { maxlength: '100', value: n.title });
+    const b = el('textarea', { maxlength: '2000', rows: '5' }); b.value = n.body;
+    const end = el('input', { type: 'datetime-local', value: toKstInput(n.ends_at) });
+    const save = opButton('저장', async () => {
+      const patch = {};
+      if (t.value.trim() !== n.title) patch.title = t.value.trim();
+      if (b.value.trim() !== n.body) patch.body = b.value.trim();
+      if (end.value && end.value !== toKstInput(n.ends_at)) patch.ends_at = noticeTime(end.value);
+      if (!Object.keys(patch).length) { say('바뀐 내용이 없어요'); return; }
+      try { await apiCall('PATCH', url, patch, '고치지 못했어요'); say('공지를 고쳤어요', 'ok'); loadNotices(); }
+      catch (e) { say(friendlyError(e), 'err'); }
+    });
+    card.replaceChildren(el('div', { style: 'display:grid; gap:6px' },
+      el('label', {}, '제목 ', t), el('label', {}, '내용 ', b),
+      el('label', {}, '끝 (한국 시각) ', end, el('span', { class: 'meta' }, ' 정해 둔 끝 시각을 없애려면 지금 내리고 새로 올려요')),
+      el('div', { style: 'display:flex; gap:6px' }, save, opButton('취소', show))));
+  };
+  show();
+  return card;
+}
+document.getElementById('n-add').addEventListener('click', async () => {
+  const v = (id) => document.getElementById(id).value;
+  const body = { title: v('n-title').trim(), body: v('n-body').trim() };
+  if (!body.title || !body.body) { say('제목과 내용을 모두 적어 주세요', 'err'); return; }
+  if (v('n-from')) body.starts_at = noticeTime(v('n-from'));
+  if (v('n-to')) body.ends_at = noticeTime(v('n-to'));
+  if (!window.confirm(`"${body.title}" 공지를 올릴까요? ${body.starts_at ? '정한 시각부터' : '바로'} 이용자 화면에 보여요.`)) return;
+  try {
+    await apiCall('POST', '/admin/notices', body, '올리지 못했어요');
+    for (const id of ['n-title', 'n-body', 'n-from', 'n-to']) document.getElementById(id).value = '';
+    say('공지를 올렸어요', 'ok'); loadNotices();
+  } catch (e) { say(friendlyError(e), 'err'); }
+});
+
 async function loadCc() {
   const box = document.getElementById('cc-list');
   try {
