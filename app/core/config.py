@@ -26,6 +26,20 @@ class Settings(BaseSettings):
     ADMIN_ALERT_WEBHOOK: str = ""
     # 지인 체험 전용: 3일치 챌린지 기록을 남기면 나머지 4주를 같은 비율로 채우고 사이클을 끝낸다. 정식 배포에서는 꺼 둔다(0).
     DEMO_AUTOFILL: bool = False
+    # 체험 마지막 날(YYYY-MM-DD). 이 날이 지나면 자동 채움을 멈추고, 화면은 3일을 못 채운 사람에게 체험 종료 안내를 보여 준다. 비우면 끝나지 않는다.
+    DEMO_AUTOFILL_END: str = ""
+
+    @property
+    def demo_end(self):
+        from datetime import date
+        import logging
+        if not self.DEMO_AUTOFILL_END.strip():
+            return None
+        try:
+            return date.fromisoformat(self.DEMO_AUTOFILL_END.strip())
+        except ValueError:      # 형식이 틀리면 요청마다 500이 나지 않게 경고만 하고 끝나지 않은 것으로 본다
+            logging.getLogger(__name__).warning("DEMO_AUTOFILL_END 형식이 잘못돼 무시합니다(YYYY-MM-DD): %r", self.DEMO_AUTOFILL_END)
+            return None
 
     @property
     def admin_email_set(self) -> set[str]:

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.apis.deps import get_current_user_id
 from app.core.db.databases import async_get_db
 from app.schemas.challenge import (
-    CycleResult, CycleStartRequest, CycleStopRequest, CycleSummary, LogRequest, LogResult, ReassessmentRequest,
+    CycleResult, CycleStartRequest, DemoFinishRequest, DemoStatus, CycleStopRequest, CycleSummary, LogRequest, LogResult, ReassessmentRequest,
     ProgramReviewResult, RecommendationResult, ReviewResult,
 )
 from app.schemas.common import DataResponse
@@ -75,6 +75,25 @@ async def record_log(
     return DataResponse(
         data=await challenge_service.record_log(db, user_id, challenge_code, req.answer, req.quantity, req.note)
     )
+
+
+@router.post("/challenges/cycles/current/demo-finish")
+async def demo_finish(
+    req: DemoFinishRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(async_get_db),
+):
+    """체험(DEMO_AUTOFILL): 기록한 날이 3일이면 나머지 4주를 채우고 챌린지를 끝낸다. 결과 보기 버튼이 부른다."""
+    return DataResponse(data=await challenge_service.finish_demo(db, user_id, req.confirm))
+
+
+@router.get("/challenges/demo", response_model=DataResponse[DemoStatus])
+async def demo_status(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(async_get_db),
+):
+    """체험이 끝났는지, 4주 결과를 받았는지 (종료 안내용)."""
+    return DataResponse(data=await challenge_service.demo_status(db, user_id))
 
 
 @router.post("/challenges/cycles/current/stop", response_model=DataResponse[CycleResult])
