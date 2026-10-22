@@ -32,7 +32,14 @@ class Settings(BaseSettings):
     @property
     def demo_end(self):
         from datetime import date
-        return date.fromisoformat(self.DEMO_AUTOFILL_END) if self.DEMO_AUTOFILL_END.strip() else None
+        import logging
+        if not self.DEMO_AUTOFILL_END.strip():
+            return None
+        try:
+            return date.fromisoformat(self.DEMO_AUTOFILL_END.strip())
+        except ValueError:      # 형식이 틀리면 요청마다 500이 나지 않게 경고만 하고 끝나지 않은 것으로 본다
+            logging.getLogger(__name__).warning("DEMO_AUTOFILL_END 형식이 잘못돼 무시합니다(YYYY-MM-DD): %r", self.DEMO_AUTOFILL_END)
+            return None
 
     @property
     def admin_email_set(self) -> set[str]:

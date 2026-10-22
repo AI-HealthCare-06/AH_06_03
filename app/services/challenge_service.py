@@ -4,6 +4,7 @@
 """
 from datetime import date, timedelta
 
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -367,6 +368,11 @@ async def finish_demo(db: AsyncSession, user_id: str, confirm: bool) -> LogResul
     cycle = await _current_active(db, user_id)
     if cycle is None:
         raise AppError(404, "CHALLENGE_CYCLE_NOT_FOUND", "진행 중인 챌린지가 없습니다.")
+    # 두 요청이 겹치면 한쪽이 기다렸다가 먼저 채운 결과를 보게, 사이클 행을 잠근다
+    cycle = (await db.execute(select(ChallengeCycle).where(ChallengeCycle.cycle_id == cycle.cycle_id)
+                              .with_for_update().execution_options(populate_existing=True))).scalar_one()
+    if cycle.status != "active":
+        return {"cycle_id": cycle.cycle_id, "autofill_pattern": await demo_autofill_service.pattern_of(db, cycle.cycle_id)}
     missions, logs, days = await demo_autofill_service.record_days(db, cycle)
     if len(days) < demo_autofill_service.MIN_DAYS:
         raise AppError(409, "DEMO_NOT_READY", "서로 다른 3일을 기록하면 결과를 볼 수 있어요.")
@@ -374,6 +380,8 @@ async def finish_demo(db: AsyncSession, user_id: str, confirm: bool) -> LogResul
     if today in days and not confirm and any(cc.cycle_challenge_id not in logged_today for cc, _ in missions):
         raise AppError(409, "DEMO_MISSIONS_UNLOGGED", "오늘 기록하지 않은 미션이 있어요.")
     pattern = await demo_autofill_service.maybe_autofill(db, cycle, finish=True)
+    if pattern is None:     # 빠르게 두 번 눌러 이미 채워졌다면 먼저 채운 결과를 돌려준다
+        pattern = await demo_autofill_service.pattern_of(db, cycle.cycle_id)
     return {"cycle_id": cycle.cycle_id, "autofill_pattern": pattern}
 
 

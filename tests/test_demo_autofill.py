@@ -271,3 +271,19 @@ async def test_그래도_마치기로_끝내면_그날_안_한_미션은_못_한
     assert all(st != "completed" for c, st in rows if c != "SMK-1"), rows
     detail = (await client.get(f"/v1/challenges/cycles/{cid}", headers=h)).json()["data"]
     assert detail["status"] == "completed"                # 그래도 꾸준함은 완주가 유지된다
+
+
+async def test_결과_보기를_이미_채운_뒤_다시_부르면_먼저_채운_결과_이름을_돌려준다(client, db_session, today, monkeypatch):
+    monkeypatch.setattr(settings, "DEMO_AUTOFILL", True)
+    h, cid, results = await start_and_log_days(client, db_session, today, 3)       # 3일째 모두 기록해 이미 채움
+    first = results[-1]["autofill_pattern"]
+    from app.services import demo_autofill_service as svc
+    async with db_session() as s:
+        assert await svc.pattern_of(s, cid) == first
+
+
+def test_DEMO_AUTOFILL_END_형식이_틀리면_경고하고_무시한다(monkeypatch):
+    monkeypatch.setattr(settings, "DEMO_AUTOFILL_END", "10/25")
+    assert settings.demo_end is None
+    monkeypatch.setattr(settings, "DEMO_AUTOFILL_END", "2026-10-25")
+    assert settings.demo_end == date(2026, 10, 25)
