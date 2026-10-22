@@ -205,6 +205,7 @@ function reviewHtml(rv) {
   ${byModel.MODEL_A || byModel.MODEL_B ? `<p class="sect">분석 결과 변화</p>
   ${byModel.MODEL_A ? `<p class="subsect">심장 혈관 건강 신호</p><div class="cmp" style="display:block">${byModel.MODEL_A}</div>` : ''}
   ${byModel.MODEL_B ? `<p class="subsect">생활습관·체형 비교</p><div class="cmp" style="display:block">${byModel.MODEL_B}</div>` : ''}` : ''}
+  ${demoSurveyHtml(rv)}
   ${rv.cycle_number < rv.total_cycles
     ? `<a class="cta" style="height:56px; font-size:17px" href="challenges.html">${rv.cycle_number + 1}차 챌린지 시작하기</a>`
     : `<div class="callout"><b>12주 챌린지를 모두 마쳤어요!</b></div>`}`;

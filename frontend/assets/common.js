@@ -412,6 +412,11 @@ function demoFillHtml(rv) {
   const t = rv && rv.demo_fill && DEMO_FILL_NAME[rv.demo_fill];
   return t ? `<div class="callout"><b>체험용 가상 기록이 섞여 있어요</b><br>직접 기록하신 3일을 제외한 나머지 기간은 가상 기록이에요. 이번 체험에는 <b>"${t}"</b> 패턴이 적용됐어요(${DEMO_FILL_ALL} 중 하나). 패턴은 실제 기록과 무관하게 미리 배정돼요.<br>따라서 달성률에는 가상 기록이 포함되어 있으며, 실제 참여 결과를 의미하지 않아요.</div>` : '';
 }
+// 체험 결과(자동 채움)를 받은 사람에게 결과 화면 맨 아래에서 소감 설문을 안내한다(꾸준함·중간에 흔들림·후반에 놓침 모두). 체험이 아닌 사이클에는 나오지 않는다.
+function demoSurveyHtml(rv) {
+  return rv && rv.demo_fill
+    ? `<div class="callout"><b>체험 소감을 남겨 주세요</b><br>결과를 보신 느낌을 알려 주시면 서비스를 고치는 데 큰 도움이 돼요.<br><a href="${DEMO_SURVEY_URL}" target="_blank" rel="noopener" style="display:inline-block; margin-top:8px; font-weight:700; color:var(--accent-d, #5C86AC)">설문 참여하기 ›</a></div>` : '';
+}
 // 체험이 끝났는데 3일 기록을 채우지 못해(또는 중단해) 4주 결과가 없는 사람에게 보여 주는 안내
 function demoEndedHtml() {
   return `<div class="callout"><b>체험 기간이 끝났어요.</b><br>3일 기록을 채우지 못해 4주 결과는 없어요. 설문에 참여해 주시면 큰 도움이 돼요.<br><a href="${DEMO_SURVEY_URL}" target="_blank" rel="noopener" style="display:inline-block; margin-top:8px; font-weight:700; color:var(--accent-d, #5C86AC)">설문 참여하기 ›</a></div>`;
