@@ -330,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => { renderHeader(); renderNav(
 function probText(p) { return typeof p === 'number' && isFinite(p) ? (p * 100).toFixed(1) + '%' : ''; }
 // "같은 성별·연령대 상위 N%" (참고용 보조 문구. 범주 판정에는 쓰지 않는다). 값이 없으면 ''.
 function percentileText(pc) { return typeof pc === 'number' && isFinite(pc) ? `같은 성별·연령대 상위 ${Math.max(1, Math.round(pc))}%` : ''; }
-const PROB_NOTE = '일본 동맥경화학회 기준을 참고한 구간이며 한국인 자료로 검증된 진단 기준이 아닙니다. 의학적 진단·치료를 대신하지 않습니다.';
+const PROB_NOTE = '10년 안에 관상동맥질환이 생길 가능성을 미국 Framingham 모델로 계산하고 한국인 평균에 맞춰 보정한 값이에요. 2% 미만 양호, 2~9% 주의, 9% 이상 높음 구간은 일본 동맥경화학회 기준을 참고했어요. 한국인 자료로 검증된 진단 기준이 아니며, 의학적 진단·치료를 대신하지 않아요.';
 const AGE_NOTE = '혈관 나이는 같은 성별·연령대 한국 성인 평균을 기준으로 한 추정치예요.';
 // 확률 근거 안내: 평소에는 접혀 있고 버튼을 누르면 펼쳐진다
 function probNoteHtml(withAge, caption) {
