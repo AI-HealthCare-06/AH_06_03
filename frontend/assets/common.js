@@ -502,9 +502,10 @@ function characterSvg(view, px) {
       rng(5, 10).forEach((c) => put(11, c, 'x'));   // 가운데 주름
       put(10, 3, 'o'); put(10, 12, 'o');            // 귀에 거는 끈
     }
-    if (s.face === 'whiskers') {   // 뺨에서 몸 테두리 쪽으로 퍼지는 세 줄씩 (위는 살짝 위로, 가운데는 곧게, 아래는 살짝 아래로)
-      many([[8, 1], [8, 2], [10, 1], [10, 2], [10, 3], [12, 2], [12, 3], [8, 13], [8, 14], [10, 12], [10, 13], [10, 14], [12, 12], [12, 13]], 'o');
-      clear([9], [2, 3, 12, 13]);
+    const far = [];   // 몸 칸(16×16) 밖으로 나가는 픽셀. 고양이수염처럼 얼굴 밖으로 튀어나오는 아이템용
+    if (s.face === 'whiskers') {   // 뺨 한 점에서 세 줄이 부채꼴로: 위는 대각선 위로, 가운데는 곧게, 아래는 대각선 아래로. 얼굴 밖까지 나간다
+      const L = [[9, 2], [8, 1], [7, 0], [6, -1], [5, -2], [10, 2], [10, 1], [10, 0], [10, -1], [10, -2], [10, -3], [11, 2], [12, 1], [13, 0], [14, -1], [15, -2]];
+      L.concat(L.map(([r, c]) => [r, 15 - c])).forEach(([r, c]) => { if (c >= 0 && c < 16) put(r, c, 'o'); else far.push([r + OFF, c]); });
     }
     if (s.face === 'freckles') { many([[9, 3], [10, 2], [10, 4], [9, 12], [10, 13], [10, 11]], 'k'); }
     if (s.face === 'mustache') {   // 프링글스 아저씨 콧수염: 코 밑이 살짝 솟고 양 끝이 위로 말린 작은 곡선. 입은 수염에 가려진다
@@ -533,6 +534,7 @@ function characterSvg(view, px) {
     const fills = { k: '#B5835A', t: '#7FB6E8', o: '#243749', e: '#243749', m: '#243749', b: s.color, h: '#FFFFFF', c: '#E8B9A5', g: '#6FA58A', y: '#F2C94C', r: '#E58F9B', w: '#DCE8EF', a: '#5C86AC', x: '#B8CDD9' };
   let rects = '';
   g.forEach((row, y) => row.forEach((ch, x) => { if (fills[ch]) rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${fills[ch]}"/>`; }));
+  far.forEach(([y, x]) => { rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${fills.o}"/>`; });
   const w = px || 40;
-  return `<svg width="${w}" height="${Math.round(w * 1.25)}" viewBox="0 0 16 20" shape-rendering="crispEdges" role="img" aria-label="캐릭터">${rects}</svg>`;
+  return `<svg width="${w}" height="${Math.round(w * 1.25)}" viewBox="0 0 16 20" style="overflow:visible" shape-rendering="crispEdges" role="img" aria-label="캐릭터">${rects}</svg>`;
 }
