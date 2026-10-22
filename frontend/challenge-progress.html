@@ -313,11 +313,14 @@ async function finishDemo() {
     if (!ok) return;
     confirm = true;
   }
+  const btn = document.getElementById('demo-finish');
+  if (btn) btn.disabled = true;   // 빠르게 두 번 눌러도 한 번만 보낸다
   try {
     const cid = cycle.cycle_id;
     const r = await apiDemoFinish(confirm);
     await showDemoResult(r.cycle_id || cid, r.autofill_pattern);
   } catch (e) { showError(friendlyError(e)); }
+  finally { if (btn) btn.disabled = false; }
 }
 
 function demoBlockHtml() {
