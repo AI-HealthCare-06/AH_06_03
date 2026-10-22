@@ -481,26 +481,41 @@ function characterSvg(view, px) {
     many(E[s.expr][0], 'e');
     (EXTRA[s.expr] || []).forEach(([ch, list]) => many(list, ch));
 
+    // 얼굴 아이템: 눈(행 7~8)·입(행 10~11) 자리와 겹치지 않게, 눈·입을 가리는 것만 먼저 비운 뒤 그린다. 'a' 테, 'x' 마스크 주름
+    const clear = (rs, cs) => rs.forEach((r) => cs.forEach((c) => put(r, c, 'b')));
+    const rng = (a, z) => Array.from({ length: z - a + 1 }, (_, k) => a + k);
     if (s.face === 'glasses') {
-      for (let c = 3; c <= 6; c++) { put(6, c, 'o'); put(9, c, 'o'); }
-      for (let c = 9; c <= 12; c++) { put(6, c, 'o'); put(9, c, 'o'); }
-      [3, 6, 9, 12].forEach((c) => { put(7, c, 'o'); put(8, c, 'o'); });
-      put(7, 7, 'o'); put(7, 8, 'o');
+      // 렌즈 안은 비워 둬서 눈이 그대로 보인다
+      [[3, 6], [9, 12]].forEach(([c0, c1]) => {
+        rng(c0, c1).forEach((c) => { put(6, c, 'a'); put(9, c, 'a'); });
+        [7, 8].forEach((r) => { put(r, c0, 'a'); put(r, c1, 'a'); });
+      });
+      put(7, 7, 'a'); put(7, 8, 'a');
     }
     if (s.face === 'shades') {
-      for (let c = 3; c <= 6; c++) { put(7, c, 'o'); put(8, c, 'o'); }
-      for (let c = 9; c <= 12; c++) { put(7, c, 'o'); put(8, c, 'o'); }
-      put(7, 7, 'o'); put(7, 8, 'o');
+      [[3, 6], [9, 12]].forEach(([c0, c1]) => { rng(c0, c1).forEach((c) => { put(7, c, 'o'); put(8, c, 'o'); }); });
+      put(7, 7, 'o'); put(7, 8, 'o'); put(7, 4, 'w'); put(7, 10, 'w');   // 반짝이는 점
     }
     if (s.face === 'mask') {
-      for (let c = 4; c <= 11; c++) { put(10, c, 'w'); put(11, c, 'w'); }
-      put(10, 3, 'o'); put(10, 12, 'o');
+      clear([10, 11, 12], rng(4, 11));
+      rng(4, 11).forEach((c) => { put(10, c, 'w'); put(11, c, 'w'); put(12, c, 'w'); });
+      rng(5, 10).forEach((c) => put(11, c, 'x'));   // 가운데 주름
+      put(10, 3, 'o'); put(10, 12, 'o');            // 귀에 거는 끈
     }
-
-    if (s.face === 'whiskers') { many([[10, 1], [10, 2], [11, 1], [10, 13], [10, 14], [11, 14]], 'o'); }
-    if (s.face === 'freckles') { many([[9, 5], [10, 4], [9, 10], [10, 11], [10, 3], [10, 12]], 'k'); }
-    if (s.face === 'mustache') { many([[10, 5], [10, 6], [10, 9], [10, 10], [11, 4], [11, 11]], 'o'); }
-    if (s.face === 'eyepatch') { for (let c = 3; c <= 6; c++) { put(7, c, 'o'); put(8, c, 'o'); } many([[6, 4], [5, 5], [6, 8], [6, 12], [5, 13]], 'o'); }
+    if (s.face === 'whiskers') {   // 뺨에서 몸 테두리 쪽으로 퍼지는 세 줄씩 (위는 살짝 위로, 가운데는 곧게, 아래는 살짝 아래로)
+      many([[8, 1], [8, 2], [10, 1], [10, 2], [10, 3], [12, 2], [12, 3], [8, 13], [8, 14], [10, 12], [10, 13], [10, 14], [12, 12], [12, 13]], 'o');
+      clear([9], [2, 3, 12, 13]);
+    }
+    if (s.face === 'freckles') { many([[9, 3], [10, 2], [10, 4], [9, 12], [10, 13], [10, 11]], 'k'); }
+    if (s.face === 'mustache') {   // 프링글스 아저씨 콧수염: 코 밑이 살짝 솟고 양 끝이 위로 말린 작은 곡선. 입은 수염에 가려진다
+      clear([10, 11, 12], rng(4, 11));
+      many([[10, 4], [10, 7], [10, 8], [10, 11]].concat(rng(5, 10).map((c) => [11, c])), 'o');
+    }
+    if (s.face === 'eyepatch') {   // 왼쪽 눈을 덮는 둥근 안대. 끈은 오른쪽 위로 이마를 넘어가고, 왼쪽은 아래로 내려간다
+      clear([7, 8, 9], rng(3, 6));
+      many([[7, 4], [7, 5], [8, 3], [8, 4], [8, 5], [8, 6], [9, 4], [9, 5]], 'o');
+      many([[6, 6], [5, 7], [5, 8], [4, 9], [9, 3], [10, 2], [11, 1]], 'o');
+    }
     // 머리 장식: b는 머리 맨 위 테두리 줄. 장식은 이 줄과 겹치게(머리 위에 얹은 것처럼) 몸 앞에 그린다
     const b = BODIES[s.body].top;
     const H = {
@@ -515,7 +530,7 @@ function characterSvg(view, px) {
     };
     (H[s.head] || []).forEach(([ch, list]) => many(list, ch));
 
-    const fills = { k: '#B5835A', t: '#7FB6E8', o: '#243749', e: '#243749', m: '#243749', b: s.color, h: '#FFFFFF', c: '#E8B9A5', g: '#6FA58A', y: '#F2C94C', r: '#E58F9B', w: '#DCE8EF' };
+    const fills = { k: '#B5835A', t: '#7FB6E8', o: '#243749', e: '#243749', m: '#243749', b: s.color, h: '#FFFFFF', c: '#E8B9A5', g: '#6FA58A', y: '#F2C94C', r: '#E58F9B', w: '#DCE8EF', a: '#5C86AC', x: '#B8CDD9' };
   let rects = '';
   g.forEach((row, y) => row.forEach((ch, x) => { if (fills[ch]) rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${fills[ch]}"/>`; }));
   const w = px || 40;
