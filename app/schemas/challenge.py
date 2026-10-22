@@ -89,7 +89,7 @@ class LogResult(BaseModel):
     limit_exceeded: bool
     warning: str | None = None  # 절주 초과 경고 (REQ-CHAL-010)
     autofilled: bool = False  # 체험 모드(DEMO_AUTOFILL)에서 3일치 기록으로 나머지 4주를 채웠다
-    autofill_pattern: str | None = None  # 채운 패턴: steady(꾸준함) / wobble(흔들림) / fade(미완료)
+    autofill_pattern: str | None = None  # 채운 패턴: steady(꾸준함) / wobble(중간에 흔들림) / fade(후반에 놓침, 판정은 미완료)
 
 
 class WeekProgress(BaseModel):
@@ -222,7 +222,7 @@ class ReviewResult(BaseModel):
     waist_limit: int
     models: list[ModelChange]
     bp_note: str
-    demo_fill: str | None = None  # 체험 자동 채움 패턴(steady 꾸준함/wobble 흔들림/fade 미완료). 가상 기록이 섞인 사이클이면 값이 있다
+    demo_fill: str | None = None  # 체험 자동 채움 패턴(steady 꾸준함/wobble 중간에 흔들림/fade 후반에 놓침). 가상 기록이 섞인 사이클이면 값이 있다
 
 class ProgramCheckpoint(Snapshot):
     """12주 중 한 시점의 측정값 (0주=처음 입력, 4·8·12주=각 사이클 끝 재입력)."""

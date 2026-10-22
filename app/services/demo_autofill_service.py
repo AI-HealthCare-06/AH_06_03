@@ -1,6 +1,6 @@
-"""체험용 자동 채움: 서로 다른 3일을 기록하면 나머지 4주(28일 모두)를 세 가지 결과(꾸준함 / 흔들림 / 미완료) 중 하나로 채우고 사이클을 끝낸다.
+"""체험용 자동 채움: 서로 다른 3일을 기록하면 나머지 4주(28일 모두)를 세 가지 패턴(꾸준함 / 중간에 흔들림 / 후반에 놓침) 중 하나로 채우고 사이클을 끝낸다.
 사용자의 3일 기록은 결과를 정하지 않는다(3일을 다 한 사람이 모두 "완주"로만 나오면 못 한 날·미완료 화면을 아무도 못 보므로).
-결과는 채운 순서대로 꾸준함 → 흔들림 → 미완료를 돌아가며 배정한다(사람이 적어도 골고루 나오게).
+결과는 채운 순서대로 꾸준함 → 중간에 흔들림 → 후반에 놓침을 돌아가며 배정한다(사람이 적어도 골고루 나오게).
 지인 체험(나흘)에서 4주 전·후 비교를 보게 하려는 임시 기능이라 DEMO_AUTOFILL=1일 때만 동작하고, DEMO_AUTOFILL_END가 지나면 멈춘다.
 채운 기록은 note에 MARK와 패턴을 남겨 구분한다(사이클·기록은 탈퇴·동의 철회 때 함께 지워진다)."""
 from datetime import date, timedelta
@@ -50,17 +50,17 @@ def _done_values(code: str, sex: str, cfg: dict | None) -> dict:
 
 
 # 4주 동안 주마다 "해낸 날"(7일 중). 미션의 주간 목표가 3·5·7이어도 판정이 같도록 목표에 비례해 채운다(week_goal).
-# 판정: 꾸준함 완주, 흔들림 완주, 미완료는 목표 미달. 4주차는 직접 기록한 3일이 들어가 있다.
+# 판정: 꾸준함·중간에 흔들림은 완주, 후반에 놓침은 미완료(목표 미달). 4주차는 직접 기록한 3일이 들어가 있다.
 PATTERNS = {
     "steady": [7, 7, 7, 7],    # 꾸준함: 매일
-    "wobble": [7, 6, 6, 7],    # 흔들림: 2·3주차만 주 6일
-    "fade": [7, 4, 2, 1],      # 미완료: 갈수록 줄어듦
+    "wobble": [7, 6, 6, 7],    # 중간에 흔들림: 2·3주차만 주 6일
+    "fade": [7, 4, 2, 1],      # 후반에 놓침: 갈수록 줄어듦
 }
 ORDER = list(PATTERNS)         # 채운 순서대로 돌아가며 배정
 
 
 def week_goal(pattern: str, days: int, weekly_target: int) -> int:
-    """그 주에 해낸 날 수. 꾸준함·흔들림은 표대로, 미완료는 주간 목표가 작은 미션이 완주로 나오지 않게 목표의 days/7로 줄인다."""
+    """그 주에 해낸 날 수. 꾸준함·중간에 흔들림은 표대로, 후반에 놓침은 주간 목표가 작은 미션이 완주로 나오지 않게 목표의 days/7로 줄인다."""
     return min(days, round(days / 7 * weekly_target)) if pattern == "fade" else days
 
 
@@ -116,10 +116,11 @@ async def maybe_autofill(db: AsyncSession, cycle: ChallengeCycle, finish: bool =
         today_logged = {l.cycle_challenge_id for l in logs if l.log_date == today}
         if today not in days or len(days) != MIN_DAYS or any(cc.cycle_challenge_id not in today_logged for cc, _ in missions):
             return None
-    return await fill(db, cycle, missions, logs)
+    return await fill(db, cycle, missions, logs, days)
 
 
-async def fill(db: AsyncSession, cycle: ChallengeCycle, missions: list, logs: list) -> str:
+async def fill(db: AsyncSession, cycle: ChallengeCycle, missions: list, logs: list, days: set[date]) -> str:
+    """28일을 채운다. 직접 기록한 날(days)에 그 미션을 기록하지 않았다면 \"못 한 날\"로 고정한다(실제 기록 날에 가상으로 \"한 날\"을 만들지 않는다)."""
     # 오늘이 마지막 날인 28일 구간으로 사이클을 옮긴다(기록한 날은 모두 이 구간 안).
     today, now = challenge_service.today_kst(), utcnow()
     cycle.started_on, cycle.ended_on = today - timedelta(days=CYCLE_DAYS - 1), today
@@ -139,13 +140,13 @@ async def fill(db: AsyncSession, cycle: ChallengeCycle, missions: list, logs: li
     pattern = await next_pattern(db)
     for cc, ch in missions:
         mine = {l.log_date: l for l in logs if l.cycle_challenge_id == cc.cycle_challenge_id}
-        for w, days in enumerate(PATTERNS[pattern]):
+        for w, wdays in enumerate(PATTERNS[pattern]):
             week = span[w * 7:(w + 1) * 7]
             have = sum(1 for d in week if d in mine and mine[d].status == "completed")
-            free = [d for d in week if d not in mine]
-            need = min(len(free), max(0, week_goal(pattern, days, cc.weekly_target) - have))
+            free = [d for d in week if d not in mine and d not in days]
+            need = min(len(free), max(0, week_goal(pattern, wdays, cc.weekly_target) - have))
             done_days = {free[k * len(free) // need] for k in range(need)} if need else set()
-            for d in free:                      # 빈 날은 모두 기록을 만든다: 해낸 날 또는 못 한 날
+            for d in (d for d in week if d not in mine):   # 빈 날은 모두 기록을 만든다: 해낸 날 또는 못 한 날(직접 기록한 날의 빈 미션은 항상 못 한 날)
                 v = _done_values(ch.challenge_code, sex, cc.target_config) if d in done_days                     else _failed_values(ch.challenge_code, sex, cc.target_config)
                 challenge_repository.add_log(db, cc.cycle_challenge_id, d, {**v, "note": f"{MARK} {pattern}"}, now)
     await db.flush()

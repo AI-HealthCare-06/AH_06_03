@@ -92,7 +92,7 @@ async def test_한_사이클에_한_번만_채운다(client, db_session, today, 
     assert r.status_code == 404      # 이미 끝난 사이클이라 더 기록할 수 없다
 
 
-async def test_28일을_모두_채우고_흔들림은_2_3주차만_주_6일이다(client, db_session, today, monkeypatch):
+async def test_28일을_모두_채우고_중간에_흔들림은_2_3주차만_주_6일이다(client, db_session, today, monkeypatch):
     monkeypatch.setattr(settings, "DEMO_AUTOFILL", True)
     force(monkeypatch, "wobble")
     h, cid, results = await start_and_log_days(client, db_session, today, 3)
@@ -182,7 +182,7 @@ def test_미완료는_주간_목표가_3_5_7인_미션_모두_목표_미달이�
             assert (rate >= 0.8) == (pattern != "fade"), (pattern, target, done, rate)
 
 
-async def test_채운_순서대로_꾸준함_흔들림_미완료를_돌아가며_배정한다(client, db_session, today, monkeypatch):
+async def test_채운_순서대로_꾸준함_중간에_흔들림_후반에_놓침을_돌아가며_배정한다(client, db_session, today, monkeypatch):
     monkeypatch.setattr(settings, "DEMO_AUTOFILL", True)
     got = []
     for _ in range(4):
@@ -249,3 +249,25 @@ async def test_채운_사람은_결과를_받았다고_나온다(client, db_sess
     h, cid, _ = await start_and_log_days(client, db_session, today, 3)
     st = (await client.get("/v1/challenges/demo", headers=h)).json()["data"]
     assert st["has_result"] is True and st["ended"] is False
+
+
+async def test_그래도_마치기로_끝내면_그날_안_한_미션은_못_한_날로_남는다(client, db_session, today, monkeypatch):
+    monkeypatch.setattr(settings, "DEMO_AUTOFILL", True)
+    force(monkeypatch, "steady")                          # 꾸준함이어도 직접 기록한 날의 빈 미션을 한 날로 채우지 않는다
+    h, cid, _ = await start_and_log_days(client, db_session, today, 2)
+    today["d"] = DAY1 + timedelta(days=2)
+    await client.put("/v1/challenges/cycles/current/logs/SMK-1", json={"answer": "not_smoked"}, headers=h)
+    r = await client.post("/v1/challenges/cycles/current/demo-finish", json={"confirm": True}, headers=h)
+    assert r.status_code == 200, r.text
+    from sqlalchemy import select
+    from app.models.challenge import Challenge, ChallengeLog, CycleChallenge
+    async with db_session() as s:
+        rows = (await s.execute(
+            select(Challenge.challenge_code, ChallengeLog.status)
+            .join(CycleChallenge, CycleChallenge.cycle_challenge_id == ChallengeLog.cycle_challenge_id)
+            .join(Challenge, Challenge.challenge_id == CycleChallenge.challenge_id)
+            .where(CycleChallenge.cycle_id == cid, ChallengeLog.log_date == DAY1 + timedelta(days=2)))).all()
+    assert {c: st for c, st in rows}["SMK-1"] == "completed"
+    assert all(st != "completed" for c, st in rows if c != "SMK-1"), rows
+    detail = (await client.get(f"/v1/challenges/cycles/{cid}", headers=h)).json()["data"]
+    assert detail["status"] == "completed"                # 그래도 꾸준함은 완주가 유지된다
