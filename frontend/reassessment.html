@@ -32,6 +32,7 @@
   .bcmp{padding:6px 4px 2px; text-align:center}
   .bcmp .bt{font-size:13.5px; line-height:1.6; color:var(--ink); font-weight:700; margin:0 0 10px}
   .bcmp .chip{display:inline-block; height:auto; margin-top:10px; padding:8px 22px; border-radius:22px; background:var(--cream); border:0; color:var(--ink); font-size:16px; line-height:1.4; font-weight:800}
+  .subsect{font-size:16px; font-weight:800; margin:10px 0 -8px; color:var(--ink)}
   .bcmp .bsim{font-size:15px; line-height:1.6; color:var(--ink); margin:0}
   .bcmp .pnote{margin:0 -4px}   /* 확률 근거 상자와 같은 너비·글자 크기·왼쪽 정렬 */
   .bcmp .bnote{font-size:12px; line-height:1.7; color:var(--muted); margin:12px 0 0}
@@ -169,14 +170,14 @@ function reviewHtml(rv) {
   rv.models.filter(m => m.comparable).forEach(m => {
     byModel[m.model_code] += (() => {
     if (m.model_code === 'MODEL_A') {
-      return `<div class="mrow"><span>심장 혈관 건강 신호</span><span>${RISK[m.before_risk_level]}${probText(m.before_probability) ? ` (${probText(m.before_probability)})` : ''} → <b>${RISK[m.after_risk_level]}${probText(m.after_probability) ? ` (${probText(m.after_probability)})` : ''}</b></span></div>${probText(m.before_probability) || probText(m.after_probability) ? probNoteHtml(false, true) : ''}`;
+      return `<div class="mrow"><span>처음 → 4주 후</span><span>${RISK[m.before_risk_level]}${probText(m.before_probability) ? ` (${probText(m.before_probability)})` : ''} → <b>${RISK[m.after_risk_level]}${probText(m.after_probability) ? ` (${probText(m.after_probability)})` : ''}</b></span></div>${probText(m.before_probability) || probText(m.after_probability) ? probNoteHtml(false, true) : ''}`;
     }
     // 서버가 주는 3단계(similar / slightly_different / different)를 말로만 비교한다. 숫자·막대는 쓰지 않는다.
     const chg = simChangeText(m.before_similarity_level, m.after_similarity_level);
     const lv = (k) => SIM_LEVEL[k] || null;
     const from = lv(m.before_similarity_level), to = lv(m.after_similarity_level);
     return `<div class="bcmp">
-      <p class="bt">생활습관·체형 비교 (혈압이 정상인 사람들과)</p>
+      <p class="bt">혈압이 정상인 사람들과 비교했어요</p>
       ${from && to ? `<p class="bsim">처음: ${from} → 4주 후: <b>${to}</b></p>` : ''}
       ${chg ? `<div class="chip">${chg}</div>` : ''}
       <p class="bnote" style="word-break:keep-all; text-wrap:balance">허리둘레, 몸무게, 술은 내가 바꿀 수 있어요.</p>
@@ -202,8 +203,8 @@ function reviewHtml(rv) {
     <div class="mrow"><span>음주</span><span>${DRINK[b.drink_freq] || '—'} → <b>${DRINK[a.drink_freq] || '—'}</b></span></div>
   </div>
   ${byModel.MODEL_A || byModel.MODEL_B ? `<p class="sect">분석 결과 변화</p>
-  ${byModel.MODEL_A ? `<div class="cmp" style="display:block">${byModel.MODEL_A}</div>` : ''}
-  ${byModel.MODEL_B ? `<div class="cmp" style="display:block; margin-top:12px">${byModel.MODEL_B}</div>` : ''}` : ''}
+  ${byModel.MODEL_A ? `<p class="subsect">심장 혈관 건강 신호</p><div class="cmp" style="display:block">${byModel.MODEL_A}</div>` : ''}
+  ${byModel.MODEL_B ? `<p class="subsect">생활습관·체형 비교</p><div class="cmp" style="display:block">${byModel.MODEL_B}</div>` : ''}` : ''}
   ${rv.cycle_number < rv.total_cycles
     ? `<a class="cta" style="height:56px; font-size:17px" href="challenges.html">${rv.cycle_number + 1}차 챌린지 시작하기</a>`
     : `<div class="callout"><b>12주 챌린지를 모두 마쳤어요!</b></div>`}`;
