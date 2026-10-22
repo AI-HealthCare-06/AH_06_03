@@ -384,13 +384,13 @@ function adviceBannerHtml(pred, health) {
   return adviceAcked() ? adviceCompactHtml() : adviceFullHtml(title);
 }
 
-// 체험 모드: 서버가 3일 기록 뒤 나머지를 가상 기록으로 채운다. 결과는 채운 순서대로 돌아가며 배정된다(코드: steady/wobble/fade).
-const DEMO_FILL_NAME = { steady: '꾸준함', wobble: '흔들림', fade: '미완료' };
+// 체험 모드: 서버가 3일 기록 뒤 나머지를 가상 기록으로 채운다. 패턴은 채운 순서대로 돌아가며 배정된다(코드: steady/wobble/fade). 후반에 놓침의 판정은 미완료다.
+const DEMO_FILL_NAME = { steady: '꾸준함', wobble: '중간에 흔들림', fade: '후반에 놓침' };
 const DEMO_FILL_ALL = Object.values(DEMO_FILL_NAME).join(' / ');
 const DEMO_SURVEY_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdtcpL88OAx2zzD8Gx0ujL_BAGgB-OsSLedmYa_u15tV3DYMQ/viewform';
 function demoFillHtml(rv) {
   const t = rv && rv.demo_fill && DEMO_FILL_NAME[rv.demo_fill];
-  return t ? `<div class="callout"><b>체험용 가상 기록이 섞여 있어요</b><br>직접 기록하신 3일을 제외한 나머지 기간은 가상 기록이에요. 이번 체험에는 <b>"${t}"</b> 결과가 적용됐어요(${DEMO_FILL_ALL} 중 하나). 결과는 실제 기록과 무관하게 미리 배정돼요.<br>따라서 달성률에는 가상 기록이 포함되어 있으며, 실제 참여 결과를 의미하지 않아요.</div>` : '';
+  return t ? `<div class="callout"><b>체험용 가상 기록이 섞여 있어요</b><br>직접 기록하신 3일을 제외한 나머지 기간은 가상 기록이에요. 이번 체험에는 <b>"${t}"</b> 패턴이 적용됐어요(${DEMO_FILL_ALL} 중 하나). 패턴은 실제 기록과 무관하게 미리 배정돼요.<br>따라서 달성률에는 가상 기록이 포함되어 있으며, 실제 참여 결과를 의미하지 않아요.</div>` : '';
 }
 // 체험이 끝났는데 3일 기록을 채우지 못해(또는 중단해) 4주 결과가 없는 사람에게 보여 주는 안내
 function demoEndedHtml() {
@@ -402,7 +402,7 @@ async function showDemoResult(cycleId, pattern) {
   const P = (t) => `<span style="display:block;text-wrap:balance;margin-top:10px">${t}</span>`;
   await noticeDialog('4주 체험 결과를 준비했어요',
     P('체험판에서는 직접 기록하신 3일을 제외한 나머지 기간을 가상 기록으로 채웠어요.')
-    + (pn ? P(`이번 체험에는 <b>‘${pn}’</b> 결과가 적용됐어요. 결과는 실제 기록과 무관하게 미리 배정돼요.`) : '')
+    + (pn ? P(`이번 체험에는 <b>‘${pn}’</b> 패턴이 적용됐어요. 패턴은 실제 기록과 무관하게 미리 배정돼요.`) : '')
     + P('따라서 달성률에는 가상 기록이 포함되어 있으며, 실제 참여 결과를 의미하지 않아요.')
     + P('이제 현재 상태를 입력하고 4주&nbsp;전후의 변화를 확인해 보세요!'), '지금 상태 입력하기');
   location.replace('reassessment.html?cycle=' + encodeURIComponent(cycleId));
