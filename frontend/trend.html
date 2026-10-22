@@ -149,7 +149,7 @@ const row = (label, a, b) => `<div class="rw"><span>${label}</span><span class="
 const riskText = (m, k) => m && m[k] ? (RISK[m[k]] || '—') + (probText(m[k.replace('risk_level', 'probability')]) ? ` (${probText(m[k.replace('risk_level', 'probability')])})` : '') : '—';
 const modelA = (rv) => (rv.models || []).find(m => m.model_code === 'MODEL_A');
 
-let DATA = null, SEL = 'start';
+let DATA = null, SEL = 'start', DEMO_ENDED = false;
 const RANGE = { 1: '1차<small>0~4주</small>', 2: '2차<small>5~8주</small>', 3: '3차<small>9~12주</small>' };   // 12주 = 4주 × 3번
 const cycleOf = (rv) => DATA.cycles.find(c => c.cycle_id === rv.cycle_id) || {};
 
@@ -157,7 +157,7 @@ function renderList() {
   const { cycles, reviews } = DATA;
   const pts = bpPoints(reviews);
   const pending = reviews.filter(r => !r.reassessed && r.cycle_status !== 'active' && r.cycle_status !== 'stopped').pop();
-  let html = '<div class="h1">내 변화</div>';
+  let html = '<div class="h1">내 변화</div>' + (DEMO_ENDED ? demoEndedHtml() : '');
 
   if (pts.length) {
     const last = pts[pts.length - 1], dl = last.v - pts[0].v;
@@ -269,6 +269,8 @@ document.addEventListener('click', (e) => {
   catch (e) { $('app').innerHTML = '<div class="callout"><b>불러오지 못했어요</b><br>잠시 뒤 다시 열어 주세요.</div>'; return; }
   const last = DATA.reviews.filter(r => r.reassessed).pop();
   SEL = last ? last.cycle_id : 'start';
+  const ds = await apiDemoStatus();
+  DEMO_ENDED = !!(ds && ds.ended && !ds.has_result);   // 체험이 끝났는데 4주 결과가 없는 사람
   renderList();
 })();
 </script>

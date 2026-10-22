@@ -263,14 +263,14 @@ function setupProgress() {
 
 // "정말 할까요?" 확인 창. 확인하면 true, 취소(버튼·바깥 클릭·Esc)하면 false로 끝나는 Promise를 돌려준다.
 // options = [[코드, 라벨], ...]를 주면 선택지를 같이 보여 주고, 확인하면 {code}(고르지 않으면 null)를, 취소하면 false를 돌려준다.
-function confirmDialog(title, message, okLabel = '확인', options) {
+function confirmDialog(title, message, okLabel = '확인', options, cancelLabel = '취소') {
   return new Promise(resolve => {
     const wrap = document.createElement('div');
     wrap.className = 'confirm-backdrop';
     wrap.innerHTML = `<div class="confirm-card" role="dialog" aria-modal="true" aria-label="${title}">
       <b>${title}</b><p>${message}</p>
       ${options ? `<div class="confirm-opts">${options.map(o => `<label><input type="radio" name="confirm-opt" value="${o[0]}"><span>${o[1]}</span></label>`).join('')}</div>` : ''}
-      <div class="confirm-actions"><button type="button" class="ghost" data-act="no">취소</button><button type="button" class="cta" data-act="yes">${okLabel}</button></div></div>`;
+      <div class="confirm-actions"><button type="button" class="ghost" data-act="no">${cancelLabel}</button><button type="button" class="cta" data-act="yes">${okLabel}</button></div></div>`;
     const done = (v) => {
       const picked = wrap.querySelector('input[name="confirm-opt"]:checked');
       document.removeEventListener('keydown', onKey); wrap.remove();
@@ -384,12 +384,28 @@ function adviceBannerHtml(pred, health) {
   return adviceAcked() ? adviceCompactHtml() : adviceFullHtml(title);
 }
 
-// 체험 모드: 서버가 3일치 기록 뒤 나머지를 가상 기록으로 채운 사이클이면(demo_fill) 비교 화면에서 그 사실과 패턴을 알린다.
-const DEMO_FILL_NAME = { steady: '꾸준함', wobble: '중간에 흔들림', fade: '후반에 놓침' };
-const DEMO_FILL_ALL = Object.values(DEMO_FILL_NAME).join(' · ');
+// 체험 모드: 서버가 3일 기록 뒤 나머지를 가상 기록으로 채운다. 결과는 채운 순서대로 돌아가며 배정된다(코드: steady/wobble/fade).
+const DEMO_FILL_NAME = { steady: '꾸준함', wobble: '흔들림', fade: '미완료' };
+const DEMO_FILL_ALL = Object.values(DEMO_FILL_NAME).join(' / ');
+const DEMO_SURVEY_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdtcpL88OAx2zzD8Gx0ujL_BAGgB-OsSLedmYa_u15tV3DYMQ/viewform';
 function demoFillHtml(rv) {
   const t = rv && rv.demo_fill && DEMO_FILL_NAME[rv.demo_fill];
-  return t ? `<div class="callout"><b>체험용 가상 기록이 섞여 있어요</b><br>실제 4주는 흔들리는 경우가 많아서, 가상 기록은 세 가지 패턴(${DEMO_FILL_ALL}) 중 <b>"${t}"</b>으로 배정되어 채워졌어요. 직접 남긴 3일 기록과는 상관없이 정해져요.</div>` : '';
+  return t ? `<div class="callout"><b>체험용 가상 기록이 섞여 있어요</b><br>직접 기록하신 3일을 제외한 나머지 기간은 가상 기록이에요. 이번 체험에는 <b>"${t}"</b> 결과가 적용됐어요(${DEMO_FILL_ALL} 중 하나). 결과는 실제 기록과 무관하게 미리 배정돼요.<br>따라서 달성률에는 가상 기록이 포함되어 있으며, 실제 참여 결과를 의미하지 않아요.</div>` : '';
+}
+// 체험이 끝났는데 3일 기록을 채우지 못해(또는 중단해) 4주 결과가 없는 사람에게 보여 주는 안내
+function demoEndedHtml() {
+  return `<div class="callout"><b>체험 기간이 끝났어요.</b><br>3일 기록을 채우지 못해 4주 결과는 없어요. 설문에 참여해 주시면 큰 도움이 돼요.<br><a href="${DEMO_SURVEY_URL}" target="_blank" rel="noopener" style="display:inline-block; margin-top:8px; font-weight:700; color:var(--accent-d, #5C86AC)">설문 참여하기 ›</a></div>`;
+}
+// 서버가 4주를 채웠을 때: 안내창을 보여 주고 4주 재입력 화면으로 보낸다.
+async function showDemoResult(cycleId, pattern) {
+  const pn = DEMO_FILL_NAME[pattern] || '';
+  const P = (t) => `<span style="display:block;text-wrap:balance;margin-top:10px">${t}</span>`;
+  await noticeDialog('4주 체험 결과를 준비했어요',
+    P('체험판에서는 직접 기록하신 3일을 제외한 나머지 기간을 가상 기록으로 채웠어요.')
+    + (pn ? P(`이번 체험에는 <b>‘${pn}’</b> 결과가 적용됐어요. 결과는 실제 기록과 무관하게 미리 배정돼요.`) : '')
+    + P('따라서 달성률에는 가상 기록이 포함되어 있으며, 실제 참여 결과를 의미하지 않아요.')
+    + P('이제 현재 상태를 입력하고 4주&nbsp;전후의 변화를 확인해 보세요!'), '지금 상태 입력하기');
+  location.replace('reassessment.html?cycle=' + encodeURIComponent(cycleId));
 }
 
 // 모델 A 버전이 바뀌어 전·후를 비교할 수 없을 때(comparable=false, 둘 다 분석 완료) 비교 줄 대신 안내한다. 오류가 아니다.
