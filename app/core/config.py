@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     # 체험 마지막 날(YYYY-MM-DD). 이 날이 지나면 자동 채움을 멈추고, 화면은 3일을 못 채운 사람에게 체험 종료 안내를 보여 준다. 비우면 끝나지 않는다.
     DEMO_AUTOFILL_END: str = ""
 
+    # 웹 푸시(VAPID). 비어 있으면 발송하지 않는다(개발·시험 환경). 개인키는 저장소에 올리지 않는다.
+    VAPID_PUBLIC_KEY: str = ""
+    VAPID_PRIVATE_KEY: str = ""
+    VAPID_SUBJECT: str = "mailto:admin@paeon.app"
+
     @property
     def demo_end(self):
         from datetime import date

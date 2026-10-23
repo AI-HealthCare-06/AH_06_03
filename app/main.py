@@ -32,6 +32,7 @@ from app.services import admin_registry_service
 from app.apis.character import router as character_router
 from app.apis.party import router as party_router
 from app.core.config import check_required_secrets
+from app.apis.push import router as push_router
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -91,6 +92,7 @@ app.include_router(home_router, prefix="/v1", dependencies=[Depends(require_heal
 app.include_router(character_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.include_router(party_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.include_router(community_posts_admin_router, prefix="/v1")
+app.include_router(push_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.mount("/media", StaticFiles(directory=BASE_DIR / "media"), name="media")
 

@@ -23,3 +23,4 @@ from app.models.community import (  # noqa: F401
 from app.models.common_challenge import CommonChallenge, CommonChallengeCert, CommonChallengeParticipant  # noqa: F401
 from app.models.character import CharacterItem, UserCharacter  # noqa: F401
 from app.models.party import Party, PartyCheckin, PartyMember  # noqa: F401
+from app.models.push import PushSetting, PushSubscription  # noqa: F401

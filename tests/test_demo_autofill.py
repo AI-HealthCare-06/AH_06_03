@@ -172,7 +172,7 @@ async def test_자동_채움이_없던_사이클은_표시가_없다(client, db_
     assert rv["demo_fill"] is None
 
 
-def test_후반에_놓침은_주간_목표가_3_5_7인_미션_모두_목표_미달이고_나머지_패턴은_완주다():
+async def test_후반에_놓침은_주간_목표가_3_5_7인_미션_모두_목표_미달이고_나머지_패턴은_완주다():
     for pattern, days in demo_autofill_service.PATTERNS.items():
         for target in (3, 5, 7):
             done = [demo_autofill_service.week_goal(pattern, d, target) for d in days]

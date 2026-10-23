@@ -22,7 +22,7 @@ from app.schemas.community import (
     PhotoResult, PostItem, PostList, ReportRequest, ReportResult,
 )
 from app.models.party import PartyMember
-from app.services import admin_alert, audit_service, photo_check, pie_service, post_attach_service
+from app.services import admin_alert, audit_service, photo_check, pie_service, post_attach_service,notify_service
 
 WELCOME_PIE = 10
 POST_PIE = 2
@@ -261,6 +261,12 @@ async def create_comment(db: AsyncSession, user_id: str, post_id: str, req: Comm
     c = CommunityComment(post_id=post_id, user_id=user_id, parent_id=parent_id, body=req.body, status="visible", created_at=utcnow())
     db.add(c)
     await db.commit()
+    if parent_id:                                                      # 답글 → 원 댓글 쓴 사람에게만
+        origin = await db.get(CommunityComment, parent_id)             # 한 단계로 맞춘 원 댓글
+        if origin is not None and origin.status == "visible":          # 지워져 자리만 남은 원 댓글이면 보내지 않음
+            await notify_service.reply_added(db, post_id, c.comment_id, origin.user_id, user_id)
+    else:                                                              # 댓글 → 글쓴이에게
+        await notify_service.comment_added(db, post_id, p.user_id, user_id)
     return CommentItem(comment_id=c.comment_id, body=c.body, author_nickname=nickname, created_at=c.created_at, mine=True, parent_id=parent_id)
 
 
