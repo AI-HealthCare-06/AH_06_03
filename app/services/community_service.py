@@ -15,11 +15,11 @@ from sqlalchemy.orm import aliased
 from app.core.errors import AppError
 from app.core.security import utcnow
 from app.models.community import (
-    CommunityComment, CommunityFame, CommunityLike, CommunityPost, CommunityPostPhoto, CommunityProfile, CommunityReport,
+    CommunityComment, CommunityCommentLike, CommunityFame, CommunityLike, CommunityPost, CommunityPostPhoto, CommunityProfile, CommunityReport,
 )
 from app.schemas.community import (
     AttachOption, CommentCreate, CommentItem, CommentUpdate, LikeResult, MyCommunity, PostAttach, PostCreate, PostCreated, PostDetail,
-    PhotoResult, PostItem, PostList, ProfileComment, ProfileResult, FameResult, ReportRequest, ReportResult,
+    CommentLikeResult, PhotoResult, PostItem, PostList, ProfileComment, ProfileResult, FameResult, ReportRequest, ReportResult,
 )
 from app.models.party import PartyMember
 from app.services import admin_alert, audit_service, photo_check, pie_service, post_attach_service,notify_service
@@ -197,6 +197,7 @@ async def _remove_post_rows(db: AsyncSession, post_id: str) -> None:
     await db.execute(delete(CommunityReport).where(
         or_(CommunityReport.post_id == post_id, CommunityReport.comment_id.in_(comment_ids))))
     await db.execute(delete(CommunityLike).where(CommunityLike.post_id == post_id))
+    await db.execute(delete(CommunityCommentLike).where(CommunityCommentLike.comment_id.in_(comment_ids)))
     await db.execute(delete(CommunityComment).where(CommunityComment.post_id == post_id))
     await db.execute(delete(CommunityPostPhoto).where(CommunityPostPhoto.post_id == post_id))
 
@@ -236,8 +237,11 @@ async def list_comments(db: AsyncSession, user_id: str, post_id: str) -> list[Co
     await _load_post(db, user_id, post_id)
     reply = aliased(CommunityComment)
     has_reply = exists(select(reply.comment_id).where(reply.parent_id == CommunityComment.comment_id, reply.status == "visible"))
+    likes = (select(func.count()).select_from(CommunityCommentLike)
+             .where(CommunityCommentLike.comment_id == CommunityComment.comment_id).correlate(CommunityComment).scalar_subquery())
+    liked = exists().where(CommunityCommentLike.comment_id == CommunityComment.comment_id, CommunityCommentLike.user_id == user_id)
     rows = (await db.execute(
-        select(CommunityComment, CommunityProfile.nickname)
+        select(CommunityComment, CommunityProfile.nickname, likes, liked)
         .outerjoin(CommunityProfile, CommunityProfile.user_id == CommunityComment.user_id)
         .where(CommunityComment.post_id == post_id,
                or_(CommunityComment.status == "visible", and_(CommunityComment.status == "deleted", has_reply)),
@@ -246,7 +250,32 @@ async def list_comments(db: AsyncSession, user_id: str, post_id: str) -> list[Co
     return [CommentItem(comment_id=c.comment_id, body="" if c.status == "deleted" else c.body,
                         author_nickname="" if c.status == "deleted" else (n or "알 수 없음"),
                         created_at=c.created_at, mine=c.status != "deleted" and c.user_id == user_id,
-                        parent_id=c.parent_id, deleted=c.status == "deleted") for c, n in rows]
+                        parent_id=c.parent_id, deleted=c.status == "deleted",
+                        like_count=0 if c.status == "deleted" else int(lk), liked_by_me=bool(ld) and c.status != "deleted")
+            for c, n, lk, ld in rows]
+
+
+async def toggle_comment_like(db: AsyncSession, user_id: str, comment_id: str) -> CommentLikeResult:
+    """댓글 좋아요 누르기/취소. 보이는 댓글(숨김·삭제 아님)에만, 내가 볼 수 있는 글의 댓글에만."""
+    await require_nickname(db, user_id)
+    c = await db.get(CommunityComment, comment_id)
+    if c is None or c.status != "visible":
+        raise not_found("댓글")
+    p = await db.get(CommunityPost, c.post_id)
+    if p is None or p.status != "visible" or not await _can_see_party(db, user_id, p):
+        raise not_found("댓글")
+    mine = (await db.execute(select(CommunityCommentLike).where(
+        CommunityCommentLike.comment_id == comment_id, CommunityCommentLike.user_id == user_id))).scalar_one_or_none()
+    if mine is None:
+        db.add(CommunityCommentLike(comment_id=comment_id, user_id=user_id, created_at=utcnow()))
+        liked = True
+    else:
+        await db.delete(mine)
+        liked = False
+    await db.commit()
+    count = (await db.execute(select(func.count()).select_from(CommunityCommentLike)
+                              .where(CommunityCommentLike.comment_id == comment_id))).scalar_one()
+    return CommentLikeResult(liked=liked, like_count=int(count))
 
 
 async def create_comment(db: AsyncSession, user_id: str, post_id: str, req: CommentCreate) -> CommentItem:
@@ -288,6 +317,7 @@ async def delete_comment(db: AsyncSession, user_id: str, comment_id: str) -> Non
     if c is None or c.user_id != user_id or c.status == "deleted":
         raise not_found("댓글")
     await db.execute(delete(CommunityReport).where(CommunityReport.comment_id == comment_id))
+    await db.execute(delete(CommunityCommentLike).where(CommunityCommentLike.comment_id == comment_id))
     has_reply = (await db.execute(select(CommunityComment.comment_id).where(
         CommunityComment.parent_id == comment_id, CommunityComment.status == "visible").limit(1))).first() is not None
     if has_reply:

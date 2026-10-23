@@ -18,7 +18,7 @@ from app.models.guest_inquiry import GuestInquiry  # noqa: F401
 from app.models.notice import Notice  # noqa: F401
 from app.models.pie import PieLedger  # noqa: F401
 from app.models.community import (  # noqa: F401
-    CommunityFame,
+    CommunityCommentLike, CommunityFame,
     CommunityComment, CommunityLike, CommunityPost, CommunityProfile, CommunityReport,
 )
 from app.models.common_challenge import CommonChallenge, CommonChallengeCert, CommonChallengeParticipant  # noqa: F401

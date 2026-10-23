@@ -31,6 +31,7 @@ class UserCharacter(Base):
     )
     body: Mapped[str] = mapped_column(String(20), nullable=False)
     color: Mapped[str] = mapped_column(String(20), nullable=False)
+    eye: Mapped[str] = mapped_column(String(20), nullable=False, default="#243749", server_default="#243749")   # 눈 색
     expr: Mapped[str] = mapped_column(String(20), nullable=False)
     face: Mapped[str] = mapped_column(String(20), nullable=False)
     head: Mapped[str] = mapped_column(String(20), nullable=False)

@@ -145,6 +145,8 @@ class CommentItem(BaseModel):
     created_at: datetime
     mine: bool
     parent_id: str | None = None   # 대댓글이면 원 댓글 id
+    like_count: int = 0
+    liked_by_me: bool = False
     deleted: bool = False          # 지운 댓글에 답글이 남아 있으면 자리만 남긴다(본문·작성자는 비움)
 
 
@@ -251,3 +253,8 @@ class ProfileResult(BaseModel):
 class FameResult(BaseModel):
     fame: int
     fame_given_by_me: bool
+
+
+class CommentLikeResult(BaseModel):
+    liked: bool
+    like_count: int
