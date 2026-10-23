@@ -1,5 +1,5 @@
 // =====================================================================
-// PAEON 전수 ERD — dbdiagram.io DBML (v8.1, 2026-10-23 모델 영역 개정 · 김혜성 / v8: 요구사항 v1.9 + 모델_연결_명세 v0.1.0 반영)
+// PAEON 전수 ERD — dbdiagram.io DBML (v8.1, 2026-10-23 모델 영역 개정 / v8: 요구사항 v1.9 + 모델_연결_명세 v0.1.0 반영)
 //
 // [v8.1 변경] 모델 영역만 구현(app/models/prediction.py)·모델 A v0.2.0·요구사항 v2.3 기준으로 정리. 다른 영역은 v8 그대로.
 //  - 수정: prediction_jobs(survey_instance_id·input_snapshot 추가), predictions(실제 칸으로 교체: prediction_job_id·model_code·
