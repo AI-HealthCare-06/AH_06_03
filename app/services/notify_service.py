@@ -25,6 +25,16 @@ async def comment_added(db: AsyncSession, post_id: str, post_author_id: str, com
                             f"{name}님이 내 글에 댓글을 남겼어요.", f"post.html?id={post_id}")
 
 
+async def like_added(db: AsyncSession, post_id: str, post_author_id: str, liker_id: str) -> None:
+    """내 글에 좋아요가 눌렸을 때 → 글쓴이에게 (설정은 댓글·답글과 같은 comment).
+    ponytail: 같은 사람이 취소했다 다시 누르면 알림이 또 간다. 문제가 되면 (글, 사람)별 발송 기록으로 한 번만 보낸다."""
+    if post_author_id == liker_id:
+        return
+    name = await _nickname(db, liker_id)
+    await push_service.send(db, post_author_id, "comment", "내 글에 좋아요가 눌렸어요 ❤️",
+                            f"{name}님이 내 글을 좋아해요.", f"post.html?id={post_id}")
+
+
 async def reply_added(db: AsyncSession, post_id: str, comment_id: str, parent_author_id: str, replier_id: str) -> None:
     """내 댓글에 답글이 달렸을 때 → 원 댓글 쓴 사람에게만 (글쓴이에게는 가지 않는다)."""
     if parent_author_id == replier_id:

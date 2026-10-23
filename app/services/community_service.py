@@ -224,6 +224,8 @@ async def toggle_like(db: AsyncSession, user_id: str, post_id: str) -> LikeResul
         await db.delete(mine)
         liked = False
     await db.commit()
+    if liked:
+        await notify_service.like_added(db, post_id, p.user_id, user_id)
     count = (await db.execute(select(func.count()).select_from(CommunityLike)
                               .where(CommunityLike.post_id == post_id))).scalar_one()
     return LikeResult(liked=liked, like_count=int(count))
