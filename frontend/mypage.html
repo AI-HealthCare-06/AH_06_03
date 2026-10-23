@@ -224,7 +224,7 @@ function wire() {
       }
     } catch (e) { if (e.code) { state.err = e.message || '동의 상태를 바꾸지 못했어요.'; render(); return; } }   // 코드 없는 실패 = 서버에 API 없음 → 화면에서만 바꿈
     // 알림 설정 메뉴를 다시 보이게 할 때(menu.html) 이 안내도 켠다: const PUSH_READY = true
-    const PUSH_READY = false;
+    const PUSH_READY = true;
     if (want) state.notice = PUSH_READY ? '다시 동의해 주셔서 감사해요. 알림을 받으시려면 <a href="notifications.html" style="font-weight:700">알림 설정</a>에서 다시 켜 주세요.' : '';
     state.consent = want; render();
   });
