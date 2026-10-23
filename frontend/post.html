@@ -7,9 +7,11 @@
 <link rel="stylesheet" href="assets/style.css">
 <style>
   .head{display:flex; align-items:center; gap:12px}
+  .head > div{min-width:0}
+  .head .meta{overflow-wrap:anywhere}
   .av{width:52px; height:52px; border-radius:16px; background:var(--cream); display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--muted); flex:none}
   .meta{font-size:13px; color:var(--muted)}
-  .cat{height:22px; padding:0 8px; border-radius:11px; border:1px solid #D2C4B4; color:#3B5063; display:inline-flex; align-items:center; font-size:13px; margin-right:6px}
+  .cat{height:22px; padding:0 8px; border-radius:11px; border:1px solid #D2C4B4; color:#3B5063; display:inline-flex; align-items:center; font-size:13px; margin-right:6px; flex:none; white-space:nowrap}
   h1.ttl2{font-size:20px; line-height:1.4; word-break:break-all}
   .bodytx{font-size:15px; line-height:1.75; white-space:pre-wrap; word-break:break-all}
   .attach{display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:12px; padding:8px 12px; align-self:flex-start; font-size:13px}
@@ -79,6 +81,9 @@ function ago(iso) {
   if (s < 60) return '방금 전'; if (s < 3600) return Math.floor(s / 60) + '분 전'; if (s < 86400) return Math.floor(s / 3600) + '시간 전';
   if (s < 172800) return '어제'; return Math.floor(s / 86400) + '일 전';
 }
+document.addEventListener('click', (e) => {   // 아바타·닉네임을 누르면 그 사람의 프로필로
+  const t = e.target.closest('[data-prof]'); if (t) location.href = 'profile.html?nick=' + encodeURIComponent(t.dataset.prof);
+});
 let post = null;
 function sheet(title, items, onPick) {
   const bg = document.createElement('div'); bg.className = 'sheet-bg';
@@ -91,7 +96,7 @@ function renderPost() {
   let att = '';
   if (p.attach) { const k = KIND[p.attach.kind]; att = '<div class="attach"><span class="ctag ' + k[1] + '">' + k[0] + '</span><span class="lb">' + esc(p.attach.label) + '</span><span class="dy">' + (p.attach.kind === 'party' ? (p.attach.days ? p.attach.days + '일째' : '이제 시작') : '인증 ' + p.attach.days + '일째') + '</span></div>'; }
   $('post').innerHTML = '<div style="display:flex; flex-direction:column; gap:14px">'
-    + '<div class="head"><span class="av"' + (p.author_nickname ? ' data-av="' + esc(nick) + '"' : '') + '>' + esc(nick.slice(0, 1)) + '</span><div><div class="meta"><span class="cat">' + esc(CAT_LABEL[p.category] || '') + '</span>' + esc(nick) + ' · ' + ago(p.created_at) + '</div></div></div>'
+    + '<div class="head"><span class="av"' + (p.author_nickname ? ' data-av="' + esc(nick) + '" data-prof="' + esc(nick) + '"' : '') + '>' + esc(nick.slice(0, 1)) + '</span><div><div class="meta"><span class="cat">' + esc(CAT_LABEL[p.category] || '') + '</span>' + (p.author_nickname ? '<span data-prof="' + esc(nick) + '" style="text-decoration:underline; text-underline-offset:2px">' + esc(nick) + '</span>' : esc(nick)) + ' · ' + ago(p.created_at) + '</div></div></div>'
     + (new URLSearchParams(location.search).get('from') === 'party' ? '' : '<h1 class="ttl2">' + esc(p.title) + '</h1>')
     + (p.hidden ? '<div class="callout">' + esc(p.notice || '') + '</div>' : '<div class="bodytx">' + esc(p.body) + '</div>') + att
     + (p.hidden ? '' : Array.from({ length: p.photo_count || 0 }, (_, i) => '<div class="ph" data-ph="' + esc(p.post_id) + '" data-n="' + i + '"></div>').join(''))
@@ -125,7 +130,7 @@ function showErr(m) { $('err').textContent = m; $('err').hidden = false; }
 let replyTo = null;   // 답글을 다는 중인 원 댓글 id
 function cmHtml(c, reply) {
   if (c.deleted) return '<div class="cm"><div class="b" style="color:var(--muted)">삭제된 댓글이에요.</div></div>';
-  const who = '<span style="display:flex; align-items:center; gap:8px"><span class="av" style="width:' + (reply ? 28 : 36) + 'px; height:' + (reply ? 28 : 36) + 'px; border-radius:12px; font-size:14px" data-av="' + esc(c.author_nickname) + '">' + esc((c.author_nickname || '?').slice(0, 1)) + '</span>' + esc(c.author_nickname) + ' · ' + ago(c.created_at) + '</span>';
+  const who = '<span style="display:flex; align-items:center; gap:8px"><span class="av" style="width:' + (reply ? 28 : 36) + 'px; height:' + (reply ? 28 : 36) + 'px; border-radius:12px; font-size:14px" data-av="' + esc(c.author_nickname) + '" data-prof="' + esc(c.author_nickname) + '">' + esc((c.author_nickname || '?').slice(0, 1)) + '</span>' + '<span data-prof="' + esc(c.author_nickname) + '" style="text-decoration:underline; text-underline-offset:2px">' + esc(c.author_nickname) + '</span> · ' + ago(c.created_at) + '</span>';
   const act = (reply ? '' : '<button type="button" class="lnk" style="min-height:0" data-reply="' + c.comment_id + '">답글</button>')
     + (c.mine ? '<button type="button" class="lnk" style="min-height:0" data-edit="' + c.comment_id + '">수정</button>' : '') + (c.mine ? '<button type="button" class="lnk" style="min-height:0" data-del="' + c.comment_id + '">삭제</button>' : '<button type="button" class="lnk" style="min-height:0" data-rep="' + c.comment_id + '">신고</button>');
   const inner = '<div class="t">' + who + '<span style="display:flex; gap:10px">' + act + '</span></div><div class="b">' + esc(c.body) + '</div>';

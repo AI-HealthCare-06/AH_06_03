@@ -136,8 +136,14 @@ function markSkipped(code, on) {
   if (on) skipped.add(code); else skipped.delete(code);
 }
 
+// 이 화면의 문항을 모두 채웠으면 "아직 답하지 않은 문항이 N개" 경고를 지운다(채운 뒤에도 남아 있으면 헷갈린다)
+function clearGapNotice() {
+  const err = document.getElementById('form-err');
+  if (err && err.style.display !== 'none' && !unansweredIn(step).length) err.style.display = 'none';
+}
 document.addEventListener('change', (e) => {
   const t = e.target;
+  setTimeout(clearGapNotice, 0);   // answers 갱신이 끝난 뒤에 확인
   if (t.type === 'radio') {
     answers[t.name] = t.value;
     t.closest('.optrow').querySelectorAll('.opt').forEach(o => o.dataset.on = o.querySelector('input').checked ? '1' : '0');

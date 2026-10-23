@@ -578,3 +578,28 @@ async function mountThanksCard() {
     } catch (err) { const m = document.getElementById('thanks-err'); m.textContent = friendlyError(err); m.hidden = false; b.disabled = false; }
   });
 }
+
+// 아래로 당겨서 새로고침(모바일). 화면 맨 위에서 손가락을 아래로 80px 이상 끌었다 놓으면 onRefresh()를 부른다. 위쪽에 "당겨서 새로고침"/"놓으면 새로고침" 안내가 나온다.
+function enablePullToRefresh(onRefresh) {
+  if (!('ontouchstart' in window)) return;   // 터치 화면에서만
+  let y0 = null, dist = 0, busy = false;
+  const bar = document.createElement('div');
+  bar.setAttribute('aria-live', 'polite');
+  bar.style.cssText = 'position:fixed; left:50%; top:0; transform:translate(-50%,-48px); z-index:70; padding:8px 16px; border-radius:0 0 16px 16px; background:var(--cream); color:var(--ink); font-size:13px; font-weight:700; transition:transform .15s; pointer-events:none';
+  document.body.appendChild(bar);
+  const show = (t, px) => { bar.textContent = t; bar.style.transform = `translate(-50%, ${px}px)`; };
+  const hide = () => { bar.style.transform = 'translate(-50%,-48px)'; };
+  window.addEventListener('touchstart', (e) => { y0 = (window.scrollY <= 0 && !busy && e.touches.length === 1) ? e.touches[0].clientY : null; dist = 0; }, { passive: true });
+  window.addEventListener('touchmove', (e) => {
+    if (y0 === null) return;
+    dist = e.touches[0].clientY - y0;
+    if (dist > 8 && window.scrollY <= 0) show(dist >= 80 ? '놓으면 새로고침' : '당겨서 새로고침', Math.min(dist / 3, 40) - 4); else hide();
+  }, { passive: true });
+  window.addEventListener('touchend', async () => {
+    const go = y0 !== null && dist >= 80 && window.scrollY <= 0; y0 = null;
+    if (!go) { hide(); return; }
+    busy = true; show('새로고침하는 중…', 8);
+    try { await onRefresh(); } catch (e) { /* 실패는 각 화면이 목록 자리에 안내한다 */ }
+    busy = false; hide();
+  }, { passive: true });
+}
