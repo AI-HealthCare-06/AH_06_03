@@ -66,7 +66,6 @@ input::placeholder,textarea::placeholder{color:#A9B3BC; font-weight:500; opacity
 .pnote button svg{transition:transform .2s}
 .pnote button[aria-expanded=true] svg{transform:rotate(180deg)}
 .pnote{text-align:left}
-.agebox + .pnote,.agecard + .pnote{margin-top:-6px}
 .pnote p{margin:0 0 4px; padding:12px 14px; border-radius:12px; background:var(--cream); font-size:13px; line-height:1.6; color:var(--body); text-align:left; word-break:keep-all}
 .pnote p[hidden]{display:none}
 .fade-r{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 36px),transparent); mask-image:linear-gradient(to right,#000 calc(100% - 36px),transparent)}
