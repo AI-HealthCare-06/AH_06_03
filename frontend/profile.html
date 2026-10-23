@@ -13,7 +13,7 @@
   .fame .cnt{font-size:16px; font-weight:800; color:var(--ink)}
   .heart{width:36px; height:36px; border-radius:50%; border:1px solid #F0C7CD; background:#fff; font-size:18px; line-height:1; display:inline-flex; align-items:center; justify-content:center; padding:0; color:#E5484D; cursor:pointer}
   .heart.on{background:#FDECEE; border-color:#E5484D}
-  .heart:disabled{opacity:.5}
+  .heart:disabled{opacity:1; cursor:default}
   .tabs2{display:flex; border-bottom:1px solid var(--line)}
   .tabs2 button{flex:1; min-height:48px; border:0; background:none; font-size:15px; font-weight:700; color:var(--muted); border-bottom:2px solid transparent}
   .tabs2 button.on{color:var(--ink); border-bottom-color:var(--ink)}
@@ -56,7 +56,7 @@ const nick = new URLSearchParams(location.search).get('nick') || '';
 let P = null, tab = 'posts';
 
 function render() {
-  const heart = P.mine ? '<span aria-hidden="true" style="color:#E5484D; font-size:18px">❤️</span>' : `<button type="button" class="heart${P.fame_given_by_me ? ' on' : ''}" id="heart" aria-pressed="${P.fame_given_by_me}" aria-label="${P.fame_given_by_me ? '인기도 취소' : '인기도 주기'}">${P.fame_given_by_me ? '❤️' : '♡'}</button>`;
+  const heart = P.mine ? '<span aria-hidden="true" style="color:#E5484D; font-size:18px">❤️</span>' : `<button type="button" class="heart${P.fame_given_by_me ? ' on' : ''}" id="heart"${P.fame_given_by_me ? ' disabled' : ''} aria-label="${P.fame_given_by_me ? '인기도를 줬어요' : '인기도 주기'}">${P.fame_given_by_me ? '❤️' : '♡'}</button>`;
   const items = tab === 'posts'
     ? (P.posts.length ? P.posts.map(p => `<a class="item" href="post.html?id=${encodeURIComponent(p.post_id)}"><div class="t">${esc(p.title)}</div><div class="p">${esc(p.preview)}</div><div class="m"><span>${esc(CAT_LABEL[p.category] || '')}</span><span>${ago(p.created_at)}</span><span>좋아요 ${p.like_count}</span><span>댓글 ${p.comment_count}</span></div></a>`).join('') : '<div class="empty">아직 쓴 글이 없어요.</div>')
     : (P.comments.length ? P.comments.map(c => `<a class="item" href="post.html?id=${encodeURIComponent(c.post_id)}#c-${encodeURIComponent(c.comment_id)}"><div class="p" style="-webkit-line-clamp:3">${esc(c.body)}</div><div class="on">‘${esc(c.post_title)}’ 글에 · ${ago(c.created_at)}</div></a>`).join('') : '<div class="empty">아직 쓴 댓글이 없어요.</div>');
@@ -69,7 +69,8 @@ function render() {
   if (av) apiCall('GET', '/characters/by-nickname/' + encodeURIComponent(P.nickname), undefined, '').then(r => { av.innerHTML = characterSvg(r.data, 80); }).catch(() => {});
   document.querySelectorAll('.tabs2 button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.t; render(); }));
   const h = $('heart');
-  if (h) h.addEventListener('click', async () => {
+  if (h && !h.disabled) h.addEventListener('click', async () => {
+    if (!(await confirmDialog('인기도를 줄까요?', '한 번 주면 취소할 수 없어요.', '주기'))) return;
     h.disabled = true;
     try {
       const r = (await apiCall('POST', '/community/users/' + encodeURIComponent(P.nickname) + '/fame', undefined, '인기도를 주지 못했어요')).data;
