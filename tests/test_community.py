@@ -203,10 +203,10 @@ async def test_프로필은_공개_글과_댓글만_인기도는_한_사람당_�
     pc = (await client.get("/v1/community/users/글쓴이", headers=c)).json()["data"]
     assert [x["post_id"] for x in pb["posts"]] == [p1] and {x["post_id"] for x in pc["posts"]} == {p1, p2}
     assert pc["comments"][0]["body"] == "내 글 댓글" and pc["mine"] is False
-    # 인기도: 한 사람이 한 사람에게 한 번, 다시 누르면 취소, 내게는 못 줌, 여러 사람에게는 각각 줄 수 있음
+    # 인기도: 한 사람이 한 사람에게 한 번(취소 없음), 내게는 못 줌, 여러 사람에게는 각각 줄 수 있음
     assert (await client.post("/v1/community/users/글쓴이/fame", headers=b)).json()["data"] == {"fame": 1, "fame_given_by_me": True}
     assert (await client.post("/v1/community/users/글쓴이/fame", headers=c)).json()["data"]["fame"] == 2
-    assert (await client.post("/v1/community/users/글쓴이/fame", headers=b)).json()["data"] == {"fame": 1, "fame_given_by_me": False}   # 취소
+    assert (await client.post("/v1/community/users/글쓴이/fame", headers=b)).json()["data"] == {"fame": 2, "fame_given_by_me": True}    # 다시 눌러도 그대로(취소 없음)
     assert (await client.post("/v1/community/users/글쓴이/fame", headers=a)).status_code == 400                                         # 본인
     assert (await client.post("/v1/community/users/독자/fame", headers=a)).json()["data"]["fame"] == 1                                  # 다른 사람에게도 줄 수 있음
     assert (await client.get("/v1/community/users/없는닉", headers=a)).status_code == 404

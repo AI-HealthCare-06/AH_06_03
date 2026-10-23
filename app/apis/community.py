@@ -54,8 +54,8 @@ async def get_profile(nickname: str, user_id: str = Depends(get_current_user_id)
 
 
 @router.post("/users/{nickname}/fame", response_model=DataResponse[FameResult])
-async def toggle_fame(nickname: str, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)):
-    return DataResponse(data=await community_service.toggle_fame(db, user_id, nickname))
+async def give_fame(nickname: str, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)):
+    return DataResponse(data=await community_service.give_fame(db, user_id, nickname))
 
 
 @router.get("/posts/{post_id}", response_model=DataResponse[PostDetail])

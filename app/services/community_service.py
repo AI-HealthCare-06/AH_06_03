@@ -344,21 +344,24 @@ async def get_profile(db: AsyncSession, user_id: str, nickname: str) -> ProfileR
         comments=[ProfileComment(comment_id=c.comment_id, post_id=c.post_id, post_title=t, body=c.body, created_at=c.created_at) for c, t in crows])
 
 
-async def toggle_fame(db: AsyncSession, user_id: str, nickname: str) -> FameResult:
-    """남에게 인기도(하트)를 준다. 한 사람에게 한 번, 다시 누르면 취소. 내 프로필에는 못 준다."""
+async def give_fame(db: AsyncSession, user_id: str, nickname: str) -> FameResult:
+    """남에게 인기도(하트)를 준다. 한 사람에게 한 번, 한 번 주면 취소되지 않는다(이미 줬으면 그대로 돌려준다). 내 프로필에는 못 준다.
+    처음 줄 때만 받는 사람에게 알린다(취소가 없어서 같은 하트로 알림이 반복될 수 없다)."""
     await require_nickname(db, user_id)
     target = await _user_by_nickname(db, nickname)
     if target == user_id:
         raise AppError(400, "FAME_SELF", "내게는 줄 수 없어요.")
-    mine = (await db.execute(select(CommunityFame).where(
-        CommunityFame.giver_id == user_id, CommunityFame.target_id == target))).scalar_one_or_none()
-    if mine is None:
-        db.add(CommunityFame(giver_id=user_id, target_id=target, created_at=utcnow()))
-    else:
-        await db.delete(mine)
-    await db.commit()
-    fame, given = await _fame_state(db, user_id, target)
-    return FameResult(fame=fame, fame_given_by_me=given)
+    given = (await db.execute(select(CommunityFame.fame_id).where(
+        CommunityFame.giver_id == user_id, CommunityFame.target_id == target))).first() is not None
+    if not given:
+        try:
+            db.add(CommunityFame(giver_id=user_id, target_id=target, created_at=utcnow()))
+            await db.commit()
+            await notify_service.fame_given(db, target, user_id, nickname)
+        except IntegrityError:    # 동시에 두 번 눌러도 한 번만
+            await db.rollback()
+    fame, mine = await _fame_state(db, user_id, target)
+    return FameResult(fame=fame, fame_given_by_me=mine)
 
 
 # ---------------------------------------------------------------- 신고
