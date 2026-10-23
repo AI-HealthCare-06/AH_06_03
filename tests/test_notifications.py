@@ -137,3 +137,12 @@ async def test_내_글에_좋아요가_눌리면_글쓴이에게_취소와_본�
     await client.post(f"/v1/community/posts/{pid}/like", headers=hb)     # 취소
     assert [(u, m["title"], m["body"], m["url"]) for u, m in sent] == \
         [(author, "내 글에 좋아요가 눌렸어요 ❤️", "몽글이님이 내 글을 좋아해요.", f"post.html?id={pid}")]
+
+
+async def test_인기도_하트는_처음_줄_때만_받는_사람에게_알린다_본인은_안_됨(client, db_session, sent):
+    target, ha = await _user(client, db_session, "a@t.kr", "글쓴이")
+    _, hb = await _user(client, db_session, "b@t.kr", "몽글이")
+    await client.post("/v1/community/users/글쓴이/fame", headers=ha)     # 본인에게는 못 줌(400), 알림 없음
+    await client.post("/v1/community/users/글쓴이/fame", headers=hb)     # 처음 줌 → 알림
+    await client.post("/v1/community/users/글쓴이/fame", headers=hb)     # 다시 눌러도(취소 없음) 알림 없음
+    assert [(u, m["title"], m["body"], m["url"]) for u, m in sent] ==         [(target, "인기도 하트를 받았어요 ❤️", "몽글이님이 내 프로필에 하트를 눌렀어요.", "profile.html?nick=%EA%B8%80%EC%93%B4%EC%9D%B4")]

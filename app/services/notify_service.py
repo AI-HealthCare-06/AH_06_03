@@ -1,6 +1,8 @@
 """이벤트 알림(댓글·대댓글·문의 답변·파티 참여)을 누구에게 어떤 문구로 보낼지 정한다. 실제 발송은 push_service.send.
 원래 요청(댓글 저장 등)이 commit된 뒤에 부른다. 발송이 실패해도 원래 요청은 성공으로 둔다(push_service.send가 오류를 삼킨다).
 본인이 한 일은 본인에게 보내지 않는다. 알림에는 댓글·문의 내용을 넣지 않는다(잠금 화면 노출 방지)."""
+from urllib.parse import quote
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,6 +35,15 @@ async def like_added(db: AsyncSession, post_id: str, post_author_id: str, liker_
     name = await _nickname(db, liker_id)
     await push_service.send(db, post_author_id, "comment", "내 글에 좋아요가 눌렸어요 ❤️",
                             f"{name}님이 내 글을 좋아해요.", f"post.html?id={post_id}")
+
+
+async def fame_given(db: AsyncSession, target_id: str, giver_id: str, target_nickname: str) -> None:
+    """내 프로필에 인기도 하트가 눌렸을 때 → 받은 사람에게 (설정은 댓글·답글·좋아요와 같은 comment). 처음 줄 때만 부른다."""
+    if target_id == giver_id:
+        return
+    name = await _nickname(db, giver_id)
+    await push_service.send(db, target_id, "comment", "인기도 하트를 받았어요 ❤️",
+                            f"{name}님이 내 프로필에 하트를 눌렀어요.", f"profile.html?nick={quote(target_nickname)}")
 
 
 async def reply_added(db: AsyncSession, post_id: str, comment_id: str, parent_author_id: str, replier_id: str) -> None:
