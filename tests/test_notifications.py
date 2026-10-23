@@ -127,3 +127,13 @@ async def test_지워져_자리만_남은_원_댓글_작성자에게는_보내�
     sent.clear()
     r = await client.post(f"/v1/community/posts/{pid}/comments", json={"body": "답글의 답글", "parent_id": rid}, headers=hs)
     assert r.status_code == 201 and sent == []                                                   # 답글은 달리지만 알림은 없음
+
+async def test_내_글에_좋아요가_눌리면_글쓴이에게_취소와_본인_좋아요는_안_보낸다(client, db_session, sent):
+    author, ha = await _user(client, db_session, "a@t.kr", "글쓴이")
+    _, hb = await _user(client, db_session, "b@t.kr", "몽글이")
+    pid = await _post(client, ha)
+    await client.post(f"/v1/community/posts/{pid}/like", headers=ha)     # 본인 글에 본인 좋아요
+    await client.post(f"/v1/community/posts/{pid}/like", headers=hb)     # 좋아요
+    await client.post(f"/v1/community/posts/{pid}/like", headers=hb)     # 취소
+    assert [(u, m["title"], m["body"], m["url"]) for u, m in sent] == \
+        [(author, "내 글에 좋아요가 눌렸어요 ❤️", "몽글이님이 내 글을 좋아해요.", f"post.html?id={pid}")]
