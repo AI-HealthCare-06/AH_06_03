@@ -16,7 +16,7 @@ from app.models.challenge import Challenge
 from app.models.community import CommunityComment, CommunityLike, CommunityPost, CommunityPostPhoto, CommunityProfile, CommunityReport
 from app.models.party import MAX_MEMBERS, Party, PartyCheckin, PartyMember
 from app.schemas.party import PartyCard, PartyChallengeOption, PartyHome, PartyInfo, PartyMemberView
-from app.services import character_service, pie_service
+from app.services import character_service, pie_service, notify_service
 from app.services.challenge_service import today_kst
 
 CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"   # 헷갈리는 0·O·1·I는 뺐다
@@ -126,6 +126,8 @@ async def join(db: AsyncSession, user_id: str, invite_code: str) -> PartyInfo:
     except IntegrityError:
         await db.rollback()
         raise AppError(409, "PARTY_ALREADY_JOINED", "이미 파티에 들어가 있어요.")
+    members = [m.user_id for m in await _members(db, party.party_id)]
+    await notify_service.party_joined(db, members, user_id)    # 이미 있던 멤버에게 알림 (본인 제외) 
     return await _info(db, party)
 
 

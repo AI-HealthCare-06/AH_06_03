@@ -8,7 +8,7 @@ from app.models.inquiry import Inquiry
 from app.schemas.inquiry import (
     AdminInquiryDetail, AdminInquiryItem, AdminInquiryList, InquiryCreate, InquiryDetail, InquiryItem, InquiryList,
 )
-from app.services import admin_alert, audit_service
+from app.services import admin_alert, audit_service,notify_service
 
 MAX_OPEN = 5    # 답을 기다리는 문의는 한 사람당 5개까지 (도배 방지)
 
@@ -93,6 +93,7 @@ async def admin_answer(db: AsyncSession, admin: str, inquiry_id: str, answer: st
     inq.user_read_at = None                   # 답을 고치면 이용자에게 다시 새 답변으로 보인다
     await audit_service.record(db, admin, "inquiry_answer", target=inq.inquiry_id[-8:])
     await db.commit()
+    await notify_service.inquiry_answered(db, inq.user_id)           # 문의한 사람에게 알림 (내용은 안 넣음)
     return _admin_detail(inq)
 
 
