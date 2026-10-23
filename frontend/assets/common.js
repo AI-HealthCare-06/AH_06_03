@@ -503,9 +503,9 @@ function characterSvg(view, px) {
       put(10, 3, 'o'); put(10, 12, 'o');            // 귀에 거는 끈
     }
     const far = [];   // 몸 칸(16×16) 밖으로 나가는 픽셀. 고양이수염처럼 얼굴 밖으로 튀어나오는 아이템용
-    if (s.face === 'whiskers') {   // 뺨 한 점에서 세 줄이 부채꼴로: 위는 대각선 위로, 가운데는 곧게, 아래는 대각선 아래로. 얼굴 밖까지 나간다
-      const L = [[9, 2], [8, 1], [7, 0], [6, -1], [5, -2], [10, 2], [10, 1], [10, 0], [10, -1], [10, -2], [10, -3], [11, 2], [12, 1], [13, 0], [14, -1], [15, -2]];
-      L.concat(L.map(([r, c]) => [r, 15 - c])).forEach(([r, c]) => { if (c >= 0 && c < 16) put(r, c, 'o'); else far.push([r + OFF, c]); });
+    if (s.face === 'whiskers') {   // 뺨 한 점에서 얼굴 밖으로 갈라지는 두 줄('<' 모양, 위·아래 대각선). 얼굴 안에서 시작한다
+      const L = [[10, 2], [9, 1], [8, 0], [7, -1], [11, 1], [12, 0], [13, -1]];
+      L.concat(L.map(([r, c]) => [r, 15 - c])).forEach(([r, c]) => { if (c < 0 || c > 15) far.push([r + OFF, c]); else put(r, c, 'o'); });
     }
     if (s.face === 'freckles') { many([[9, 3], [10, 2], [10, 4], [9, 12], [10, 13], [10, 11]], 'k'); }
     if (s.face === 'mustache') {   // 프링글스 아저씨 콧수염: 코 밑이 살짝 솟고 양 끝이 위로 말린 작은 곡선. 입은 수염에 가려진다
@@ -531,10 +531,17 @@ function characterSvg(view, px) {
     };
     (H[s.head] || []).forEach(([ch, list]) => many(list, ch));
 
-    const fills = { k: '#B5835A', t: '#7FB6E8', o: '#243749', e: '#243749', m: '#243749', b: s.color, h: '#FFFFFF', c: '#E8B9A5', g: '#6FA58A', y: '#F2C94C', r: '#E58F9B', w: '#DCE8EF', a: '#5C86AC', x: '#B8CDD9' };
+    const fills = { k: '#B5835A', t: '#7FB6E8', o: '#243749', e: '#243749', m: '#243749', b: s.color, h: '#FFFFFF', c: '#E8B9A5', g: '#6FA58A', y: '#F2C94C', r: '#E58F9B', w: '#DCE8EF', a: '#5C86AC', x: '#B8CDD9', v: '#7F97AB' };
   let rects = '';
   g.forEach((row, y) => row.forEach((ch, x) => { if (fills[ch]) rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${fills[ch]}"/>`; }));
   far.forEach(([y, x]) => { rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${fills.o}"/>`; });
   const w = px || 40;
   return `<svg width="${w}" height="${Math.round(w * 1.25)}" viewBox="0 0 16 20" style="overflow:visible" shape-rendering="crispEdges" role="img" aria-label="캐릭터">${rects}</svg>`;
 }
+
+// 홈 화면에 추가(PWA)할 수 있게 매니페스트를 연결한다. 아이폰은 설치한 앱에서만 푸시를 받는다.
+(function () {
+  if (document.querySelector('link[rel="manifest"]')) return;
+  const l = document.createElement('link'); l.rel = 'manifest'; l.href = 'manifest.webmanifest'; document.head.appendChild(l);
+  const t = document.createElement('link'); t.rel = 'apple-touch-icon'; t.href = 'assets/img/icon-192.png'; document.head.appendChild(t);
+})();
