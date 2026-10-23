@@ -27,7 +27,7 @@ THANKS = "thanks_first_day"
 THANKS_KEY = "2026-10"
 THANKS_AMOUNT = 200
 THANKS_SIGNUP = (date(2026, 10, 22), date(2026, 10, 23))
-THANKS_UNTIL = date(2026, 10, 31)        # 이 날(한국 날짜)까지 받을 수 있다 (체험 데이터는 11/1 전에 삭제)
+THANKS_UNTIL = date(2026, 10, 25)        # 체험 마지막 날(한국 날짜) 23:59까지 받을 수 있다. 지나면 카드도 안 보이고 받기도 막힌다
 
 
 def kst_range_to_utc(start: date, end: date) -> tuple[datetime, datetime]:
