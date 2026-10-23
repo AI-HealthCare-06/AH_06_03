@@ -32,3 +32,19 @@ async def test_기간_안_가입자에게만_한_번_지급(db_session):
         assert await g.grant(db, *args, apply=True) == (2, 2)
         assert await g.grant(db, *args, apply=True) == (2, 0)                       # 다시 돌려도 중복 지급 없음
         assert [await pie_service.balance(db, u) for u in (inside, edge, outside)] == [200, 200, 0]
+
+
+async def test_공지_카드로_받기_기간_안만_한_번만(client, db_session, monkeypatch):
+    inside, h_in = await make(db_session, "in2@test.kr")
+    outside, h_out = await make(db_session, "out2@test.kr")
+    async with db_session() as db:
+        await db.execute(update(User).where(User.user_id == inside).values(created_at=datetime(2026, 10, 22, 3, 0)))
+        await db.execute(update(User).where(User.user_id == outside).values(created_at=datetime(2026, 10, 24, 0, 0)))   # 한국 10/24 09:00 = 기간 밖
+        await db.commit()
+    monkeypatch.setattr(pie_service, "THANKS_UNTIL", date(2999, 1, 1))                                         # 받는 기한은 시험 날짜와 무관하게
+    assert (await client.get("/v1/pie/thanks", headers=h_in)).json()["data"] == {"eligible": True, "claimed": False, "amount": 200}
+    assert (await client.post("/v1/pie/thanks", headers=h_out)).status_code == 403     # 기간 밖 가입자
+    r = await client.post("/v1/pie/thanks", headers=h_in)
+    assert r.status_code == 200 and r.json()["data"]["claimed"] is True
+    await client.post("/v1/pie/thanks", headers=h_in)                                   # 다시 눌러도 한 번만
+    assert (await client.get("/v1/pie", headers=h_in)).json()["data"]["balance"] == 200

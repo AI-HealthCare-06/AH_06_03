@@ -7,7 +7,7 @@
 """
 import argparse
 import asyncio
-from datetime import date, datetime, timedelta
+from datetime import date
 
 from sqlalchemy import select
 
@@ -15,14 +15,8 @@ from app.core.db.databases import async_get_db
 from app.models.user import User
 from app.services import pie_service
 
-REASON = "thanks_first_day"
-
-
-def kst_range_to_utc(start: date, end: date) -> tuple[datetime, datetime]:
-    """한국 날짜 [start, end] 하루 전체를 UTC 구간 [시작, 끝)으로."""
-    s = datetime(start.year, start.month, start.day) - timedelta(hours=9)
-    e = datetime(end.year, end.month, end.day) + timedelta(days=1) - timedelta(hours=9)
-    return s, e
+REASON = pie_service.THANKS
+kst_range_to_utc = pie_service.kst_range_to_utc   # 테스트와 하위 호환
 
 
 async def grant(db, start: date, end: date, amount: int, key: str, apply: bool) -> tuple[int, int]:
@@ -56,7 +50,7 @@ if __name__ == "__main__":
     ap.add_argument("--from", dest="start", type=date.fromisoformat, required=True)
     ap.add_argument("--to", dest="end", type=date.fromisoformat, required=True)
     ap.add_argument("--amount", type=int, default=200)
-    ap.add_argument("--key", default="2026-10", help="같은 지급인지 구분하는 이름 (바꾸면 다시 지급된다)")
+    ap.add_argument("--key", default=pie_service.THANKS_KEY, help="같은 지급인지 구분하는 이름 (바꾸면 다시 지급된다)")
     ap.add_argument("--apply", action="store_true")
     a = ap.parse_args()
     if a.end < a.start or a.amount <= 0:

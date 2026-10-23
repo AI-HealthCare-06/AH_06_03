@@ -19,3 +19,9 @@ class PieHistory(BaseModel):
     balance: int
     total: int
     items: list[PieEntry]
+
+
+class ThanksStatus(BaseModel):
+    eligible: bool   # 가입 감사 파이를 받을 수 있는 사람(기간 안에 가입했고 받는 기한 안)
+    claimed: bool    # 이미 받았음
+    amount: int
