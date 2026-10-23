@@ -138,6 +138,7 @@ const goSearch = () => { st.q = document.getElementById('q').value.trim(); st.of
 document.getElementById('q-go').addEventListener('click', goSearch);
 document.getElementById('q').addEventListener('keydown', (e) => { if (e.key === 'Enter') goSearch(); });
 document.getElementById('more-btn').addEventListener('click', () => load(true).catch(() => {}));
+enablePullToRefresh(() => { st.offset = 0; return load(false); });   // 당겨서 새로고침
 apiCall('GET', '/characters/me', undefined, '').then(r => { document.getElementById('me-char').innerHTML = characterSvg(r.data, 36); }).catch(() => {});
 (async () => {
   try {

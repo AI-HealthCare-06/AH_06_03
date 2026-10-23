@@ -132,6 +132,7 @@ async function load(append) {
   } catch (e) { document.getElementById('list').innerHTML = `<div class="empty">${esc(friendlyError(e))}</div>`; }
 }
 function reload() { st.offset = 0; load(false); }
+enablePullToRefresh(() => { st.offset = 0; return load(false); });   // 당겨서 새로고침
 
 document.getElementById('btn-search').innerHTML = ICON.search;
 document.getElementById('fab').innerHTML = ICON.plus + '글쓰기';
