@@ -101,3 +101,21 @@ async def test_내_데이터_내려받기에_기기_암호화_키는_안_나간�
     r = await client.get("/v1/users/me/data-export", headers=h)
     assert r.status_code == 200
     assert "p-key" not in r.text and "a-key" not in r.text            # p256dh·auth 값이 없어야 함
+
+async def test_건강정보_동의를_철회하면_구독이_지워지고_문의_답변_알림도_안_간다(client, db_session, monkeypatch):
+    from app.core.security import utcnow
+    from app.models.inquiry import Inquiry
+    from app.services import account_service, inquiry_service
+    uid, h = await _user(db_session, "a@t.kr")
+    await client.put("/v1/push/subscription", json=SUB, headers=h)
+    monkeypatch.setattr(settings, "VAPID_PRIVATE_KEY", "test-key")
+    sent = []
+    monkeypatch.setattr(push_service, "_webpush", lambda sub, payload: sent.append(sub.user_id))
+    async with db_session() as s:
+        await account_service.delete_health_data(s, uid)                  # 철회 때 지우는 범위
+        await s.commit()
+        inq = Inquiry(user_id=uid, title="질문", body="내용", created_at=utcnow())
+        s.add(inq)
+        await s.commit()
+        await inquiry_service.admin_answer(s, "admin@t.kr", inq.inquiry_id, "답변")
+    assert await _subs(db_session) == [] and sent == []                   # 구독이 없어서 아무 알림도 안 감
