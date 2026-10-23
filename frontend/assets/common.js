@@ -543,3 +543,28 @@ function characterSvg(view, px) {
   const l = document.createElement('link'); l.rel = 'manifest'; l.href = 'manifest.webmanifest'; document.head.appendChild(l);
   const t = document.createElement('link'); t.rel = 'apple-touch-icon'; t.href = 'assets/img/icon-192.png'; document.head.appendChild(t);
 })();
+
+// 가입 감사 파이: 기간 안에 가입한 분에게만 "파이 받기" 카드를 보인다(서버가 대상·기한·중복을 판단). 자리표시(id="thanks-slot")가 있는 화면에서 mountThanksCard()를 부른다.
+let _thanks = null;
+async function mountThanksCard() {
+  const slot = document.getElementById('thanks-slot');
+  if (!slot || typeof apiCall !== 'function' || !loggedIn()) return;
+  if (_thanks === null) {
+    try { _thanks = (await apiCall('GET', '/pie/thanks', undefined, '')).data; } catch (e) { _thanks = { eligible: false, claimed: true }; }
+  }
+  if (!_thanks.eligible || _thanks.claimed) { slot.innerHTML = ''; return; }
+  slot.innerHTML = `<div style="background:var(--cream); border-radius:20px; padding:18px 18px 16px; display:flex; flex-direction:column; gap:6px">
+    <b style="font-size:17px">가입 감사 선물 🎁</b>
+    <span style="font-size:13.5px; line-height:1.6; color:var(--body)">10월 22~23일에 가입해 주셔서 감사해요.<br>감사의 마음으로 파이 ${_thanks.amount}개를 드려요.</span>
+    <span id="thanks-err" style="font-size:13px; color:var(--risk)" hidden></span>
+    <button type="button" class="cta" id="thanks-go" style="margin-top:6px">파이 ${_thanks.amount}개 받기</button></div>`;
+  document.getElementById('thanks-go').addEventListener('click', async (e) => {
+    const b = e.currentTarget; b.disabled = true;
+    try {
+      await apiCall('POST', '/pie/thanks', undefined, '파이를 받지 못했어요');
+      _thanks.claimed = true;
+      slot.innerHTML = `<div style="background:var(--cream); border-radius:20px; padding:18px; text-align:center"><b style="font-size:16px">파이 ${_thanks.amount}개를 받았어요 🎉</b><br><span style="font-size:13.5px; color:var(--body)">감사합니다. 상단 파이 숫자를 확인해 보세요.</span></div>`;
+      setTimeout(() => location.reload(), 1600);
+    } catch (err) { const m = document.getElementById('thanks-err'); m.textContent = friendlyError(err); m.hidden = false; b.disabled = false; }
+  });
+}

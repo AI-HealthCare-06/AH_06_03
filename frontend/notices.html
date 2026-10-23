@@ -42,9 +42,10 @@ const day = (iso) => {
   const bar = `<div class="page-bar pb"><a class="back" href="menu.html" aria-label="뒤로">${ICON.back}</a><span class="ttl">공지사항</span></div>`;
   const seen = new Set(JSON.parse(localStorage.getItem(_noticeKey()) || '[]'));
   const list = await fetchNotices();
-  document.getElementById('screen').innerHTML = bar + (list.length
+  document.getElementById('screen').innerHTML = bar + '<div id="thanks-slot"></div>' + (list.length
     ? `<div class="list">${list.map(n => `<div class="ntc"><div class="top">${seen.has(n.notice_id) ? '' : '<span class="new">NEW</span>'}<span class="d">${day(n.starts_at)}</span></div><div class="t">${esc(n.title)}</div><div class="b">${esc(n.body)}</div></div>`).join('')}</div>`
     : '<div class="empty">게시 중인 공지가 없어요.</div>');
+  mountThanksCard();
   markNoticesSeen(list);   // 열어서 봤으니 파란 점과 새 공지 표시는 다음부터 사라진다
 })();
 </script>
