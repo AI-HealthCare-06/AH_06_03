@@ -27,6 +27,8 @@
   .step .field label{font-size:15px}
   .sumrow.go{cursor:pointer}
   .sumrow.go .vv::after{content:" ›"; color:var(--muted); font-weight:400}
+  body.typing .tabbar{display:none}
+  body.typing .bar{bottom:0}
   .bar{position:sticky; bottom:84px; background:#fff; padding:12px 0; display:flex; flex-direction:column; gap:10px; z-index:5}
   .bar .cta,.bar .ghost{height:56px; font-size:17px; border-radius:28px; margin:0}
 </style>
@@ -331,6 +333,9 @@ const STEPS = [
 ];
 const REVIEW = STEPS.length;
 const stepsBox = document.getElementById('steps');
+// 입력 중에는 하단 탭바를 숨겨 키보드가 올라와도 입력칸과 다음 버튼이 가려지지 않게 한다
+document.addEventListener('focusin', (e) => { if (e.target.matches('input, select, textarea')) document.body.classList.add('typing'); });
+document.addEventListener('focusout', () => { setTimeout(() => { if (!document.activeElement || !document.activeElement.matches('input, select, textarea')) document.body.classList.remove('typing'); }, 100); });
 const reviewBox = document.getElementById('review-rows');
 let stepIdx = 0, backToReview = false;
 STEPS.forEach((st) => {
@@ -381,7 +386,8 @@ function goStep(i, fromReview) {
   document.getElementById('submit-btn').classList.toggle('off', !review);
   document.getElementById('step-skip').classList.toggle('off', review || !STEPS[i].optional || backToReview);
   window.scrollTo(0, 0);
-  if (!review) { const f = STEPS[i].box.querySelector('input'); if (f) f.focus({ preventScroll: true }); }
+  // 터치 기기(아이폰·카카오톡 브라우저 등)에서는 커서를 자동으로 넣지 않는다: 키보드가 저절로 올라와 화면이 위로 밀린다
+  if (!review && window.matchMedia('(pointer: fine)').matches) { const f = STEPS[i].box.querySelector('input'); if (f) f.focus({ preventScroll: true }); }
 }
 
 // 값끼리 맞는지(범위 안이어도 말이 안 되는 조합): 수축기 > 이완기, 키·몸무게로 계산한 BMI 10~60

@@ -154,9 +154,18 @@ document.getElementById('doc').innerHTML = `
     <a class="ghost" href="mypage.html">돌아가기</a>
     <button type="button" class="cta" id="print-btn">PDF로 저장</button>
   </div>
-  <p class="hint no-print" style="text-align:center; margin-top:8px">인쇄 창에서 <b>PDF로 저장</b>을 고르세요.</p>`;
+  <p class="hint no-print" style="text-align:center; margin-top:8px">인쇄 창에서 <b>PDF로 저장</b>을 고르세요. 휴대폰에서는 저장이 안 될 수 있어요.</p>`;
 document.getElementById('back').innerHTML = ICON.back;
-document.getElementById('print-btn').addEventListener('click', () => window.print());
+// 카카오톡 같은 앱 안 브라우저와 아이폰에서는 인쇄(PDF 저장)가 안 되거나 찾기 어렵다 → 안내한다
+document.getElementById('print-btn').addEventListener('click', async () => {
+  const ua = navigator.userAgent;
+  if (/KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\//i.test(ua) || /iPhone|iPad|iPod/i.test(ua)) {
+    await noticeDialog('PDF 저장은 컴퓨터에서만 가능해요',
+      '<span style="display:block;text-wrap:balance;margin-top:10px">휴대폰에서는 마이페이지의 “원본 데이터 내려받기(JSON)”를 이용해 주세요.</span>', '확인');
+    return;
+  }
+  window.print();
+});
 </script>
 </body>
 </html>

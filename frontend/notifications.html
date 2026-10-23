@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 알림 설정</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .grp{display:flex; flex-direction:column}
+  .grp .gt{font-size:13px; color:var(--muted); padding-bottom:6px}
+  .item{display:flex; align-items:center; justify-content:space-between; gap:14px; min-height:64px; padding:10px 0; border-bottom:1px solid var(--line)}
+  .item:last-child{border-bottom:0}
+  .item .tx{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px}
+  .item .tx b{font-size:16px; font-weight:700}
+  .item .tx span{font-size:13px; color:var(--muted); line-height:1.5}
+  .sw{position:relative; flex:none; width:52px; height:32px}
+  .sw input{position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer; z-index:1}
+  .sw i{position:absolute; inset:0; border-radius:16px; background:#CBD5DD; transition:background .15s}
+  .sw i::after{content:""; position:absolute; top:3px; left:3px; width:26px; height:26px; border-radius:50%; background:#fff; transition:transform .15s}
+  .sw input:checked + i{background:var(--accent)}
+  .sw input:checked + i::after{transform:translateX(20px)}
+  .sw input:disabled{cursor:not-allowed}
+  .sw input:disabled + i{opacity:.45}
+  .box{background:var(--cream); border-radius:18px; padding:16px; font-size:14px; line-height:1.7; color:var(--body)}
+  .box b{color:var(--ink)}
+  .how{display:flex; gap:8px; margin-top:12px}
+  .how a{flex:1; min-height:44px; display:flex; align-items:center; justify-content:center; border-radius:999px; border:1px solid var(--sage); background:#fff; color:var(--ink); font-size:14px; font-weight:700; text-decoration:none}
+</style>
+</head>
+<body>
+<div id="header-slot"></div>
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" style="gap:20px">
+        <div class="page-bar" style="margin-bottom:0"><a class="back" href="menu.html" aria-label="뒤로" id="back"></a><span class="ttl">알림 설정</span></div>
+        <div id="notice" class="box" hidden></div>
+        <div id="err" class="callout" style="display:none"></div>
+
+        <div class="grp">
+          <div class="item"><span class="tx"><b>알림 받기</b><span>이 기기로 알림을 보내요</span></span><label class="sw"><input type="checkbox" id="master" aria-label="알림 받기"><i></i></label></div>
+        </div>
+
+        <div class="grp" id="kinds">
+          <div class="gt">받을 알림</div>
+          <div class="item"><span class="tx"><b>댓글 · 답글</b><span>내 글에 댓글이, 내 댓글에 답글이 달리면</span></span><label class="sw"><input type="checkbox" data-k="comment" aria-label="댓글·답글 알림"><i></i></label></div>
+          <div class="item"><span class="tx"><b>문의 답변</b><span>남긴 문의에 답변이 오면</span></span><label class="sw"><input type="checkbox" data-k="inquiry" aria-label="문의 답변 알림"><i></i></label></div>
+          <div class="item"><span class="tx"><b>파티</b><span>우리 파티에 새 멤버가 참여하면</span></span><label class="sw"><input type="checkbox" data-k="party" aria-label="파티 알림"><i></i></label></div>
+          <div class="item"><span class="tx"><b>챌린지 리마인드</b><span>저녁에 오늘 기록을 아직 안 했을 때</span></span><label class="sw"><input type="checkbox" data-k="challenge" aria-label="챌린지 리마인드"><i></i></label></div>
+          <div class="item"><span class="tx"><b>아침 식사</b><span>아침 식사 미션을 하고 있을 때 아침에</span></span><label class="sw"><input type="checkbox" data-k="breakfast" aria-label="아침 식사 알림"><i></i></label></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+document.getElementById('back').innerHTML = ICON.back;
+const $ = (id) => document.getElementById(id);
+const KINDS = ['comment', 'inquiry', 'party', 'challenge', 'breakfast'];
+const showErr = (m) => { const el = $('err'); el.style.display = m ? 'block' : 'none'; el.textContent = m || ''; };
+const HOW = '<div class="how"><a href="notices.html">아이폰 방법</a><a href="notices.html">안드로이드 방법</a></div>';   // 공지사항에 두 방법을 정리해 둔다
+const showNotice = (h) => { $('notice').hidden = !h; $('notice').innerHTML = h ? h + HOW : ''; };
+const setKinds = (disabled) => document.querySelectorAll('[data-k]').forEach(i => { i.disabled = disabled; });
+
+// 서버 약속(API): GET /push/vapid-key → { public_key } · PUT/DELETE /push/subscription { endpoint, keys } · GET/PATCH /push/settings { comment, inquiry, party, challenge, breakfast }
+const b64ToBytes = (s) => { const p = '='.repeat((4 - s.length % 4) % 4), r = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(r, c => c.charCodeAt(0)); };
+const ua = navigator.userAgent;
+const inApp = /KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\//i.test(ua);
+const ios = /iPhone|iPad|iPod/i.test(ua);
+const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+
+async function currentSub() {
+  const reg = (await navigator.serviceWorker.getRegistration('sw.js')) || (await navigator.serviceWorker.register('sw.js'));
+  await navigator.serviceWorker.ready;
+  return { reg, sub: await reg.pushManager.getSubscription() };
+}
+
+async function turnOn() {
+  const perm = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+  if (perm !== 'granted') throw new Error('알림이 차단돼 있어요. 휴대폰 설정에서 이 사이트의 알림을 허용해 주세요.');
+  const { reg } = await currentSub();
+  const key = (await apiCall('GET', '/push/vapid-key', undefined, '알림 서버가 아직 준비되지 않았어요')).data.public_key;
+  const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(key) });
+  const j = sub.toJSON();
+  await apiCall('PUT', '/push/subscription', { endpoint: j.endpoint, keys: j.keys }, '알림을 켜지 못했어요');
+}
+async function turnOff() {
+  const { sub } = await currentSub();
+  if (sub) { const ep = sub.endpoint; await sub.unsubscribe(); await apiCall('DELETE', '/push/subscription', { endpoint: ep }, '알림을 끄지 못했어요').catch(() => {}); }
+}
+
+async function init() {
+  if (inApp || !supported) {
+    $('master').disabled = true; setKinds(true);
+    showNotice(inApp ? '<b>카카오톡 등 앱 안에서는 알림을 받을 수 없어요.</b><br>아래 방법대로 크롬이나 사파리에서 열어 주세요.' : '<b>이 브라우저에서는 알림을 받을 수 없어요.</b><br>' + (ios ? '홈 화면에 추가한 뒤 설치된 앱에서 열어 주세요.' : '크롬 등 다른 브라우저에서 열어 주세요.'));
+    return;
+  }
+  if (ios && !standalone) {   // 아이폰은 홈 화면에 설치한 앱에서만 푸시를 받는다
+    $('master').disabled = true; setKinds(true);
+    showNotice('<b>아이폰은 홈 화면에 추가해야 알림을 받을 수 있어요.</b><br>아래에서 방법을 확인해 주세요.');
+    return;
+  }
+  if (Notification.permission === 'denied') showNotice('<b>알림이 차단돼 있어요.</b><br>휴대폰 설정에서 이 사이트의 알림을 허용해 주세요.');
+  let on = false;
+  try { on = !!(await currentSub()).sub; } catch (e) { /* 등록 실패는 꺼진 것으로 본다 */ }
+  $('master').checked = on; setKinds(!on);
+  try {
+    const s = (await apiCall('GET', '/push/settings', undefined, '')).data;
+    KINDS.forEach(k => { document.querySelector('[data-k="' + k + '"]').checked = s[k] !== false; });
+  } catch (e) { KINDS.forEach(k => { document.querySelector('[data-k="' + k + '"]').checked = true; }); }
+}
+
+$('master').addEventListener('change', async (e) => {
+  showErr(''); const want = e.target.checked; e.target.disabled = true;
+  try { if (want) await turnOn(); else await turnOff(); setKinds(!want); }
+  catch (err) { e.target.checked = !want; showErr(friendlyError(err)); }
+  finally { e.target.disabled = false; }
+});
+document.querySelectorAll('[data-k]').forEach(i => i.addEventListener('change', async () => {
+  showErr('');
+  try { await apiCall('PATCH', '/push/settings', { [i.dataset.k]: i.checked }, '설정을 저장하지 못했어요'); }
+  catch (err) { i.checked = !i.checked; showErr(friendlyError(err)); }
+}));
+init();
+</script>
+</body>
+</html>

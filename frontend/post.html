@@ -19,11 +19,19 @@
   .like{height:44px; padding:0 18px; border-radius:22px; border:1px solid var(--sage); background:#fff; font-weight:700; font-size:14px; display:flex; align-items:center; gap:6px}
   .like.on{background:var(--notice); border-color:var(--accent)}
   .lnk{border:0; background:none; font-size:13px; color:var(--muted); text-decoration:underline; min-height:44px}
-  .cm{padding:14px 0; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:4px}
+  .cm{padding:16px 0 12px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:8px}
   .cm .t{display:flex; justify-content:space-between; font-size:13px; color:var(--muted)}
+  .cm.re{padding:12px 0 4px 6px; border-top:0; flex-direction:row; gap:8px; align-items:flex-start}
+  .cm.re .ln{flex:none; width:14px; color:var(--muted); font-size:15px; line-height:28px}
+  .cm.re .col{flex:1; min-width:0; display:flex; flex-direction:column; gap:6px}
+  .cm.re .b{font-size:14px}
+  .cm.re + .cm:not(.re){margin-top:2px}
   .cm .b{font-size:14.5px; line-height:1.6; word-break:break-all; white-space:pre-wrap}
   .cmbar{display:flex; gap:8px}
-  .cmbar input{flex:1; height:48px; border:0; border-radius:12px; background:var(--cream); padding:0 14px; font:inherit; font-size:15px}
+  .cmbar{align-items:center}
+  #cmbar{margin:18px 0 96px}   /* 입력칸 위 여백 + 아래는 하단 탭바(84px)에 붙지 않게 */
+  #cmbar .pill-btn{flex:none; white-space:nowrap}
+  .cmbar input{min-width:0; flex:1; height:48px; border:0; border-radius:12px; background:var(--cream); padding:0 14px; font:inherit; font-size:15px}
   .sheet-bg{position:fixed; inset:0; background:rgba(36,55,73,.5); z-index:200; display:flex; align-items:flex-end; justify-content:center}
   .sheet{background:var(--cream); width:100%; max-width:430px; border-radius:16px 16px 0 0; padding:14px 20px 28px; display:flex; flex-direction:column; gap:10px}
   .sheet .grab{width:36px; height:4px; border-radius:2px; background:var(--sage); align-self:center}
@@ -41,7 +49,7 @@
         <div class="page-bar"><a class="back" href="feed.html" aria-label="뒤로" id="back"></a><span class="ttl">글</span></div>
         <div id="post"><p class="hint">불러오는 중...</p></div>
         <div id="cms"></div>
-        <div class="cmbar" id="cmbar" hidden><input id="cm-in" maxlength="300" placeholder="댓글을 남겨 보세요" aria-label="댓글"><button type="button" class="pill-btn" id="cm-go">등록</button></div>
+        <div class="cmbar" id="cmbar" hidden><input id="cm-in" maxlength="300" placeholder="댓글을 남겨 보세요" aria-label="댓글"><button type="button" class="lnk" id="cm-cancel" hidden onclick="clearReply()">취소</button><button type="button" class="pill-btn" id="cm-go">등록</button></div>
         <p class="err" id="err" hidden></p>
       </div>
     </div>
@@ -114,21 +122,51 @@ async function report(path, reason) {
   } catch (e) { showErr(e.code === 'ALREADY_REPORTED' ? '이미 신고했어요.' : friendlyError(e)); }
 }
 function showErr(m) { $('err').textContent = m; $('err').hidden = false; }
+let replyTo = null;   // 답글을 다는 중인 원 댓글 id
+function cmHtml(c, reply) {
+  if (c.deleted) return '<div class="cm"><div class="b" style="color:var(--muted)">삭제된 댓글이에요.</div></div>';
+  const who = '<span style="display:flex; align-items:center; gap:8px"><span class="av" style="width:' + (reply ? 28 : 36) + 'px; height:' + (reply ? 28 : 36) + 'px; border-radius:12px; font-size:14px" data-av="' + esc(c.author_nickname) + '">' + esc((c.author_nickname || '?').slice(0, 1)) + '</span>' + esc(c.author_nickname) + ' · ' + ago(c.created_at) + '</span>';
+  const act = (reply ? '' : '<button type="button" class="lnk" style="min-height:0" data-reply="' + c.comment_id + '">답글</button>')
+    + (c.mine ? '<button type="button" class="lnk" style="min-height:0" data-edit="' + c.comment_id + '">수정</button>' : '') + (c.mine ? '<button type="button" class="lnk" style="min-height:0" data-del="' + c.comment_id + '">삭제</button>' : '<button type="button" class="lnk" style="min-height:0" data-rep="' + c.comment_id + '">신고</button>');
+  const inner = '<div class="t">' + who + '<span style="display:flex; gap:10px">' + act + '</span></div><div class="b">' + esc(c.body) + '</div>';
+  return '<div class="cm' + (reply ? ' re' : '') + '" id="c-' + c.comment_id + '">' + (reply ? '<span class="ln" aria-hidden="true">ㄴ</span><div class="col">' + inner + '</div>' : inner) + '</div>';
+}
 async function loadComments() {
   try {
     const list = (await apiCall('GET', '/community/posts/' + id + '/comments', undefined, '댓글을 불러오지 못했어요')).data;
-    $('cms').innerHTML = '<div class="sect" style="margin:0 0 4px">댓글 ' + list.length + '</div>' + (list.length ? list.map(c =>
-      '<div class="cm"><div class="t"><span style="display:flex; align-items:center; gap:8px"><span class="av" style="width:36px; height:36px; border-radius:12px; font-size:14px" data-av="' + esc(c.author_nickname) + '">' + esc((c.author_nickname || '?').slice(0, 1)) + '</span>' + esc(c.author_nickname) + ' · ' + ago(c.created_at) + '</span>' + (c.mine ? '<button type="button" class="lnk" style="min-height:0" data-del="' + c.comment_id + '">삭제</button>' : '<button type="button" class="lnk" style="min-height:0" data-rep="' + c.comment_id + '">신고</button>') + '</div><div class="b">' + esc(c.body) + '</div></div>').join('') : '<div class="empty" style="padding:20px 0">첫 댓글을 남겨 보세요.</div>');
+    const ids = new Set(list.map(c => c.comment_id));
+    const roots = list.filter(c => !c.parent_id || !ids.has(c.parent_id));   // 원 댓글이 숨겨졌으면 답글도 맨 위로 보인다
+    const kids = (pid) => list.filter(c => c.parent_id === pid);
+    const shown = list.filter(c => !c.deleted).length;
+    $('cms').innerHTML = '<div class="sect" style="margin:0 0 4px">댓글 ' + shown + '</div>' + (shown ? roots.map(c => cmHtml(c, false) + kids(c.comment_id).map(k => cmHtml(k, true)).join('')).join('') : '<div class="empty" style="padding:20px 0">첫 댓글을 남겨 보세요.</div>');
     hydrateAvatars($('cms'), 28);
     document.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
       if (await confirmDialog('댓글을 삭제할까요?', '', '삭제')) { try { await apiCall('DELETE', '/community/comments/' + b.dataset.del, undefined, '삭제하지 못했어요'); loadComments(); } catch (e) { showErr(friendlyError(e)); } }
     }));
     document.querySelectorAll('[data-rep]').forEach(b => b.addEventListener('click', () => sheet('신고 사유를 골라 주세요', REASONS, (v) => report('comments/' + b.dataset.rep, v))));
+    document.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => {
+      const c = list.find(x => x.comment_id === b.dataset.edit), box = document.querySelector('#c-' + c.comment_id + ' .b');
+      box.innerHTML = '<div class="cmbar" style="gap:6px"><input id="ed-in" style="height:40px" maxlength="300" aria-label="댓글 수정"><button type="button" class="pill-btn" id="ed-go">저장</button><button type="button" class="lnk" id="ed-x">취소</button></div>';
+      const inp = $('ed-in'); inp.value = c.body; inp.focus();
+      $('ed-x').addEventListener('click', loadComments);
+      $('ed-go').addEventListener('click', async () => {
+        const v = inp.value.trim(); if (!v) return;
+        try { await apiCall('PATCH', '/community/comments/' + c.comment_id, { body: v }, '수정하지 못했어요'); loadComments(); } catch (e) { showErr(friendlyError(e)); }
+      });
+    }));
+    document.querySelectorAll('[data-reply]').forEach(b => b.addEventListener('click', () => {
+      replyTo = b.dataset.reply; const who = list.find(c => c.comment_id === replyTo);
+      $('cm-in').placeholder = (who ? who.author_nickname + '님에게 ' : '') + '답글을 남겨 보세요'; $('cm-in').focus();
+      $('cm-cancel').hidden = false;
+    }));
+    const hash = location.hash.slice(1);   // 알림에서 #c-댓글id로 들어오면 그 댓글로 이동해 잠깐 강조한다
+    if (hash && document.getElementById(hash)) { const el = document.getElementById(hash); el.scrollIntoView({ block: 'center' }); el.style.background = 'var(--cream)'; setTimeout(() => { el.style.background = ''; }, 1800); }
   } catch (e) { $('cms').innerHTML = ''; }
 }
+function clearReply() { replyTo = null; $('cm-in').placeholder = '댓글을 남겨 보세요'; $('cm-cancel').hidden = true; }
 $('cm-go').addEventListener('click', async () => {
   const v = $('cm-in').value.trim(); if (!v) return;
-  try { await apiCall('POST', '/community/posts/' + id + '/comments', { body: v }, '댓글을 남기지 못했어요'); $('cm-in').value = ''; $('err').hidden = true; loadComments(); }
+  try { await apiCall('POST', '/community/posts/' + id + '/comments', replyTo ? { body: v, parent_id: replyTo } : { body: v }, '댓글을 남기지 못했어요'); $('cm-in').value = ''; clearReply(); $('err').hidden = true; loadComments(); }
   catch (e) { if (e.code === 'NICKNAME_REQUIRED') location.href = 'nickname.html?next=feed.html'; else showErr(friendlyError(e)); }
 });
 (async () => {
