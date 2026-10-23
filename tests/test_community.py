@@ -229,3 +229,21 @@ async def test_프로필에서_운영팀이_숨긴_글과_파티_글은_빠진�
     pr = (await client.get("/v1/community/users/글쓴이", headers=b)).json()["data"]
     assert [x["post_id"] for x in pr["posts"]] == [keep] and pr["post_count"] == 1
     assert [x["body"] for x in pr["comments"]] == ["보일 댓글"]
+
+
+async def test_댓글_좋아요는_한_사람이_한_번_다시_누르면_취소_지운_댓글엔_못_누른다(client, db_session):
+    _, a = await with_nick(client, db_session, "a@test.kr", "글쓴이")
+    _, b = await with_nick(client, db_session, "b@test.kr", "독자")
+    pid = (await client.post("/v1/community/posts", json=POST, headers=a)).json()["data"]["post_id"]
+    cid = (await client.post(f"/v1/community/posts/{pid}/comments", json={"body": "좋은 글이네요"}, headers=b)).json()["data"]["comment_id"]
+    url = f"/v1/community/comments/{cid}/like"
+    assert (await client.post(url, headers=a)).json()["data"] == {"liked": True, "like_count": 1}
+    assert (await client.post(url, headers=b)).json()["data"] == {"liked": True, "like_count": 2}          # 내 댓글에 내가 눌러도 됨
+    got = {c["comment_id"]: c for c in (await client.get(f"/v1/community/posts/{pid}/comments", headers=a)).json()["data"]}
+    assert (got[cid]["like_count"], got[cid]["liked_by_me"]) == (2, True)
+    assert (await client.post(url, headers=a)).json()["data"] == {"liked": False, "like_count": 1}         # 취소
+    got = (await client.get(f"/v1/community/posts/{pid}/comments", headers=a)).json()["data"][0]
+    assert (got["like_count"], got["liked_by_me"]) == (1, False)
+    assert (await client.post("/v1/community/comments/없는댓글/like", headers=a)).status_code == 404
+    assert (await client.delete(f"/v1/community/comments/{cid}", headers=b)).status_code == 204
+    assert (await client.post(url, headers=a)).status_code == 404                                          # 지운 댓글

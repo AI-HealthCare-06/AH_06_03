@@ -8,7 +8,7 @@ from app.apis.deps import get_current_user_id
 from app.core.db.databases import async_get_db
 from app.schemas.common import DataResponse
 from app.schemas.community import (
-    AttachOption, CommentCreate, CommentUpdate, FameResult, ProfileResult, PhotoResult, CommentItem, LikeResult, MyCommunity, NicknameRequest, PostCreate, PostCreated, PostDetail, PostList,
+    AttachOption, CommentCreate, CommentLikeResult, CommentUpdate, FameResult, ProfileResult, PhotoResult, CommentItem, LikeResult, MyCommunity, NicknameRequest, PostCreate, PostCreated, PostDetail, PostList,
     ReportRequest, ReportResult,
 )
 from app.core.errors import AppError
@@ -84,6 +84,11 @@ async def create_comment(
     post_id: str, req: CommentCreate, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)
 ):
     return DataResponse(data=await community_service.create_comment(db, user_id, post_id, req))
+
+
+@router.post("/comments/{comment_id}/like", response_model=DataResponse[CommentLikeResult])
+async def toggle_comment_like(comment_id: str, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)):
+    return DataResponse(data=await community_service.toggle_comment_like(db, user_id, comment_id))
 
 
 @router.patch("/comments/{comment_id}", response_model=DataResponse[CommentItem])

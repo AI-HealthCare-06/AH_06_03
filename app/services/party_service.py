@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import AppError
 from app.core.security import utcnow
 from app.models.challenge import Challenge
-from app.models.community import CommunityComment, CommunityLike, CommunityPost, CommunityPostPhoto, CommunityProfile, CommunityReport
+from app.models.community import CommunityComment, CommunityCommentLike, CommunityLike, CommunityPost, CommunityPostPhoto, CommunityProfile, CommunityReport
 from app.models.party import MAX_MEMBERS, Party, PartyCheckin, PartyMember
 from app.schemas.party import PartyCard, PartyChallengeOption, PartyHome, PartyInfo, PartyMemberView
 from app.services import character_service, pie_service, notify_service
@@ -150,6 +150,7 @@ async def leave(db: AsyncSession, user_id: str) -> None:
         await db.execute(delete(CommunityReport).where(
             (CommunityReport.post_id.in_(post_ids)) | (CommunityReport.comment_id.in_(comment_ids))))
         await db.execute(delete(CommunityLike).where(CommunityLike.post_id.in_(post_ids)))
+        await db.execute(delete(CommunityCommentLike).where(CommunityCommentLike.comment_id.in_(comment_ids)))
         await db.execute(delete(CommunityComment).where(CommunityComment.post_id.in_(post_ids)))
         await db.execute(delete(CommunityPostPhoto).where(CommunityPostPhoto.post_id.in_(post_ids)))
         await db.execute(delete(CommunityPost).where(CommunityPost.party_id == party_id))

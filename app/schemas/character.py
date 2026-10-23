@@ -5,6 +5,7 @@ class CharacterView(BaseModel):
     """지금 입은 조합 (화면이 캐릭터를 그릴 때 쓰는 값)."""
     body: str
     color: str
+    eye: str = "#243749"   # 눈 색 (옛 화면이 보내지 않으면 기본 검정)
     expr: str
     face: str
     head: str
@@ -22,7 +23,7 @@ class ItemView(BaseModel):
 
 
 class SlotView(BaseModel):
-    slot: str           # body / color / expr / face / head
+    slot: str           # body / color / eye / expr / face / head
     items: list[ItemView]
 
 
