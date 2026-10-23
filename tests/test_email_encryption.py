@@ -121,7 +121,7 @@ async def test_키가_없으면_잠그지_않고_멈춘다(monkeypatch):
         pii.email_hash("a@test.kr")
 
 
-def test_이메일_정리와_LIKE_패턴():
+async def test_이메일_정리와_LIKE_패턴():
     from app.services.admin_users_service import like_match
     assert pii.normalize_email("  A@B.KR ") == "a@b.kr"
     assert like_match("%@purge.kr", "t1@purge.kr") and like_match("t_@PURGE.kr", "t1@purge.kr")
