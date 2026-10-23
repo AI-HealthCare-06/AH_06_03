@@ -119,6 +119,18 @@ class CommentCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     body: str = Field(min_length=1, max_length=300)
+    parent_id: str | None = None  # 대댓글이면 달려는 댓글 id
+
+    @field_validator("body")
+    @classmethod
+    def not_blank(cls, v: str) -> str:
+        return _strip(v)
+
+
+class CommentUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    body: str = Field(min_length=1, max_length=300)
 
     @field_validator("body")
     @classmethod
@@ -132,6 +144,8 @@ class CommentItem(BaseModel):
     author_nickname: str
     created_at: datetime
     mine: bool
+    parent_id: str | None = None   # 대댓글이면 원 댓글 id
+    deleted: bool = False          # 지운 댓글에 답글이 남아 있으면 자리만 남긴다(본문·작성자는 비움)
 
 
 class ReportRequest(BaseModel):
