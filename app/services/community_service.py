@@ -284,6 +284,7 @@ async def delete_comment(db: AsyncSession, user_id: str, comment_id: str) -> Non
         CommunityComment.parent_id == comment_id, CommunityComment.status == "visible").limit(1))).first() is not None
     if has_reply:
         c.status = "deleted"   # 답글이 달린 댓글은 자리만 남긴다("삭제된 댓글이에요")
+        c.body = ""            # 본문도 DB에서 비운다(화면에서만 가리지 않는다)
     else:
         await db.delete(c)
     await db.commit()

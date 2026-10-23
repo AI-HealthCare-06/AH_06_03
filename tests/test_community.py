@@ -170,6 +170,8 @@ async def test_대댓글은_한_단계만_지운_원댓글은_자리가_남는�
     assert (await client.delete(f"/v1/community/comments/{root['comment_id']}", headers=b)).status_code == 204
     got = (await client.get(url, headers=a)).json()["data"]
     assert [(c["deleted"], c["body"]) for c in got] == [(True, ""), (False, "답글"), (False, "답글의 답글")]
+    async with db_session() as db:                                                       # 화면에서만 가리는 게 아니라 DB 본문도 비워진다
+        assert (await db.get(CommunityComment, root["comment_id"])).body == ""
     for c in got[1:]:
         assert (await client.delete(f"/v1/community/comments/{c['comment_id']}", headers=a if c["mine"] else b)).status_code == 204
     assert (await client.get(url, headers=a)).json()["data"] == []                   # 답글이 모두 사라지면 자리도 사라진다
