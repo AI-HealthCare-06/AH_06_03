@@ -82,6 +82,21 @@ class CommunityComment(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
 
+class CommunityFame(Base):
+    """사람에게 누르는 좋아요(인기도). 한 사람이 여러 사람에게 한 번씩 줄 수 있고, 같은 사람에게는 한 번만 준다."""
+    __tablename__ = "community_fame"
+    __table_args__ = (UniqueConstraint("giver_id", "target_id"),)
+
+    fame_id: Mapped[str] = mapped_column(CHAR(36), primary_key=True, default=new_id)
+    giver_id: Mapped[str] = mapped_column(
+        CHAR(36), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    target_id: Mapped[str] = mapped_column(
+        CHAR(36), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
 class CommunityLike(Base):
     __tablename__ = "community_likes"
     __table_args__ = (UniqueConstraint("post_id", "user_id"),)
