@@ -9,7 +9,7 @@
   .who{display:flex; flex-direction:column; align-items:center; gap:8px; padding:8px 0 4px; text-align:center}
   .who .av{width:96px; height:96px; border-radius:28px; background:var(--cream); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:32px; color:var(--muted)}
   .who h1{margin:0; font-size:22px; font-weight:800; word-break:break-all; text-align:center}
-  .fame{display:flex; align-items:center; justify-content:flex-end; gap:8px; width:100%}
+  .fame{display:flex; align-items:center; justify-content:center; gap:8px; width:100%}
   .fame .cnt{font-size:16px; font-weight:800; color:var(--ink)}
   .heart{width:36px; height:36px; border-radius:50%; border:1px solid #F0C7CD; background:#fff; font-size:18px; line-height:1; display:inline-flex; align-items:center; justify-content:center; padding:0; color:#E5484D; cursor:pointer}
   .heart.on{background:#FDECEE; border-color:#E5484D}
@@ -62,7 +62,7 @@ function render() {
     : (P.comments.length ? P.comments.map(c => `<a class="item" href="post.html?id=${encodeURIComponent(c.post_id)}#c-${encodeURIComponent(c.comment_id)}"><div class="p" style="-webkit-line-clamp:3">${esc(c.body)}</div><div class="on">‘${esc(c.post_title)}’ 글에 · ${ago(c.created_at)}</div></a>`).join('') : '<div class="empty">아직 쓴 댓글이 없어요.</div>');
   $('body').innerHTML = `<div class="who"><span class="av" data-av="${esc(P.nickname)}">${esc(P.nickname.slice(0, 1))}</span>
     <h1>${esc(P.nickname)}</h1>
-    <div class="fame">${heart}<span class="cnt" id="fame-n">${P.fame}</span></div></div>
+    <div class="fame"><span class="cnt" id="fame-n">${P.fame}</span>${heart}</div></div>
     <div class="tabs2"><button type="button" data-t="posts" class="${tab === 'posts' ? 'on' : ''}">글 ${P.post_count}</button><button type="button" data-t="comments" class="${tab === 'comments' ? 'on' : ''}">댓글 ${P.comments.length}</button></div>
     <div>${items}</div>`;
   const av = document.querySelector('[data-av]');
