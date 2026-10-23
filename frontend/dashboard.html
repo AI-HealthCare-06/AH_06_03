@@ -77,7 +77,8 @@
 
 <script src="assets/common.js"></script>
 <script src="assets/api.js"></script>
-<script>showNoticePopups();</script>
+<script>if (!loggedIn()) location.replace('login.html');   // 홈 화면에 추가한 앱은 로그인 정보가 따로라, 로그인 안 된 채 열리면 로그인부터
+showNoticePopups();</script>
 
 <script>
 function cssv(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
