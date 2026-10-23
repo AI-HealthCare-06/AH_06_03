@@ -1,5 +1,20 @@
 // =====================================================================
-// PAEON 전수 ERD — dbdiagram.io DBML (v8, 요구사항 v1.9 + 모델_연결_명세 v0.1.0 반영)
+// PAEON 전수 ERD — dbdiagram.io DBML (v8.1, 2026-10-23 모델 영역 개정 · 김혜성 / v8: 요구사항 v1.9 + 모델_연결_명세 v0.1.0 반영)
+//
+// [v8.1 변경] 모델 영역만 구현(app/models/prediction.py)·모델 A v0.2.0·요구사항 v2.3 기준으로 정리. 다른 영역은 v8 그대로.
+//  - 수정: prediction_jobs(survey_instance_id·input_snapshot 추가), predictions(실제 칸으로 교체: prediction_job_id·model_code·
+//          model_version·status·skip_reason·missing_features, job_run_id·model_version_id·result_card_type 삭제),
+//          prediction_factors(label 추가, feature_definition_id 삭제), Enum risk_level_type 이름(양호·주의·높음),
+//          Enum model_scope_type 설명(모델 B 입력 v0.2.0, 주간 혈압 없음)
+//  - [POST-MVP]로 이동(필요해지는 조건은 각 Note): model_definitions·model_versions·model_change_logs(의료기기 판정 시 변경관리),
+//          prediction_job_runs·prediction_feature_values(비동기 처리·재학습 데이터 추출 시), result_disclosures(고지 문구 버전 기록)
+//  - [POST-MVP]: derived_feature_definitions(나트륨 지수 등 설문 파생 점수 규칙. 사용 중이며 지금은 challenge_rules.py에 고정)
+//  - [v8.1 삭제 예정]: feature_weight_versions·feature_weight_items(피드백 기반 가중치 보정을 하지 않음, NFR-FEED-002 v2.3),
+//          model_feature_contracts(모델 입력 계약은 모델 JSON·모델_연결_명세.md가 담당).
+//          challenge_recommendation_batches.feature_weight_version_id가 참조하므로 [확인 요청: 챌린지 담당] 후 삭제
+//  - 삭제: factor_challenge_links(추천에 쓰지 않기로 결정, REQ-PRED-003 v2.0), ML 실험 기록 구역 4개 표(실험 기록은 서비스 DB가 아닌
+//          modeling/*/artifacts/metrics_*.json로 관리), Enum result_card_type·factor_link_status·dataset_split_type
+//  - [확인 요청: 백엔드] prediction_jobs의 비동기 칸(retryable·retry_of_job_id·started_at)은 요구사항 REQ-PRED-002 결정 후 정리
 // 기준: docs/요구사항_정의서_파이온.xlsx v1.9 (1차 멘토링 9/28 반영: 모델 B 복원, 허리둘레·한 번 음주량 입력)
 //       + modeling/handoff/모델_연결_명세.md (모델 A v0.1.0 · 모델 B v0.1.0, 첫 번째 사이클)
 //  - v1.7에서 삭제된 LLM 예방행동 추천(REQ-RECO-001)은 제외
@@ -98,9 +113,9 @@ Enum eligibility_result {
 
 Enum model_scope_type {
   MODEL_A   [note: '장기(10년) 위험 예측 입력']
-  MODEL_B   [note: '현재 생활습관 기반 예측 입력']
+  MODEL_B   [note: '현재 체형·생활습관 비교 입력(나이·성별·BMI·허리둘레·부모 고혈압·흡연·음주, v0.2.0)']
   BOTH
-  TRACKING  [note: '예측에 쓰지 않는 추적용 입력(주간 혈압 등)']
+  TRACKING  [note: '예측에 쓰지 않는 기록용 입력(혈압은 시작·4주 재입력 때만, 주간 혈압 기록 없음 v2.2)']
 }
 
 Enum health_input_type {
@@ -164,11 +179,6 @@ Enum model_change_type {
   threshold
   preprocessing
 }
-Enum dataset_split_type {
-  train
-  validation
-  test
-}
 
 Enum prediction_request_type {
   initial   [note: '최초 입력 → MODEL_A + MODEL_B']
@@ -190,13 +200,18 @@ Enum job_run_status {
   skipped
 }
 Enum risk_level_type {
-  normal
-  borderline
-  high
+  normal      [note: '양호 <2% (v8.1)']
+  borderline  [note: '주의 2~9% (v8.1)']
+  high        [note: '높음 ≥9% (v8.1)']
 }
-Enum result_card_type {
-  long_term        [note: 'MODEL_A → 카드 1(10년 관상동맥질환 위험·구간)과 카드 2(혈관 나이 vs 실제 나이)']
-  current_profile  [note: 'MODEL_B → 카드 3(현재 위험 프로필 + 개선 가능 1위 요인). 판정 아님(REQ-PRED-001)']
+Enum model_code {
+  MODEL_A
+  MODEL_B
+}
+Enum prediction_status {
+  completed
+  skipped
+  failed
 }
 Enum factor_direction {
   risk_increase
@@ -215,11 +230,6 @@ Enum catalog_status {
   mvp      [note: '미션 카탈로그 상태 MVP']
   review   [note: '검토 (v2.1 현재 해당 카테고리 없음)']
   backlog  [note: 'Backlog (v2.1 현재 해당 카테고리 없음)']
-}
-Enum factor_link_status {
-  linked            [note: '요인 → 카테고리 연결 확정']
-  pending_decision  [note: '팀 결정 필요(반대 방향 요인, Backlog 카테고리 등)']
-  not_linked        [note: '수정 불가 요인 등. 설명에만 표시']
 }
 Enum difficulty_level {
   low
@@ -710,7 +720,7 @@ Table survey_response_options {
 
 
 // =====================================================================
-// ===== [MVP] 파생 피처 · 가중치 =====
+// ===== [POST-MVP v8.1] 파생 피처 · [v8.1 삭제 예정] 가중치 (머리말 참고) =====
 // =====================================================================
 Table derived_feature_definitions {
   feature_definition_id uuid [pk]
@@ -723,7 +733,10 @@ Table derived_feature_definitions {
   Indexes {
     (feature_code, version) [unique]
   }
-  Note: '''NFR-FEED-002, NFR-ML-004,006. 파생 피처를 데이터로 관리.
+  Note: '''[POST-MVP] v8.1: 설문 파생 점수(나트륨 지수, Lee 등 2022)는 사용 중이다. 나트륨 미션·외식 미션 대상 판정에 쓰인다(REQ-PRED-008).
+지금은 계산 규칙을 app/services/challenge_rules.py의 sodium_index에 근거 문헌 계산식 그대로 고정하고, 결과는 응답 때 계산한다(DB 저장 없음).
+필요해지는 조건: 계산식 버전을 바꿔야 할 때(새 근거) 과거 결과 재현, 다른 질환의 설문 지수 추가(NFR-ARCH-002). challenge_eligibility_rules가 이 표를 참조한다.
+(v8) NFR-FEED-002, NFR-ML-004,006. 파생 피처를 데이터로 관리.
 행은 수정하지 않고, 규칙이 바뀌면 version+1 새 행을 추가(과거 예측 재현성).'''
 }
 
@@ -734,7 +747,7 @@ Table feature_weight_versions {
   changed_by varchar(100) [not null]
   effective_from timestamptz [not null]
   effective_to timestamptz
-  Note: 'NFR-FEED-002. 피드백·실측 데이터 기반 가중치 변경 이력.'
+  Note: '[v8.1 삭제 예정] 피드백 기반 가중치 보정을 하지 않음(NFR-FEED-002 v2.3). 나트륨 지수 계산식이 바뀌면 derived_feature_definitions.version으로 관리. (v8) 피드백·실측 데이터 기반 가중치 변경 이력.'
 }
 
 Table feature_weight_items {
@@ -745,11 +758,12 @@ Table feature_weight_items {
   Indexes {
     (feature_weight_version_id, feature_definition_id) [unique]
   }
+  Note: '[v8.1 삭제 예정] feature_weight_versions와 같은 이유'
 }
 
 
 // =====================================================================
-// ===== [MVP] 질환 · 모델 레지스트리 =====
+// ===== [MVP] 질환 · [POST-MVP v8.1] 모델 레지스트리 (diseases만 MVP) =====
 // =====================================================================
 Table diseases {
   disease_id uuid [pk]
@@ -767,7 +781,7 @@ Table model_definitions {
   eligible_age_min int [note: 'REQ-ELIG-001, 명세 §5: MODEL_A=32 / MODEL_B=19']
   eligible_age_max int [note: 'MODEL_A=70 / MODEL_B=NULL(80세 이상은 80으로 계산)']
   active boolean [not null, default: true]
-  Note: 'REQ-PRED-001, REQ-ELIG-001, NFR-ARCH-002~003. 운영 모델은 MODEL_A(장기 위험)·MODEL_B(현재 생활습관) 2종(요구사항 v1.9).'
+  Note: '[POST-MVP] v8.1: 지금은 모델 JSON(modeling/model_a·model_b/artifacts)과 predictions.model_code로 관리. 필요해지는 조건: 식약처 의료기기 판정 시 변경관리, 질환·모델 추가(NFR-ARCH-002). (v8) REQ-PRED-001, REQ-ELIG-001, NFR-ARCH-002~003. 운영 모델은 MODEL_A(장기 위험)·MODEL_B(현재 생활습관) 2종(요구사항 v1.9).'
 }
 
 Table model_versions {
@@ -785,7 +799,8 @@ Table model_versions {
   Indexes {
     (model_id, version) [unique]
   }
-  Note: 'NFR-ML-004, NFR-ARCH-003~004, NFR-SAFE-005, NFR-OPS-004'
+  Note: '''[POST-MVP] v8.1: 지금은 predictions.model_version 문자열과 git의 모델 JSON으로 버전을 추적(NFR-OPS-004 v2.3). threshold_config 현재값 = MODEL_A 양호 <0.02 · 주의 0.02~0.09 · 높음 ≥0.09(JAS 2017).
+필요해지는 조건: 식약처 의료기기 판정 시 버전별 검증 기록, 배포 없이 모델 교체(서버 밖 모델 저장소 도입 시). (v8) NFR-ML-004, NFR-ARCH-003~004, NFR-SAFE-005, NFR-OPS-004'''
 }
 
 Table model_feature_contracts {
@@ -798,7 +813,8 @@ Table model_feature_contracts {
   Indexes {
     (model_version_id, feature_definition_id) [unique]
   }
-  Note: '''REQ-HEALTH-002,008, REQ-PRED-007, NFR-ML-001.
+  Note: '''[v8.1 삭제 예정] 피처 목록·평균·계수는 모델 JSON(feats), 변환은 paeon_models.py features_a/b, 문서 계약은 modeling/handoff/모델_연결_명세.md가 담당.
+(v8) REQ-HEALTH-002,008, REQ-PRED-007, NFR-ML-001.
 MODEL_A 피처(명세 §2.2): age, male, sysBP, totChol, currentSmoker, diabetes, BPMeds, prevalentHyp, BMI
   (HTN_STATUS → prevalentHyp·BPMeds, SMOKING=current → currentSmoker). HDL은 학습 데이터에 없어 사용하지 않음.
 MODEL_B 피처 v0.2.0(명세 §2.2): age, male, bmi, waist, parent_htn, smoke_current, smoke_former, drink_freq, drink_amount
@@ -817,7 +833,7 @@ Table model_change_logs {
   changed_by varchar(100) [not null]
   reason text [not null]
   changed_at timestamptz [not null]
-  Note: 'NFR-OPS-004. 변경 일시·변경자·사유. (운영 이력이므로 MVP에 포함)'
+  Note: '[POST-MVP] v8.1: 지금은 git 커밋과 docs/모델_개발_계획_고혈압.md 변경 이력 표로 기록(NFR-OPS-004 v2.3). 필요해지는 조건: 식약처 의료기기 판정 시 변경관리 기록. (v8) NFR-OPS-004. 변경 일시·변경자·사유.'
 }
 
 
@@ -828,6 +844,7 @@ Table prediction_jobs {
   prediction_job_id uuid [pk]
   user_id uuid [not null]
   health_record_id uuid [not null]
+  survey_instance_id uuid [note: 'v8.1: 구현 칸. 함께 쓴 생활습관 설문']
   request_type prediction_request_type [not null]
   status job_status [not null, default: 'queued']
   retryable boolean [not null, default: false, note: 'REQ-PRED-002: 실패 시 재시도 가능 여부 표시']
@@ -836,11 +853,13 @@ Table prediction_jobs {
   started_at timestamptz
   completed_at timestamptz
   failure_reason text
+  input_snapshot json [note: 'v8.1: 예측에 넣은 입력 그대로. 4주 재예측 때 나이 유지, 모델 버전이 다르면 이 값으로 지금 모델로 다시 계산해 비교(NFR-ARCH-004)']
   Indexes {
     (user_id, requested_at)
     (status, requested_at)
   }
-  Note: 'REQ-PRED-002,007, NFR-ASYNC-001. 접수 202 + prediction_job_id 반환.'
+  Note: '''REQ-PRED-002,007, NFR-ASYNC-001. 접수 202 + prediction_job_id 반환.
+[확인 요청: 백엔드] v8.1: 구현은 요청 즉시 계산해 201로 결과 반환. retryable·retry_of_job_id·started_at은 구현에 없음 → REQ-PRED-002 결정 후 정리.'''
 }
 
 Table prediction_job_runs {
@@ -855,7 +874,8 @@ Table prediction_job_runs {
   Indexes {
     (prediction_job_id, model_version_id) [unique]
   }
-  Note: '''모델 A/B를 독립 실행·교체(NFR-ARCH-003). 요청 1건에 MODEL_A run과 MODEL_B run을 각각 생성하고, 한쪽 실패가 다른 쪽에 영향을 주지 않는다.
+  Note: '''[POST-MVP] v8.1: 지금은 predictions 한 행 = 모델 하나(status·skip_reason)로 독립 실행을 표현. 필요해지는 조건: 비동기 대기열 도입(무거운 모델·LLM 설명).
+(v8) 모델 A/B를 독립 실행·교체(NFR-ARCH-003). 요청 1건에 MODEL_A run과 MODEL_B run을 각각 생성하고, 한쪽 실패가 다른 쪽에 영향을 주지 않는다.
 적용 연령 밖이면 run_status=skipped + skip_reason_code, predictions 행을 만들지 않는다.
 HTN_STATUS가 diagnosed_untreated·treated이면 MODEL_B run은 skipped(htn_diagnosed), MODEL_A는 정상 실행(REQ-ELIG-002, NFR-ML-008).
 두 모델은 독립: 한쪽이 skipped·failed여도 다른 쪽 결과는 그대로 쓴다(명세 §2.1).'''
@@ -863,23 +883,24 @@ HTN_STATUS가 diagnosed_untreated·treated이면 MODEL_B run은 skipped(htn_diag
 
 Table predictions {
   prediction_id uuid [pk]
-  job_run_id uuid [not null, unique]
-  user_id uuid [not null, note: '조회용 비정규화. job_run → job.user_id와 일치를 서비스에서 보장']
-  model_version_id uuid [not null, ref: > model_versions.model_version_id, note: 'NFR-ARCH-004 전·후 비교 기준. job_run 값과 동일']
-  risk_level risk_level_type [note: 'MODEL_A만 정상·경계·위험 판정. MODEL_B는 NULL(판정이 아님, REQ-PRED-001)']
-  score decimal(8,6) [note: '명세 probability(소수 6자리). MODEL_A: 10년 관상동맥질환 확률(보정 전, 그대로 % 표시 금지) / MODEL_B: 경계군과 닮은 정도']
-  percentile decimal(5,2) [note: '같은 성별·연령대 상위 %. v0.1.0은 NULL(보정 사이클에서 채움)']
-  vascular_age decimal(5,1) [note: 'MODEL_A 카드 2. v0.1.0은 모델 출력에 없어 데모 계산식(나이 계수 0.066053) 사용, 두 번째 사이클 재설계']
-  result_card_type result_card_type [not null]
+  prediction_job_id uuid [not null, note: 'v8.1: job_run_id 대신 번호표(prediction_jobs)에 직접 연결']
+  user_id uuid [not null, note: '조회용 비정규화']
+  model_code model_code [not null, note: 'v8.1: MODEL_A / MODEL_B']
+  model_version varchar(20) [note: 'v8.1: 모델 JSON 버전 문자열(예: 0.2.0). 전·후 비교 기준(NFR-ARCH-004)']
+  status prediction_status [not null, note: 'v8.1: completed / skipped / failed']
+  skip_reason varchar(30) [note: 'v8.1: age_out_of_range / cad_diagnosed(MODEL_A) / htn_diagnosed(MODEL_B)']
+  score decimal(8,6) [note: 'v8.1: MODEL_A = 한국인 보정 10년 확률(화면에 "생활습관 관리용 참고 신호"로 % 표시) / MODEL_B = 경계군 확률 점수(화면에는 similarity_level 3단계만, 숫자 비표시)']
+  risk_level risk_level_type [note: 'MODEL_A만: 양호 <2% · 주의 2~9% · 높음 ≥9%(JAS 2017). MODEL_B는 NULL(판정 아님, REQ-PRED-001 v2.3)']
+  vascular_age decimal(5,1) [note: 'v8.1: MODEL_A만. 같은 성별·연령대 한국 성인 평균(국민건강영양조사 2022~2024) 기준 추정치, 20~90 제한']
+  percentile decimal(5,2) [note: 'v8.1: MODEL_A만. 같은 성별·연령대 상위 %(참고용, 범주 판정에 쓰지 않음)']
+  missing_features json [note: 'v8.1: 비어서 학습 중앙값으로 채운 입력(예: totChol)']
   predicted_at timestamptz [not null]
   Indexes {
+    (prediction_job_id, model_code) [unique]
     (user_id, predicted_at)
-    (user_id, model_version_id, predicted_at) [note: '동일 버전 전·후 비교']
   }
-  Note: '''REQ-PRED-001,003~007, NFR-ML-004, NFR-ARCH-004. 결과는 덮어쓰지 않고 이력으로 쌓는다.
-검진 기록·재예측 종류는 job_run → prediction_jobs로 추적. 두 모델 결과를 하나로 합산하지 않는다.
-마이그레이션: CHECK ((result_card_type = 'long_term') = (risk_level IS NOT NULL))
-마이그레이션: CHECK (result_card_type = 'long_term' OR vascular_age IS NULL)'''
+  Note: '''REQ-PRED-001,003~007, NFR-ML-004, NFR-ARCH-004. 결과는 덮어쓰지 않고 이력으로 쌓는다. 두 모델 결과를 하나로 합산하지 않는다.
+v8.1: 번호표 1건에 MODEL_A·MODEL_B 결과가 각각 한 행. 모델 B similarity_level(비슷한 편/조금 달라요/많이 달라요)은 저장하지 않고 score와 모델 JSON similarity_cuts(혈압 정상인 사람 점수의 중앙값 0.26·상위 25% 경계 0.41)로 응답 때 계산. 저장된 결과의 model_version이 지금 모델과 다르면 계산하지 않음(NULL).'''
 }
 
 Table prediction_feature_values {
@@ -891,18 +912,18 @@ Table prediction_feature_values {
   Indexes {
     (prediction_id, feature_definition_id) [unique]
   }
-  Note: 'NFR-ML-004~005. 예측에 실제 사용한 입력 스냅샷.'
+  Note: '[POST-MVP] v8.1: 지금은 prediction_jobs.input_snapshot(JSON)으로 대체. 필요해지는 조건: 쌓인 데이터로 재학습할 때 피처별 추출(NFR-ML-009). (v8) NFR-ML-004~005. 예측에 실제 사용한 입력 스냅샷.'
 }
 
 Table prediction_factors {
   prediction_factor_id uuid [pk]
   prediction_id uuid [not null]
-  feature_definition_id uuid [ref: > derived_feature_definitions.feature_definition_id]
   factor_code varchar(50) [not null]
+  label varchar(100) [not null, note: 'v8.1: 화면에 보이는 요인 이름']
   direction factor_direction [not null]
   importance decimal(12,8) [not null, note: '명세 contribution: 로그 오즈 기여도(+ = 위험↑). 기준점 = 있다/없다 요인은 없음, 숫자·단계 요인은 학습 평균']
   value_label varchar(100) [note: '값의 뜻(예: 있음, 주 2–3회). 숫자 요인은 NULL']
-  modifiable boolean [not null, note: 'true면 챌린지로 연결(REQ-PRED-003)']
+  modifiable boolean [not null, note: '바꿀 수 있는 요인인지. 결과 설명용이며 챌린지 추천에는 쓰지 않음(REQ-PRED-003 v2.0)']
   direction_matches_expectation boolean [not null, default: true, note: '학습된 계수 방향이 의학적 상식과 일치하는지. false여도 거르지 않고 저장']
   display_rank int [not null]
   Indexes {
@@ -921,7 +942,9 @@ Table result_disclosures {
   disclosure_type disclosure_type [not null]
   message_version varchar(30) [not null]
   shown_at timestamptz [not null]
-  Note: 'REQ-PRED-005~006, NFR-SAFE-001,003,005'
+  Note: '''[POST-MVP] v8.1: 지금은 화면 고정 문구(확률 근거·계산 근거·비교 기준)만 있고 표시 기록은 없음.
+필요한 이유: 고지 문구가 바뀔 때 누가 어느 버전을 봤는지 알아야 함(예: 2026-10-23 확률 근거 문구 변경), 진단이 아니라는 고지를 보여준 근거. 다음 버전 우선순위 높음.
+(v8) REQ-PRED-005~006, NFR-SAFE-001,003,005'''
 }
 
 
@@ -949,24 +972,6 @@ Table challenges {
   proof_type proof_type [not null]
   active boolean [not null, default: true]
   Note: 'REQ-CHAL-001,003,008; NFR-ARCH-005. v2.1 시드 = 미션 10개(SMK-1, ALC-1, NA-1·2, ACT-1·2·3, OUT-1, BRK-1, WT-1), 가이드 §4.'
-}
-
-Table factor_challenge_links {
-  factor_link_id uuid [pk]
-  model_id uuid [not null, ref: > model_definitions.model_id]
-  factor_code varchar(50) [not null, note: '모델 출력 factors[].code (예: waist, bmi, drink_freq, currentSmoker, sysBP)']
-  category_id uuid [ref: > challenge_categories.category_id, note: 'not_linked이면 NULL']
-  link_status factor_link_status [not null]
-  note text
-  Indexes {
-    (model_id, factor_code, category_id) [unique]
-  }
-  Note: '''모델_연결_명세 §7 요인 → 챌린지 카테고리 연결표를 데이터로 관리(NFR-ARCH-005).
-v2.0: 챌린지 추천·대체에는 쓰지 않음 (REQ-PRED-003·CHAL-008 v2.0). 결과 화면에서 요인 옆에 관련 카테고리를 안내할 때만 조회.
-v0.1.0 시드 예: B waist·bmi / A BMI → 체중 관리(Backlog, pending_decision) · B drink_freq·drink_amount → 절주(linked)
-  · A currentSmoker → 금연(linked) · B eatout → 외식·배달, B aerobic → 신체 활동(반대 방향, pending_decision)
-  · A sysBP → 나트륨·신체 활동·체중 관리 중 선택(pending_decision) · A totChol → not_linked
-v2.1: B waist·bmi / A BMI → 체중 관리(linked, 결과 화면 안내용. WT-1 추천 판정은 user_classifications.overweight로 함)'''
 }
 
 Table challenge_levels {
@@ -1340,62 +1345,6 @@ Table security_audit_logs {
 
 
 // =====================================================================
-// ===== [POST-MVP] ML 실험 기록 =====
-// =====================================================================
-Table training_datasets {
-  dataset_id uuid [pk]
-  dataset_name varchar(150) [not null]
-  dataset_version varchar(50) [not null]
-  source_type varchar(50) [not null, note: 'MODEL_A=Framingham Heart Study / MODEL_B=KNHANES 2022-2024(질병관리청 원시자료)']
-  population_filter jsonb [not null, note: 'MODEL_B: HE_HP IN (1,2,3), 4(고혈압) 제외(NFR-ML-008). 라벨 1→0, 2·3→1(REQ-PRED-009)']
-  used_for_model_code varchar(30) [not null, note: 'MODEL_A, MODEL_B']
-  created_at timestamptz [not null]
-  Indexes {
-    (dataset_name, dataset_version) [unique]
-  }
-  Note: '''[POST-MVP] NFR-ML-007~008. 모델 A/B 학습 데이터 및 모집단 분리.
-원시자료는 이용 조건(질병관리청 원시자료 공개 규정 제8조)상 저장소·DB에 올리지 않고 메타데이터만 기록한다.'''
-}
-
-Table model_experiments {
-  experiment_id uuid [pk]
-  model_version_id uuid [not null, ref: > model_versions.model_version_id]
-  dataset_id uuid [not null, ref: > training_datasets.dataset_id]
-  algorithm varchar(50) [not null, note: 'logistic_regression(전달 모델), xgboost(비교) 등']
-  split_config jsonb [not null]
-  preprocessing_config jsonb [not null]
-  executed_at timestamptz [not null]
-  Note: '[POST-MVP] NFR-ML-001~003,005,009'
-}
-
-Table model_experiment_metrics {
-  metric_id uuid [pk]
-  experiment_id uuid [not null, ref: > model_experiments.experiment_id]
-  metric_name varchar(30) [not null, note: 'auc_roc, f1, precision, recall']
-  metric_value decimal(12,8) [not null]
-  dataset_split dataset_split_type [not null]
-  Indexes {
-    (experiment_id, metric_name, dataset_split) [unique]
-  }
-  Note: '[POST-MVP]'
-}
-
-Table model_confusion_matrices {
-  confusion_matrix_id uuid [pk]
-  experiment_id uuid [not null, ref: > model_experiments.experiment_id]
-  dataset_split dataset_split_type [not null]
-  true_negative int [not null]
-  false_positive int [not null]
-  false_negative int [not null]
-  true_positive int [not null]
-  Indexes {
-    (experiment_id, dataset_split) [unique]
-  }
-  Note: '[POST-MVP]'
-}
-
-
-// =====================================================================
 // ===== [POST-MVP] 피드백 분석 · 개선 =====
 // =====================================================================
 Table feedback_analysis_reports {
@@ -1498,7 +1447,7 @@ Ref: challenge_recommendation_batches.survey_instance_id > survey_instances.surv
 // --- 예측 (prediction 도메인 삭제 시, 검진 기록 삭제 시 함께) ---
 Ref: prediction_jobs.health_record_id > health_records.health_record_id [delete: cascade]
 Ref: prediction_job_runs.prediction_job_id > prediction_jobs.prediction_job_id [delete: cascade]
-Ref: predictions.job_run_id > prediction_job_runs.job_run_id [delete: cascade]
+Ref: predictions.prediction_job_id > prediction_jobs.prediction_job_id [delete: cascade]
 Ref: prediction_feature_values.prediction_id > predictions.prediction_id [delete: cascade]
 Ref: prediction_factors.prediction_id > predictions.prediction_id [delete: cascade]
 Ref: result_disclosures.prediction_id > predictions.prediction_id [delete: cascade]
