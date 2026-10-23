@@ -330,12 +330,22 @@ document.addEventListener('DOMContentLoaded', () => { renderHeader(); renderNav(
 function probText(p) { return typeof p === 'number' && isFinite(p) ? (p * 100).toFixed(1) + '%' : ''; }
 // "같은 성별·연령대 상위 N%" (참고용 보조 문구. 범주 판정에는 쓰지 않는다). 값이 없으면 ''.
 function percentileText(pc) { return typeof pc === 'number' && isFinite(pc) ? `같은 성별·연령대 상위 ${Math.max(1, Math.round(pc))}%` : ''; }
-const PROB_NOTE = '10년 안에 관상동맥질환이 생길 가능성을 미국 Framingham 모델로 계산하고 한국인 평균에 맞춰 보정한 값이에요. 2% 미만 양호, 2~9% 주의, 9% 이상 높음 구간은 일본 동맥경화학회 기준을 참고했어요. 한국인 자료로 검증된 진단 기준이 아니며, 의학적 진단·치료를 대신하지 않아요. 혈관 나이는 같은 성별·연령대 한국 성인 평균을 기준으로 한 추정치예요.';
+const PROB_NOTE = '10년 안에 관상동맥질환이 생길 가능성을 미국 Framingham 모델로 계산하고 한국인 평균에 맞춰 보정한 값이에요. 2% 미만 양호, 2~9% 주의, 9% 이상 높음 구간은 일본 동맥경화학회 기준을 참고했어요. 의학적 진단·치료를 대신하지 않아요.';
+// 혈관 나이 카드의 "계산 근거" 문구 (확률 근거와 따로 둔다)
+const AGE_BASIS = '혈관 나이는 혈압, 콜레스테롤, 흡연, 당뇨, 고혈압 진단·치료, BMI가 같은 성별·연령대 한국 성인 평균(국민건강영양조사 2022~2024)과 얼마나 다른지를 나이로 바꿔 더한 추정치예요. 모두 평균과 같으면 실제 나이와 같게 나와요.<br><br>상위 %는 같은 성별·연령대 한국 성인 중 위험 요인이 많은 순서로 줄 세웠을 때의 위치예요. 상위 1%에 가까울수록 위험 요인이 많은 편이고, 50% 근처면 중간쯤이에요.<br>두 값 모두 의학적 진단·치료를 대신하지 않아요.';
 // 확률 근거 안내: 평소에는 접혀 있고 버튼을 누르면 펼쳐진다
 function probNoteHtml(withAge, caption) {
   const chev = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6"/></svg>';
   const btn = `<button type="button" aria-expanded="false" onclick="const p = this.closest('.pnote').querySelector('p'); p.hidden = !p.hidden; this.setAttribute('aria-expanded', String(!p.hidden))">확률 근거${chev}</button>`;
   return `<div class="pnote"><div class="prow">${caption ? '<span class="pcap">확률은 생활습관 관리용 참고 신호예요</span>' : ''}${btn}</div><p hidden>${PROB_NOTE}</p></div>`;
+}
+
+// 혈관 나이 카드 아래 줄: 같은 성별·연령대 상위 N%(참고용) + "계산 근거" 버튼
+function ageNoteHtml(pc) {
+  const chev = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6"/></svg>';
+  const btn = `<button type="button" aria-expanded="false" onclick="const p = this.closest('.pnote').querySelector('p'); p.hidden = !p.hidden; this.setAttribute('aria-expanded', String(!p.hidden))">계산 근거${chev}</button>`;
+  const cap = percentileText(pc) ? `<span class="pcap">${percentileText(pc)} (참고용)</span>` : '';
+  return `<div class="pnote"><div class="prow">${cap}${btn}</div><p hidden>${AGE_BASIS}</p></div>`;
 }
 
 // 모델 B 단계 이름(서버 similarity_level)

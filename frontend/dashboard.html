@@ -199,8 +199,8 @@ function tilesHtml() {
   const href = state === 'active' || state === 'redo' ? reassessHref : 'challenges.html';
   const when = `<a class="tile blue" href="${href}"><span class="lb">혈압·체중을<br>다시 재는 날까지</span><div><div class="vv">${vv}</div><div class="trk"><b style="width:${pct}%"></b></div><span class="ft">${ft}</span></div></a>`;
   html += `<div class="tiles${risk ? '' : ' one'}">${risk}${when}</div>`;
-  if (a && probText(a.probability)) html += probNoteHtml(a.vascular_age != null, true);
-  if (a && a.vascular_age != null) html += `<div class="agecard"><div class="t"><b>혈관 나이 (추정)</b><span>실제 나이와 차이가 클 수 있어요</span></div><div class="n">${Math.round(a.vascular_age)}세</div></div>`;
+  if (a && probText(a.probability)) html += probNoteHtml(false, true);
+  if (a && a.vascular_age != null) html += `<div class="agecard"><div class="t"><b>혈관 나이 (추정)</b><span>실제 나이와 차이가 클 수 있어요</span></div><div class="n">${Math.round(a.vascular_age)}세</div></div>` + ageNoteHtml(a.percentile);
   return html;
 }
 

@@ -132,11 +132,10 @@ if (!pred) {
         <div class="seg">${[1, 2, 3].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>
         <div class="lv"><span${cur(1)}>양호</span><span${cur(2)}>주의</span><span${cur(3)}>높음</span></div>
         ${probText(a.probability) ? `<div class="prob"><b>${probText(a.probability)}</b></div>` : ''}
-        ${percentileText(a.percentile) ? `<div class="small" style="margin:0">${percentileText(a.percentile)} · 참고용</div>` : ''}
-        ${probText(a.probability) ? probNoteHtml(a.vascular_age != null, true) : ''}
+        ${probText(a.probability) ? probNoteHtml(false, true) : ''}
         ${top && top.direction_matches_expectation !== false ? `<div class="why">바꿀 수 있는 요인 중 <b>${top.label}</b> 쪽이 이 신호에 가장 크게 영향을 주고 있어요.</div>` : ''}
       </div>
-      ${a.vascular_age != null ? `<div class="agebox"><div class="t">혈관 나이 (추정)<span>실제 나이와 차이가 클 수 있어요</span></div><div class="n">${Math.round(a.vascular_age)}세</div></div>` : ''}
+      ${a.vascular_age != null ? `<div class="agebox"><div class="t">혈관 나이 (추정)<span>실제 나이와 차이가 클 수 있어요</span></div><div class="n">${Math.round(a.vascular_age)}세</div></div>${ageNoteHtml(a.percentile)}` : ''}
       `;
     aRest = factorBlock('MODEL_A', a, '바꿀 수 있는 요인');
   }
