@@ -28,6 +28,9 @@
   .cm.re .col{flex:1; min-width:0; display:flex; flex-direction:column; gap:6px}
   .cm.re .b{font-size:14px}
   .cm.re + .cm:not(.re){margin-top:2px}
+  .clk{display:inline-flex; align-items:center; gap:4px; min-height:32px; padding:0 10px 0 0; border:0; background:none; font-size:13px; color:var(--muted); cursor:pointer}
+  .clk .h{font-size:16px; line-height:1; color:#E5484D}
+  .clk.on{color:#E5484D; font-weight:700}
   .cm .b{font-size:14.5px; line-height:1.6; word-break:break-all; white-space:pre-wrap}
   .cmbar{display:flex; gap:8px}
   .cmbar{align-items:center}
@@ -133,7 +136,8 @@ function cmHtml(c, reply) {
   const who = '<span style="display:flex; align-items:center; gap:8px"><span class="av" style="width:' + (reply ? 28 : 36) + 'px; height:' + (reply ? 28 : 36) + 'px; border-radius:12px; font-size:14px" data-av="' + esc(c.author_nickname) + '" data-prof="' + esc(c.author_nickname) + '">' + esc((c.author_nickname || '?').slice(0, 1)) + '</span>' + '<span data-prof="' + esc(c.author_nickname) + '" style="text-decoration:underline; text-underline-offset:2px">' + esc(c.author_nickname) + '</span> · ' + ago(c.created_at) + '</span>';
   const act = (reply ? '' : '<button type="button" class="lnk" style="min-height:0" data-reply="' + c.comment_id + '">답글</button>')
     + (c.mine ? '<button type="button" class="lnk" style="min-height:0" data-edit="' + c.comment_id + '">수정</button>' : '') + (c.mine ? '<button type="button" class="lnk" style="min-height:0" data-del="' + c.comment_id + '">삭제</button>' : '<button type="button" class="lnk" style="min-height:0" data-rep="' + c.comment_id + '">신고</button>');
-  const inner = '<div class="t">' + who + '<span style="display:flex; gap:10px">' + act + '</span></div><div class="b">' + esc(c.body) + '</div>';
+  const inner = '<div class="t">' + who + '<span style="display:flex; gap:10px">' + act + '</span></div><div class="b">' + esc(c.body) + '</div>'
+    + '<div><button type="button" class="clk' + (c.liked_by_me ? ' on' : '') + '" data-cl="' + c.comment_id + '" aria-pressed="' + !!c.liked_by_me + '" aria-label="댓글 좋아요"><span class="h">' + (c.liked_by_me ? '❤️' : '♡') + '</span><span class="n">' + (c.like_count || 0) + '</span></button></div>';
   return '<div class="cm' + (reply ? ' re' : '') + '" id="c-' + c.comment_id + '">' + (reply ? '<span class="ln" aria-hidden="true">ㄴ</span><div class="col">' + inner + '</div>' : inner) + '</div>';
 }
 async function loadComments() {
@@ -158,6 +162,15 @@ async function loadComments() {
         const v = inp.value.trim(); if (!v) return;
         try { await apiCall('PATCH', '/community/comments/' + c.comment_id, { body: v }, '수정하지 못했어요'); loadComments(); } catch (e) { showErr(friendlyError(e)); }
       });
+    }));
+    document.querySelectorAll('[data-cl]').forEach(b => b.addEventListener('click', async () => {
+      b.disabled = true;
+      try {
+        const r = (await apiCall('POST', '/community/comments/' + b.dataset.cl + '/like', undefined, '좋아요를 누르지 못했어요')).data;
+        b.classList.toggle('on', r.liked); b.setAttribute('aria-pressed', String(r.liked));
+        b.querySelector('.h').textContent = r.liked ? '❤️' : '♡'; b.querySelector('.n').textContent = r.like_count;
+      } catch (e) { if (e.code === 'NICKNAME_REQUIRED') location.href = 'nickname.html?next=feed.html'; else showErr(friendlyError(e)); }
+      b.disabled = false;
     }));
     document.querySelectorAll('[data-reply]').forEach(b => b.addEventListener('click', () => {
       replyTo = b.dataset.reply; const who = list.find(c => c.comment_id === replyTo);

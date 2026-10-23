@@ -59,7 +59,7 @@
 if (!loggedIn()) location.replace('login.html');
 document.getElementById('back').innerHTML = ICON.back;
 const $ = (x) => document.getElementById(x);
-const TAB = { body: '몸체', color: '색', expr: '표정', face: '얼굴', head: '머리' };
+const TAB = { body: '몸체', color: '색', eye: '눈 색', expr: '표정', face: '얼굴', head: '머리' };
 const st = { tab: 'body', slots: null, balance: 0, view: null };
 const slotItems = (s) => st.slots.find(x => x.slot === s).items;
 const find = (s, k) => slotItems(s).find(i => i.key === k);
@@ -70,8 +70,8 @@ function render() {
   $('pv').innerHTML = characterSvg(st.view, 176);
   $('tabs').innerHTML = Object.entries(TAB).map(([k, l]) => `<button type="button" class="${k === st.tab ? 'on' : ''}" data-t="${k}">${l}</button>`).join('');
   const items = slotItems(st.tab);
-  $('opts').innerHTML = st.tab === 'color'
-    ? '<div class="sw">' + items.map(i => `<div><button type="button" class="${st.view.color === i.key ? 'on' : ''}" data-k="${i.key}" aria-label="${i.label}" style="background:${i.key}"></button><span>${i.label}</span><span class="tg ${tag(i)[0]}">${tag(i)[1]}</span></div>`).join('') + '</div>'
+  $('opts').innerHTML = st.tab === 'color' || st.tab === 'eye'
+    ? '<div class="sw">' + items.map(i => `<div><button type="button" class="${st.view[st.tab] === i.key ? 'on' : ''}" data-k="${i.key}" aria-label="${i.label}" style="background:${i.key}"></button><span>${i.label}</span><span class="tg ${tag(i)[0]}">${tag(i)[1]}</span></div>`).join('') + '</div>'
     : '<div class="grid4">' + items.map(i => `<button type="button" class="it${st.view[st.tab] === i.key ? ' on' : ''}" data-k="${i.key}" aria-label="${i.label}">${characterSvg({ ...st.view, [st.tab]: i.key }, 64)}<span class="l">${i.label}</span><span class="tg ${tag(i)[0]}">${tag(i)[1]}</span></button>`).join('') + '</div>';
   const c = cost(), short = c > st.balance;
   $('bal').textContent = st.balance;

@@ -450,10 +450,11 @@ function modelANoticeHtml(models) {
 }
 
 // ---- 캐릭터 그리기: 서버가 주는 조합 {body,color,expr,face,head} → 16x20 픽셀 SVG (시안 CharacterCreate의 그리기 코드)
-const CHARACTER_DEFAULT = { body: 'mongle', color: '#AACDDC', expr: 'basic', face: 'none', head: 'none' };
+const CHARACTER_DEFAULT = { body: 'mongle', color: '#AACDDC', eye: '#243749', expr: 'basic', face: 'none', head: 'none' };
 function characterSvg(view, px) {
   const s = { ...CHARACTER_DEFAULT, ...(view || {}) };
   if (!/^#[0-9A-Fa-f]{6}$/.test(s.color)) s.color = CHARACTER_DEFAULT.color;
+  if (!/^#[0-9A-Fa-f]{6}$/.test(s.eye)) s.eye = CHARACTER_DEFAULT.eye;
     const BODIES = {
       mongle: { top: 3, rows: ['................', '...oo......oo...', '..obbo....obbo..', '..obbboooobbbo..', '.obbbbbbbbbbbbo.', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '..obboooooobbo..', '..oooo....oooo..'] },
       bobo: { top: 2, rows: ['................', '................', '.....oooooo.....', '...ooobbbbooo...', '..obbbbbbbbbbo..', '.obhhbbbbbbbbbo.', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', 'obbbbbbbbbbbbbbo', '.obbbbbbbbbbbbo.', '..obbbbbbbbbbo..', '...obbbbbbbbo...', '....oooooooo....'] },
@@ -542,7 +543,7 @@ function characterSvg(view, px) {
 
     const fills = { k: '#B5835A', t: '#7FB6E8', o: '#243749', e: '#243749', m: '#243749', b: s.color, h: '#FFFFFF', c: '#E8B9A5', g: '#6FA58A', y: '#F2C94C', r: '#E58F9B', w: '#DCE8EF', a: '#5C86AC', x: '#B8CDD9' };
   let rects = '';
-  g.forEach((row, y) => row.forEach((ch, x) => { if (fills[ch]) rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${fills[ch]}"/>`; }));
+  g.forEach((row, y) => row.forEach((ch, x) => { const col = ch === 'e' && y - OFF <= 9 ? s.eye : fills[ch]; if (col) rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${col}"/>`; }));   // 눈(몸 칸 9행 위)만 눈 색, 입은 짙은 색
   const w = px || 40;
   return `<svg width="${w}" height="${Math.round(w * 1.25)}" viewBox="0 0 16 20" shape-rendering="crispEdges" role="img" aria-label="캐릭터">${rects}</svg>`;
 }

@@ -56,15 +56,15 @@ input.addEventListener('input', () => { btn.disabled = !valid(input.value.trim()
 apiCall('GET', '/community/me', undefined, '').then(r => {
   if (r.data.nickname) { input.value = r.data.nickname; btn.disabled = false; document.getElementById('gift').hidden = true; }
 }).catch(() => {});
-const TAB = { body: '몸체', color: '색', expr: '표정', face: '얼굴', head: '머리' };
+const TAB = { body: '몸체', color: '색', eye: '눈 색', expr: '표정', face: '얼굴', head: '머리' };
 const ch = { tab: 'body', slots: [], view: { ...CHARACTER_DEFAULT } };
 function renderCh() {
   document.getElementById('pv').innerHTML = characterSvg(ch.view, 176);
   document.getElementById('tabs').innerHTML = Object.entries(TAB).map(([k, l]) => '<button type="button" class="' + (k === ch.tab ? 'on' : '') + '" data-t="' + k + '">' + l + '</button>').join('');
   const sl = ch.slots.find(x => x.slot === ch.tab); if (!sl) return;
   const free = sl.items.filter(i => i.owned);
-  document.getElementById('opts').innerHTML = ch.tab === 'color'
-    ? '<div class="sw">' + free.map(i => '<button type="button" class="' + (ch.view.color === i.key ? 'on' : '') + '" data-k="' + i.key + '" aria-label="' + i.label + '" style="background:' + i.key + '"></button>').join('') + '</div>'
+  document.getElementById('opts').innerHTML = ch.tab === 'color' || ch.tab === 'eye'
+    ? '<div class="sw">' + free.map(i => '<button type="button" class="' + (ch.view[ch.tab] === i.key ? 'on' : '') + '" data-k="' + i.key + '" aria-label="' + i.label + '" style="background:' + i.key + '"></button>').join('') + '</div>'
     : '<div class="grid4">' + free.map(i => '<button type="button" class="it' + (ch.view[ch.tab] === i.key ? ' on' : '') + '" data-k="' + i.key + '" aria-label="' + i.label + '">' + characterSvg({ ...ch.view, [ch.tab]: i.key }, 64) + '<span>' + i.label + '</span></button>').join('') + '</div>';
 }
 document.getElementById('tabs').addEventListener('click', (e) => { const t = e.target.closest('[data-t]'); if (t) { ch.tab = t.dataset.t; renderCh(); } });
