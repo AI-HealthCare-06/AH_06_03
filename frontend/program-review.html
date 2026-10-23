@@ -77,6 +77,7 @@
   .simbox .s{font-size:15px; color:var(--ink)}
   .simbox .b{font-size:18px; font-weight:800}
   .rates .rw>span:last-child{font-weight:800}
+  .tb + .pnote{margin-top:-8px}
 </style>
 </head>
 <body>
@@ -141,7 +142,7 @@ function render(rv) {
   const chg = mB ? simChangeText(mB.before_similarity_level, mB.after_similarity_level).replace('4주 전보다', '처음보다') : '';
   const pts = (rv.checkpoints || []).filter(c => c.sbp != null).map(c => ({ v: c.sbp, d: WEEKS[c.week] || c.week + '주' }));
   const pc = cmpA && typeof m.before_percentile === 'number' && typeof m.after_percentile === 'number'
-    ? [['같은 성별·연령대(참고용)', `상위 ${Math.max(1, Math.round(m.before_percentile))}%`, `상위 ${Math.max(1, Math.round(m.after_percentile))}%`]] : [];
+    ? [['상위 % (참고용)', `상위 ${Math.max(1, Math.round(m.before_percentile))}%`, `상위 ${Math.max(1, Math.round(m.after_percentile))}%`]] : [];
   const rates = (rv.cycles || []).map(c => c.cycle_rate).filter(v => typeof v === 'number');
   const avgRate = rates.length ? Math.round(rates.reduce((x, y) => x + y, 0) / rates.length * 100) + '%' : '—';   // 사이클별 달성률 평균
   const wk = rv.weeks_done || 12, done = wk >= 12;      // 3차까지 마쳤으면 12주, 아니면 마지막 재입력까지(지금까지 4·8주)
@@ -151,9 +152,10 @@ function render(rv) {
     <div class="tb"><div class="th"><span>항목</span><span>0주</span><span>${wk}주</span></div>
       ${[['혈압', bpText(b), bpText(a)], ['체중', unit(b.weight_kg, 'kg'), unit(a.weight_kg, 'kg')], ['허리둘레', unit(b.waist_cm, 'cm'), unit(a.waist_cm, 'cm')]]
         .concat([['챌린지 달성률', '—', avgRate]])
-        .concat(cmpA ? [['건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')]] : []).concat(pc)
+        .concat(cmpA ? [['건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')]] : [])
         .map(r => `<div class="rw"><span>${r[0]}</span><span>${esc(r[1])}</span><span>${esc(r[2])}</span></div>`).join('')}</div>
     ${cmpA && (probText(m.before_probability) || probText(m.after_probability)) ? probNoteHtml(false, true) : ''}
+    ${pc.length ? `<div class="tb"><div class="th"><span>같은 성별·연령대</span><span>0주</span><span>${wk}주</span></div>${pc.map(r => `<div class="rw"><span>${r[0]}</span><span>${esc(r[1])}</span><span>${esc(r[2])}</span></div>`).join('')}</div>${ageNoteHtml(null)}` : ''}
     <div class="hab"><div class="t">습관 변화</div>
       <div class="rw"><span>흡연</span><span>${SMOKING[b.smoking] || '—'} → <b>${SMOKING[a.smoking] || '—'}</b></span></div>
       <div class="rw"><span>음주</span><span>${DRINK[b.drink_freq] || '—'} → <b>${DRINK[a.drink_freq] || '—'}</b></span></div></div>
