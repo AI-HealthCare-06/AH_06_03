@@ -227,3 +227,27 @@ class AdminPostActionResult(BaseModel):
     post_id: str
     status: str                   # 바뀐 뒤 상태
     handled_reports: int          # 함께 처리된 대기 신고 수
+
+
+class ProfileComment(BaseModel):
+    comment_id: str
+    post_id: str
+    post_title: str
+    body: str
+    created_at: datetime
+
+
+class ProfileResult(BaseModel):
+    """다른 사람의 커뮤니티 프로필. 글·댓글은 공개 글만(숨김·신고·파티 글은 빼고), 인기도는 받은 하트 수."""
+    nickname: str
+    mine: bool
+    fame: int                     # 받은 하트 수
+    fame_given_by_me: bool        # 내가 이미 줬는지
+    post_count: int
+    posts: list[PostItem]
+    comments: list[ProfileComment]
+
+
+class FameResult(BaseModel):
+    fame: int
+    fame_given_by_me: bool

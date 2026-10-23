@@ -188,3 +188,44 @@ async def test_댓글_수정은_본인만(client, db_session):
     r = await client.patch(url, json={"body": "고침"}, headers=b)
     assert r.status_code == 200 and r.json()["data"]["body"] == "고침"
     assert (await client.get(f"/v1/community/posts/{pid}/comments", headers=a)).json()["data"][0]["body"] == "고침"
+
+
+async def test_프로필은_공개_글과_댓글만_인기도는_한_사람당_한_번(client, db_session):
+    uid_a, a = await with_nick(client, db_session, "a@test.kr", "글쓴이")
+    _, b = await with_nick(client, db_session, "b@test.kr", "독자")
+    _, c = await with_nick(client, db_session, "c@test.kr", "구경꾼")
+    p1 = (await client.post("/v1/community/posts", json=POST, headers=a)).json()["data"]["post_id"]
+    p2 = (await client.post("/v1/community/posts", json={**POST, "title": "신고될 글"}, headers=a)).json()["data"]["post_id"]
+    await client.post(f"/v1/community/posts/{p1}/comments", json={"body": "내 글 댓글"}, headers=a)
+    await client.post(f"/v1/community/posts/{p2}/report", json={"reason": "spam"}, headers=b)      # 신고한 사람 b에게는 그 글이 빠진다
+    # 프로필: 글쓴이의 글 2개 중 b가 신고한 글은 b에게만 빠진다
+    pb = (await client.get("/v1/community/users/글쓴이", headers=b)).json()["data"]
+    pc = (await client.get("/v1/community/users/글쓴이", headers=c)).json()["data"]
+    assert [x["post_id"] for x in pb["posts"]] == [p1] and {x["post_id"] for x in pc["posts"]} == {p1, p2}
+    assert pc["comments"][0]["body"] == "내 글 댓글" and pc["mine"] is False
+    # 인기도: 한 사람이 한 사람에게 한 번, 다시 누르면 취소, 내게는 못 줌, 여러 사람에게는 각각 줄 수 있음
+    assert (await client.post("/v1/community/users/글쓴이/fame", headers=b)).json()["data"] == {"fame": 1, "fame_given_by_me": True}
+    assert (await client.post("/v1/community/users/글쓴이/fame", headers=c)).json()["data"]["fame"] == 2
+    assert (await client.post("/v1/community/users/글쓴이/fame", headers=b)).json()["data"] == {"fame": 1, "fame_given_by_me": False}   # 취소
+    assert (await client.post("/v1/community/users/글쓴이/fame", headers=a)).status_code == 400                                         # 본인
+    assert (await client.post("/v1/community/users/독자/fame", headers=a)).json()["data"]["fame"] == 1                                  # 다른 사람에게도 줄 수 있음
+    assert (await client.get("/v1/community/users/없는닉", headers=a)).status_code == 404
+
+
+async def test_프로필에서_운영팀이_숨긴_글과_파티_글은_빠진다(client, db_session):
+    from sqlalchemy import update
+    uid_a, a = await with_nick(client, db_session, "a@test.kr", "글쓴이")
+    _, b = await with_nick(client, db_session, "b@test.kr", "독자")
+    keep = (await client.post("/v1/community/posts", json=POST, headers=a)).json()["data"]["post_id"]
+    hidden = (await client.post("/v1/community/posts", json={**POST, "title": "숨길 글"}, headers=a)).json()["data"]["post_id"]
+    party = (await client.post("/v1/community/posts", json={**POST, "title": "파티 글"}, headers=a)).json()["data"]["post_id"]
+    c_hidden = (await client.post(f"/v1/community/posts/{keep}/comments", json={"body": "숨길 댓글"}, headers=a)).json()["data"]["comment_id"]
+    await client.post(f"/v1/community/posts/{keep}/comments", json={"body": "보일 댓글"}, headers=a)
+    async with db_session() as db:
+        await db.execute(update(CommunityPost).where(CommunityPost.post_id == hidden).values(status="hidden"))      # 운영팀이 숨김
+        await db.execute(update(CommunityPost).where(CommunityPost.post_id == party).values(party_id="p-none"))     # 파티 글(파티 소속)
+        await db.execute(update(CommunityComment).where(CommunityComment.comment_id == c_hidden).values(status="hidden"))
+        await db.commit()
+    pr = (await client.get("/v1/community/users/글쓴이", headers=b)).json()["data"]
+    assert [x["post_id"] for x in pr["posts"]] == [keep] and pr["post_count"] == 1
+    assert [x["body"] for x in pr["comments"]] == ["보일 댓글"]

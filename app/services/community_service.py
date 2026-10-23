@@ -15,11 +15,11 @@ from sqlalchemy.orm import aliased
 from app.core.errors import AppError
 from app.core.security import utcnow
 from app.models.community import (
-    CommunityComment, CommunityLike, CommunityPost, CommunityPostPhoto, CommunityProfile, CommunityReport,
+    CommunityComment, CommunityFame, CommunityLike, CommunityPost, CommunityPostPhoto, CommunityProfile, CommunityReport,
 )
 from app.schemas.community import (
     AttachOption, CommentCreate, CommentItem, CommentUpdate, LikeResult, MyCommunity, PostAttach, PostCreate, PostCreated, PostDetail,
-    PhotoResult, PostItem, PostList, ReportRequest, ReportResult,
+    PhotoResult, PostItem, PostList, ProfileComment, ProfileResult, FameResult, ReportRequest, ReportResult,
 )
 from app.models.party import PartyMember
 from app.services import admin_alert, audit_service, photo_check, pie_service, post_attach_service,notify_service
@@ -296,6 +296,69 @@ async def delete_comment(db: AsyncSession, user_id: str, comment_id: str) -> Non
     else:
         await db.delete(c)
     await db.commit()
+
+
+# ---------------------------------------------------------------- 프로필·인기도
+PROFILE_POSTS = 20
+PROFILE_COMMENTS = 20
+
+
+async def _user_by_nickname(db: AsyncSession, nickname: str) -> str:
+    uid = (await db.execute(select(CommunityProfile.user_id).where(CommunityProfile.nickname == nickname))).scalar_one_or_none()
+    if uid is None:
+        raise not_found("사용자")
+    return uid
+
+
+async def _fame_state(db: AsyncSession, me: str, target: str) -> tuple[int, bool]:
+    fame = int((await db.execute(select(func.count()).select_from(CommunityFame).where(CommunityFame.target_id == target))).scalar_one())
+    given = (await db.execute(select(CommunityFame.fame_id).where(
+        CommunityFame.giver_id == me, CommunityFame.target_id == target))).first() is not None
+    return fame, given
+
+
+async def get_profile(db: AsyncSession, user_id: str, nickname: str) -> ProfileResult:
+    """남의 프로필: 닉네임, 받은 인기도(하트), 쓴 글·댓글. 숨김·삭제·내가 신고한 것과 파티 글은 뺀다(건강정보 신고로 숨겨진 글도 같은 규칙으로 빠진다)."""
+    target = await _user_by_nickname(db, nickname)
+    base = select(CommunityPost).where(
+        CommunityPost.user_id == target, CommunityPost.status == "visible", CommunityPost.party_id.is_(None),
+        ~_reported_by(user_id, CommunityReport.post_id == CommunityPost.post_id))
+    total = int((await db.execute(select(func.count()).select_from(base.subquery()))).scalar_one())
+    likes = _like_count()
+    rows = (await db.execute(
+        select(CommunityPost, CommunityProfile.nickname, likes, _comment_count(), _liked_by(user_id), _photo_count())
+        .outerjoin(CommunityProfile, CommunityProfile.user_id == CommunityPost.user_id)
+        .where(CommunityPost.post_id.in_(select(base.subquery().c.post_id)))
+        .order_by(CommunityPost.created_at.desc(), CommunityPost.post_id).limit(PROFILE_POSTS))).all()
+    crows = (await db.execute(
+        select(CommunityComment, CommunityPost.title)
+        .join(CommunityPost, CommunityPost.post_id == CommunityComment.post_id)
+        .where(CommunityComment.user_id == target, CommunityComment.status == "visible",
+               CommunityPost.status == "visible", CommunityPost.party_id.is_(None),
+               ~_reported_by(user_id, CommunityReport.comment_id == CommunityComment.comment_id))
+        .order_by(CommunityComment.created_at.desc()).limit(PROFILE_COMMENTS))).all()
+    fame, given = await _fame_state(db, user_id, target)
+    return ProfileResult(
+        nickname=nickname, mine=target == user_id, fame=fame, fame_given_by_me=given, post_count=total,
+        posts=[PostItem(**_item(p, n, lk, cm, ld, user_id, ph)) for p, n, lk, cm, ld, ph in rows],
+        comments=[ProfileComment(comment_id=c.comment_id, post_id=c.post_id, post_title=t, body=c.body, created_at=c.created_at) for c, t in crows])
+
+
+async def toggle_fame(db: AsyncSession, user_id: str, nickname: str) -> FameResult:
+    """남에게 인기도(하트)를 준다. 한 사람에게 한 번, 다시 누르면 취소. 내 프로필에는 못 준다."""
+    await require_nickname(db, user_id)
+    target = await _user_by_nickname(db, nickname)
+    if target == user_id:
+        raise AppError(400, "FAME_SELF", "내게는 줄 수 없어요.")
+    mine = (await db.execute(select(CommunityFame).where(
+        CommunityFame.giver_id == user_id, CommunityFame.target_id == target))).scalar_one_or_none()
+    if mine is None:
+        db.add(CommunityFame(giver_id=user_id, target_id=target, created_at=utcnow()))
+    else:
+        await db.delete(mine)
+    await db.commit()
+    fame, given = await _fame_state(db, user_id, target)
+    return FameResult(fame=fame, fame_given_by_me=given)
 
 
 # ---------------------------------------------------------------- 신고

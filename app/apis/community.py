@@ -8,7 +8,7 @@ from app.apis.deps import get_current_user_id
 from app.core.db.databases import async_get_db
 from app.schemas.common import DataResponse
 from app.schemas.community import (
-    AttachOption, CommentCreate, CommentUpdate, PhotoResult, CommentItem, LikeResult, MyCommunity, NicknameRequest, PostCreate, PostCreated, PostDetail, PostList,
+    AttachOption, CommentCreate, CommentUpdate, FameResult, ProfileResult, PhotoResult, CommentItem, LikeResult, MyCommunity, NicknameRequest, PostCreate, PostCreated, PostDetail, PostList,
     ReportRequest, ReportResult,
 )
 from app.core.errors import AppError
@@ -46,6 +46,16 @@ async def list_posts(
 @router.post("/posts", status_code=status.HTTP_201_CREATED, response_model=DataResponse[PostCreated])
 async def create_post(req: PostCreate, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)):
     return DataResponse(data=await community_service.create_post(db, user_id, req))
+
+
+@router.get("/users/{nickname}", response_model=DataResponse[ProfileResult])
+async def get_profile(nickname: str, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)):
+    return DataResponse(data=await community_service.get_profile(db, user_id, nickname))
+
+
+@router.post("/users/{nickname}/fame", response_model=DataResponse[FameResult])
+async def toggle_fame(nickname: str, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)):
+    return DataResponse(data=await community_service.toggle_fame(db, user_id, nickname))
 
 
 @router.get("/posts/{post_id}", response_model=DataResponse[PostDetail])
