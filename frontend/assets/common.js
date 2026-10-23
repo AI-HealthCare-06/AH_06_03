@@ -345,7 +345,7 @@ function ageNoteHtml(pc) {
   const chev = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6"/></svg>';
   const btn = `<button type="button" aria-expanded="false" onclick="const p = this.closest('.pnote').querySelector('p'); p.hidden = !p.hidden; this.setAttribute('aria-expanded', String(!p.hidden))">계산 근거${chev}</button>`;
   const cap = percentileText(pc) ? `<span class="pcap">${percentileText(pc)} (참고용)</span>` : '';
-  return `<div class="pnote"><div class="prow">${cap}${btn}</div><p hidden>${AGE_BASIS}</p></div>`;
+  return `<div class="pnote agenote"><div class="prow">${cap}${btn}</div><p hidden>${AGE_BASIS}</p></div>`;
 }
 
 // 모델 B 단계 이름(서버 similarity_level)
