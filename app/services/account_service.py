@@ -107,7 +107,7 @@ async def get_deletion(db: AsyncSession, user_id: str, deletion_request_id: str)
 
 
 # 내려받기에서 뺄 칸 (비밀번호·로그인 토큰 해시, 암호화된 보호자 정보, 이메일 찾기용 지문)
-EXPORT_SKIP_COLUMNS = {"password_hash", "refresh_token_hash", "guardian_name_enc", "guardian_contact_enc", "email_hash"}
+EXPORT_SKIP_COLUMNS = {"password_hash", "refresh_token_hash", "guardian_name_enc", "guardian_contact_enc", "email_hash", "p256dh", "auth"}
 # user_id 칸이 없는 자식 표 → (부모 표, 연결 칸): 부모가 내 것이면 같이 담는다
 EXPORT_CHILDREN = {
     "health_measurements": ("health_records", "health_record_id"),

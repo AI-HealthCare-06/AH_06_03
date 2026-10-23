@@ -93,3 +93,11 @@ async def test_VAPID_키가_없으면_보내지_않는다(db_session):
     uid, _ = await _user(db_session, "a@t.kr")
     async with db_session() as s:
         assert (await push_service.send(s, uid, "comment", "t", "b", "u")).sent == 0
+
+
+async def test_내_데이터_내려받기에_기기_암호화_키는_안_나간다(client, db_session):
+    _, h = await _user(db_session, "a@t.kr")
+    await client.put("/v1/push/subscription", json=SUB, headers=h)
+    r = await client.get("/v1/users/me/data-export", headers=h)
+    assert r.status_code == 200
+    assert "p-key" not in r.text and "a-key" not in r.text            # p256dh·auth 값이 없어야 함
