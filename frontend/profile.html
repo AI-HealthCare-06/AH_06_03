@@ -8,15 +8,14 @@
 <style>
   .who{display:flex; flex-direction:column; align-items:center; gap:8px; padding:8px 0 4px; text-align:center}
   .who .av{width:96px; height:96px; border-radius:28px; background:var(--cream); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:32px; color:var(--muted)}
-  .who h1{margin:0; font-size:22px; font-weight:800; word-break:break-all}
-  .fame{display:flex; align-items:center; justify-content:center; gap:10px; margin-top:4px}
-  .fame .n{font-size:15px; color:var(--body)}
-  .fame .n b{font-size:20px; color:var(--ink)}
-  .heart{height:44px; padding:0 18px; border-radius:22px; border:1px solid var(--sage); background:#fff; font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:6px; color:var(--ink)}
-  .heart.on{background:var(--notice); border-color:var(--accent)}
+  .who h1{margin:0; font-size:22px; font-weight:800; word-break:break-all; width:max-content; max-width:70%; text-align:center}
+  .nm{position:relative; display:flex; justify-content:center; align-items:center; width:100%; min-height:44px; padding:0 24px; box-sizing:border-box}
+  .nm h1{position:relative}
+  .nm .side{position:absolute; left:calc(50% + var(--half, 40px) + 10px); display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); white-space:nowrap}
+  .nm .side b{font-size:13px; color:var(--ink)}
+  .heart{width:36px; height:36px; border-radius:50%; border:1px solid #F0C7CD; background:#fff; font-size:18px; line-height:1; display:inline-flex; align-items:center; justify-content:center; padding:0; color:#E5484D; cursor:pointer}
+  .heart.on{background:#FDECEE; border-color:#E5484D}
   .heart:disabled{opacity:.5}
-  .stats{display:flex; justify-content:center; gap:22px; font-size:13px; color:var(--muted)}
-  .stats b{color:var(--ink); font-size:15px}
   .tabs2{display:flex; border-bottom:1px solid var(--line)}
   .tabs2 button{flex:1; min-height:48px; border:0; background:none; font-size:15px; font-weight:700; color:var(--muted); border-bottom:2px solid transparent}
   .tabs2 button.on{color:var(--ink); border-bottom-color:var(--ink)}
@@ -59,15 +58,15 @@ const nick = new URLSearchParams(location.search).get('nick') || '';
 let P = null, tab = 'posts';
 
 function render() {
-  const heart = P.mine ? '' : `<button type="button" class="heart${P.fame_given_by_me ? ' on' : ''}" id="heart" aria-pressed="${P.fame_given_by_me}">${P.fame_given_by_me ? '❤️' : '🤍'} 인기도 주기</button>`;
+  const heart = P.mine ? '' : `<button type="button" class="heart${P.fame_given_by_me ? ' on' : ''}" id="heart" aria-pressed="${P.fame_given_by_me}" aria-label="${P.fame_given_by_me ? '인기도 취소' : '인기도 주기'}">${P.fame_given_by_me ? '❤️' : '♡'}</button>`;
   const items = tab === 'posts'
     ? (P.posts.length ? P.posts.map(p => `<a class="item" href="post.html?id=${encodeURIComponent(p.post_id)}"><div class="t">${esc(p.title)}</div><div class="p">${esc(p.preview)}</div><div class="m"><span>${esc(CAT_LABEL[p.category] || '')}</span><span>${ago(p.created_at)}</span><span>좋아요 ${p.like_count}</span><span>댓글 ${p.comment_count}</span></div></a>`).join('') : '<div class="empty">아직 쓴 글이 없어요.</div>')
     : (P.comments.length ? P.comments.map(c => `<a class="item" href="post.html?id=${encodeURIComponent(c.post_id)}#c-${encodeURIComponent(c.comment_id)}"><div class="p" style="-webkit-line-clamp:3">${esc(c.body)}</div><div class="on">‘${esc(c.post_title)}’ 글에 · ${ago(c.created_at)}</div></a>`).join('') : '<div class="empty">아직 쓴 댓글이 없어요.</div>');
-  $('body').innerHTML = `<div class="who"><span class="av" data-av="${esc(P.nickname)}">${esc(P.nickname.slice(0, 1))}</span><h1>${esc(P.nickname)}</h1>
-    <div class="fame"><span class="n">인기도 <b id="fame-n">${P.fame}</b></span>${heart}</div>
-    <div class="stats"><span>글 <b>${P.post_count}</b></span></div></div>
-    <div class="tabs2"><button type="button" data-t="posts" class="${tab === 'posts' ? 'on' : ''}">쓴 글</button><button type="button" data-t="comments" class="${tab === 'comments' ? 'on' : ''}">쓴 댓글</button></div>
+  $('body').innerHTML = `<div class="who"><span class="av" data-av="${esc(P.nickname)}">${esc(P.nickname.slice(0, 1))}</span>
+    <div class="nm"><h1 id="nick-h">${esc(P.nickname)}</h1><span class="side"><span>인기도 <b id="fame-n">${P.fame}</b></span>${heart}</span></div></div>
+    <div class="tabs2"><button type="button" data-t="posts" class="${tab === 'posts' ? 'on' : ''}">글 ${P.post_count}</button><button type="button" data-t="comments" class="${tab === 'comments' ? 'on' : ''}">댓글 ${P.comments.length}</button></div>
     <div>${items}</div>`;
+  const hh = $('nick-h'); if (hh) hh.parentElement.style.setProperty('--half', (hh.offsetWidth / 2) + 'px');   // 닉네임은 가운데, 인기도·하트는 닉네임 오른쪽 바로 옆
   const av = document.querySelector('[data-av]');
   if (av) apiCall('GET', '/characters/by-nickname/' + encodeURIComponent(P.nickname), undefined, '').then(r => { av.innerHTML = characterSvg(r.data, 80); }).catch(() => {});
   document.querySelectorAll('.tabs2 button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.t; render(); }));
