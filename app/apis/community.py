@@ -8,7 +8,7 @@ from app.apis.deps import get_current_user_id
 from app.core.db.databases import async_get_db
 from app.schemas.common import DataResponse
 from app.schemas.community import (
-    AttachOption, CommentCreate, PhotoResult, CommentItem, LikeResult, MyCommunity, NicknameRequest, PostCreate, PostCreated, PostDetail, PostList,
+    AttachOption, CommentCreate, CommentUpdate, PhotoResult, CommentItem, LikeResult, MyCommunity, NicknameRequest, PostCreate, PostCreated, PostDetail, PostList,
     ReportRequest, ReportResult,
 )
 from app.core.errors import AppError
@@ -74,6 +74,13 @@ async def create_comment(
     post_id: str, req: CommentCreate, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)
 ):
     return DataResponse(data=await community_service.create_comment(db, user_id, post_id, req))
+
+
+@router.patch("/comments/{comment_id}", response_model=DataResponse[CommentItem])
+async def update_comment(
+    comment_id: str, req: CommentUpdate, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(async_get_db)
+):
+    return DataResponse(data=await community_service.update_comment(db, user_id, comment_id, req))
 
 
 @router.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -10,6 +10,7 @@ from datetime import timedelta
 from sqlalchemy import and_, delete, exists, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.core.errors import AppError
 from app.core.security import utcnow
@@ -17,7 +18,7 @@ from app.models.community import (
     CommunityComment, CommunityLike, CommunityPost, CommunityPostPhoto, CommunityProfile, CommunityReport,
 )
 from app.schemas.community import (
-    AttachOption, CommentCreate, CommentItem, LikeResult, MyCommunity, PostAttach, PostCreate, PostCreated, PostDetail,
+    AttachOption, CommentCreate, CommentItem, CommentUpdate, LikeResult, MyCommunity, PostAttach, PostCreate, PostCreated, PostDetail,
     PhotoResult, PostItem, PostList, ReportRequest, ReportResult,
 )
 from app.models.party import PartyMember
@@ -231,14 +232,19 @@ async def toggle_like(db: AsyncSession, user_id: str, post_id: str) -> LikeResul
 # ---------------------------------------------------------------- 댓글
 async def list_comments(db: AsyncSession, user_id: str, post_id: str) -> list[CommentItem]:
     await _load_post(db, user_id, post_id)
+    reply = aliased(CommunityComment)
+    has_reply = exists(select(reply.comment_id).where(reply.parent_id == CommunityComment.comment_id, reply.status == "visible"))
     rows = (await db.execute(
         select(CommunityComment, CommunityProfile.nickname)
         .outerjoin(CommunityProfile, CommunityProfile.user_id == CommunityComment.user_id)
-        .where(CommunityComment.post_id == post_id, CommunityComment.status == "visible",
+        .where(CommunityComment.post_id == post_id,
+               or_(CommunityComment.status == "visible", and_(CommunityComment.status == "deleted", has_reply)),
                ~_reported_by(user_id, CommunityReport.comment_id == CommunityComment.comment_id))
         .order_by(CommunityComment.created_at, CommunityComment.comment_id))).all()
-    return [CommentItem(comment_id=c.comment_id, body=c.body, author_nickname=n or "알 수 없음",
-                        created_at=c.created_at, mine=c.user_id == user_id) for c, n in rows]
+    return [CommentItem(comment_id=c.comment_id, body="" if c.status == "deleted" else c.body,
+                        author_nickname="" if c.status == "deleted" else (n or "알 수 없음"),
+                        created_at=c.created_at, mine=c.status != "deleted" and c.user_id == user_id,
+                        parent_id=c.parent_id, deleted=c.status == "deleted") for c, n in rows]
 
 
 async def create_comment(db: AsyncSession, user_id: str, post_id: str, req: CommentCreate) -> CommentItem:
@@ -246,10 +252,27 @@ async def create_comment(db: AsyncSession, user_id: str, post_id: str, req: Comm
     p = await db.get(CommunityPost, post_id)
     if p is None or p.status != "visible" or not await _can_see_party(db, user_id, p):
         raise not_found()
-    c = CommunityComment(post_id=post_id, user_id=user_id, body=req.body, status="visible", created_at=utcnow())
+    parent_id = None
+    if req.parent_id is not None:
+        parent = await db.get(CommunityComment, req.parent_id)
+        if parent is None or parent.post_id != post_id or parent.status != "visible":
+            raise not_found("댓글")
+        parent_id = parent.parent_id or parent.comment_id   # 대댓글에 단 답글은 원 댓글 아래로 붙인다(한 단계만)
+    c = CommunityComment(post_id=post_id, user_id=user_id, parent_id=parent_id, body=req.body, status="visible", created_at=utcnow())
     db.add(c)
     await db.commit()
-    return CommentItem(comment_id=c.comment_id, body=c.body, author_nickname=nickname, created_at=c.created_at, mine=True)
+    return CommentItem(comment_id=c.comment_id, body=c.body, author_nickname=nickname, created_at=c.created_at, mine=True, parent_id=parent_id)
+
+
+async def update_comment(db: AsyncSession, user_id: str, comment_id: str, req: CommentUpdate) -> CommentItem:
+    """내 댓글 본문만 고친다 (지운 댓글·남의 댓글은 404)."""
+    c = await db.get(CommunityComment, comment_id)
+    if c is None or c.user_id != user_id or c.status != "visible":
+        raise not_found("댓글")
+    c.body = req.body
+    await db.commit()
+    nickname = await require_nickname(db, user_id)
+    return CommentItem(comment_id=c.comment_id, body=c.body, author_nickname=nickname, created_at=c.created_at, mine=True, parent_id=c.parent_id)
 
 
 async def delete_comment(db: AsyncSession, user_id: str, comment_id: str) -> None:
@@ -257,7 +280,12 @@ async def delete_comment(db: AsyncSession, user_id: str, comment_id: str) -> Non
     if c is None or c.user_id != user_id or c.status == "deleted":
         raise not_found("댓글")
     await db.execute(delete(CommunityReport).where(CommunityReport.comment_id == comment_id))
-    await db.delete(c)
+    has_reply = (await db.execute(select(CommunityComment.comment_id).where(
+        CommunityComment.parent_id == comment_id, CommunityComment.status == "visible").limit(1))).first() is not None
+    if has_reply:
+        c.status = "deleted"   # 답글이 달린 댓글은 자리만 남긴다("삭제된 댓글이에요")
+    else:
+        await db.delete(c)
     await db.commit()
 
 
