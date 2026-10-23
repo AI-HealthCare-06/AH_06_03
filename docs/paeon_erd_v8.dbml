@@ -900,7 +900,7 @@ Table predictions {
     (user_id, predicted_at)
   }
   Note: '''REQ-PRED-001,003~007, NFR-ML-004, NFR-ARCH-004. 결과는 덮어쓰지 않고 이력으로 쌓는다. 두 모델 결과를 하나로 합산하지 않는다.
-v8.1: 번호표 1건에 MODEL_A·MODEL_B 결과가 각각 한 행. 모델 B similarity_level(비슷한 편/조금 달라요/많이 달라요)은 저장하지 않고 score와 모델 JSON similarity_cuts로 응답 때 계산.'''
+v8.1: 번호표 1건에 MODEL_A·MODEL_B 결과가 각각 한 행. 모델 B similarity_level(비슷한 편/조금 달라요/많이 달라요)은 저장하지 않고 score와 모델 JSON similarity_cuts(혈압 정상인 사람 점수의 중앙값 0.26·상위 25% 경계 0.41)로 응답 때 계산. 저장된 결과의 model_version이 지금 모델과 다르면 계산하지 않음(NULL).'''
 }
 
 Table prediction_feature_values {
