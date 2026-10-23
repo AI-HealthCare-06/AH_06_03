@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAEON — 프로필</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .who{display:flex; flex-direction:column; align-items:center; gap:8px; padding:8px 0 4px; text-align:center}
+  .who .av{width:96px; height:96px; border-radius:28px; background:var(--cream); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:32px; color:var(--muted)}
+  .who h1{margin:0; font-size:22px; font-weight:800; word-break:break-all}
+  .fame{display:flex; align-items:center; justify-content:center; gap:10px; margin-top:4px}
+  .fame .n{font-size:15px; color:var(--body)}
+  .fame .n b{font-size:20px; color:var(--ink)}
+  .heart{height:44px; padding:0 18px; border-radius:22px; border:1px solid var(--sage); background:#fff; font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:6px; color:var(--ink)}
+  .heart.on{background:var(--notice); border-color:var(--accent)}
+  .heart:disabled{opacity:.5}
+  .stats{display:flex; justify-content:center; gap:22px; font-size:13px; color:var(--muted)}
+  .stats b{color:var(--ink); font-size:15px}
+  .tabs2{display:flex; border-bottom:1px solid var(--line)}
+  .tabs2 button{flex:1; min-height:48px; border:0; background:none; font-size:15px; font-weight:700; color:var(--muted); border-bottom:2px solid transparent}
+  .tabs2 button.on{color:var(--ink); border-bottom-color:var(--ink)}
+  .item{display:block; padding:14px 0; border-bottom:1px solid var(--line); text-decoration:none; color:inherit}
+  .item .t{font-size:15px; font-weight:800; line-height:1.4; word-break:break-all}
+  .item .p{font-size:13.5px; color:var(--body); line-height:1.6; margin-top:4px; word-break:break-all; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  .item .m{font-size:12.5px; color:var(--muted); margin-top:6px; display:flex; gap:10px}
+  .item .on{font-size:12.5px; color:var(--muted); margin-top:4px}
+  .empty{padding:28px 0; text-align:center; color:var(--muted); font-size:14px}
+</style>
+</head>
+<body>
+<div id="header-slot"></div>
+<div class="wrapper">
+  <div class="frame">
+    <div class="frame-body">
+      <div class="screen" style="gap:14px">
+        <div class="page-bar" style="margin-bottom:0"><a class="back" href="feed.html" aria-label="뒤로" id="back"></a><span class="ttl">프로필</span></div>
+        <div id="err" class="callout" hidden></div>
+        <div id="body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="assets/common.js"></script>
+<script src="assets/api.js"></script>
+<script>
+if (!loggedIn()) location.replace('login.html');
+document.getElementById('back').innerHTML = ICON.back;
+document.getElementById('back').addEventListener('click', (e) => { if (history.length > 1) { e.preventDefault(); history.back(); } });
+const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const CAT_LABEL = { diet: '식단', exercise: '운동', challenge: '챌린지 인증', tips: '고민과 꿀팁' };
+function ago(iso) {
+  const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + 'Z'), s = (Date.now() - d) / 1000;
+  if (s < 60) return '방금 전'; if (s < 3600) return Math.floor(s / 60) + '분 전'; if (s < 86400) return Math.floor(s / 3600) + '시간 전';
+  if (s < 172800) return '어제'; return Math.floor(s / 86400) + '일 전';
+}
+const nick = new URLSearchParams(location.search).get('nick') || '';
+let P = null, tab = 'posts';
+
+function render() {
+  const heart = P.mine ? '' : `<button type="button" class="heart${P.fame_given_by_me ? ' on' : ''}" id="heart" aria-pressed="${P.fame_given_by_me}">${P.fame_given_by_me ? '❤️' : '🤍'} 인기도 주기</button>`;
+  const items = tab === 'posts'
+    ? (P.posts.length ? P.posts.map(p => `<a class="item" href="post.html?id=${encodeURIComponent(p.post_id)}"><div class="t">${esc(p.title)}</div><div class="p">${esc(p.preview)}</div><div class="m"><span>${esc(CAT_LABEL[p.category] || '')}</span><span>${ago(p.created_at)}</span><span>좋아요 ${p.like_count}</span><span>댓글 ${p.comment_count}</span></div></a>`).join('') : '<div class="empty">아직 쓴 글이 없어요.</div>')
+    : (P.comments.length ? P.comments.map(c => `<a class="item" href="post.html?id=${encodeURIComponent(c.post_id)}#c-${encodeURIComponent(c.comment_id)}"><div class="p" style="-webkit-line-clamp:3">${esc(c.body)}</div><div class="on">‘${esc(c.post_title)}’ 글에 · ${ago(c.created_at)}</div></a>`).join('') : '<div class="empty">아직 쓴 댓글이 없어요.</div>');
+  $('body').innerHTML = `<div class="who"><span class="av" data-av="${esc(P.nickname)}">${esc(P.nickname.slice(0, 1))}</span><h1>${esc(P.nickname)}</h1>
+    <div class="fame"><span class="n">인기도 <b id="fame-n">${P.fame}</b></span>${heart}</div>
+    <div class="stats"><span>글 <b>${P.post_count}</b></span></div></div>
+    <div class="tabs2"><button type="button" data-t="posts" class="${tab === 'posts' ? 'on' : ''}">쓴 글</button><button type="button" data-t="comments" class="${tab === 'comments' ? 'on' : ''}">쓴 댓글</button></div>
+    <div>${items}</div>`;
+  const av = document.querySelector('[data-av]');
+  if (av) apiCall('GET', '/characters/by-nickname/' + encodeURIComponent(P.nickname), undefined, '').then(r => { av.innerHTML = characterSvg(r.data, 80); }).catch(() => {});
+  document.querySelectorAll('.tabs2 button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.t; render(); }));
+  const h = $('heart');
+  if (h) h.addEventListener('click', async () => {
+    h.disabled = true;
+    try {
+      const r = (await apiCall('POST', '/community/users/' + encodeURIComponent(P.nickname) + '/fame', undefined, '인기도를 주지 못했어요')).data;
+      P.fame = r.fame; P.fame_given_by_me = r.fame_given_by_me; render();
+    } catch (e) {
+      h.disabled = false; const el = $('err'); el.textContent = e.code === 'NICKNAME_REQUIRED' ? '닉네임을 정해야 인기도를 줄 수 있어요.' : friendlyError(e); el.hidden = false;
+    }
+  });
+}
+(async () => {
+  if (!nick) { $('body').innerHTML = '<div class="empty">보려는 사람을 알 수 없어요.</div>'; return; }
+  try { P = (await apiCall('GET', '/community/users/' + encodeURIComponent(nick), undefined, '프로필을 불러오지 못했어요')).data; render(); }
+  catch (e) { $('body').innerHTML = `<div class="empty">${esc(e.code === 'NOT_FOUND' || /찾을 수 없/.test(e.message || '') ? '찾을 수 없는 사용자예요.' : friendlyError(e))}</div>`; }
+})();
+</script>
+</body>
+</html>
