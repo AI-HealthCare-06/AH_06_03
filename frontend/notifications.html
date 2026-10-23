@@ -84,6 +84,7 @@ async function turnOn() {
   if (perm !== 'granted') throw new Error('알림이 차단돼 있어요. 휴대폰 설정에서 이 사이트의 알림을 허용해 주세요.');
   const { reg } = await currentSub();
   const key = (await apiCall('GET', '/push/vapid-key', undefined, '알림 서버가 아직 준비되지 않았어요')).data.public_key;
+  if (!key) throw new Error('알림 서버가 아직 준비되지 않았어요. 잠시 뒤에 다시 시도해 주세요.');   // 서버에 VAPID 키가 없으면 공개 키가 비어 있다
   const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(key) });
   const j = sub.toJSON();
   await apiCall('PUT', '/push/subscription', { endpoint: j.endpoint, keys: j.keys }, '알림을 켜지 못했어요');
