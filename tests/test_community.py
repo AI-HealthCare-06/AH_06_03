@@ -154,3 +154,37 @@ async def test_탈퇴하면_커뮤니티_기록도_모두_지워진다(client, d
     async with db_session() as s:
         for model in (CommunityPost, CommunityProfile, PieLedger):
             assert (await s.execute(select(model))).scalars().all() == []
+
+
+async def test_대댓글은_한_단계만_지운_원댓글은_자리가_남는다(client, db_session):
+    _, a = await with_nick(client, db_session, "a@test.kr", "글쓴이")
+    _, b = await with_nick(client, db_session, "b@test.kr", "독자")
+    pid = (await client.post("/v1/community/posts", json=POST, headers=a)).json()["data"]["post_id"]
+    url = f"/v1/community/posts/{pid}/comments"
+    root = (await client.post(url, json={"body": "원 댓글"}, headers=b)).json()["data"]
+    r1 = (await client.post(url, json={"body": "답글", "parent_id": root["comment_id"]}, headers=a)).json()["data"]
+    assert r1["parent_id"] == root["comment_id"]
+    r2 = (await client.post(url, json={"body": "답글의 답글", "parent_id": r1["comment_id"]}, headers=b)).json()["data"]
+    assert r2["parent_id"] == root["comment_id"]                                    # 한 단계: 원 댓글 아래로 붙는다
+    assert (await client.post(url, json={"body": "x", "parent_id": "nope"}, headers=a)).status_code == 404
+    assert (await client.delete(f"/v1/community/comments/{root['comment_id']}", headers=b)).status_code == 204
+    got = (await client.get(url, headers=a)).json()["data"]
+    assert [(c["deleted"], c["body"]) for c in got] == [(True, ""), (False, "답글"), (False, "답글의 답글")]
+    async with db_session() as db:                                                       # 화면에서만 가리는 게 아니라 DB 본문도 비워진다
+        assert (await db.get(CommunityComment, root["comment_id"])).body == ""
+    for c in got[1:]:
+        assert (await client.delete(f"/v1/community/comments/{c['comment_id']}", headers=a if c["mine"] else b)).status_code == 204
+    assert (await client.get(url, headers=a)).json()["data"] == []                   # 답글이 모두 사라지면 자리도 사라진다
+
+
+async def test_댓글_수정은_본인만(client, db_session):
+    _, a = await with_nick(client, db_session, "a@test.kr", "글쓴이")
+    _, b = await with_nick(client, db_session, "b@test.kr", "독자")
+    pid = (await client.post("/v1/community/posts", json=POST, headers=a)).json()["data"]["post_id"]
+    cid = (await client.post(f"/v1/community/posts/{pid}/comments", json={"body": "처음"}, headers=b)).json()["data"]["comment_id"]
+    url = f"/v1/community/comments/{cid}"
+    assert (await client.patch(url, json={"body": "남이 수정"}, headers=a)).status_code == 404
+    assert (await client.patch(url, json={"body": "  "}, headers=b)).status_code == 422
+    r = await client.patch(url, json={"body": "고침"}, headers=b)
+    assert r.status_code == 200 and r.json()["data"]["body"] == "고침"
+    assert (await client.get(f"/v1/community/posts/{pid}/comments", headers=a)).json()["data"][0]["body"] == "고침"

@@ -74,6 +74,9 @@ class CommunityComment(Base):
     user_id: Mapped[str] = mapped_column(
         CHAR(36), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True
     )
+    parent_id: Mapped[str | None] = mapped_column(
+        CHAR(36), ForeignKey("community_comments.comment_id", ondelete="CASCADE"), nullable=True, index=True
+    )  # 대댓글이면 원 댓글(한 단계만: 대댓글에 다는 답글은 원 댓글 아래로 붙는다)
     body: Mapped[str] = mapped_column(String(300), nullable=False)
     status: Mapped[str] = mapped_column(String(10), nullable=False, default="visible")
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
