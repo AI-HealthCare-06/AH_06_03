@@ -1,7 +1,7 @@
 """커뮤니티 구역 W13~W17: 피드, 글쓰기, 글 상세, 프로필, 닉네임·캐릭터."""
 from build import phone, shot, esc
 
-NEW = "신규"
+NEW = ""
 
 W13 = dict(
     id="W13", name="커뮤니티 피드", flow="피드 보기 → 글 열기 / 글쓰기 / 사람 프로필",

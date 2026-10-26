@@ -1,7 +1,7 @@
 """파이·파티·공통 챌린지·문의·공지·알림 설정 구역 W18~W23."""
 from build import shot
 
-NEW = "신규"
+NEW = ""
 
 W18 = dict(
     id="W18", name="파이", flow="내 파이 확인 → 모으는 방법 → 최근 내역",

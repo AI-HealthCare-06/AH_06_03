@@ -215,7 +215,7 @@ def build(parts):
 <div class="intro" id="top"><h1>파이온 PAEON 와이어프레임 v6</h1>
 <p>모바일(390px) 화면은 왼쪽, 설명은 오른쪽. 관리자 화면은 컴퓨터에서 쓰는 화면이라 넓게 그렸어요.<br>
 화면 ID는 기존(W01~W12)을 유지하고 새 화면은 W13부터 이어 붙였어요. 요구사항 ID는 요구사항 정의서(v2.4) 기준이에요.<br>
-<b>v6 · 2026-10-26 · 서비스(지인 체험 배포 후) 화면 기준으로 전체 재작성.</b> 표시: <span class="flagged">신규</span> = 지인 체험 배포(10/22) 이후 추가된 화면 (요구사항 정의서 v2.4에 반영) · <span class="flagged">보류</span> = 팀 결정 대기</p></div>
+<b>v6 · 2026-10-26 · 서비스(지인 체험 배포 후) 화면 기준으로 전체 재작성.</b></p></div>
 {design_block()}{toc_block(parts)}{"".join(body)}
 </body></html>"""
 
