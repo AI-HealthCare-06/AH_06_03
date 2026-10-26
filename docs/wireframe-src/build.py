@@ -173,8 +173,38 @@ def block(s):
     return f'<div class="row {kind}" id="{anchor}">{left}<div class="side">{side(s)}</div></div>'
 
 
+def swatch(hex_, label, dark=False):
+    c = "#fff" if dark else "#243749"
+    return f'<span style="display:inline-block;background:{hex_};color:{c};border:1px solid #E6DBCD;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700;margin:0 6px 6px 0">{hex_} {label}</span>'
+
+
+def design_block():
+    sw = "".join([swatch("#FFFFFF", "바탕"), swatch("#F8F1E7", "연한 면(카드·입력칸)"), swatch("#E6DBCD", "선·구분"), swatch("#81A6C6", "보조 포인트", True),
+                  swatch("#5C86AC", "포인트·주 버튼", True), swatch("#243749", "글자", True), swatch("#E4F0F5", "안내 상자"),
+                  swatch("#3E7A55", "정상", True), swatch("#8C6014", "주의", True), swatch("#B0543F", "위험", True)])
+    return f'''<div class="sect" id="design"><h2>디자인 기준</h2></div>
+<div class="row" style="grid-template-columns:1fr"><div class="side"><h3><span class="id">기준</span> 디자인 토큰 (서비스 화면 기준)</h3>
+<div style="margin:14px 0"><b>색 — 파랑 + 크림 (2026-10 리디자인)</b><p>{sw}</p>
+<p>포인트색은 화면당 주 버튼 하나에만 써요. 위험 범주 3색(정상·주의·위험)과 본문 17px·버튼 48px 클릭 영역 등 접근성 수치는 그대로예요.</p></div>
+<div style="margin:14px 0"><b>모양</b><p>글꼴 나눔고딕. 입력칸 모서리 12 · 카드 20 · 버튼은 알약 모양. 그림자 없이 1px 선으로 나눠요. 모바일 390~430px 한 칼럼, 아래에 탭 5개(내 변화·챌린지·홈·커뮤니티·더보기), 위에 제목 + 파이 숫자 + 알림 종.</p></div>
+<div style="margin:14px 0"><b>v4(9/28) 대비 바뀐 것</b><p>분홍 팔레트 → 파랑·크림. 데스크톱 사이드 메뉴 → 모바일 하단 탭. 관리자 화면만 컴퓨터용 넓은 화면.</p></div></div></div>'''
+
+
+def toc_block(parts):
+    items = []
+    for p in parts:
+        for s in p["screens"]:
+            tag = f' <span class="flagged">{esc(s["flag"])}</span>' if s.get("flag") else ""
+            items.append(f'<div><b>{esc(s["id"])}</b> {esc(s["name"])}{tag}</div>')
+    flow = ("핵심 흐름: W01 → W01-2 → W02 → W03 → W04 → W04-2 → W05 → W06 → W07 → W09 → W10 → W08 → W11 → W11-2 → W23(12주 결과)<br>"
+            "커뮤니티: W17(닉네임) → W13 → W14 → W15 → W16 · 파이·파티·공통 챌린지: W18 · W19 · W20 · 문의·공지·알림: W21 · W22 · 배지: W24<br>"
+            "관리자(컴퓨터): A01 → A05")
+    return (f'<div class="sect" id="toc"><h2>화면 목록 · 핵심 흐름</h2></div><div class="row" style="grid-template-columns:1fr"><div class="side">'
+            f'<div style="columns:2;column-gap:28px;font-size:13px;line-height:1.9">{"".join(items)}</div><p style="margin-top:12px;font-size:13px;color:#5A6B7A">{flow}</p></div></div>')
+
+
 def build(parts):
-    nav = '<a href="#top">소개</a>' + "".join(f'<a href="#{p["anchor"]}">{esc(p["nav"])}</a>' for p in parts)
+    nav = '<a href="#top">소개</a><a href="#design">디자인</a><a href="#toc">목록</a>' + "".join(f'<a href="#{p["anchor"]}">{esc(p["nav"])}</a>' for p in parts)
     body = []
     for p in parts:
         body.append(f'<div class="sect" id="{p["anchor"]}"><h2>{esc(p["title"])}</h2>' + (f'<p>{esc(p["desc"])}</p>' if p.get("desc") else "") + "</div>")
@@ -186,7 +216,7 @@ def build(parts):
 <p>모바일(390px) 화면은 왼쪽, 설명은 오른쪽. 관리자 화면은 컴퓨터에서 쓰는 화면이라 넓게 그렸어요.<br>
 화면 ID는 기존(W01~W12)을 유지하고 새 화면은 W13부터 이어 붙였어요. 요구사항 ID는 요구사항 정의서(v2.4) 기준이에요.<br>
 <b>v6 · 2026-10-26 · 서비스(지인 체험 배포 후) 화면 기준으로 전체 재작성.</b> 표시: <span class="flagged">신규</span> = 지인 체험 배포(10/22) 이후 추가된 화면 (요구사항 정의서 v2.4에 반영) · <span class="flagged">보류</span> = 팀 결정 대기</p></div>
-{"".join(body)}
+{design_block()}{toc_block(parts)}{"".join(body)}
 </body></html>"""
 
 
