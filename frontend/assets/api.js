@@ -604,6 +604,24 @@ async function apiGetCurrentCycle() {
 }
 
 // 지난 사이클 포함 전체 이력 (최근부터)
+// ---- 12주(프로그램) 단위. 서버가 program_number를 주면 그것을, 없으면 4주 사이클 3개씩을 12주 하나로 본다.
+const progOf = (c) => c.program_number != null ? c.program_number : Math.ceil(c.cycle_number / 3);
+// 지금 12주의 상태(새 12주 시작 가능 여부·모델 버전). 서버에 아직 없으면 null — 화면은 기존 동작 그대로.
+async function apiProgramStatus() {
+  try { return (await apiCall('GET', '/challenges/program/status', undefined, '')).data; } catch (e) { return null; }
+}
+async function apiRestartProgram() {
+  return (await apiCall('POST', '/challenges/program/restart', undefined, '새 12주를 시작하지 못했습니다')).data;
+}
+// 새 12주를 시작하기 전 안내문. 모델 버전이 바뀌었으면 무엇이 바뀌는지 알린다.
+const escH = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function restartNoticeText(st) {
+  if (st && st.version_changed) {
+    return `이번 12주부터 새 분석 모델(${escH(st.latest_model_version)}${st.latest_updated_on ? ', ' + escH(st.latest_updated_on) + ' 업데이트' : ''})이 적용돼요.` +
+      (st.change_note ? ` 바뀐 점: ${escH(st.change_note)}.` : '') + ' 이전 12주 결과는 그때 쓴 모델로 계산한 그대로 남아요. 새 결과와는 모델이 달라 직접 비교할 수 없어요.';
+  }
+  return '이전 12주 기록은 그대로 남아요. 처음부터 12주(4주씩 3번)를 새로 시작해요.' + (st && st.model_version ? ` 분석 모델은 지금과 같은 ${escH(st.model_version)}을 써요.` : '');
+}
 async function apiListCycles() {
   return (await apiCall('GET', '/challenges/cycles', undefined, '챌린지 이력을 불러오지 못했습니다')).data;
 }

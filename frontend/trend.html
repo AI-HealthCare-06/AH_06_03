@@ -107,7 +107,9 @@ const unit = (v, u) => v == null ? '—' : v + u;
 
 // 서버의 사이클별 전후 비교(review)에서 가져온다. 혈압은 시작할 때와 4주 재입력 때만 재므로 점도 그때만 찍힌다.
 async function loadReviews() {
-  const cycles = (await apiListCycles()).slice().sort((x, y) => x.cycle_number - y.cycle_number);
+  const all = await apiListCycles();
+  const cur = Math.max(1, ...all.map(progOf));   // 지금(가장 최근) 12주의 4주 사이클만 탭으로
+  const cycles = all.filter(c => progOf(c) === cur).sort((x, y) => x.cycle_number - y.cycle_number);
   const reviews = [];
   for (const c of cycles) {
     try { reviews.push((await apiCall('GET', `/challenges/cycles/${encodeURIComponent(c.cycle_id)}/review`, undefined, '변화를 불러오지 못했습니다')).data); }
@@ -198,7 +200,7 @@ function startPane(reviews) {
   if (!f) return '';
   const b = f.before || {}, a = modelA(f);
   return `<div class="ch"><div class="l1"><span>처음 입력한 값</span><span class="tag">시작</span></div><span class="l2">${esc(b.examination_date || '').replace(/-/g, '.')} 입력</span></div>
-    <div class="rows">${row('혈압', '', bpText(b) === '—' ? '—' : bpText(b) + ' mmHg')}${row('체중', '', unit(b.weight_kg, 'kg'))}${row('허리둘레', '', unit(b.waist_cm, 'cm'))}${row('건강 신호', '', riskText(a, 'before_risk_level'))}</div>${a && probText(a.before_probability) ? probNoteHtml(false, true) : ''}`;
+    <div class="rows">${row('혈압', '', bpText(b) === '—' ? '—' : bpText(b) + ' mmHg')}${row('체중', '', unit(b.weight_kg, 'kg'))}${row('허리둘레', '', unit(b.waist_cm, 'cm'))}${row('건강 신호', '', riskText(a, 'before_risk_level'))}</div>${a && probText(a.before_probability) ? probNoteHtml(false, true) : ''}${goodNoteAny(a)}`;
 }
 
 function cyclePane(rv) {
@@ -215,14 +217,14 @@ function cyclePane(rv) {
   }
   const b = rv.before || {}, a = rv.after || {}, m = modelA(rv), cmpA = m && m.comparable;
   const rate = c.cycle_rate != null ? Math.round(c.cycle_rate * 100) + '%' : '—';
-  return head + demoFillHtml(rv) + `<div class="rows">${row('혈압', bpText(b), bpText(a))}${row('체중', unit(b.weight_kg, 'kg'), unit(a.weight_kg, 'kg'))}${row('허리둘레', unit(b.waist_cm, 'cm'), unit(a.waist_cm, 'cm'))}${row('챌린지 달성률', '', rate)}${cmpA ? row('건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')) : ''}</div>${cmpA && (probText(m.before_probability) || probText(m.after_probability)) ? probNoteHtml(false, true) : ''}
+  return head + demoFillHtml(rv) + `<div class="rows">${row('혈압', bpText(b), bpText(a))}${row('체중', unit(b.weight_kg, 'kg'), unit(a.weight_kg, 'kg'))}${row('허리둘레', unit(b.waist_cm, 'cm'), unit(a.waist_cm, 'cm'))}${row('챌린지 달성률', '', rate)}${cmpA ? row('건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')) : ''}</div>${cmpA && (probText(m.before_probability) || probText(m.after_probability)) ? probNoteHtml(false, true) : ''}${cmpA ? goodNoteAny(m) : ''}
     <div class="two">${DATA.reviews.filter(r => r.reassessed).pop().cycle_id === rv.cycle_id ? '<a class="cta" href="result.html">분석 결과 보기</a>' : ''}<button type="button" class="ghost" id="to-cmp" data-id="${esc(rv.cycle_id)}">전·후 비교</button></div>`;
 }
 
 // 서버가 12주 번호를 주기 전까지는 4주 사이클 번호 3개씩을 한 묶음(12주)으로 본다.
 function twelveSection(cycles) {
   const by = {};
-  cycles.forEach(c => { const n = Math.ceil(c.cycle_number / 3); (by[n] = by[n] || []).push(c); });
+  cycles.forEach(c => { const n = progOf(c); (by[n] = by[n] || []).push(c); });
   const ps = Object.keys(by).map(n => {
     const cs = by[n].sort((x, y) => x.cycle_number - y.cycle_number), done = cs.length >= 3 && cs.every(c => c.status !== 'active');
     const rated = cs.filter(c => c.status !== 'active' && c.cycle_rate != null);

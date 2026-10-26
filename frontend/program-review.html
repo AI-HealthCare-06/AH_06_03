@@ -146,7 +146,8 @@ function render(rv) {
   const rates = (rv.cycles || []).map(c => c.cycle_rate).filter(v => typeof v === 'number');
   const avgRate = rates.length ? Math.round(rates.reduce((x, y) => x + y, 0) / rates.length * 100) + '%' : '—';   // 사이클별 달성률 평균
   const wk = rv.weeks_done || 12, done = wk >= 12;      // 3차까지 마쳤으면 12주, 아니면 마지막 재입력까지(지금까지 4·8주)
-  $('app').innerHTML = back(done ? '12주 변화' : `지금까지 ${wk}주`) + `
+  const pn = rv.program_number > 1 ? rv.program_number + '번째 ' : '';   // 12주를 여러 번 했을 때만 몇 번째인지 표시
+  $('app').innerHTML = back(done ? pn + '12주 변화' : `${pn}지금까지 ${wk}주`) + `
     <div class="cmphd"><span class="s">${done ? '12주' : `지금까지 ${wk}주`} · 처음 입력한 때부터</span><div class="big">${done ? '12주 동안' : `${wk}주 동안`}<br>이렇게 달라졌어요</div></div>
     ${pts.length > 1 ? `<div class="cbox"><div class="hd"><span style="font-size:15px;font-weight:800;color:var(--ink)">수축기 혈압</span><span>mmHg</span></div>${lineChart({ points: pts, W: 310, H: 170, ref: 140, refLabel: '기준 140', color: '#243749', labelFont: 13, big: true })}</div>` : ''}
     <div class="tb"><div class="th"><span>항목</span><span>0주</span><span>${wk}주</span></div>
@@ -155,6 +156,7 @@ function render(rv) {
         .concat(cmpA ? [['건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')]] : [])
         .map(r => `<div class="rw"><span>${r[0]}</span><span>${esc(r[1])}</span><span>${esc(r[2])}</span></div>`).join('')}</div>
     ${cmpA && (probText(m.before_probability) || probText(m.after_probability)) ? probNoteHtml(false, true) : ''}
+    ${cmpA ? goodNoteAny(m) : ''}
     ${pc.length ? `<div class="tb"><div class="th"><span>같은 성별·연령대</span><span>0주</span><span>${wk}주</span></div>${pc.map(r => `<div class="rw"><span>${r[0]}</span><span>${esc(r[1])}</span><span>${esc(r[2])}</span></div>`).join('')}</div>${ageNoteHtml(null)}` : ''}
     <div class="hab"><div class="t">습관 변화</div>
       <div class="rw"><span>흡연</span><span>${SMOKING[b.smoking] || '—'} → <b>${SMOKING[a.smoking] || '—'}</b></span></div>
@@ -163,6 +165,7 @@ function render(rv) {
     ${modelANoticeHtml(rv.models)}
     ${mB ? simBoxHtml(mB, '지금', chg) : ''}
     ${rv.bp_note ? `<div class="small" style="font-size:13px; line-height:1.7">${esc(rv.bp_note)}</div>` : ''}
+    ${rv.model_version ? `<div class="small" style="font-size:13px; line-height:1.7">분석 모델 ${esc(rv.model_version)}${rv.model_updated_on ? ' · ' + esc(rv.model_updated_on) + ' 업데이트' : ''}. 이 결과는 12주를 시작한 모델 그대로 처음부터 끝까지 계산했어요.</div>` : ''}
     <div class="small" style="font-size:13px; line-height:1.7">진단이 아닌 참고 정보입니다. 정확한 판단은 의료진과 상담하세요.</div>
     ${done ? '' : `<a class="cta" style="height:56px; border-radius:28px; font-size:17px" href="challenges.html">${wk / 4 + 1}차 챌린지 시작하기</a>`}
     <a class="ghost" href="twelve-weeks.html">12주 기록 보기</a>`;
@@ -170,7 +173,7 @@ function render(rv) {
 }
 
 (async () => {
-  try { render((await apiCall('GET', '/challenges/program/review', undefined, '12주 결과를 불러오지 못했습니다')).data); }
+  try { const pn = new URLSearchParams(location.search).get('program'); render((await apiCall('GET', '/challenges/program/review' + (pn ? '?program=' + encodeURIComponent(pn) : ''), undefined, '12주 결과를 불러오지 못했습니다')).data); }
   catch (e) {
     $('app').innerHTML = back('12주 변화') + (e.code === 'PROGRAM_REVIEW_NOT_READY'
       ? '<div class="empty"><b>첫 4주 재입력을 마치면 볼 수 있어요</b><span>재입력을 마치면 처음과 지금까지를 한 번에 비교해 드려요.</span><a class="cta" href="trend.html">내 변화로</a></div>'

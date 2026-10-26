@@ -170,7 +170,7 @@ function reviewHtml(rv) {
   rv.models.filter(m => m.comparable).forEach(m => {
     byModel[m.model_code] += (() => {
     if (m.model_code === 'MODEL_A') {
-      return `<div class="mrow"><span>처음 → 4주 후</span><span>${RISK[m.before_risk_level]}${probText(m.before_probability) ? ` (${probText(m.before_probability)})` : ''} → <b>${RISK[m.after_risk_level]}${probText(m.after_probability) ? ` (${probText(m.after_probability)})` : ''}</b></span></div>${probText(m.before_probability) || probText(m.after_probability) ? probNoteHtml(false, true) : ''}`;
+      return `<div class="mrow"><span>처음 → 4주 후</span><span>${RISK[m.before_risk_level]}${probText(m.before_probability) ? ` (${probText(m.before_probability)})` : ''} → <b>${RISK[m.after_risk_level]}${probText(m.after_probability) ? ` (${probText(m.after_probability)})` : ''}</b></span></div>${probText(m.before_probability) || probText(m.after_probability) ? probNoteHtml(false, true) : ''}${goodNoteAny(m)}`;
     }
     // 서버가 주는 3단계(similar / slightly_different / different)를 말로만 비교한다. 숫자·막대는 쓰지 않는다.
     const chg = simChangeText(m.before_similarity_level, m.after_similarity_level);

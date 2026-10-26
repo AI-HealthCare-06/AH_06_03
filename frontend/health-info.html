@@ -182,13 +182,6 @@
               <div class="field"></div>
             </div>
 
-            <div class="grid2">
-              <div class="field">
-                <label for="glucose">공복혈당 (mg/dL)</label>
-                <input id="glucose" type="number" min="30" max="600">
-              </div>
-            </div>
-
             <p id="form-err" class="err" style="display:none"></p>
 
             <div class="privacy" id="privacy-note">
@@ -259,7 +252,6 @@ function summaryRows(health) {
     ['고혈압 진단·치료 상태', optionLabel('htn-status', health.htn_status), 6],
     ['부모 고혈압 가족력', optionLabel('parent-htn', health.parent_htn), 6],
     ['총콜레스테롤', health.total_chol != null ? `${health.total_chol} mg/dL` : '입력 안 함', 7],
-    ['공복혈당', health.fasting_glucose != null ? `${health.fasting_glucose} mg/dL` : '입력 안 함', 7],
   );
   return rows;
 }
@@ -293,7 +285,6 @@ function fillForm(health) {
   document.getElementById('htn-status').value = health.htn_status;
   document.getElementById('total-chol').value = health.total_chol ?? '';
   document.getElementById('parent-htn').value = health.parent_htn;
-  document.getElementById('glucose').value = health.fasting_glucose ?? '';
 }
 
 function showSummary() {
@@ -329,7 +320,7 @@ const STEPS = [
   { title: '흡연 여부를 알려 주세요', ids: ['smoking', 'ecig'] },
   { title: '음주 습관을 알려 주세요', ids: ['drink-freq', 'drink-amount'] },
   { title: '병력과 가족력을 알려 주세요', ids: ['diabetes', 'htn-status', 'parent-htn'] },
-  { title: '선택 항목이에요', ids: ['total-chol', 'glucose'], optional: true },
+  { title: '선택 항목이에요', ids: ['total-chol'], optional: true },
 ];
 const REVIEW = STEPS.length;
 const stepsBox = document.getElementById('steps');
@@ -364,7 +355,6 @@ function currentPayload() {
     htn_status: document.getElementById('htn-status').value,
     total_chol: document.getElementById('total-chol').value ? Number(document.getElementById('total-chol').value) : null,
     parent_htn: document.getElementById('parent-htn').value,
-    fasting_glucose: document.getElementById('glucose').value ? Number(document.getElementById('glucose').value) : null,
   };
 }
 

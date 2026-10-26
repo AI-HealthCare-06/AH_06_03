@@ -132,6 +132,7 @@ if (!pred) {
         <div class="big">${n === 1 ? OKI : TRI}<span>${RISK_LABEL[a.risk_level]}</span></div>
         <div class="seg">${[1, 2, 3].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>
         <div class="lv"><span${cur(1)}>양호</span><span${cur(2)}>주의</span><span${cur(3)}>높음</span></div>
+        ${goodNote(a.risk_level)}
         ${probText(a.probability) ? `<div class="prob"><b>${probText(a.probability)}</b></div>` : ''}
         ${probText(a.probability) ? probNoteHtml(false, true) : ''}
         ${top && top.direction_matches_expectation !== false ? `<div class="why">바꿀 수 있는 요인 중 <b>${top.label}</b> 쪽이 이 신호에 가장 크게 영향을 주고 있어요.</div>` : ''}
@@ -159,8 +160,12 @@ if (!pred) {
     ? bHtml + advice + '<div class="callout" style="text-align:center">10년 내 심장 혈관 건강 신호는 <b>만 32~70세</b>에게만 분석해요</div>'
     : aHtml + grp(ageHtml + advice + aRest) + (pred.model_b.status === 'completed' ? grp(bHtml) : bHtml);
 
+  const escH = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const verOf = (m, name) => m && m.status === 'completed' && m.model_version ? `${name} ${escH(m.model_version)}${m.model_updated_on ? ' (' + escH(m.model_updated_on) + ' 업데이트)' : ''}` : '';
+  const vers = [verOf(pred.model_a, '심장 혈관 건강 신호'), verOf(pred.model_b, '생활습관·체형 비교')].filter(Boolean);
+  const verLine = vers.length ? `<div>분석 모델: ${vers.join(' · ')}</div>` : '';
   const miss = (pred.model_a.missing_features || []).includes('totChol');
-  html += `<div class="notes">${miss ? '<div>총콜레스테롤은 입력하지 않아서 학습 데이터의 중앙값(234)으로 대신해 계산했어요. 이 값은 내 실제 수치가 아니에요.</div>' : ''}<div>진단이 아닌 참고 정보입니다. 정확한 판단은 의료진과 상담하세요.</div></div>
+  html += `<div class="notes">${verLine}${miss ? '<div>총콜레스테롤은 입력하지 않아서 학습 데이터의 중앙값(234)으로 대신해 계산했어요. 이 값은 내 실제 수치가 아니에요.</div>' : ''}<div>진단이 아닌 참고 정보입니다. 정확한 판단은 의료진과 상담하세요.</div></div>
     <a class="cta" style="height:56px; border-radius:28px; font-size:17px" href="${localStorage.getItem('paeon-cycle') ? 'challenge-progress.html' : 'challenges.html'}">${localStorage.getItem('paeon-cycle') ? '내 챌린지 보기' : '챌린지 시작하기'}</a>`;
 
   screen.innerHTML = html;

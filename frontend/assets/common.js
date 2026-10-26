@@ -331,6 +331,12 @@ function probText(p) { return typeof p === 'number' && isFinite(p) ? (p * 100).t
 // "같은 성별·연령대 상위 N%" (참고용 보조 문구. 범주 판정에는 쓰지 않는다). 값이 없으면 ''.
 function percentileText(pc) { return typeof pc === 'number' && isFinite(pc) ? `같은 성별·연령대 상위 ${Math.max(1, Math.round(pc))}%` : ''; }
 const PROB_NOTE = '10년 안에 관상동맥질환이 생길 가능성을 미국 Framingham 모델로 계산하고 한국인 평균에 맞춰 보정한 값이에요. 2% 미만 양호, 2~9% 주의, 9% 이상 높음 구간은 일본 동맥경화학회 기준을 참고했어요. 의학적 진단·치료를 대신하지 않아요.';
+// "양호"가 건강에 문제없음으로 읽히는 오해를 막는 안내(혜성 문구). 결과가 "양호"(normal)일 때만, 접지 않고 항상 보이게 한다.
+const GOOD_NOTE = '입력한 정보로 계산한 10년 심장 혈관 질환 확률이 낮은 구간(2% 미만)이에요. 건강에 전혀 문제가 없다는 뜻은 아니에요.';
+const GOOD_NOTE_SHORT = '양호는 건강에 문제가 없다는 뜻은 아니에요.';
+const goodNote = (level, short) => level === 'normal' ? `<div class="gnote">${short ? GOOD_NOTE_SHORT : GOOD_NOTE}</div>` : '';
+// 4주 비교처럼 처음·4주 후 두 범주가 있을 때: 하나라도 양호면 짧은 안내
+const goodNoteAny = (m) => m && (m.before_risk_level === 'normal' || m.after_risk_level === 'normal') ? goodNote('normal', true) : '';
 // 혈관 나이 카드의 "계산 근거" 문구 (확률 근거와 따로 둔다)
 const AGE_BASIS = '혈관 나이는 혈압, 콜레스테롤, 흡연, 당뇨, 고혈압 진단·치료, BMI가 같은 성별·연령대 한국 성인 평균(국민건강영양조사 2022~2024)과 얼마나 다른지를 나이로 바꿔 더한 추정치예요. 모두 평균과 같으면 실제 나이와 같게 나와요.<br><br>상위 %는 같은 성별·연령대 한국 성인 중 위험 요인이 많은 순서로 줄 세웠을 때의 위치예요. 상위 1%에 가까울수록 위험 요인이 많은 편이고, 50% 근처면 중간쯤이에요.<br>두 값 모두 의학적 진단·치료를 대신하지 않아요.';
 // 확률 근거 안내: 평소에는 접혀 있고 버튼을 누르면 펼쳐진다
