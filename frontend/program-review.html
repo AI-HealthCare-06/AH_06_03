@@ -163,6 +163,7 @@ function render(rv) {
     ${modelANoticeHtml(rv.models)}
     ${mB ? simBoxHtml(mB, '지금', chg) : ''}
     ${rv.bp_note ? `<div class="small" style="font-size:13px; line-height:1.7">${esc(rv.bp_note)}</div>` : ''}
+    ${rv.model_version ? `<div class="small" style="font-size:13px; line-height:1.7">분석 모델 ${esc(rv.model_version)}${rv.model_updated_on ? ' · ' + esc(rv.model_updated_on) + ' 업데이트' : ''}. 이 결과는 12주를 시작한 모델 그대로 처음부터 끝까지 계산했어요.</div>` : ''}
     <div class="small" style="font-size:13px; line-height:1.7">진단이 아닌 참고 정보입니다. 정확한 판단은 의료진과 상담하세요.</div>
     ${done ? '' : `<a class="cta" style="height:56px; border-radius:28px; font-size:17px" href="challenges.html">${wk / 4 + 1}차 챌린지 시작하기</a>`}
     <a class="ghost" href="twelve-weeks.html">12주 기록 보기</a>`;
@@ -170,7 +171,7 @@ function render(rv) {
 }
 
 (async () => {
-  try { render((await apiCall('GET', '/challenges/program/review', undefined, '12주 결과를 불러오지 못했습니다')).data); }
+  try { const pn = new URLSearchParams(location.search).get('program'); render((await apiCall('GET', '/challenges/program/review' + (pn ? '?program=' + encodeURIComponent(pn) : ''), undefined, '12주 결과를 불러오지 못했습니다')).data); }
   catch (e) {
     $('app').innerHTML = back('12주 변화') + (e.code === 'PROGRAM_REVIEW_NOT_READY'
       ? '<div class="empty"><b>첫 4주 재입력을 마치면 볼 수 있어요</b><span>재입력을 마치면 처음과 지금까지를 한 번에 비교해 드려요.</span><a class="cta" href="trend.html">내 변화로</a></div>'

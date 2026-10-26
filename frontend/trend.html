@@ -107,7 +107,9 @@ const unit = (v, u) => v == null ? '—' : v + u;
 
 // 서버의 사이클별 전후 비교(review)에서 가져온다. 혈압은 시작할 때와 4주 재입력 때만 재므로 점도 그때만 찍힌다.
 async function loadReviews() {
-  const cycles = (await apiListCycles()).slice().sort((x, y) => x.cycle_number - y.cycle_number);
+  const all = await apiListCycles();
+  const cur = Math.max(1, ...all.map(progOf));   // 지금(가장 최근) 12주의 4주 사이클만 탭으로
+  const cycles = all.filter(c => progOf(c) === cur).sort((x, y) => x.cycle_number - y.cycle_number);
   const reviews = [];
   for (const c of cycles) {
     try { reviews.push((await apiCall('GET', `/challenges/cycles/${encodeURIComponent(c.cycle_id)}/review`, undefined, '변화를 불러오지 못했습니다')).data); }
@@ -222,7 +224,7 @@ function cyclePane(rv) {
 // 서버가 12주 번호를 주기 전까지는 4주 사이클 번호 3개씩을 한 묶음(12주)으로 본다.
 function twelveSection(cycles) {
   const by = {};
-  cycles.forEach(c => { const n = Math.ceil(c.cycle_number / 3); (by[n] = by[n] || []).push(c); });
+  cycles.forEach(c => { const n = progOf(c); (by[n] = by[n] || []).push(c); });
   const ps = Object.keys(by).map(n => {
     const cs = by[n].sort((x, y) => x.cycle_number - y.cycle_number), done = cs.length >= 3 && cs.every(c => c.status !== 'active');
     const rated = cs.filter(c => c.status !== 'active' && c.cycle_rate != null);
