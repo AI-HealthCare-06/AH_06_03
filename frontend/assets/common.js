@@ -332,7 +332,7 @@ function probText(p) { return typeof p === 'number' && isFinite(p) ? (p * 100).t
 function percentileText(pc) { return typeof pc === 'number' && isFinite(pc) ? `같은 성별·연령대 상위 ${Math.max(1, Math.round(pc))}%` : ''; }
 const PROB_NOTE = '10년 안에 관상동맥질환이 생길 가능성을 미국 Framingham 모델로 계산하고 한국인 평균에 맞춰 보정한 값이에요. 2% 미만 양호, 2~9% 주의, 9% 이상 높음 구간은 일본 동맥경화학회 기준을 참고했어요. 의학적 진단·치료를 대신하지 않아요.';
 // "양호"가 건강에 문제없음으로 읽히는 오해를 막는 안내(혜성 문구). 결과가 "양호"(normal)일 때만, 접지 않고 항상 보이게 한다.
-const GOOD_NOTE = '입력한 정보로 계산한 10년 심장 혈관 질환 확률이 낮은 구간(2% 미만)이에요. 건강에 전혀 문제가 없다는 뜻은 아니에요!';
+const GOOD_NOTE = '입력한 정보로 계산한 10년 심장 혈관 질환 확률이 낮은 구간(2% 미만)이에요. 건강에 전혀 문제가 없다는 뜻은 아니에요.';
 const GOOD_NOTE_SHORT = '양호는 건강에 문제가 없다는 뜻은 아니에요.';
 const goodNote = (level, short) => level === 'normal' ? `<div class="gnote">${short ? GOOD_NOTE_SHORT : GOOD_NOTE}</div>` : '';
 // 4주 비교처럼 처음·4주 후 두 범주가 있을 때: 하나라도 양호면 짧은 안내
