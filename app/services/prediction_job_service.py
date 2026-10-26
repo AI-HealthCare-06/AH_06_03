@@ -21,7 +21,12 @@ CARRY_FORWARD = ["HEIGHT", "TOTAL_CHOL", "HDL", "FASTING_GLUCOSE", "DIABETES", "
 COMPARE_METRICS = ["SBP", "DBP", "WEIGHT", "WAIST"]  # W11-2 혜림 담당 항목 (명세 §6.2-3)
 
 async def create_job(
-    db: AsyncSession, user_id: str, health_record_id: str, survey_instance_id: str | None, request_type: str
+    db: AsyncSession,
+    user_id: str,
+    health_record_id: str,
+    survey_instance_id: str | None,
+    request_type: str,
+    model_versions: dict[str, str] | None = None,
 ) -> PredictionJobResult:
     # 1. 내 상자인가?
     record = await health_repository.get_health_record(db, health_record_id)
@@ -56,7 +61,10 @@ async def create_job(
     job.input_snapshot = user_input
 
     # 6. 모델 A·B 실행
-    result = prediction_service.predict_dict(user_input)
+    result = prediction_service.predict_dict(
+        user_input,
+        model_versions=model_versions,
+    )
 
     # 6-1. 관상동맥질환 진단자는 모델 A 제외 (REQ-ELIG-002). 대상 확인 기록이 없는 예전 가입자는 그대로.
     assessment = await eligibility_repository.get_latest(db, user_id)
@@ -123,6 +131,10 @@ def _to_model_result(p, factors: list) -> ModelResult:
         top_risk_factor=risk_up[0] if risk_up else None,
         top_modifiable_factor=next((f for f in risk_up if f.modifiable), None),
         missing_features=p.missing_features or [],
+        model_updated_on=predictor.model_release_info(
+            p.model_code,
+            p.model_version,
+        ).get("updated_on"),
     )
 
 
@@ -202,6 +214,10 @@ def _summary(p) -> ModelSummary | None:
         similarity_level=similarity_level_b(p.score, p.model_version)
         if p.model_code == "MODEL_B" and p.status == "completed" else None,
         skip_reason=p.skip_reason,
+        model_updated_on=predictor.model_release_info(
+            p.model_code,
+            p.model_version,
+        ).get("updated_on"),
     )
 
 

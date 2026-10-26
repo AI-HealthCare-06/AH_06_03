@@ -28,24 +28,55 @@ def _drop_imputed_factors(r: dict) -> dict:
     return r
 
 # 모델 하나를 안전하게 실행하는 함수
-def _run_safely(model_code: str, run, user: dict) -> ModelResult:
-    """모델을 실행하고 결과를 ModelResult로 감싸서 반환한다.
-    모델이 오류를 내면 ModelResult.status=failed로 반환한다.
-    """
+def _run_safely(
+    model_code: str,
+    run,
+    user: dict,
+    version: str,
+) -> ModelResult:
+    """한 모델을 지정한 버전으로 안전하게 실행한다."""
     try:
-        return ModelResult(**_drop_imputed_factors(run(user)))
+        result = ModelResult(**_drop_imputed_factors(run(user, version)))
+        result.model_updated_on = predictor.model_release_info(
+            model_code,
+            version,
+        ).get("updated_on")
+        return result
     except Exception:
         logger.exception("%s 예측 실패", model_code)
-        return ModelResult(model_code=model_code, status="failed", error=FAILED_MESSAGE)
+        return ModelResult(
+            model_code=model_code,
+            model_version=version,
+            status="failed",
+            error=FAILED_MESSAGE,
+            model_updated_on=predictor.model_release_info(
+                model_code,
+                version,
+            ).get("updated_on"),
+        )
 
 # 본체 함수
-def predict_dict(user: dict) -> PredictResponse:
-    """번역된 사전을 받아 모델 A·B를 따로 실행한다. 점수를 합치지 않는다."""
-    return PredictResponse(
-        model_a=_run_safely("MODEL_A", predictor.run_model_a, user),
-        model_b=_run_safely("MODEL_B", predictor.run_model_b, user),
-    )
+def predict_dict(
+    user: dict,
+    model_versions: dict[str, str] | None = None,
+) -> PredictResponse:
+    """번역된 사전을 받아 지정한 버전의 모델 A·B를 따로 실행한다."""
+    versions = model_versions or predictor.CURRENT_VERSION
 
+    return PredictResponse(
+        model_a=_run_safely(
+            "MODEL_A",
+            predictor.run_model_a,
+            user,
+            versions["MODEL_A"],
+        ),
+        model_b=_run_safely(
+            "MODEL_B",
+            predictor.run_model_b,
+            user,
+            versions["MODEL_B"],
+        ),
+    )
 
 def predict(req: PredictRequest) -> PredictResponse:
     """임시 창구(/v1/predict)용. 신청서를 사전으로 바꿔서 predict_dict에 넘긴다."""

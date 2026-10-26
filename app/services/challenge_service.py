@@ -15,7 +15,7 @@ from app.repositories import challenge_repository, health_repository, survey_rep
 from app.core.config import settings
 from app.schemas.challenge import (
     AnswerOption, CycleMission, CycleResult, CycleSummary, DemoInfo, DemoStatus, ExcludedItem, FixedSlot, LogResult, MissionCard,
-    MissionResult, ModelChange, ProgramCheckpoint, ProgramCycleRate, ProgramReviewResult, RecommendationResult,
+    MissionResult, ModelChange, ProgramCheckpoint, ProgramCycleRate, ProgramReviewResult, ProgramStatus, RecommendationResult,
     ReviewResult, Snapshot, SodiumResult, SurveyNeeded, WeekProgress,
 )
 
@@ -28,6 +28,7 @@ from app.services.challenge_catalog import (
 )
 from app.services.model_input import age_on
 from app.ml.predictor import similarity_level_b
+from app.ml import predictor
 
 ALC_WARNING = "오늘은 권장량을 넘었어요. 건강을 위해서는 술을 마시지 않는 것이 가장 좋아요."
 
@@ -100,9 +101,30 @@ async def _active_codes(db: AsyncSession) -> tuple[set[str], dict, dict[str, int
     return active, {ch.challenge_code: (ch, lv) for ch, _, lv in rows}, order
 
 
-async def _next_cycle_number(db: AsyncSession, user_id: str) -> int:
-    cycles = await challenge_repository.get_cycles(db, user_id)
-    return sum(1 for c in cycles if c.status in ("completed", "incomplete")) + 1
+async def _next_cycle_number(db: AsyncSession, program_id: str) -> int:
+    """프로그램 안에서 다음 사이클 번호를 계산한다: 1 → 2 → 3."""
+    cycles = await challenge_repository.get_program_cycles(db, program_id)
+    finished = sum(1 for cycle in cycles if cycle.status in ("completed", "incomplete"))
+    return finished + 1
+
+
+async def _get_or_create_current_program(db: AsyncSession, user_id: str):
+    """첫 사이클을 시작할 때 프로그램 1을 만든다. 이미 있으면 그대로 사용한다."""
+    program = await challenge_repository.get_latest_program(db, user_id)
+    if program is not None:
+        return program
+
+    info = predictor.current_program_model_info()
+    return await challenge_repository.create_program(
+        db=db,
+        user_id=user_id,
+        program_number=1,
+        model_a_version=info["model_a_version"],
+        model_b_version=info["model_b_version"],
+        model_updated_on=info["model_updated_on"],
+        change_note=info["change_note"],
+        now=utcnow(),
+    )
 
 
 async def _build_recommendation(db: AsyncSession, user_id: str):
@@ -121,8 +143,16 @@ async def get_recommendation(db: AsyncSession, user_id: str) -> RecommendationRe
     facts, _, _, c, rec = await _build_recommendation(db, user_id)
     sodium = c.get("sodium")
     done = set(rec.completed)
+
+    program = await challenge_repository.get_latest_program(db, user_id)
+    next_cycle_number = (
+        await _next_cycle_number(db, program.program_id)
+        if program is not None
+        else 1
+    )
+
     return RecommendationResult(
-        cycle_number=await _next_cycle_number(db, user_id),
+        cycle_number=next_cycle_number,
         total_cycles=PROGRAM_CYCLES,
         fixed=[
             FixedSlot(slot=s["slot"], slot_label=s["from"], selection_type=s["selection_type"],
@@ -188,20 +218,37 @@ async def _current_active(db: AsyncSession, user_id: str) -> ChallengeCycle | No
 async def start_cycle(db: AsyncSession, user_id: str, selected_code: str) -> CycleResult:
     if await _current_active(db, user_id) is not None:
         raise AppError(409, "CHALLENGE_CYCLE_ACTIVE", "진행 중인 챌린지가 있습니다.")
-    # 프로그램은 4주 × PROGRAM_CYCLES번 (12주). 화면을 거치지 않은 요청도 여기서 막는다
-    if await _next_cycle_number(db, user_id) > PROGRAM_CYCLES:
-        raise AppError(409, "CHALLENGE_PROGRAM_COMPLETE", f"{PROGRAM_CYCLES * 4}주 챌린지를 모두 마쳤습니다.")
+    # 현재 프로그램이 이미 3사이클을 끝냈다면 restart 전에는 새 사이클을 막는다.
+    program = await challenge_repository.get_latest_program(db, user_id)
+    if program is not None and await _next_cycle_number(db, program.program_id) > PROGRAM_CYCLES:
+        raise AppError(
+            409,
+            "CHALLENGE_PROGRAM_COMPLETE",
+            f"{PROGRAM_CYCLES * 4}주 챌린지를 모두 마쳤습니다. 새 12주를 시작해 주세요.",
+        )
 
     facts, record, instance, c, rec = await _build_recommendation(db, user_id)
     if selected_code not in rec.candidates:
         raise AppError(422, "CHALLENGE_SELECTION_INVALID", "선택할 수 없는 미션입니다.")
+
+        # 첫 사이클이라면 프로그램 1을 지금 만든다.
+    if program is None:
+        program = await _get_or_create_current_program(db, user_id)
+
+    cycle_number = await _next_cycle_number(db, program.program_id)
 
     _, catalog, _ = await _active_codes(db)
     chosen = [(s["code"], s["selection_type"]) for s in rec.fixed if s["code"]] + [(selected_code, "selected")]
 
     now, today = utcnow(), today_kst()
     cycle = await challenge_repository.create_cycle(
-        db, user_id, await _next_cycle_number(db, user_id), today, today + timedelta(days=CYCLE_DAYS - 1), now
+        db,
+        user_id,
+        program.program_id,
+        cycle_number,
+        today,
+        today + timedelta(days=CYCLE_DAYS - 1),
+        now,
     )
     for code, selection in chosen:
         ch, lv = catalog[code]
@@ -272,6 +319,70 @@ async def _sex(db: AsyncSession, user_id: str) -> str:
     profile = await user_repository.get_profile(db, user_id)
     return profile.sex if profile and profile.sex else "female"
 
+def _program_is_complete(cycles: list[ChallengeCycle]) -> bool:
+    """완료·미완료로 끝난 4주 사이클이 3개면 12주 프로그램 완료다."""
+    finished = sum(
+        1
+        for cycle in cycles
+        if cycle.status in ("completed", "incomplete")
+    )
+    return finished >= PROGRAM_CYCLES
+
+
+async def get_program_status(db: AsyncSession, user_id: str) -> ProgramStatus:
+    """가장 최근 12주 프로그램의 완료 여부와 모델 버전 안내."""
+    program = await challenge_repository.get_latest_program(db, user_id)
+    if program is None:
+        raise AppError(404, "PROGRAM_NOT_FOUND", "아직 시작한 12주 프로그램이 없습니다.")
+
+    cycles = await challenge_repository.get_program_cycles(db, program.program_id)
+    complete = _program_is_complete(cycles)
+    latest = predictor.current_program_model_info()
+
+    version_changed = bool(
+        (program.model_a_version and program.model_a_version != latest["model_a_version"])
+        or (program.model_b_version and program.model_b_version != latest["model_b_version"])
+    )
+
+    return ProgramStatus(
+        program_number=program.program_number,
+        complete=complete,
+        can_restart=complete,
+        model_version=program.model_a_version,
+        latest_model_version=latest["model_version"],
+        version_changed=version_changed,
+        latest_updated_on=latest["model_updated_on"],
+        change_note=latest["change_note"],
+        model_a_version=program.model_a_version,
+        model_b_version=program.model_b_version,
+    )
+
+
+async def restart_program(db: AsyncSession, user_id: str) -> ProgramStatus:
+    """완료한 12주 프로그램 뒤에 새 프로그램을 만들고 최신 모델 버전을 고정한다."""
+    current = await challenge_repository.get_latest_program(db, user_id)
+    if current is None:
+        raise AppError(409, "PROGRAM_NOT_COMPLETE", "완료한 12주 프로그램이 없습니다.")
+
+    cycles = await challenge_repository.get_program_cycles(db, current.program_id)
+    if not _program_is_complete(cycles):
+        raise AppError(409, "PROGRAM_NOT_COMPLETE", "12주를 모두 마친 뒤 새 프로그램을 시작할 수 있습니다.")
+
+    latest = predictor.current_program_model_info()
+    await challenge_repository.create_program(
+        db=db,
+        user_id=user_id,
+        program_number=current.program_number + 1,
+        model_a_version=latest["model_a_version"],
+        model_b_version=latest["model_b_version"],
+        model_updated_on=latest["model_updated_on"],
+        change_note=latest["change_note"],
+        now=utcnow(),
+    )
+    await db.commit()
+
+    return await get_program_status(db, user_id)
+
 
 async def get_current_cycle(db: AsyncSession, user_id: str) -> CycleResult:
     cycle = await _current_active(db, user_id)
@@ -292,7 +403,16 @@ async def list_cycles(db: AsyncSession, user_id: str) -> list[CycleSummary]:
     await _current_active(db, user_id)  # 끝난 사이클이 있으면 먼저 닫는다
     result = []
     cycles = await challenge_repository.get_cycles(db, user_id)
-    reassessed = await challenge_repository.get_reassessed_cycle_ids(db, [c.cycle_id for c in cycles])
+    programs = await challenge_repository.get_programs(db, user_id)
+    program_numbers = {
+        program.program_id: program.program_number
+        for program in programs
+    }
+    reassessed = await challenge_repository.get_reassessed_cycle_ids(
+        db,
+        [c.cycle_id for c in cycles],
+    )
+
     for cycle in cycles:
         missions = await challenge_repository.get_cycle_missions(db, cycle.cycle_id)
         logs = await challenge_repository.get_logs(db, [cc.cycle_challenge_id for cc, _ in missions])
@@ -308,6 +428,7 @@ async def list_cycles(db: AsyncSession, user_id: str) -> list[CycleSummary]:
             cycle_rate=sum(rates) / len(rates) if rates else 0.0,
             mission_codes=[ch.challenge_code for _, ch in missions],
             reassessed=cycle.cycle_id in reassessed,
+            program_number=program_numbers[cycle.program_id],
         ))
     return result
 
@@ -429,6 +550,15 @@ async def submit_reassessment(db: AsyncSession, user_id: str, cycle_id: str, exa
                               items: list[dict]) -> ReviewResult:
     """4주 재입력 저장 → 모델 A·B 재예측(interim, 직전 값 이월은 예측 서비스가 함) → 전후 비교."""
     cycle = await _owned_ended_cycle(db, user_id, cycle_id)
+    program = await challenge_repository.get_program_by_id(db, cycle.program_id)
+    if program is None:
+        raise AppError(500, "PROGRAM_NOT_FOUND", "사이클의 12주 프로그램 정보를 찾을 수 없습니다.")
+
+    # 이전 데이터에는 버전이 비어 있을 수 있어 최신값으로 안전하게 보완한다.
+    model_versions = {
+        "MODEL_A": program.model_a_version or predictor.CURRENT_VERSION["MODEL_A"],
+        "MODEL_B": program.model_b_version or predictor.CURRENT_VERSION["MODEL_B"],
+    }
     if cycle.status in ("active", "stopped"):
         raise AppError(409, "CHALLENGE_CYCLE_NOT_ENDED", "4주가 끝난 챌린지만 재입력할 수 있습니다.")
     if await challenge_repository.get_reassessment(db, cycle.cycle_id) is not None:
@@ -470,7 +600,14 @@ async def submit_reassessment(db: AsyncSession, user_id: str, cycle_id: str, exa
 
     # 재예측(interim): 다시 받지 않은 항목(키·콜레스테롤·당뇨·고혈압 진단·가족력)은 예측 서비스가 직전 값으로 채운다
     # (prediction_job_service._carry_forward). 모델 하나가 실패해도 결과는 "failed"로 저장되고 비교 화면은 그대로 보여준다
-    await prediction_job_service.create_job(db, user_id, record.health_record_id, None, "interim")
+    await prediction_job_service.create_job(
+        db,
+        user_id,
+        record.health_record_id,
+        None,
+        "interim",
+        model_versions=model_versions,
+    )
     return await get_review(db, user_id, cycle_id)
 
 
@@ -492,8 +629,8 @@ async def _model_changes(db: AsyncSession, before_p: dict, after_p: dict) -> lis
     비교할 수 없으면 reason으로 이유를 알린다 (4주 리뷰와 12주 리뷰가 같이 쓴다)."""
     models = []
     for code in ("MODEL_A", "MODEL_B"):
-        b = await prediction_job_service.current_version_view(db, before_p.get(code))
-        a = await prediction_job_service.current_version_view(db, after_p.get(code))
+        b = before_p.get(code)
+        a = after_p.get(code)
         reason = prediction_job_service.comparison_reason(b, a)
         models.append(ModelChange(
             model_code=code,
@@ -544,15 +681,26 @@ async def get_review(db: AsyncSession, user_id: str, cycle_id: str) -> ReviewRes
         bp_note=BP_NOTE,
         demo_fill=await demo_autofill_service.pattern_of(db, cycle.cycle_id),
     )
-
-async def get_program_review(db: AsyncSession, user_id: str) -> ProgramReviewResult:
+async def get_program_review(
+    db: AsyncSession,
+    user_id: str,
+    program_number: int | None = None,
+) -> ProgramReviewResult:
     """12주 프로그램의 처음(0주) ↔ 지금까지(마지막 재입력) 비교.
     처음 = 1차 사이클을 시작할 때 기준이 된 건강기록, 마지막 = 지금까지 한 사이클 끝 재입력 중 가장 나중 것(4·8·12주).
     12주를 다 못 채웠거나 중간에 그만둔 사람도 재입력이 하나라도 있으면 '지금까지'를 보여 준다 (weeks_done).
     모델 결과는 _model_changes로 같은 모델 버전끼리 비교한다(버전이 다르면 입력값 사진으로 다시 계산, 나이는 처음 나이).
     재입력이 하나도 없으면 PROGRAM_REVIEW_NOT_READY."""
     await _current_active(db, user_id)                                  # 끝난 사이클이 있으면 먼저 닫는다
-    cycles = sorted(await challenge_repository.get_cycles(db, user_id), key=lambda c: c.cycle_number)[:PROGRAM_CYCLES]
+    program = (
+        await challenge_repository.get_program(db, user_id, program_number)
+        if program_number is not None
+        else await challenge_repository.get_latest_program(db, user_id)
+    )
+    if program is None:
+        raise AppError(404, "PROGRAM_NOT_FOUND", "12주 프로그램을 찾을 수 없습니다.")
+
+    cycles = await challenge_repository.get_program_cycles(db, program.program_id)
     first = cycles[0] if cycles else None
     basis = await challenge_repository.get_basis_record(db, user_id, first.started_on, first.cycle_id) if first else None
 
@@ -576,6 +724,9 @@ async def get_program_review(db: AsyncSession, user_id: str) -> ProgramReviewRes
     before_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, basis.health_record_id)}
     after_p = {p.model_code: p for p in await challenge_repository.get_latest_job_predictions(db, final.health_record_id)}
     return ProgramReviewResult(
+        program_number=program.program_number,
+        model_version=program.model_a_version,
+        model_updated_on=program.model_updated_on,
         weeks_done=last_cycle.cycle_number * CYCLE_WEEKS,
         before=_snapshot(basis, before_m), after=_snapshot(final, after_m), checkpoints=checkpoints,
         cycles=[ProgramCycleRate(cycle_number=c.cycle_number, status=c.status, cycle_rate=rates.get(c.cycle_id, 0.0))

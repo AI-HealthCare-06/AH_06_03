@@ -6,6 +6,7 @@ import pytest
 from app.core.security import create_access_token
 from app.models.challenge import ChallengeCycle
 from app.models.user import User, UserProfile
+from tests.conftest import make_program
 
 pytestmark = pytest.mark.asyncio
 
@@ -34,7 +35,10 @@ async def _put(client, h, rid, sbp):
 
 async def _start_cycle(Session, uid, day):
     async with Session() as s:
-        s.add(ChallengeCycle(user_id=uid, cycle_number=1, started_on=day, ended_on=date(2026, 10, 30),
+        program = make_program(uid, now=NOW)
+        s.add(program)
+        await s.flush()
+        s.add(ChallengeCycle(user_id=uid,  program_id=program.program_id,cycle_number=1, started_on=day, ended_on=date(2026, 10, 30),
                              status="active", created_at=NOW, updated_at=NOW))
         await s.commit()
 

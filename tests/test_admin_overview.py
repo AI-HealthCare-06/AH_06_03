@@ -19,6 +19,7 @@ from app.models.health import HealthRecord
 from app.models.prediction import Prediction, PredictionJob
 from app.models.survey import SurveyInstance, SurveyVersion
 from app.models.user import User, UserProfile
+from tests.conftest import make_program
 
 pytestmark = pytest.mark.asyncio
 
@@ -79,9 +80,24 @@ async def seeded(db_session):
                          skip_reason="htn_diagnosed", predicted_at=NOW))
         for n, uid in enumerate(ids[5:], start=1):
             s.add(Prediction(prediction_job_id=f"job{n}", user_id=uid, model_code="MODEL_A", status="completed", predicted_at=NOW))
-        for number, (uid, status) in enumerate([(ids[5], "active"), (ids[6], "completed")], start=1):
-            s.add(ChallengeCycle(user_id=uid, cycle_number=number, started_on=date(2026, 9, 1), ended_on=date(2026, 9, 28),
-                                 status=status, created_at=NOW, updated_at=NOW))
+
+        for uid, status in [(ids[5], "active"), (ids[6], "completed")]:
+            program = make_program(uid, now=NOW)
+            s.add(program)
+            await s.flush()
+
+            s.add(
+                ChallengeCycle(
+                    user_id=uid,
+                    program_id=program.program_id,
+                    cycle_number=1,
+                    started_on=date(2026, 9, 1),
+                    ended_on=date(2026, 9, 28),
+                    status=status,
+                    created_at=NOW,
+                    updated_at=NOW,
+                )
+            )
         terms = ConsentPolicy(policy_type="terms_of_service", version="v1", purpose_text="a", collection_items="b",
                               retention_policy="c", withdrawal_method="d", third_party_notice="e", published_at=NOW)
         health = ConsentPolicy(policy_type="health_data", version="v4", purpose_text="a", collection_items="b",

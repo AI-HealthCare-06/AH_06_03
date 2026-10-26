@@ -150,6 +150,7 @@ class CycleResult(BaseModel):
 class CycleSummary(BaseModel):
     cycle_id: str
     cycle_number: int
+    program_number: int
     status: str
     started_on: date
     ended_on: date
@@ -235,9 +236,30 @@ class ProgramCycleRate(BaseModel):
     cycle_rate: float           # 그 사이클 미션 달성률 (0~1)
 
 
+class ProgramStatus(BaseModel):
+    """가장 최근 12주 프로그램의 상태와 모델 버전 안내."""
+    program_number: int
+    complete: bool
+    can_restart: bool
+
+    # 프론트가 표시할 대표 모델(A) 버전
+    model_version: str | None
+    latest_model_version: str
+    version_changed: bool
+    latest_updated_on: date | None
+    change_note: str | None
+
+    # 서버 보관·검증용: 프론트는 몰라도 무시한다.
+    model_a_version: str | None = None
+    model_b_version: str | None = None
+
+
 class ProgramReviewResult(BaseModel):
     """12주 프로그램의 처음(0주) ↔ 지금까지(마지막 재입력) 비교. 모델 결과는 같은 모델 버전으로 다시 계산한 값끼리 비교한다."""
-    weeks_done: int                      # 지금까지 몇 주인지: 4 / 8 / 12 (화면 제목 "지금까지 N주")
+    program_number: int
+    model_version: str | None
+    model_updated_on: date | None
+    weeks_done: int
     before: Snapshot                     # 0주 (처음 입력)
     after: Snapshot                      # 12주 (3차 사이클 끝 재입력)
     checkpoints: list[ProgramCheckpoint]  # 혈압 선 그래프용 0·4·8·12주 (재입력이 없는 시점은 빠짐)

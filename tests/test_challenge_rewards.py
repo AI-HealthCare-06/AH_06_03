@@ -16,14 +16,17 @@ pytestmark = pytest.mark.asyncio
 
 
 async def _setup(Session):
-    from tests.conftest import _seed_module
+    from tests.conftest import _seed_module, make_program
     seed = _seed_module()
     async with Session() as s:
         u = User(email="r@test.kr", password_hash="x", status="active")
         s.add(u)
         await s.flush()
         s.add(UserProfile(user_id=u.user_id, sex="male", birth_date=date(1981, 3, 1)))
-        c = ChallengeCycle(user_id=u.user_id, cycle_number=1, started_on=START,
+        program = make_program(u.user_id, now=NOW)
+        s.add(program)
+        await s.flush()
+        c = ChallengeCycle(user_id=u.user_id, program_id=program.program_id, cycle_number=1, started_on=START,
                            ended_on=START + timedelta(days=27), status="active", created_at=NOW, updated_at=NOW)
         s.add(c)
         await s.flush()

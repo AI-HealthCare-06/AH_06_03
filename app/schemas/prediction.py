@@ -80,6 +80,7 @@ class Factor(BaseModel):
 class ModelResult(BaseModel):
     model_code:Literal["MODEL_A", "MODEL_B"] # 어떤 모델인지
     model_version:str | None=None # 모델 버전
+    model_updated_on: date | None = None
     status: Literal["completed", "skipped", "failed"] # 상태
     skip_reason: Literal["age_out_of_range", "htn_diagnosed", "cad_diagnosed"] | None = None
     probability:float | None=None # 점수
@@ -128,6 +129,7 @@ class ModelSummary(BaseModel):
     """📊 목록용 모델 결과 요약 (요인·확률 없음)."""
     status: str
     model_version: str | None
+    model_updated_on: date | None = None
     risk_level: str | None
     vascular_age: float | None
     skip_reason: str | None
