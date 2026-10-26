@@ -56,6 +56,27 @@ class ChallengeLevel(Base):
     target_config: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
 
+class ChallengeProgram(Base):
+    """사용자별 12주 프로그램. 프로그램 안에는 4주 사이클이 3개 있다."""
+    __tablename__ = "challenge_programs"
+    __table_args__ = (
+        UniqueConstraint("user_id", "program_number", name="uq_challenge_program_user_number"),
+    )
+
+    program_id: Mapped[str] = mapped_column(CHAR(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        CHAR(36), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    program_number: Mapped[int] = mapped_column(Integer, nullable=False)  # 1, 2, 3 ...
+    model_a_version: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    model_b_version: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    model_updated_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    change_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+
 class ChallengeCycle(Base):
     """4주 사이클 한 번. 프로그램은 3사이클(12주)."""
     __tablename__ = "challenge_cycles"
@@ -64,7 +85,13 @@ class ChallengeCycle(Base):
     user_id: Mapped[str] = mapped_column(
         CHAR(36), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True
     )
-    cycle_number: Mapped[int] = mapped_column(Integer, nullable=False)  # 1~4
+    program_id: Mapped[str] = mapped_column(
+        CHAR(36),
+        ForeignKey("challenge_programs.program_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    cycle_number: Mapped[int] = mapped_column(Integer, nullable=False)  # 프로그램 안에서 1~3
     started_on: Mapped[date] = mapped_column(Date, nullable=False)
     ended_on: Mapped[date] = mapped_column(Date, nullable=False)  # started_on + 27일
     status: Mapped[str] = mapped_column(

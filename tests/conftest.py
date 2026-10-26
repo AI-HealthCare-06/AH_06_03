@@ -20,7 +20,12 @@ from cryptography.fernet import Fernet as _Fernet
 _settings.PII_ENC_KEY = _settings.PII_ENC_KEY or _Fernet.generate_key().decode()
 _settings.PII_HASH_KEY = _settings.PII_HASH_KEY or "test-pii-hash-key"
 from app.services import login_guard
-from app.models.challenge import Challenge, ChallengeCategory, ChallengeLevel
+from app.models.challenge import (
+    Challenge,
+    ChallengeCategory,
+    ChallengeLevel,
+    ChallengeProgram,
+)
 from app.models.health import HealthInputSchema, HealthMeasurement, HealthRecord
 from app.models.survey import SurveyInstance, SurveyOption, SurveyQuestion, SurveyResponse, SurveyVersion
 from app.models.user import User, UserProfile
@@ -135,3 +140,22 @@ async def make_user(Session, *, sex="male", birth=date(1981, 3, 1), measurements
                                      option_id=o.option_id, created_at=now))
         await s.commit()
         return {"Authorization": f"Bearer {create_access_token(user.user_id)}"}
+
+def make_program(
+    user_id: str,
+    *,
+    program_number: int = 1,
+    now: datetime | None = None,
+) -> ChallengeProgram:
+    timestamp = now or datetime(2026, 10, 8, 9, 0)
+
+    return ChallengeProgram(
+        user_id=user_id,
+        program_number=program_number,
+        model_a_version="0.2.0",
+        model_b_version="0.2.0",
+        model_updated_on=date(2026, 10, 20),
+        change_note="테스트용 모델 버전",
+        created_at=timestamp,
+        updated_at=timestamp,
+    )

@@ -9,6 +9,7 @@ from app.models.challenge import Challenge, ChallengeCycle, ChallengeLog, CycleC
 from app.models.push import PushSetting, PushSubscription
 from app.models.user import User, UserProfile
 from app.services import push_service, reminder_service as rs
+from tests.conftest import make_program
 
 pytestmark = pytest.mark.asyncio
 
@@ -39,7 +40,10 @@ async def _user(Session, email, codes=("BRK-1", "ACT-1"), logged=(), breakfast_o
         if not breakfast_on:
             s.add(PushSetting(user_id=u.user_id, comment=True, inquiry=True, party=True, challenge=True,
                               breakfast=False, updated_at=NOW))
-        c = ChallengeCycle(user_id=u.user_id, cycle_number=1, started_on=TODAY - timedelta(days=3),
+        program = make_program(u.user_id, now=NOW)
+        s.add(program)
+        await s.flush()
+        c = ChallengeCycle(user_id=u.user_id, program_id=program.program_id,cycle_number=1, started_on=TODAY - timedelta(days=3),
                            ended_on=TODAY + timedelta(days=24), status="active", created_at=NOW, updated_at=NOW)
         s.add(c)
         await s.flush()
