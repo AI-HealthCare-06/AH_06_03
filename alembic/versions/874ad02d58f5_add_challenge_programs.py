@@ -1,7 +1,7 @@
 """add challenge programs
 
 Revision ID: 874ad02d58f5
-Revises: cf92c31e0691
+Revises: f2c9d5e83b61
 Create Date: 2026-10-26 13:25:56.429584
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '874ad02d58f5'
-down_revision: Union[str, Sequence[str], None] = 'cf92c31e0691'
+down_revision: Union[str, Sequence[str], None] = 'f2c9d5e83b61'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -105,8 +105,5 @@ def downgrade() -> None:
         table_name="challenge_cycles",
     )
     op.drop_column("challenge_cycles", "program_id")
-    op.drop_index(
-        op.f("ix_challenge_programs_user_id"),
-        table_name="challenge_programs",
-    )
+    
     op.drop_table("challenge_programs")
