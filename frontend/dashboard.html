@@ -131,7 +131,7 @@ const startedOn = cycle ? new Date(cycle.startedOn + 'T00:00:00') : null;
 const dayNo = startedOn ? Math.round((todayD - startedOn) / 86400000) + 1 : 0;   // 시작한 날이 1일째
 const cycleDone = cycle && dayNo > 28;
 // 건강정보만 있고 예측 결과가 없으면(대상 확인·입력 검토를 안 마쳤으면) 'pending': 이어서 하도록 안내
-let doneCycles = 0;
+let doneCycles = 0, lastIncomplete = false;   // 마지막으로 끝난 4주가 목표 미달이면 다른 문구
 const state = (health || pred) ? (cycle ? (cycleDone ? 'redo' : 'active') : (pred ? 'ready' : 'pending')) : 'empty';
 // 4주 재입력은 서버에 저장되는 화면으로 (사이클 번호가 있을 때). 없으면 예전 추이 화면
 const reassessHref = cycle && cycle.cycleId ? `reassessment.html?cycle=${encodeURIComponent(cycle.cycleId)}` : 'trend.html';
@@ -218,12 +218,14 @@ function render() {
   } else {
     if (state === 'active') body += ringHtml();
     else if (state === 'ready' && doneCycles >= 3) body += stateCard(STATE_ICON.doc, '12주를 모두 마쳤어요!', '지난 기록에서 처음과 달라진 점을 볼 수 있어요.', '', btn('program-review.html', '12주 결과 보기') + btn('twelve-weeks.html', '12주 기록 보기', 'ghost'));
-    else if (state === 'ready' && doneCycles > 0) body += stateCard(STATE_ICON.doc, `${['', '첫', '두'][doneCycles]} 번째 4주를 마쳤어요!`, `이제 ${['', '두', '한'][doneCycles]} 번(${(3 - doneCycles) * 4}주) 남았어요.`, '', btn('challenges.html', `${doneCycles + 1}차 4주 챌린지 시작`));
+    else if (state === 'ready' && doneCycles > 0) body += lastIncomplete
+      ? stateCard(STATE_ICON.doc, `${['', '첫', '두'][doneCycles]} 번째 4주가 끝났어요`, `목표를 다 채우지는 못했지만 괜찮아요.<br>미션을 다시 골라 이어서 해 봐요. (${(3 - doneCycles) * 4}주 남았어요)`, '', btn('challenges.html', '미션 다시 골라 이어서 하기'))
+      : stateCard(STATE_ICON.doc, `${['', '첫', '두'][doneCycles]} 번째 4주를 마쳤어요!`, `이제 ${['', '두', '한'][doneCycles]} 번(${(3 - doneCycles) * 4}주) 남았어요.`, '', btn('challenges.html', `${doneCycles + 1}차 4주 챌린지 시작`));
     else if (state === 'ready') body += stateCard(STATE_ICON.doc, '분석이 끝났어요', '결과에 맞는 챌린지를 골라요.<br><b style="font-size:17px;color:var(--ink)">12주 = 4주씩 3번</b>', '', btn('challenges.html', '4주 챌린지 시작'));
     else {
       const last = cycleNo >= 3;
       body += stateCard(STATE_ICON.doc, last ? '12주 계획을 모두 마쳤어요' : `12주 계획 ${cycleNo}/3차가 끝났어요`, '바뀐 항목만 다시 입력하면 비교해 드려요.', '',
-        btn(reassessHref, last ? '12주 결과 확인하기' : '4주 결과 확인하기') + (!last && !cycle.cycleId ? btn('challenges.html', `다음 4주 챌린지 시작 (${cycleNo + 1}차)`, 'ghost') : ''));
+        btn(reassessHref, last ? '12주 결과 확인하기' : '4주 결과 확인하기') + (!last && !cycle.cycleId ? btn('challenges.html', cycle.status === 'incomplete' ? '미션 다시 골라 이어서 하기' : `다음 4주 챌린지 시작 (${cycleNo + 1}차)`, 'ghost') : ''));
     }
     if (pred) body += tilesHtml();
     const bpPts = bpPoints(health, progress.bpLog);
@@ -235,7 +237,7 @@ function render() {
 }
 render();
 // 진행 중인 4주가 없을 때, 이미 끝낸 4주가 몇 번인지 알아서 안내 문구를 맞춘다(실패하면 처음 문구 그대로)
-if (state === 'ready') apiListCycles().then(l => { doneCycles = (l || []).filter(c => c.status === 'completed' || c.status === 'incomplete').length; if (doneCycles) render(); }).catch(() => {});
+if (state === 'ready') apiListCycles().then(l => { const done = (l || []).filter(c => c.status === 'completed' || c.status === 'incomplete'); doneCycles = done.length; lastIncomplete = !!done[0] && done[0].status === 'incomplete'; if (doneCycles) render(); }).catch(() => {});
 if (state === 'active') apiCall('GET', '/home/summary', undefined, '').then(r => { summary = r.data; render(); }).catch(() => {});
 </script>
 </body>
