@@ -222,6 +222,7 @@ function render() {
     else if (state === 'ready' && doneCycles > 0) body += lastIncomplete
       ? stateCard(STATE_ICON.doc, `${['', '첫', '두'][doneCycles]} 번째 4주가 끝났어요`, `목표를 다 채우지는 못했지만 괜찮아요.<br>다음 4주 미션을 골라 이어서 해 봐요. (${(3 - doneCycles) * 4}주 남았어요)`, '', btn('challenges.html', '다음 4주 미션 고르기'))
       : stateCard(STATE_ICON.doc, `${['', '첫', '두'][doneCycles]} 번째 4주를 마쳤어요!`, `이제 ${['', '두', '한'][doneCycles]} 번(${(3 - doneCycles) * 4}주) 남았어요.`, '', btn('challenges.html', `${doneCycles + 1}차 4주 챌린지 시작`));
+    else if (state === 'ready' && progStatus && progStatus.program_number > 1) body += stateCard(STATE_ICON.doc, `${progStatus.program_number}번째 12주를 시작했어요`, '이번 12주의 첫 번째 4주 챌린지를 골라요.<br><b style="font-size:17px;color:var(--ink)">12주 = 4주씩 3번</b>', '', btn('challenges.html', '4주 챌린지 시작'));
     else if (state === 'ready') body += stateCard(STATE_ICON.doc, '분석이 끝났어요', '결과에 맞는 챌린지를 골라요.<br><b style="font-size:17px;color:var(--ink)">12주 = 4주씩 3번</b>', '', btn('challenges.html', '4주 챌린지 시작'));
     else {
       const last = cycleNo >= 3;
@@ -238,7 +239,7 @@ function render() {
 }
 render();
 // 진행 중인 4주가 없을 때, 이미 끝낸 4주가 몇 번인지 알아서 안내 문구를 맞춘다(실패하면 처음 문구 그대로)
-if (state === 'ready') Promise.all([apiListCycles(), apiProgramStatus()]).then(([l, ps]) => { progStatus = ps; const cur = ps ? ps.program_number : Math.max(1, ...(l || []).map(progOf)); const done = (l || []).filter(c => progOf(c) === cur && (c.status === 'completed' || c.status === 'incomplete')); doneCycles = done.length; lastIncomplete = !!done[0] && done[0].status === 'incomplete'; if (doneCycles) render(); }).catch(() => {});
+if (state === 'ready') Promise.all([apiListCycles(), apiProgramStatus()]).then(([l, ps]) => { progStatus = ps; const cur = ps ? ps.program_number : Math.max(1, ...(l || []).map(progOf)); const done = (l || []).filter(c => progOf(c) === cur && (c.status === 'completed' || c.status === 'incomplete')); doneCycles = done.length; lastIncomplete = !!done[0] && done[0].status === 'incomplete'; if (doneCycles || (ps && ps.program_number > 1)) render(); }).catch(() => {});
 // 12주를 마친 뒤 새 12주 시작 (서버의 POST /challenges/program/restart)
 document.addEventListener('click', async (ev) => {
   if (!ev.target.closest('#restart-prog')) return;

@@ -146,7 +146,8 @@ function render(rv) {
   const rates = (rv.cycles || []).map(c => c.cycle_rate).filter(v => typeof v === 'number');
   const avgRate = rates.length ? Math.round(rates.reduce((x, y) => x + y, 0) / rates.length * 100) + '%' : '—';   // 사이클별 달성률 평균
   const wk = rv.weeks_done || 12, done = wk >= 12;      // 3차까지 마쳤으면 12주, 아니면 마지막 재입력까지(지금까지 4·8주)
-  $('app').innerHTML = back(done ? '12주 변화' : `지금까지 ${wk}주`) + `
+  const pn = rv.program_number > 1 ? rv.program_number + '번째 ' : '';   // 12주를 여러 번 했을 때만 몇 번째인지 표시
+  $('app').innerHTML = back(done ? pn + '12주 변화' : `${pn}지금까지 ${wk}주`) + `
     <div class="cmphd"><span class="s">${done ? '12주' : `지금까지 ${wk}주`} · 처음 입력한 때부터</span><div class="big">${done ? '12주 동안' : `${wk}주 동안`}<br>이렇게 달라졌어요</div></div>
     ${pts.length > 1 ? `<div class="cbox"><div class="hd"><span style="font-size:15px;font-weight:800;color:var(--ink)">수축기 혈압</span><span>mmHg</span></div>${lineChart({ points: pts, W: 310, H: 170, ref: 140, refLabel: '기준 140', color: '#243749', labelFont: 13, big: true })}</div>` : ''}
     <div class="tb"><div class="th"><span>항목</span><span>0주</span><span>${wk}주</span></div>
