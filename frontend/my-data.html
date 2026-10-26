@@ -114,6 +114,7 @@ function predictionRows(p) {
   if (a) {
     if (a.status === 'completed') {
       r.push(row('10년 내 심장 혈관 건강 신호', (L.risk[a.risk_level] || esc(a.risk_level)) + (probText(a.probability) ? ` · ${probText(a.probability)}` : '')));
+      r.push(goodNote(a.risk_level, true));
       if (percentileText(a.percentile)) r.push(row('같은 성별·연령대 비교(참고용)', percentileText(a.percentile).replace('같은 성별·연령대 ', '')));
       if (a.vascular_age != null) r.push(row('혈관 나이(추정)', `${a.vascular_age}세`));
       if (probText(a.probability)) r.push(probNoteHtml(false, true));

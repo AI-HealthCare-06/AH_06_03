@@ -75,6 +75,7 @@ const sig = document.getElementById('signal');
 if (a && RISK_LABEL[a.risk_level]) {
   sig.innerHTML = `<span>10년 내 심장 혈관 건강 신호</span><b>${RISK_LABEL[a.risk_level]}</b>`;
   sig.hidden = false;
+  sig.insertAdjacentHTML('afterend', goodNote(a.risk_level, true));
 } else if (pred && pred.model_a && pred.model_a.status === 'skipped') {
   sig.innerHTML = '<span>이번엔 신호를 분석하지 않아요. 챌린지는 그대로 할 수 있어요.</span>';
   sig.hidden = false;

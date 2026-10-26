@@ -155,6 +155,7 @@ function render(rv) {
         .concat(cmpA ? [['건강 신호', riskText(m, 'before_risk_level'), riskText(m, 'after_risk_level')]] : [])
         .map(r => `<div class="rw"><span>${r[0]}</span><span>${esc(r[1])}</span><span>${esc(r[2])}</span></div>`).join('')}</div>
     ${cmpA && (probText(m.before_probability) || probText(m.after_probability)) ? probNoteHtml(false, true) : ''}
+    ${cmpA ? goodNoteAny(m) : ''}
     ${pc.length ? `<div class="tb"><div class="th"><span>같은 성별·연령대</span><span>0주</span><span>${wk}주</span></div>${pc.map(r => `<div class="rw"><span>${r[0]}</span><span>${esc(r[1])}</span><span>${esc(r[2])}</span></div>`).join('')}</div>${ageNoteHtml(null)}` : ''}
     <div class="hab"><div class="t">습관 변화</div>
       <div class="rw"><span>흡연</span><span>${SMOKING[b.smoking] || '—'} → <b>${SMOKING[a.smoking] || '—'}</b></span></div>

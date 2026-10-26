@@ -165,3 +165,5 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .nav-dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:#5C86AC; margin-left:6px; vertical-align:middle}
 /* 한국어 줄바꿈: 단어 중간에서 끊지 않고 띄어쓰기에서만 줄을 바꾼다 (한 글자만 다음 줄로 넘어가는 것을 막음). 긴 주소 같은 건 넘치지 않게 필요할 때만 자른다 */
 body{word-break:keep-all; overflow-wrap:break-word}
+
+.gnote{margin:10px 0 0; font-size:14px; line-height:1.65; color:var(--body); font-weight:700}
