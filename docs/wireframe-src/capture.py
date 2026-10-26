@@ -57,7 +57,7 @@ CUR = ""
 def mock_admin(path):
     table = [("/users/me", A.ME, True), ("/admin/challenges", A.CATALOG, True), ("/admin/users", A.USERS, False), ("/admin/stats", A.STATS, False),
              ("/admin/audit", A.AUDIT, False), ("/admin/inquiries", A.INQ, False), ("/admin/guest-inquiries", A.GUEST, False),
-             ("/admin/notices", A.NOTICES, False), ("/admin/reports", A.REPORTS, False), ("/admin/community/posts", A.POSTS, False),
+             ("/admin/notices", A.NOTICES, False), ("/admin/reports", A.REPORTS, False), ("/admin/overview", A.OVERVIEW, False), ("/admin/community/posts", A.POSTS, False),
              ("/admin/common-challenges", A.CC, False)]
     for prefix, data, exact in table:
         if path == prefix or (not exact and path.startswith(prefix)):
@@ -69,7 +69,7 @@ def mock_existing(path):
     if re.match(r"/challenges/cycles/[^/]+/review", path):
         return {"data": E.REVIEW}
     table = {"/challenges/cycles/current": E.CYCLE, "/challenges/cycles": E.CYCLES, "/challenges/recommendations": E.RECO,
-             "/challenges/program/review": E.PROGRAM, "/challenges/participants": [], "/home/summary": E.SUMMARY, "/badges": E.BADGES,
+             "/challenges/program/review": E.PROGRAM, "/challenges/participants": [], "/home/summary": E.SUMMARY, "/badges": __import__("mock_admin").BADGES,
              "/users/me": E.ME, "/users/me/consents": E.CONSENTS, "/challenges/demo": {"enabled": False, "ended": False, "ends_on": None, "has_result": False}}
     if path in table:
         return {"data": table[path]}
@@ -119,6 +119,8 @@ def mock(url, method):
         return {"data": {"unread": 1, "items": M.INQUIRIES}}
     if path == "/push/settings":
         return {"data": M.PUSH_SETTINGS}
+    if path == "/badges":
+        return {"data": A.BADGES}
     if path == "/pie":
         return {"data": {"balance": 120, "recent": []}}
     if path == "/pie/thanks":
@@ -148,6 +150,7 @@ SCREENS = {
     "W22": ("notifications.html", 780),
     "W22-2": ("menu.html", 780),
     "W23": ("plan.html", 780),
+    "W24": ("badges.html", 780),
 }
 # 기존 화면 W01~W12: 이름 → (주소, 높이, 로그인 여부)  — 씨앗(localStorage)은 모두 넣는다
 EXIST = {
@@ -165,6 +168,7 @@ SCREENS.update({k: v[:2] for k, v in EXIST.items()})
 ADMIN = {"A-mission": "mission", "A-users": "users", "A-stats": "stats", "A-cc": "cc", "A-logs": "logs", "A-inq": "inquiries",
          "A-guest": "guest", "A-notices": "notices", "A-reports": "reports", "A-posts": "posts", "A-purge": "purge"}
 SCREENS.update({k: ("admin.html", 760) for k in ADMIN})
+SCREENS["A-overview"] = ("admin-overview.html", 1500)
 
 
 def run(names):
@@ -175,7 +179,7 @@ def run(names):
             global CUR
             CUR = n
             url, h = SCREENS[n][:2]
-            ctx = b.new_context(viewport={"width": 1180 if n in ADMIN else 390, "height": h}, device_scale_factor=2, has_touch=True)
+            ctx = b.new_context(viewport={"width": 1180 if (n in ADMIN or n == "A-overview") else 390, "height": h}, device_scale_factor=2, has_touch=True)
             pg = ctx.new_page()
             errs = []
             pg.on("pageerror", lambda e: errs.append(str(e)))

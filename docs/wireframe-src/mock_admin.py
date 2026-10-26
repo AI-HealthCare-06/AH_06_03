@@ -45,3 +45,24 @@ def cc(i, t, p, s, e, st, n, fin=None):
 CC = {"items": [cc("cc1", "하루 7천 보", "steps", "2026-10-20", "2026-10-26", "active", 12),
                 cc("cc2", "물 마시기", "self", "2026-10-27", "2026-11-02", "upcoming", 3),
                 cc("cc3", "계단 오르기", "self", "2026-10-10", "2026-10-16", "ended", 8)]}
+
+OVERVIEW = {
+    "funnel": [{"label": "가입", "users": 24, "rate_of_previous": None}, {"label": "건강정보 입력", "users": 18, "rate_of_previous": 0.75},
+               {"label": "분석 완료", "users": 16, "rate_of_previous": 0.89}, {"label": "챌린지 시작", "users": 12, "rate_of_previous": 0.75}],
+    "activity": [{"date": f"2026-10-{d}", "signups": s, "logins": l, "active_users": a, "returning_users": r}
+                 for d, s, l, a, r in [(20, 3, 9, 6, 2), (21, 5, 14, 9, 4), (22, 8, 20, 13, 6), (23, 6, 18, 12, 7), (24, 2, 15, 10, 8)]],
+    "consents": [{"policy_type": "terms_of_service", "version": "v4", "agreed": 24, "withdrawn": 0},
+                 {"policy_type": "privacy", "version": "v4", "agreed": 24, "withdrawn": 0},
+                 {"policy_type": "health_data", "version": "v4", "agreed": 21, "withdrawn": 1}],
+    "deletions": {"deleted_accounts": 2, "consent_withdrawals": 1, "recent": [{"completed_at": "2026-10-24T05:00:00", "deleted_rows": 48}]},
+    "status": {"server_started_at": "2026-10-24T01:00:00", "uptime_seconds": 90000, "db_ok": True, "db_revision": "f2c9d5e83b61", "admin_count": 2},
+}
+BADGES = {"total": 8, "earned_count": 4, "next": {"label": "7일 연속", "hint": "7일 연속 미션을 모두 마쳐요"}, "badges": [
+    {"code": "first", "label": "첫 인증", "group": "streak", "earned": True, "progress": 1, "target": 1, "hint": "처음 인증해요"},
+    {"code": "streak_3", "label": "3일 연속", "group": "streak", "earned": True, "progress": 3, "target": 3, "hint": "3일 연속"},
+    {"code": "streak_7", "label": "7일 연속", "group": "streak", "earned": False, "progress": 5, "target": 7, "hint": "7일 연속 미션을 모두 마쳐요"},
+    {"code": "week_1", "label": "1주 완주", "group": "streak", "earned": True, "progress": 7, "target": 7, "hint": "1주"},
+    {"code": "exercise_10", "label": "운동 10회", "group": "record", "earned": True, "progress": 10, "target": 10, "hint": "운동 10회"},
+    {"code": "bp_4", "label": "혈압 4번 기록", "group": "record", "earned": False, "progress": 2, "target": 4, "hint": "혈압 4번 기록"},
+    {"code": "cycle_1", "label": "1차 4주 완주", "group": "record", "earned": False, "progress": 0, "target": 1, "hint": "1차 4주를 마쳐요"},
+    {"code": "cycle_12w", "label": "12주 완주", "group": "record", "earned": False, "progress": 0, "target": 1, "hint": "12주를 마쳐요"}]}
