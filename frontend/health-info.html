@@ -81,11 +81,11 @@
 
             <div class="grid2">
               <div class="field">
-                <label for="sbp">수축기 혈압 (mmHg)</label>
+                <label for="sbp">높은 쪽 혈압(수축기) (mmHg)</label>
                 <input id="sbp" type="number" min="60" max="260" required>
               </div>
               <div class="field">
-                <label for="dbp">이완기 혈압 (mmHg)</label>
+                <label for="dbp">낮은 쪽 혈압(이완기) (mmHg)</label>
                 <input id="dbp" type="number" min="30" max="160" required>
               </div>
 
@@ -383,7 +383,7 @@ function goStep(i, fromReview) {
 // 값끼리 맞는지(범위 안이어도 말이 안 되는 조합): 수축기 > 이완기, 키·몸무게로 계산한 BMI 10~60
 function checkPair() {
   const v = (id) => { const e = document.getElementById(id); return e && e.value !== '' ? Number(e.value) : null; };
-  document.getElementById('dbp').setCustomValidity(v('sbp') != null && v('dbp') != null && v('sbp') <= v('dbp') ? '수축기 혈압은 이완기 혈압보다 높아야 해요.' : '');
+  document.getElementById('dbp').setCustomValidity(v('sbp') != null && v('dbp') != null && v('sbp') <= v('dbp') ? '높은 쪽 혈압은 낮은 쪽 혈압보다 커야 해요. 두 칸이 바뀌지 않았는지 확인해 주세요.' : '');
   const h = v('height'), w = v('weight'), bmi = h && w ? w / (h / 100) ** 2 : null;
   document.getElementById('weight').setCustomValidity(bmi != null && (bmi < 10 || bmi > 60) ? '키와 몸무게를 다시 확인해 주세요.' : '');
 }

@@ -136,7 +136,7 @@ function lineChart({ points, W, H, ref, refLabel, color, labelFont, big }) {
   const Y = v => padT + (hi - v) / (hi - lo) * (H - padT - padB);
   const fill = big ? '#FFFFFF' : '#F8F1E7';
   const r = big ? 6 : 5, sw = 2.5;
-  const s = [`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="수축기 혈압 ${vals.join(', ')}">`,
+  const s = [`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="높은 쪽 혈압 ${vals.join(', ')}">`,
     `<line x1="0" y1="${Y(ref).toFixed(1)}" x2="${W}" y2="${Y(ref).toFixed(1)}" stroke="#5A6B7A" stroke-width="1" stroke-dasharray="4 4"/>`,
     `<text x="${W}" y="${(Y(ref) - 6).toFixed(1)}" text-anchor="end" font-size="${big ? 12 : 11}" fill="#5A6B7A">${refLabel}</text>`];
   if (points.length > 1) s.push(`<polyline fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" points="${points.map((p, i) => X(i).toFixed(1) + ',' + Y(p.v).toFixed(1)).join(' ')}"/>`);
@@ -166,7 +166,7 @@ function renderList() {
   if (pts.length) {
     const last = pts[pts.length - 1], dl = last.v - pts[0].v;
     html += `<div class="bpcard">
-      <div class="top"><span>지금 수축기 혈압</span>${pts.length > 1 ? `<span class="delta">처음보다 ${dl > 0 ? '+' : dl < 0 ? '−' : ''}${Math.abs(dl)}</span>` : ''}</div>
+      <div class="top"><span>지금 높은 쪽 혈압(수축기)</span>${pts.length > 1 ? `<span class="delta">처음보다 ${dl > 0 ? '+' : dl < 0 ? '−' : ''}${Math.abs(dl)}</span>` : ''}</div>
       <div class="val"><b>${last.v}</b><i>mmHg</i><span>${esc(last.d)} 측정</span></div>
       ${lineChart({ points: pts, W: 318, H: 74, ref: 140, refLabel: '기준 140', color: '#5C86AC', labelFont: 12 })}
     </div>`;
