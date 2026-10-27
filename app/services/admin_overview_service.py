@@ -10,10 +10,11 @@ from datetime import date, datetime, time, timedelta, timezone
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import pii
 from app.core.config import settings
 from app.core.security import utcnow
 from app.models.access_log import AccessLog
-from app.models.challenge import ChallengeCycle
+from app.models.challenge import ChallengeCycle, ChallengeLog, CycleChallenge
 from app.models.consent import ConsentPolicy, UserConsent
 from app.models.deletion import AccountDeletionRequest
 from app.models.eligibility import EligibilityAssessment
@@ -22,6 +23,10 @@ from app.models.prediction import PredictionJob
 from app.models.survey import SurveyInstance
 from app.models.user import User
 from app.schemas.admin_overview import (
+    Journey,
+    JourneyStage,
+    RecordDays,
+    SkippedAccount,
     ConsentCount, DailyActivity, DeletionEvent, DeletionStat, FunnelStage, Overview, ServiceStatus,
 )
 from app.services import admin_service
@@ -82,6 +87,101 @@ async def funnel(db: AsyncSession) -> list[FunnelStage]:
         ))
         previous = n
     return stages
+
+
+# ---- 기간별 이탈 분석 ----
+# 위 funnel()은 "그 단계나 더 뒤 단계에 기록이 있으면 지나간 것"으로 센다(아래 단계가 위보다 많아지지 않게).
+# 그 방식은 단계를 건너뛴 사람을 앞 단계에도 넣어서, 예를 들어 분석 없이 챌린지를 시작한 사람을 분석 인원에 센다.
+# 여기서는 각 단계의 실제 기록으로 세고, 건너뛰고 온 사람과 앞 단계에서 넘어오지 않은 사람을 따로 보여 준다.
+JOURNEY = [
+    ("signup", "가입"),
+    ("eligibility", "대상 확인"),
+    ("health", "건강정보 입력"),
+    ("survey", "설문 제출"),
+    ("prediction", "분석 결과"),
+    ("challenge_started", "챌린지 시작"),
+    ("next_cycle", "다음 4주 시작"),
+]
+DEMO_MARK = "[체험 자동 채움]"   # 체험 자동 채움 기록의 note 앞머리(demo_autofill_service.MARK와 같음)
+
+
+def _kst_start(day: date) -> datetime:
+    """한국 날짜의 0시를 DB 시각(UTC, 시간대 없음)으로."""
+    return datetime.combine(day, time.min) - timedelta(hours=9)
+
+
+async def journey(db: AsyncSession, signup_from: date | None = None, signup_to: date | None = None,
+                  exclude_admins: bool = True) -> Journey:
+    conditions = [User.status == "active"]
+    if signup_from:
+        conditions.append(User.created_at >= _kst_start(signup_from))
+    if signup_to:
+        conditions.append(User.created_at < _kst_start(signup_to + timedelta(days=1)))
+    rows = (await db.execute(select(User.user_id, User.created_at, User.email_hash).where(*conditions))).all()
+    admin_hashes = {pii.email_hash(e) for e in settings.admin_email_set} if exclude_admins else set()
+    cohort = {r.user_id for r in rows if r.email_hash not in admin_hashes}
+    signed_up = {r.user_id: r.created_at for r in rows}
+
+    records = {
+        "signup": cohort,
+        "eligibility": await _user_ids(db, EligibilityAssessment.user_id, EligibilityAssessment.user_id.in_(cohort)),
+        "health": await _user_ids(db, HealthRecord.user_id, HealthRecord.user_id.in_(cohort)),
+        "survey": await _user_ids(db, SurveyInstance.user_id, SurveyInstance.user_id.in_(cohort), SurveyInstance.status == "submitted"),
+        "prediction": await _user_ids(db, PredictionJob.user_id, PredictionJob.user_id.in_(cohort), PredictionJob.status == "completed"),
+        "challenge_started": await _user_ids(db, ChallengeCycle.user_id, ChallengeCycle.user_id.in_(cohort)),
+        "next_cycle": await _user_ids(db, ChallengeCycle.user_id, ChallengeCycle.user_id.in_(cohort), ChallengeCycle.cycle_number >= 2),
+    }
+    stages, previous = [], None
+    for code, label in JOURNEY:
+        now = records[code]
+        if previous is None:
+            stages.append(JourneyStage(code=code, label=label, users=len(now), from_previous=None, skipped_previous=None, lost=None))
+        else:
+            stages.append(JourneyStage(code=code, label=label, users=len(now), from_previous=len(now & previous),
+                                       skipped_previous=len(now - previous), lost=len(previous - now)))
+        previous = now
+    middle = [s for s in stages[1:-1] if s.lost]      # 마지막 단계(다음 4주)는 시간이 지나야 늘어서 뺀다
+    if middle:
+        top = max(s.lost for s in middle)
+        for s in middle:
+            s.biggest_loss = s.lost == top
+
+    # 첫 4주에 본인이 직접 기록한 날짜 수(체험 자동 채움 기록은 뺌). 사람마다 가장 먼저 시작한 첫 4주 하나만 본다.
+    cycles = (await db.execute(
+        select(ChallengeCycle.cycle_id, ChallengeCycle.user_id, ChallengeCycle.status, ChallengeCycle.started_on)
+        .where(ChallengeCycle.user_id.in_(cohort), ChallengeCycle.cycle_number == 1)
+    )).all()
+    first: dict[str, tuple] = {}
+    for c in cycles:
+        if c.user_id not in first or c.started_on < first[c.user_id].started_on:
+            first[c.user_id] = c
+    own_days: dict[str, set] = {c.cycle_id: set() for c in first.values()}
+    if own_days:
+        logs = (await db.execute(
+            select(CycleChallenge.cycle_id, ChallengeLog.log_date, ChallengeLog.note)
+            .join(ChallengeLog, ChallengeLog.cycle_challenge_id == CycleChallenge.cycle_challenge_id)
+            .where(CycleChallenge.cycle_id.in_(list(own_days)))
+        )).all()
+        for cycle_id, log_date, note in logs:
+            if not (note or "").startswith(DEMO_MARK):
+                own_days[cycle_id].add(log_date)
+    buckets = {b: {"users": 0, "finished_4w": 0, "started_next": 0} for b in ("0일", "1일", "2일", "3일 이상")}
+    for c in first.values():
+        n = len(own_days[c.cycle_id])
+        b = buckets["3일 이상" if n >= 3 else f"{n}일"]
+        b["users"] += 1
+        b["finished_4w"] += c.status in ("completed", "incomplete")
+        b["started_next"] += c.user_id in records["next_cycle"]
+
+    skipped = sorted(records["challenge_started"] - records["prediction"], key=lambda u: signed_up[u])
+    return Journey(
+        signup_from=signup_from, signup_to=signup_to, exclude_admins=exclude_admins,
+        cohort=len(cohort), admins_excluded=len(rows) - len(cohort), stages=stages,
+        record_days=[RecordDays(bucket=k, **v) for k, v in buckets.items()],
+        challenge_without_prediction=[
+            SkippedAccount(user_id_short=u[-8:], signed_up_kst=(signed_up[u] + timedelta(hours=9)).strftime("%m-%d %H:%M"))
+            for u in skipped],
+    )
 
 
 async def consents(db: AsyncSession) -> list[ConsentCount]:
