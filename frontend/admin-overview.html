@@ -105,6 +105,71 @@ function renderFunnel(stages) {
 
 let days = 14;
 
+// ---- 기간별 이탈 분석 (실제 기록 기준) ----
+// 위 "체험 진행 현황"은 뒤 단계 기록이 있으면 앞 단계도 지난 것으로 센다(단계를 건너뛴 사람이 앞 단계에 섞임).
+// 여기서는 각 단계의 실제 기록으로 세고, 건너뛰고 온 사람과 앞 단계에서 넘어오지 않은 사람을 따로 보여 준다.
+const LOSS_COLOR = 'var(--danger)';
+const journey = { from: '2026-10-22', to: '2026-10-25', exclude: true };   // 처음엔 지인 체험 기간
+const journeyBox = el('div');
+
+function journeyControls() {
+  const from = el('input', { type: 'date', value: journey.from, 'aria-label': '가입일 시작' });
+  const to = el('input', { type: 'date', value: journey.to, 'aria-label': '가입일 끝' });
+  const ex = el('input', { type: 'checkbox', checked: journey.exclude });
+  const go = el('button', { class: 'btn', type: 'button', onclick: () => loadJourney(from.value, to.value, ex.checked) }, '보기');
+  const all = el('button', { class: 'btn', type: 'button', onclick: () => { from.value = ''; to.value = ''; loadJourney('', '', ex.checked); } }, '전체 기간');
+  return el('div', { class: 'card', style: 'display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:13px' },
+    '가입일', from, '~', to, el('label', {}, ex, ' 관리자(팀원) 계정 빼기'), go, all);
+}
+
+async function loadJourney(from, to, exclude) {
+  Object.assign(journey, { from, to, exclude });
+  const q = new URLSearchParams({ exclude_admins: exclude ? 'true' : 'false' });
+  if (from) q.set('from', from);
+  if (to) q.set('to', to);
+  journeyBox.replaceChildren(el('p', { class: 'meta' }, '불러오는 중이에요…'));
+  try {
+    const body = await apiCall('GET', `/admin/overview/journey?${q}`, undefined, '이탈 분석을 불러오지 못했어요');
+    renderJourney(body.data);
+  } catch (e) {
+    journeyBox.replaceChildren(el('p', { class: 'meta' }, friendlyError(e)));
+  }
+}
+
+function renderJourney(d) {
+  const top = Math.max(1, ...d.stages.map((s) => s.users));
+  const stageRows = d.stages.map((s) => {
+    const parts = [];
+    if (s.lost) parts.push(`앞 단계에서 ${s.lost}명 안 넘어옴`);
+    if (s.skipped_previous) parts.push(`${s.skipped_previous}명은 앞 단계 없이 옴`);
+    const note = s.from_previous == null ? '시작' : (parts.join(' · ') || '빠진 사람 없음');
+    return el('div', { class: 'bar-row', style: 'grid-template-columns:112px 1fr 190px' },
+      el('div', {}, s.label),
+      el('div', { class: 'track' }, el('div', { class: 'fill', style: `width:${Math.round((s.users / top) * 100)}%;${s.biggest_loss ? `background:${LOSS_COLOR}` : ''}` })),
+      el('div', { class: 'num' }, `${s.users}명`, el('small', { style: s.biggest_loss ? `color:${LOSS_COLOR}; font-weight:700` : '' }, note)));
+  });
+  const scope = `가입일 ${d.signup_from || '처음'} ~ ${d.signup_to || '지금'} · 대상 ${d.cohort}명${d.exclude_admins ? ` (관리자 ${d.admins_excluded}명 뺌)` : ''}`;
+  const daysTable = el('table', { class: 't' },
+    el('thead', {}, el('tr', {}, el('th', {}, '직접 기록일'), el('th', {}, '인원'), el('th', {}, '4주를 마침'), el('th', {}, '다음 4주 시작'))),
+    el('tbody', {}, ...d.record_days.map((r) => el('tr', {},
+      el('td', {}, r.bucket), el('td', {}, `${r.users}명`), el('td', {}, `${r.finished_4w}명`), el('td', {}, `${r.started_next}명`)))));
+  const skipped = d.challenge_without_prediction;
+  journeyBox.replaceChildren(
+    el('p', { class: 'meta' }, scope),
+    el('div', { class: 'card' }, ...stageRows),
+    el('p', { class: 'meta' }, '빨간색이 가장 많이 빠진 곳이에요(마지막 단계는 시간이 지나야 늘어서 뺐어요). "앞 단계 없이 옴"은 단계를 건너뛴 사람이에요.'),
+    el('h4', {}, '챌린지를 시작한 뒤'),
+    el('p', { class: 'meta' }, '첫 4주에 본인이 직접 기록한 날짜 수예요. 체험 자동 채움 기록은 빼고, 같은 날 여러 미션을 기록해도 하루로 세요.'),
+    el('div', { class: 'card' }, daysTable),
+    el('h4', {}, '분석 없이 챌린지를 시작한 계정'),
+    skipped.length
+      ? el('div', { class: 'card' },
+          el('p', { class: 'meta' }, `${skipped.length}개예요. 가입자 목록에서 회원 번호로 찾을 수 있어요. 4주 비교의 기준이 될 처음 분석이 없어요.`),
+          ...skipped.map((a) => el('div', { style: 'font-size:13px; padding:2px 0' }, `${a.user_id_short} · ${a.signed_up_kst} 가입`)))
+      : el('p', { class: 'meta' }, '없어요.'));
+}
+
+
 function renderActivity(list) {
   const top = Math.max(1, ...list.map((a) => a.active_users));
   const range = el('div', { class: 'range' }, ...[14, 30, 90].map((n) =>
@@ -168,6 +233,9 @@ function render(d) {
     el('h4', {}, '체험 진행 현황'),
     el('p', { class: 'meta' }, '단계별 사용자 수예요. 막대가 확 짧아지는 곳에서 멈춰요.'),
     renderFunnel(d.funnel),
+    el('h4', {}, '기간별 이탈 분석'),
+    el('p', { class: 'meta' }, '각 단계의 실제 기록으로 셌어요. 위 진행 현황은 뒤 단계에 기록이 있으면 앞 단계도 지난 것으로 세서, 단계를 건너뛴 사람이 앞 단계에 섞여요.'),
+    journeyControls(), journeyBox,
     el('h4', {}, '날짜별 활동'), el('p', { class: 'meta' }, '신규 가입과 로그인 수예요.'), renderActivity(d.activity),
     el('h4', {}, '동의 현황'), renderConsents(d.consents),
     el('h4', {}, '삭제 현황'), renderDeletions(d.deletions),
@@ -181,6 +249,7 @@ async function load() {
   try {
     const body = await apiCall('GET', `/admin/overview?days=${days}`, undefined, '운영 현황을 불러오지 못했어요');
     render(body.data);
+    loadJourney(journey.from, journey.to, journey.exclude);
   } catch (e) {
     const text = e.code === 'ADMIN_FORBIDDEN' ? '이 계정은 관리자가 아니에요.' : friendlyError(e);
     $content.replaceChildren(el('div', { class: 'lock' }, text, el('br'), el('a', { href: 'login.html' }, '관리자 계정으로 로그인하기')));
