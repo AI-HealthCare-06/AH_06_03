@@ -16,15 +16,11 @@
   #msg{min-height:20px; font-size:13px; margin:0 0 8px}
   #msg.err{color:var(--danger,#C97B6B); font-weight:700}
   .card{background:#fff; border:1px solid var(--sage-light); border-radius:14px; padding:12px 16px; margin-bottom:12px}
-  .bar-row{display:grid; grid-template-columns:112px 1fr 150px; gap:10px; align-items:center; padding:6px 0; font-size:13px}
+  .bar-row{display:grid; grid-template-columns:112px 1fr 92px; gap:10px; align-items:center; padding:6px 0; font-size:13px}
   .bar-row .track{background:var(--sage-light); border-radius:8px; height:14px; overflow:hidden}
   .bar-row .fill{background:var(--sage,#8FA894); height:100%; min-width:2px}
   .bar-row .num{text-align:right; white-space:nowrap}
   .bar-row .num small{color:var(--muted); display:block; font-size:11.5px}
-  .bar-row .num small.lost{color:var(--danger,#C0503E)}
-  .bar-row.worst{background:var(--notice,#E4F0F5); border-radius:10px; padding:6px 8px; margin:0 -8px}
-  .bar-row.worst .fill{background:var(--danger,#C0503E)}
-  .bottleneck{margin:0 0 8px; font-size:14px; color:var(--ink)}
   table.t{border-collapse:collapse; width:100%; font-size:12.5px}
   table.t th, table.t td{padding:7px 6px; border-bottom:1px solid var(--sage-light); text-align:right; white-space:nowrap}
   table.t th:first-child, table.t td:first-child{text-align:left}
@@ -100,20 +96,11 @@ function duration(sec) {
 
 function renderFunnel(stages) {
   const top = Math.max(1, ...stages.map((s) => s.users));
-  // 앞 단계에서 빠진 사람 수. 가장 많이 빠진 단계(동률이면 앞쪽)를 병목으로 표시한다.
-  const lost = stages.map((s, i) => (i === 0 ? 0 : Math.max(0, stages[i - 1].users - s.users)));
-  const worst = lost.indexOf(Math.max(...lost));
-  const hasLoss = lost[worst] > 0;
-  const rows = stages.map((s, i) => el('div', { class: 'bar-row' + (hasLoss && i === worst ? ' worst' : '') },
+  const rows = stages.map((s) => el('div', { class: 'bar-row' },
     el('div', {}, s.label),
     el('div', { class: 'track' }, el('div', { class: 'fill', style: `width:${Math.round((s.users / top) * 100)}%` })),
-    el('div', { class: 'num' }, `${s.users}명`,
-      el('small', {}, s.rate_of_previous == null ? '시작' : `앞 단계 대비 ${pct(s.rate_of_previous)}`),
-      i > 0 && lost[i] > 0 ? el('small', { class: 'lost' }, `${stages[i - 1].label}에서 ${lost[i]}명 빠짐`) : '')));
-  const summary = hasLoss
-    ? el('p', { class: 'bottleneck' }, el('b', {}, '가장 많이 빠진 곳: '), `${stages[worst - 1].label} → ${stages[worst].label} (${lost[worst]}명, 앞 단계 사람의 ${pct(lost[worst] / Math.max(1, stages[worst - 1].users))})`)
-    : el('p', { class: 'meta' }, '아직 빠진 사람이 없어요.');
-  return el('div', { class: 'card' }, summary, ...rows);
+    el('div', { class: 'num' }, `${s.users}명`, el('small', {}, s.rate_of_previous == null ? '시작' : `앞 단계 대비 ${pct(s.rate_of_previous)}`))));
+  return el('div', { class: 'card' }, ...rows);
 }
 
 let days = 14;
