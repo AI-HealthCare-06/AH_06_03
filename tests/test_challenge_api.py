@@ -272,3 +272,10 @@ async def test_server_blocks_cycle_after_program_ends(client, db_session, today)
     assert hist[0]["program_number"] == 2
     assert [item["cycle_number"] for item in hist[1:]] == [3, 2, 1]
     assert {item["program_number"] for item in hist[1:]} == {1}
+
+async def test_cycle_needs_analysis_first(client, db_session, today):
+    """분석(예측)을 마치지 않았으면 챌린지를 시작할 수 없다. 마치면 시작된다(bcb65673형: 화면 순서를 건너뛴 경우)."""
+    h = await make_user(db_session, measurements=SMOKER_DRINKER, answers=SURVEY, analyzed=False)
+    r = await client.post("/v1/challenges/cycles", json={"selected_code": "NA-1"}, headers=h)
+    assert r.status_code == 409 and r.json()["error"]["code"] == "ANALYSIS_REQUIRED"
+    assert (await client.get("/v1/challenges/cycles/current", headers=h)).status_code == 404   # 아무것도 만들어지지 않음
