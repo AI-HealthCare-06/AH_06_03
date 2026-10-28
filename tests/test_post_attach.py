@@ -9,6 +9,7 @@ from app.models.challenge import Challenge, ChallengeCycle, ChallengeLog, CycleC
 from app.models.common_challenge import CommonChallengeCert
 from app.models.user import User, UserProfile
 from app.services.challenge_service import today_kst
+from conftest import make_program
 
 pytestmark = pytest.mark.asyncio
 
@@ -39,7 +40,10 @@ async def start_cycle(Session, uid, today_done: bool, past_days: int):
     async with Session() as s:
         ch = (await s.execute(select(Challenge).order_by(Challenge.challenge_code))).scalars().first()
         today = today_kst()
-        cycle = ChallengeCycle(user_id=uid, cycle_number=1, started_on=today - timedelta(days=20),
+        program = make_program(uid)
+        s.add(program)
+        await s.flush()
+        cycle = ChallengeCycle(user_id=uid, program_id=program.program_id,cycle_number=1, started_on=today - timedelta(days=20),
                                ended_on=today + timedelta(days=7), status="active",
                                created_at=utcnow(), updated_at=utcnow())
         s.add(cycle)

@@ -8,7 +8,7 @@ from app.models.calendar import CalendarEntry, HealthTodo  # noqa: F401
 from app.models.deletion import AccountDeletionRequest  # noqa: F401
 from app.models.consent import ConsentPolicy, UserConsent  # noqa: F401
 from app.models.challenge import (  # noqa: F401
-    Challenge, ChallengeCategory, ChallengeCycle, ChallengeLevel, ChallengeLog, CycleChallenge, UserClassification,
+    Challenge, ChallengeCategory, ChallengeCycle, ChallengeLevel, ChallengeLog, CycleChallenge, UserClassification,ChallengeProgram
 )
 from app.models.eligibility import EligibilityAssessment  # noqa: F401
 from app.models.admin_audit import AdminAuditLog  # noqa: F401

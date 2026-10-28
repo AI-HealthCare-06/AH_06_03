@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.challenge import (
-    Challenge, ChallengeCategory, ChallengeCycle, ChallengeLevel, ChallengeLog, CycleChallenge, UserClassification,
+    Challenge, ChallengeCategory, ChallengeCycle, ChallengeLevel, ChallengeLog, CycleChallenge, UserClassification,ChallengeProgram
 )
 from app.models.health import HealthMeasurement, HealthRecord
 from app.models.prediction import Prediction, PredictionJob
@@ -81,6 +81,84 @@ async def get_cycles(db: AsyncSession, user_id: str) -> list[ChallengeCycle]:
     )
     return list(result.scalars().all())
 
+async def get_latest_program(db: AsyncSession, user_id: str) -> ChallengeProgram | None:
+    """사용자의 가장 최근 12주 프로그램."""
+    result = await db.execute(
+        select(ChallengeProgram)
+        .where(ChallengeProgram.user_id == user_id)
+        .order_by(ChallengeProgram.program_number.desc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+async def get_programs(db: AsyncSession, user_id: str) -> list[ChallengeProgram]:
+    """사용자의 모든 12주 프로그램. 최근 프로그램부터."""
+    result = await db.execute(
+        select(ChallengeProgram)
+        .where(ChallengeProgram.user_id == user_id)
+        .order_by(ChallengeProgram.program_number.desc())
+    )
+    return list(result.scalars().all())
+
+async def get_program_by_id(
+    db: AsyncSession,
+    program_id: str,
+) -> ChallengeProgram | None:
+    """프로그램 ID로 12주 프로그램을 찾는다."""
+    return await db.get(ChallengeProgram, program_id)
+
+async def get_program(
+    db: AsyncSession,
+    user_id: str,
+    program_number: int,
+) -> ChallengeProgram | None:
+    """프로그램 번호로 한 12주 프로그램을 찾는다."""
+    result = await db.execute(
+        select(ChallengeProgram)
+        .where(ChallengeProgram.user_id == user_id)
+        .where(ChallengeProgram.program_number == program_number)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_program_cycles(
+    db: AsyncSession,
+    program_id: str,
+) -> list[ChallengeCycle]:
+    """한 프로그램에 속한 사이클. 1·2·3차 순서."""
+    result = await db.execute(
+        select(ChallengeCycle)
+        .where(ChallengeCycle.program_id == program_id)
+        .order_by(ChallengeCycle.cycle_number)
+    )
+    return list(result.scalars().all())
+
+
+async def create_program(
+    db: AsyncSession,
+    user_id: str,
+    program_number: int,
+    model_a_version: str,
+    model_b_version: str,
+    model_updated_on: date | None,
+    change_note: str | None,
+    now: datetime,
+) -> ChallengeProgram:
+    """새 12주 프로그램을 만든다. 모델 버전은 여기서 고정한다."""
+    program = ChallengeProgram(
+        user_id=user_id,
+        program_number=program_number,
+        model_a_version=model_a_version,
+        model_b_version=model_b_version,
+        model_updated_on=model_updated_on,
+        change_note=change_note,
+        created_at=now,
+        updated_at=now,
+    )
+    db.add(program)
+    await db.flush()
+    return program
+
 
 async def get_cycle_missions(db: AsyncSession, cycle_id: str) -> list[tuple[CycleChallenge, Challenge]]:
     result = await db.execute(
@@ -125,11 +203,18 @@ async def get_log(db: AsyncSession, cycle_challenge_id: str, log_date: date) -> 
 
 
 async def create_cycle(
-    db: AsyncSession, user_id: str, cycle_number: int, started_on: date, ended_on: date, now: datetime
+    db: AsyncSession,
+    user_id: str,
+    program_id: str,
+    cycle_number: int,
+    started_on: date,
+    ended_on: date,
+    now: datetime,
 ) -> ChallengeCycle:
     cycle = ChallengeCycle(
         user_id=user_id, cycle_number=cycle_number, started_on=started_on, ended_on=ended_on,
         status="active", created_at=now, updated_at=now,
+        program_id=program_id,
     )
     db.add(cycle)
     await db.flush()

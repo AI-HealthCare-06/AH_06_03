@@ -1,12 +1,12 @@
 """챌린지 창구. W09 챌린지 선택 · W10 챌린지 수행."""
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status,Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apis.deps import get_current_user_id
 from app.core.db.databases import async_get_db
 from app.schemas.challenge import (
     CycleResult, CycleStartRequest, DemoFinishRequest, DemoStatus, CycleStopRequest, CycleSummary, LogRequest, LogResult, ReassessmentRequest,
-    ProgramReviewResult, RecommendationResult, ReviewResult,
+    ProgramReviewResult, ProgramStatus, RecommendationResult, ReviewResult,
 )
 from app.schemas.common import DataResponse
 from app.services import challenge_service
@@ -49,11 +49,42 @@ async def get_current_cycle(
 
 @router.get("/challenges/program/review", response_model=DataResponse[ProgramReviewResult])
 async def get_program_review(
+    program: int | None = Query(default=None, ge=1),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(async_get_db),
 ):
     """12주 프로그램의 처음(0주) ↔ 지금까지(마지막 재입력) 비교. 재입력이 하나도 없으면 404."""
-    return DataResponse(data=await challenge_service.get_program_review(db, user_id))
+    return DataResponse(
+    data=await challenge_service.get_program_review(db, user_id, program)
+)
+
+@router.get(
+    "/challenges/program/status",
+    response_model=DataResponse[ProgramStatus],
+)
+async def get_program_status(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(async_get_db),
+):
+    """가장 최근 12주 프로그램의 상태·모델 버전 안내."""
+    return DataResponse(
+        data=await challenge_service.get_program_status(db, user_id)
+    )
+
+
+@router.post(
+    "/challenges/program/restart",
+    response_model=DataResponse[ProgramStatus],
+)
+async def restart_program(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(async_get_db),
+):
+    """완료한 12주 프로그램 뒤에 새 12주를 만든다."""
+    return DataResponse(
+        data=await challenge_service.restart_program(db, user_id)
+    )
+
 
 @router.get("/challenges/cycles/{cycle_id}", response_model=DataResponse[CycleResult])
 async def get_cycle(

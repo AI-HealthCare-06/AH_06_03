@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.core.security import create_access_token
 from app.models.challenge import Challenge, ChallengeCycle, ChallengeLevel, ChallengeLog, CycleChallenge
 from app.models.user import User, UserProfile
+from tests.conftest import make_program
 
 pytestmark = pytest.mark.asyncio
 
@@ -31,7 +32,10 @@ async def make_account(Session, email: str) -> tuple[dict, str]:
 
 
 async def add_cycle(s, user_id: str, status: str, number: int = 1) -> ChallengeCycle:
-    cyc = ChallengeCycle(user_id=user_id, cycle_number=number, started_on=date(2026, 9, 1), ended_on=date(2026, 9, 28),
+    program = make_program(user_id, now=NOW)
+    s.add(program)
+    await s.flush()
+    cyc = ChallengeCycle(user_id=user_id, program_id=program.program_id,cycle_number=number, started_on=date(2026, 9, 1), ended_on=date(2026, 9, 28),
                          status=status, created_at=NOW, updated_at=NOW)
     s.add(cyc)
     await s.flush()

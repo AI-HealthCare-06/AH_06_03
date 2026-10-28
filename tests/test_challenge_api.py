@@ -231,6 +231,10 @@ async def test_data_export_includes_challenge_missions_and_logs(client, db_sessi
 async def test_server_blocks_cycle_after_program_ends(client, db_session, today):
     # 4주 × 3번(12주)을 마치면 화면을 거치지 않고 요청해도 4번째 사이클은 시작되지 않는다
     h = await make_user(db_session, measurements=SMOKER_DRINKER, answers=SURVEY)
+    # 프로그램이 없거나 12주를 마치지 않았다면 재시작할 수 없다.
+    r = await client.post("/v1/challenges/program/restart", headers=h)
+    assert r.status_code == 409
+    assert r.json()["error"]["code"] == "PROGRAM_NOT_COMPLETE"
     for n in range(3):
         today["d"] = DAY1 + timedelta(days=28 * n)
         r = await client.post("/v1/challenges/cycles", json={"selected_code": "NA-1"}, headers=h)
@@ -241,3 +245,30 @@ async def test_server_blocks_cycle_after_program_ends(client, db_session, today)
     assert r.status_code == 409 and r.json()["error"]["code"] == "CHALLENGE_PROGRAM_COMPLETE"
     hist = (await client.get("/v1/challenges/cycles", headers=h)).json()["data"]
     assert len(hist) == 3  # 4번째가 만들어지지 않음
+    assert {item["program_number"] for item in hist} == {1}
+
+    # 3차 사이클이 끝난 직후에만 새 12주를 시작할 수 있다.
+    status = (await client.get("/v1/challenges/program/status", headers=h)).json()["data"]
+    assert status["program_number"] == 1
+    assert status["complete"] is True
+    assert status["can_restart"] is True
+    assert status["model_version"] == "0.2.0"
+
+    # 새 프로그램 생성: 프로그램 번호는 증가하고, 사이클 번호는 다시 1부터다.
+    r = await client.post("/v1/challenges/program/restart", headers=h)
+    assert r.status_code == 200, r.text
+    restarted = r.json()["data"]
+    assert restarted["program_number"] == 2
+    assert restarted["complete"] is False
+    assert restarted["can_restart"] is False
+
+    rec = (await client.get("/v1/challenges/recommendations", headers=h)).json()["data"]
+    assert rec["cycle_number"] == 1
+    r = await client.post("/v1/challenges/cycles", json={"selected_code": "NA-1"}, headers=h)
+    assert r.status_code == 201, r.text
+    assert r.json()["data"]["cycle_number"] == 1
+
+    hist = (await client.get("/v1/challenges/cycles", headers=h)).json()["data"]
+    assert hist[0]["program_number"] == 2
+    assert [item["cycle_number"] for item in hist[1:]] == [3, 2, 1]
+    assert {item["program_number"] for item in hist[1:]} == {1}
