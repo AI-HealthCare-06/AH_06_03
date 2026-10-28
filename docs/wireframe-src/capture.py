@@ -57,7 +57,7 @@ CUR = ""
 def mock_admin(path):
     table = [("/users/me", A.ME, True), ("/admin/challenges", A.CATALOG, True), ("/admin/users", A.USERS, False), ("/admin/stats", A.STATS, False),
              ("/admin/audit", A.AUDIT, False), ("/admin/inquiries", A.INQ, False), ("/admin/guest-inquiries", A.GUEST, False),
-             ("/admin/notices", A.NOTICES, False), ("/admin/reports", A.REPORTS, False), ("/admin/overview", A.OVERVIEW, False), ("/admin/community/posts", A.POSTS, False),
+             ("/admin/notices", A.NOTICES, False), ("/admin/reports", A.REPORTS, False), ("/admin/overview/journey", A.JOURNEY, False), ("/admin/overview", A.OVERVIEW, False), ("/admin/community/posts", A.POSTS, False),
              ("/admin/common-challenges", A.CC, False)]
     for prefix, data, exact in table:
         if path == prefix or (not exact and path.startswith(prefix)):
