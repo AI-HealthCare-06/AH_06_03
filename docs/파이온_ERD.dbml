@@ -23,7 +23,7 @@
 //  - 삭제: factor_challenge_links(추천에 쓰지 않기로 결정, REQ-PRED-003 v2.0), ML 실험 기록 구역 4개 표(실험 기록은 서비스 DB가 아닌
 //          modeling/*/artifacts/metrics_*.json로 관리), Enum result_card_type·factor_link_status·dataset_split_type
 //  - [확인 요청: 백엔드] prediction_jobs의 비동기 칸(retryable·retry_of_job_id·started_at)은 요구사항 REQ-PRED-002 결정 후 정리
-// 기준: docs/요구사항_정의서_파이온.xlsx v1.9 (1차 멘토링 9/28 반영: 모델 B 복원, 허리둘레·한 번 음주량 입력)
+// 기준: docs/파이온_요구사항_정의서.xlsx v1.9 (1차 멘토링 9/28 반영: 모델 B 복원, 허리둘레·한 번 음주량 입력)
 //       + modeling/handoff/모델_연결_명세.md (모델 A v0.1.0 · 모델 B v0.1.0, 첫 번째 사이클)
 //  - v1.7에서 삭제된 LLM 예방행동 추천(REQ-RECO-001)은 제외
 //  - 식단 나트륨 분석(REQ-RECO-002)은 MVP 범위에 포함
