@@ -1,7 +1,7 @@
-"""PAEON 와이어프레임 v6 생성기.
+"""PAEON 와이어프레임 생성기.
 화면 정의는 screens_*.py 에 모아 두고, 이 파일이 같은 양식(왼쪽 모바일 390px 프레임 / 오른쪽 설명)으로 HTML을 만든다.
 관리자 화면은 컴퓨터에서 쓰는 화면이라 왼쪽 프레임을 넓게(720px) 그린다.
-실행: python docs/wireframe-src/build.py  →  docs/PAEON_와이어프레임_v6.html
+실행: python docs/wireframe-src/build.py  →  docs/파이온_와이어프레임.html
 """
 import html
 import importlib
@@ -11,7 +11,7 @@ import sys
 HERE = pathlib.Path(__file__).parent
 sys.path.insert(0, str(HERE))
 
-OUT = HERE.parent / "PAEON_와이어프레임_v6.html"
+OUT = HERE.parent / "파이온_와이어프레임.html"
 
 CSS = """
 :root{--blue:#5C86AC; --blue-l:#E4F0F5; --cream:#F8F1E7; --line:#E6DBCD; --ink:#243749; --muted:#6B7A88; --mid:#B8C4CE; --soft:#EEF1F4; --risk:#C0392B; --ok:#2E7D5B}
@@ -210,9 +210,9 @@ def build(parts):
         body.append(f'<div class="sect" id="{p["anchor"]}"><h2>{esc(p["title"])}</h2>' + (f'<p>{esc(p["desc"])}</p>' if p.get("desc") else "") + "</div>")
         body.extend(block(s) for s in p["screens"])
     return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PAEON 와이어프레임 v6</title><style>{CSS}</style></head><body>
+<title>PAEON 와이어프레임</title><style>{CSS}</style></head><body>
 <div class="picker"><span class="brand">PAEON</span>{nav}</div>
-<div class="intro" id="top"><h1>파이온 PAEON 와이어프레임 v6</h1>
+<div class="intro" id="top"><h1>파이온 PAEON 와이어프레임</h1>
 <p>모바일(390px) 화면은 왼쪽, 설명은 오른쪽. 관리자 화면은 컴퓨터에서 쓰는 화면이라 넓게 그렸어요.<br>
 화면 ID는 기존(W01~W12)을 유지하고 새 화면은 W13부터 이어 붙였어요. 요구사항 ID는 요구사항 정의서(v2.4) 기준이에요.<br>
 <b>v6 · 2026-10-26 · 서비스(지인 체험 배포 후) 화면 기준으로 전체 재작성.</b></p></div>

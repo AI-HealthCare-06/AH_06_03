@@ -57,6 +57,18 @@ OVERVIEW = {
     "deletions": {"deleted_accounts": 2, "consent_withdrawals": 1, "recent": [{"completed_at": "2026-10-24T05:00:00", "deleted_rows": 48}]},
     "status": {"server_started_at": "2026-10-24T01:00:00", "uptime_seconds": 90000, "db_ok": True, "db_revision": "f2c9d5e83b61", "admin_count": 2},
 }
+JOURNEY = {"signup_from": "2026-10-22", "signup_to": "2026-10-25", "exclude_admins": True, "cohort": 26, "admins_excluded": 4,
+           "stages": [
+               {"code": "signup", "label": "가입", "users": 26, "from_previous": None, "skipped_previous": None, "lost": None, "biggest_loss": False},
+               {"code": "eligibility", "label": "대상 확인", "users": 25, "from_previous": 25, "skipped_previous": 0, "lost": 1, "biggest_loss": False},
+               {"code": "health", "label": "건강정보 입력", "users": 22, "from_previous": 21, "skipped_previous": 1, "lost": 4, "biggest_loss": True},
+               {"code": "survey", "label": "설문 제출", "users": 21, "from_previous": 21, "skipped_previous": 0, "lost": 1, "biggest_loss": False},
+               {"code": "prediction", "label": "분석 결과", "users": 20, "from_previous": 20, "skipped_previous": 0, "lost": 1, "biggest_loss": False},
+               {"code": "challenge", "label": "챌린지 시작", "users": 19, "from_previous": 19, "skipped_previous": 0, "lost": 1, "biggest_loss": False},
+               {"code": "next", "label": "다음 4주 시작", "users": 4, "from_previous": 4, "skipped_previous": 0, "lost": 15, "biggest_loss": False}],
+           "record_days": [{"bucket": "0일", "users": 6, "finished_4w": 1, "started_next": 0}, {"bucket": "1일", "users": 3, "finished_4w": 1, "started_next": 0},
+                           {"bucket": "2일", "users": 2, "finished_4w": 0, "started_next": 0}, {"bucket": "3일 이상", "users": 8, "finished_4w": 7, "started_next": 4}],
+           "challenge_without_prediction": [{"user_id_short": "bcb65673", "signed_up_kst": "10/23 14:02"}]}
 BADGES = {"total": 8, "earned_count": 4, "next": {"label": "7일 연속", "hint": "7일 연속 미션을 모두 마쳐요"}, "badges": [
     {"code": "first", "label": "첫 인증", "group": "streak", "earned": True, "progress": 1, "target": 1, "hint": "처음 인증해요"},
     {"code": "streak_3", "label": "3일 연속", "group": "streak", "earned": True, "progress": 3, "target": 3, "hint": "3일 연속"},
