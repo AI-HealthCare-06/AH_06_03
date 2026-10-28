@@ -62,10 +62,8 @@
                   <option value="nate.com">nate.com</option>
                   <option value="outlook.com">outlook.com</option>
                   <option value="icloud.com">icloud.com</option>
-                  <option value="">직접 입력</option>
                 </select>
               </div>
-              <input id="email-custom" type="text" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="직접 입력 (예: company.co.kr)" hidden>
               <input id="email" type="hidden">
             </div>
             <div class="field">
@@ -212,15 +210,18 @@ function clearError() {
   errEl.style.display = 'none';
 }
 
-// 이메일: 아이디는 직접 쓰고 뒷부분은 목록에서 고르거나 직접 입력한다(도메인 오타로 인한 중복 가입 방지)
-const emailId = document.getElementById('email-id'), emailDomain = document.getElementById('email-domain'), emailCustom = document.getElementById('email-custom');
+// 이메일: 아이디는 직접 쓰고 뒷부분은 목록에서 고른다(도메인 오타로 인한 중복 가입 방지)
+const emailId = document.getElementById('email-id'), emailDomain = document.getElementById('email-domain');
 function buildEmail() {
   const id = emailId.value.trim().replace(/@.*$/, '');   // 실수로 @까지 붙여 넣어도 앞부분만
-  const domain = (emailDomain.value || emailCustom.value).trim().replace(/^@/, '').toLowerCase();
-  return id && /^[^\s@]+\.[^\s@]{2,}$/.test(domain) ? id + '@' + domain : '';
+  return id ? id + '@' + emailDomain.value : '';
 }
-emailDomain.addEventListener('change', () => { emailCustom.hidden = emailDomain.value !== ''; if (!emailCustom.hidden) emailCustom.focus(); });
-emailId.addEventListener('input', () => { if (emailId.value.includes('@')) { const [i, d] = emailId.value.split('@'); emailId.value = i; const opt = [...emailDomain.options].find(o => o.value === d.toLowerCase()); if (opt) emailDomain.value = opt.value; else if (d) { emailDomain.value = ''; emailCustom.hidden = false; emailCustom.value = d; } } });
+emailId.addEventListener('input', () => {   // 전체 주소를 붙여 넣으면 목록에 있는 도메인은 자동 선택
+  if (!emailId.value.includes('@')) return;
+  const [i, d] = emailId.value.split('@'); emailId.value = i;
+  const opt = [...emailDomain.options].find(o => o.value === d.toLowerCase());
+  if (opt) emailDomain.value = opt.value;
+});
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
