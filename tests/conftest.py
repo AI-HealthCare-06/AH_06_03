@@ -27,6 +27,7 @@ from app.models.challenge import (
     ChallengeProgram,
 )
 from app.models.health import HealthInputSchema, HealthMeasurement, HealthRecord
+from app.models.prediction import PredictionJob
 from app.models.survey import SurveyInstance, SurveyOption, SurveyQuestion, SurveyResponse, SurveyVersion
 from app.models.user import User, UserProfile
 
@@ -94,7 +95,7 @@ async def client(db_session):
 
 
 async def make_user(Session, *, sex="male", birth=date(1981, 3, 1), measurements: dict, answers: dict | None = None,
-                    exam=date(2026, 10, 8)) -> dict:
+                    exam=date(2026, 10, 8), analyzed: bool = True) -> dict:
     """회원 + 건강기록 + (선택) 설문 답안지를 만들고 인증 헤더를 돌려준다.
     measurements: {"SMOKING": "current", "HEIGHT": 175, ...}
     answers: {"N0": ("o30", 30), "P1": ("none", None), "P2": (None, 5000), ...}
@@ -138,6 +139,9 @@ async def make_user(Session, *, sex="male", birth=date(1981, 3, 1), measurements
                 await s.flush()
                 s.add(SurveyResponse(survey_instance_id=inst.survey_instance_id, question_id=q.question_id,
                                      option_id=o.option_id, created_at=now))
+        if analyzed:   # 챌린지는 분석을 마친 사람만 시작한다(ANALYSIS_REQUIRED). 시험 사용자는 기본으로 분석을 마친 상태
+            s.add(PredictionJob(user_id=user.user_id, health_record_id=rec.health_record_id, request_type="initial",
+                                status="completed", requested_at=now, completed_at=now))
         await s.commit()
         return {"Authorization": f"Bearer {create_access_token(user.user_id)}"}
 

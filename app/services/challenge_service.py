@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import AppError
 from app.core.security import utcnow
 from app.models.challenge import ChallengeCycle
-from app.repositories import challenge_repository, health_repository, survey_repository, user_repository
+from app.repositories import challenge_repository, health_repository, prediction_repository, survey_repository, user_repository
 from app.core.config import settings
 from app.schemas.challenge import (
     AnswerOption, CycleMission, CycleResult, CycleSummary, DemoInfo, DemoStatus, ExcludedItem, FixedSlot, LogResult, MissionCard,
@@ -228,6 +228,9 @@ async def start_cycle(db: AsyncSession, user_id: str, selected_code: str) -> Cyc
         )
 
     facts, record, instance, c, rec = await _build_recommendation(db, user_id)
+    # 분석(예측)을 마친 사람만 시작한다. 화면 순서를 건너뛰어도(주소로 바로 들어와도) 분석 결과 없이 챌린지가 돌지 않게 서버에서 막는다.
+    if await prediction_repository.get_latest_completed_job(db, user_id) is None:
+        raise AppError(409, "ANALYSIS_REQUIRED", "분석을 먼저 마쳐야 챌린지를 시작할 수 있어요.")
     if selected_code not in rec.candidates:
         raise AppError(422, "CHALLENGE_SELECTION_INVALID", "선택할 수 없는 미션입니다.")
 
