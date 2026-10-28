@@ -1,5 +1,9 @@
 // =====================================================================
-// PAEON 전수 ERD — dbdiagram.io DBML (v8.2, 2026-10-28 구현 테이블 추가 · 김이슬 / v8.1, 2026-10-23 모델 영역 개정 · 김혜성 / v8: 요구사항 v1.9 + 모델_연결_명세 v0.1.0 반영)
+// PAEON 전수 ERD — dbdiagram.io DBML (v8.3, 2026-10-28 실제 DB 대조 · 김이슬 / v8.2, 2026-10-28 구현 테이블 추가 · 김이슬 / v8.1, 2026-10-23 모델 영역 개정 · 김혜성 / v8: 요구사항 v1.9 + 모델_연결_명세 v0.1.0 반영)
+//
+// [v8.3 변경] 실제 서버 DB(main, 53개 표)와 칸 단위로 대조한 체크리스트(ERD_대조_체크리스트_1028)를 반영.
+//  - 실제 DB에 없는 설계만 표 28개를 [POST-MVP]로 바꿈. 이제 '실제로 만든 표 53개 + 만들지 않은 설계 41개(점선)'.
+//  - 칸 차이 25칸(실제에만 13: 추가, ERD에만 12: 삭제), 제약 차이 5칸(NOT NULL·외래 키)을 실제에 맞춤.
 //
 // [v8.2 변경] 서버에 구현됐지만 ERD에 없던 표 27개를 새 영역 9개로 추가(커뮤니티·파티·파이·캐릭터·공통 챌린지·12주 프로그램·캘린더·
 //  문의·공지·웹 푸시·접속/관리자 기록). 기준: repo-be app/models. challenge_cycles에 program_id·cycle_number 추가.
@@ -353,12 +357,14 @@ Enum rejection_reason {
 // =====================================================================
 Table users {
   user_id uuid [pk]
-  email varchar(255) [not null, unique, note: '탈퇴 시 deleted+{user_id}@invalid 로 익명화']
   password_hash varchar(255) [not null, note: 'NFR-SEC-001. 탈퇴 시 무효값으로 교체']
   status user_status [not null, default: 'active']
   created_at timestamptz [not null]
-  updated_at timestamptz [not null]
+  updated_at timestamptz
   deleted_at timestamptz
+  email_enc text [not null, note: 'v8.3: 구현 칸. POST /auth/signup(이메일 암호화), 관리자 이메일 보기 / 발표 사례 3']
+  email_hash char(64) [not null, note: 'v8.3: 구현 칸. 로그인·가입 중복 확인(지문으로 찾기) / 발표 사례 3']
+  suspended_until timestamptz [note: 'v8.3: 구현 칸. POST /admin/users/{id}/suspend']
   Note: 'REQ-USER-001~003, NFR-SEC-001. 물리 삭제하지 않는 tombstone 행.'
 }
 
@@ -367,7 +373,7 @@ Table user_profiles {
   sex sex_type [note: 'W04에서 수집하므로 가입 직후에는 NULL 가능']
   birth_date date [not null, note: '만 14세 미만 판별(REQ-CONSENT-003)·적용 연령 판별(REQ-ELIG-001)']
   created_at timestamptz [not null]
-  updated_at timestamptz [not null]
+  updated_at timestamptz
   Note: 'REQ-HEALTH-001. 이름·전화번호는 수집하지 않는다.'
 }
 
@@ -396,7 +402,7 @@ Table account_verification_tokens {
   Indexes {
     (email, purpose)
   }
-  Note: 'REQ-USER-004.'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 이메일 인증 없음. REQ-USER-004.'
 }
 
 Table account_deletion_requests {
@@ -425,7 +431,7 @@ Table data_processing_tasks {
   Indexes {
     (deletion_request_id, data_domain) [unique]
   }
-  Note: 'REQ-USER-003, NFR-SEC-003. 탈퇴 1건 = 도메인별 task 1건.'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 탈퇴는 한 번에 처리, 작업 표 없음. REQ-USER-003, NFR-SEC-003. 탈퇴 1건 = 도메인별 task 1건.'
 }
 
 
@@ -455,6 +461,7 @@ Table user_consents {
   status consent_status [not null, default: 'agreed']
   consented_at timestamptz [not null]
   withdrawn_at timestamptz
+  deletion_summary json [note: 'v8.3: 구현 칸. DELETE /users/me/consents/{id} 응답의 지운 내역']
   Indexes {
     (user_id, policy_id)
   }
@@ -465,7 +472,6 @@ Table user_consents {
 Table guardian_consent_verifications {
   guardian_verification_id uuid [pk]
   user_id uuid [not null]
-  policy_id uuid [not null, ref: > consent_policies.policy_id]
   guardian_name_enc varchar(500) [note: '암호화 저장. 파기 시 NULL']
   guardian_contact_enc varchar(500) [note: '암호화 저장(휴대폰/이메일). 파기 시 NULL']
   verification_method varchar(30) [not null, note: 'sms, email 등']
@@ -474,6 +480,7 @@ Table guardian_consent_verifications {
   verified_at timestamptz
   purge_due_at timestamptz [not null, note: 'collected_at + 5일']
   purged_at timestamptz
+  guardian_relation varchar(14) [not null, note: 'v8.3: 구현 칸. POST /auth/signup 요청 guardian_relation']
   Indexes {
     user_id
     (verification_status, purge_due_at) [note: '파기 배치 조회']
@@ -513,7 +520,7 @@ Table eligibility_answers {
   Indexes {
     (assessment_id, question_code) [unique]
   }
-  Note: '''REQ-ELIG-002,004. 응급 증상 응답은 저장하지 않는다(NFR-SEC-003 최소 수집).
+  Note: '''[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 대상 확인은 eligibility_assessments 한 표에. REQ-ELIG-002,004. 응급 증상 응답은 저장하지 않는다(NFR-SEC-003 최소 수집).
 응급 여부는 eligibility_assessments.emergency_flag·result_code·emergency_acknowledged_at으로만 남아 NFR-SAFE-004 차단과 부적합 사유 표시에 충분하다.
 마이그레이션(선택): question_code를 허용 목록으로 제한하는 CHECK 또는 서비스 검증.'''
 }
@@ -596,7 +603,7 @@ Table health_validation_errors {
   error_code varchar(50) [not null]
   message varchar(255) [not null]
   resolved_at timestamptz
-  Note: 'REQ-HEALTH-003. 필수값·숫자·단위·허용 범위 필드 오류(API 422).'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 검증 오류는 응답(422)으로만. REQ-HEALTH-003. 필수값·숫자·단위·허용 범위 필드 오류(API 422).'
 }
 
 Table uploaded_file_processing_jobs {
@@ -614,7 +621,7 @@ Table uploaded_file_processing_jobs {
     user_id
     (file_purpose, status, created_at) [note: 'NFR-OPS-006 인식 실패율 집계']
   }
-  Note: 'REQ-HEALTH-006, REQ-RECO-002, NFR-SEC-005, NFR-OPS-006. 원본 이미지는 처리 후 지체 없이 삭제.'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 위와 같음. REQ-HEALTH-006, REQ-RECO-002, NFR-SEC-005, NFR-OPS-006. 원본 이미지는 처리 후 지체 없이 삭제.'
 }
 
 Table ocr_extraction_results {
@@ -628,7 +635,7 @@ Table ocr_extraction_results {
   Indexes {
     (file_job_id, metric_code) [unique]
   }
-  Note: 'REQ-HEALTH-006. 인식된 칸만 폼에 채우고, 실패 시 퀵 폼으로 전환.'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 검진결과지 OCR 미구현(POST-MVP). REQ-HEALTH-006. 인식된 칸만 폼에 채우고, 실패 시 퀵 폼으로 전환.'
 }
 
 
@@ -655,6 +662,8 @@ Table survey_questions {
   answer_type survey_answer_type [not null, default: 'single_select', note: '모든 문항은 선택지형(REQ-HEALTH-005)']
   display_order int [not null]
   required boolean [not null, default: true]
+  num_max int [note: 'v8.3: 구현 칸. 위와 같음']
+  num_min int [note: 'v8.3: 구현 칸. GET /surveys/{type}/active 문항 범위']
   Indexes {
     (survey_version_id, question_code) [unique]
   }
@@ -667,7 +676,6 @@ Table survey_options {
   option_text varchar(255) [not null]
   numeric_score decimal(8,2)
   model_value_code varchar(50) [note: '모델 B v0.2.0부터 생활습관 설문은 모델 입력이 아님 → 설문 v2 문항은 NULL. (설문 v1의 BREAKFAST·EATOUT·AEROBIC 값은 v0.1.0 기록용)']
-  derived_value jsonb [note: '분류 코드 등 보조값. 나트륨 지수 문항 점수는 numeric_score(가이드 §1.2)']
   display_order int [not null]
   Indexes {
     (question_id, option_code) [unique]
@@ -683,7 +691,7 @@ Table survey_question_rules {
   source_question_id uuid [not null, ref: > survey_questions.question_id]
   source_option_id uuid [not null, ref: > survey_options.option_id]
   rule_type varchar(20) [not null, default: 'show_when']
-  Note: 'REQ-HEALTH-005. 앞 문항 답에 따른 조건부 건너뛰기. 옵션은 FK로 참조.'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 문항 건너뛰기 규칙 없음. REQ-HEALTH-005. 앞 문항 답에 따른 조건부 건너뛰기. 옵션은 FK로 참조.'
 }
 
 Table survey_instances {
@@ -691,7 +699,6 @@ Table survey_instances {
   user_id uuid [not null]
   survey_version_id uuid [not null, ref: > survey_versions.survey_version_id]
   health_record_id uuid
-  cycle_id uuid [note: 'interim_lifestyle 재설문일 때 대상 사이클']
   status survey_instance_status [not null, default: 'started']
   started_at timestamptz [not null]
   submitted_at timestamptz
@@ -706,6 +713,8 @@ Table survey_responses {
   survey_instance_id uuid [not null]
   question_id uuid [not null, ref: > survey_questions.question_id]
   created_at timestamptz [not null]
+  option_id uuid [note: 'v8.3: 구현 칸. POST /survey-instances/{id}/responses']
+  value_num decimal(12,4) [note: 'v8.3: 구현 칸. 위와 같음(숫자 답)']
   Indexes {
     (survey_instance_id, question_id) [unique]
   }
@@ -718,7 +727,7 @@ Table survey_response_options {
   Indexes {
     (response_id, option_id) [pk]
   }
-  Note: '''single_select는 1행, multi_select는 N행.
+  Note: '''[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 답은 survey_responses.option_id 한 칸. single_select는 1행, multi_select는 N행.
 마이그레이션: option이 해당 question 소속인지 트리거 또는 서비스 로직으로 검증.'''
 }
 
@@ -774,7 +783,7 @@ Table diseases {
   disease_code varchar(50) [not null, unique]
   disease_name varchar(100) [not null]
   active boolean [not null, default: true]
-  Note: 'NFR-ARCH-002. 고혈압 이후 질환 확장 기준.'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 질환 확장 미구현. NFR-ARCH-002. 고혈압 이후 질환 확장 기준.'
 }
 
 Table model_definitions {
@@ -851,10 +860,7 @@ Table prediction_jobs {
   survey_instance_id uuid [note: 'v8.1: 구현 칸. 함께 쓴 생활습관 설문']
   request_type prediction_request_type [not null]
   status job_status [not null, default: 'queued']
-  retryable boolean [not null, default: false, note: 'REQ-PRED-002: 실패 시 재시도 가능 여부 표시']
-  retry_of_job_id uuid [ref: > prediction_jobs.prediction_job_id]
   requested_at timestamptz [not null]
-  started_at timestamptz
   completed_at timestamptz
   failure_reason text
   input_snapshot json [note: 'v8.1: 예측에 넣은 입력 그대로. 4주 재예측 때 나이 유지, 모델 버전이 다르면 이 값으로 지금 모델로 다시 계산해 비교(NFR-ARCH-004)']
@@ -959,10 +965,8 @@ Table challenge_categories {
   category_id uuid [pk]
   category_code varchar(50) [not null, unique]
   category_name varchar(100) [not null]
-  description text
   display_order int [not null]
   active boolean [not null, default: true]
-  catalog_status catalog_status [not null, default: 'mvp', note: '미션 카탈로그 시트 상태. v2.1: 7개 카테고리(SMOKING·ALCOHOL·SODIUM·ACTIVITY·EATOUT·BREAKFAST·WEIGHT) 모두 mvp (가이드 §3.1)']
   Note: 'REQ-CHAL-001(5~6개), NFR-ARCH-005'
 }
 
@@ -998,7 +1002,7 @@ Table challenge_eligibility_rules {
   rule_expression jsonb [not null]
   priority int [not null]
   active boolean [not null, default: true]
-  Note: '''REQ-CHAL-001,008,009; NFR-ML-006, NFR-SAFE-007(복약자 문구 제한 규칙 포함 가능).
+  Note: '''[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 규칙은 서버 코드(challenge_rules.py). REQ-CHAL-001,008,009; NFR-ML-006, NFR-SAFE-007(복약자 문구 제한 규칙 포함 가능).
 replace 규칙 시드(REQ-CHAL-008 v2.0): 금연 칸 비해당(SMOKING≠current)·절주 칸 비해당(ALCOHOL_FREQ ∈ never_lifetime·none_past_year 또는 ALCOHOL_AMOUNT=1_2) → 해당 고정 칸을
   대체 순서 high_sodium → low_activity → frequent_eatout → breakfast_skip의 첫 카테고리 대표 미션으로 채움 (두 칸은 다른 카테고리, 없으면 비움). 모델 출력은 쓰지 않음.
 NFR-ML-006 v2.0: 미션은 임상시험·메타분석·정부 지침 근거가 있는 것만 채택 (가이드 §4, 부록 B).'''
@@ -1014,8 +1018,9 @@ Table user_classifications {
   survey_instance_id uuid [note: '설문 기반 분류일 때']
   health_record_id uuid [note: '건강정보 입력 기반 분류일 때(흡연·음주·복약·체중)']
   classification_code varchar(50) [not null, note: '건강정보 입력: smoker(일반담배 현재 흡연), drinker(한 번 3잔 이상), bp_160_100, on_bp_medication, overweight(BMI 25 이상, HEIGHT·WEIGHT로 서버 계산) / 설문: high_sodium(나트륨 지수 150 초과 또는 지수 적용 범위 밖), low_activity, has_baseline_steps, frequent_eatout(외식 주 5회 이상+high_sodium), breakfast_skip, bp_measurable (조건은 가이드 §2.2)']
-  classification_value jsonb
+  classification_value jsonb [not null]
   classified_at timestamptz [not null]
+  cycle_id uuid [not null, note: 'v8.3: 구현 칸']
   Indexes {
     (survey_instance_id, classification_code) [unique]
     (health_record_id, classification_code) [unique]
@@ -1036,7 +1041,7 @@ Table challenge_recommendation_batches {
   Indexes {
     (user_id, created_at)
   }
-  Note: 'REQ-CHAL-001, REQ-FEED-001,003. 추천 결과 조회·버전 추적.'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 추천은 요청할 때 계산(GET /challenges/recommendations), 저장 안 함. REQ-CHAL-001, REQ-FEED-001,003. 추천 결과 조회·버전 추적.'
 }
 
 Table challenge_recommendation_categories {
@@ -1048,7 +1053,7 @@ Table challenge_recommendation_categories {
   Indexes {
     (recommendation_batch_id, category_id) [unique]
   }
-  Note: 'REQ-CHAL-001: 여러 카테고리 후보를 함께 제시한 순서와 근거. 사용자가 카테고리를 고르는 단계는 없음.'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 위와 같음. REQ-CHAL-001: 여러 카테고리 후보를 함께 제시한 순서와 근거. 사용자가 카테고리를 고르는 단계는 없음.'
 }
 
 Table challenge_recommendation_candidates {
@@ -1063,7 +1068,7 @@ Table challenge_recommendation_candidates {
   Indexes {
     (recommendation_batch_id, challenge_id) [unique]
   }
-  Note: '추천·제외 미션 모두 저장. 이전 사이클 완료 챌린지는 excluded(REQ-CHAL-002).'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 위와 같음. 추천·제외 미션 모두 저장. 이전 사이클 완료 챌린지는 excluded(REQ-CHAL-002).'
 }
 
 Table challenge_recommendation_reasons {
@@ -1073,7 +1078,7 @@ Table challenge_recommendation_reasons {
   factor_code varchar(50)
   message varchar(500) [not null]
   display_order int [not null]
-  Note: 'REQ-PRED-003,006. 결과 화면(카드 3 포함)에 표시하는 챌린지 추천 근거.'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 위와 같음. REQ-PRED-003,006. 결과 화면(카드 3 포함)에 표시하는 챌린지 추천 근거.'
 }
 
 
@@ -1085,7 +1090,6 @@ Table challenge_cycles {
   user_id uuid [not null]
   program_id uuid [not null, note: '12주 프로그램(challenge_programs). 서버 구현 기준']
   cycle_number int [not null, note: '프로그램 안에서 1~3']
-  recommendation_batch_id uuid
   started_on date [not null]
   ended_on date [not null, note: 'started_on + 27일']
   status cycle_status [not null, default: 'active']
@@ -1105,9 +1109,7 @@ Table cycle_challenges {
   cycle_challenge_id uuid [pk]
   cycle_id uuid [not null]
   challenge_id uuid [not null, ref: > challenges.challenge_id]
-  recommendation_candidate_id uuid
   selection_type selection_type [not null]
-  removable boolean [not null, default: true, note: 'REQ-CHAL-003: 요약 화면의 미션별 해제 가능 여부']
   difficulty difficulty_level [not null, note: 'REQ-CHAL-009: 사용자별 적용 난이도']
   weekly_target int [not null, note: '시작 시점 challenge_levels 값 스냅샷']
   target_config jsonb [note: '음주 허용 잔 수 등 스냅샷']
@@ -1128,7 +1130,7 @@ Table challenge_target_weeks {
   Indexes {
     (cycle_challenge_id, week_number) [unique]
   }
-  Note: '''REQ-CHAL-004,006, REQ-DASH-008. 주간 목표(달성률 분모).
+  Note: '''[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 주차 목표는 계산해서 보여 줌. REQ-CHAL-004,006, REQ-DASH-008. 주간 목표(달성률 분모).
 달성 수(분자)는 저장하지 않고 challenge_logs에서 status=completed 건수로 계산
 (뷰 v_challenge_week_progress 권장) → 당일 수정 시 동기화 문제 없음.'''
 }
@@ -1143,6 +1145,7 @@ Table challenge_logs {
   note text
   recorded_at timestamptz [not null]
   updated_at timestamptz [not null]
+  answer varchar(30) [note: 'v8.3: 구현 칸. PUT /challenges/cycles/current/logs/{code} 요청 answer']
   Indexes {
     (cycle_challenge_id, log_date) [unique]
   }
@@ -1156,7 +1159,7 @@ Table challenge_proofs {
   file_job_id uuid
   proof_data jsonb
   submitted_at timestamptz [not null]
-  Note: 'REQ-CHAL-004, challenge_proof_submitted 이벤트.'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 인증 사진은 커뮤니티 글 사진으로. REQ-CHAL-004, challenge_proof_submitted 이벤트.'
 }
 
 
@@ -1170,7 +1173,7 @@ Table evidence_sources {
   source_url varchar(500)
   citation_text text [not null]
   verified_at timestamptz
-  Note: 'REQ-RECO-002. 식약처 공개 데이터 출처(식단 나트륨 분석의 food_items 기준).'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 위와 같음. REQ-RECO-002. 식약처 공개 데이터 출처(식단 나트륨 분석의 food_items 기준).'
 }
 
 Table food_items {
@@ -1183,7 +1186,7 @@ Table food_items {
   Indexes {
     food_name
   }
-  Note: 'REQ-RECO-002. 식약처 공개 영양성분 데이터 기준.'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 식단 분석 미구현(POST-MVP). REQ-RECO-002. 식약처 공개 영양성분 데이터 기준.'
 }
 
 Table meal_analysis_results {
@@ -1200,7 +1203,7 @@ Table meal_analysis_results {
   Indexes {
     (user_id, analyzed_at)
   }
-  Note: 'REQ-RECO-002. 이미지 분석 실패 시 직접 입력(manual)으로 대체.'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 위와 같음. REQ-RECO-002. 이미지 분석 실패 시 직접 입력(manual)으로 대체.'
 }
 
 Table meal_analysis_foods {
@@ -1211,6 +1214,7 @@ Table meal_analysis_foods {
   serving_count decimal(8,2)
   sodium_mg_estimated decimal(12,2)
   confidence decimal(5,4)
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 위와 같음.'
 }
 
 
@@ -1224,7 +1228,7 @@ Table notification_preferences {
   morning_time time
   timezone varchar(50) [not null, default: 'Asia/Seoul']
   updated_at timestamptz [not null]
-  Note: 'REQ-NOTI-001~002'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 실제는 push_settings. REQ-NOTI-001~002'
 }
 
 Table push_devices {
@@ -1239,7 +1243,7 @@ Table push_devices {
   Indexes {
     user_id
   }
-  Note: 'REQ-NOTI-001. HTTPS + 사용자 동작으로 받은 권한이 있을 때만 웹 푸시.'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 실제는 push_subscriptions. REQ-NOTI-001. HTTPS + 사용자 동작으로 받은 권한이 있을 때만 웹 푸시.'
 }
 
 Table notification_templates {
@@ -1252,6 +1256,7 @@ Table notification_templates {
   Indexes {
     (notification_type, version) [unique]
   }
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 알림 문구는 서버 코드에 있음.'
 }
 
 Table reevaluation_schedules {
@@ -1267,7 +1272,7 @@ Table reevaluation_schedules {
     (status, due_at)
     (user_id, schedule_type)
   }
-  Note: 'REQ-HEALTH-008, REQ-DASH-011, NFR-OPS-005. 두 주기 스케줄을 schedule_type으로 분리.'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 재평가 알림은 만들지 않음. REQ-HEALTH-008, REQ-DASH-011, NFR-OPS-005. 두 주기 스케줄을 schedule_type으로 분리.'
 }
 
 Table notification_deliveries {
@@ -1283,7 +1288,7 @@ Table notification_deliveries {
   Indexes {
     (status, scheduled_at)
   }
-  Note: '''REQ-NOTI-001~002, REQ-CHAL-004, NFR-OPS-005. 실패 시 재시도.
+  Note: '''[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 발송 내역은 저장하지 않음. REQ-NOTI-001~002, REQ-CHAL-004, NFR-OPS-005. 실패 시 재시도.
 챌린지 알림은 사용자당 하루 1회 이하(REQ-CHAL-004).
 마이그레이션: UNIQUE (user_id, (scheduled_at AT TIME ZONE 'Asia/Seoul')::date) WHERE 템플릿 유형 = morning_challenge (트리거 또는 서비스 로직)'''
 }
@@ -1310,7 +1315,7 @@ Table feedbacks {
     (user_id, created_at)
     feedback_type
   }
-  Note: '''REQ-FEED-001~003.
+  Note: '''[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 체험 의견은 구글 폼. REQ-FEED-001~003.
 마이그레이션: CHECK — feedback_type에 해당하지 않는 대상 FK는 모두 NULL
   (해당 FK는 생성 시 필수, 대상 삭제 후에는 SET NULL로 비어 통계만 유지)
   prediction → prediction_id / recommendation → recommendation_batch_id
@@ -1331,7 +1336,7 @@ Table analytics_events {
   Indexes {
     (event_name, occurred_at)
   }
-  Note: '지표·이벤트. 건강 수치·설문 원문은 event_properties에 넣지 않는다(NFR-SEC-004).'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 만들지 않음. 지표·이벤트. 건강 수치·설문 원문은 event_properties에 넣지 않는다(NFR-SEC-004).'
 }
 
 Table security_audit_logs {
@@ -1346,7 +1351,7 @@ Table security_audit_logs {
   Indexes {
     (user_id, occurred_at)
   }
-  Note: 'NFR-SEC-002,004,005(원본 이미지 삭제 증빙). 민감 값 자체는 기록하지 않는다.'
+  Note: '[POST-MVP] 구현 안 함(2026-10-28 실제 DB 대조): 관리자 기록은 admin_audit_logs, 로그인 기록은 access_logs. NFR-SEC-002,004,005(원본 이미지 삭제 증빙). 민감 값 자체는 기록하지 않는다.'
 }
 
 
@@ -1610,6 +1615,8 @@ Table common_challenge_certs {
   challenge_id uuid [not null]
   user_id uuid [not null]
   cert_date date [not null, note: '한국 날짜']
+  created_at timestamptz [not null, note: 'v8.3: 구현 칸']
+  steps int [note: 'v8.3: 구현 칸. POST /common-challenges/{id}/certify 요청 steps']
   Indexes {
     (challenge_id, user_id, cert_date) [unique]
   }
@@ -1812,7 +1819,6 @@ Ref: api_request_audits.user_id > users.user_id [delete: set null]
 Ref: eligibility_answers.assessment_id > eligibility_assessments.assessment_id [delete: cascade]
 
 // --- 건강정보 (health 도메인 삭제 시) ---
-Ref: health_records.cycle_id > challenge_cycles.cycle_id [delete: set null]
 Ref: health_measurements.health_record_id > health_records.health_record_id [delete: cascade]
 Ref: health_validation_errors.health_record_id > health_records.health_record_id [delete: cascade]
 Ref: uploaded_file_processing_jobs.health_record_id > health_records.health_record_id [delete: set null]
@@ -1820,7 +1826,6 @@ Ref: ocr_extraction_results.file_job_id > uploaded_file_processing_jobs.file_job
 
 // --- 설문 (survey 도메인 삭제 시) ---
 Ref: survey_instances.health_record_id > health_records.health_record_id [delete: set null]
-Ref: survey_instances.cycle_id > challenge_cycles.cycle_id [delete: set null]
 Ref: survey_responses.survey_instance_id > survey_instances.survey_instance_id [delete: cascade]
 Ref: survey_response_options.response_id > survey_responses.response_id [delete: cascade]
 Ref: user_classifications.survey_instance_id > survey_instances.survey_instance_id [delete: cascade]
@@ -1842,9 +1847,7 @@ Ref: challenge_recommendation_candidates.recommendation_batch_id > challenge_rec
 Ref: challenge_recommendation_reasons.recommendation_candidate_id > challenge_recommendation_candidates.recommendation_candidate_id [delete: cascade]
 
 // --- 챌린지 사이클 (challenge 도메인 삭제 시) ---
-Ref: challenge_cycles.recommendation_batch_id > challenge_recommendation_batches.recommendation_batch_id [delete: set null]
 Ref: cycle_challenges.cycle_id > challenge_cycles.cycle_id [delete: cascade]
-Ref: cycle_challenges.recommendation_candidate_id > challenge_recommendation_candidates.recommendation_candidate_id [delete: set null]
 Ref: challenge_target_weeks.cycle_challenge_id > cycle_challenges.cycle_challenge_id [delete: cascade]
 Ref: challenge_logs.cycle_challenge_id > cycle_challenges.cycle_challenge_id [delete: cascade]
 Ref: challenge_proofs.challenge_log_id > challenge_logs.challenge_log_id [delete: cascade]
@@ -1901,3 +1904,8 @@ Ref: inquiries.user_id > users.user_id [delete: cascade]
 Ref: push_subscriptions.user_id > users.user_id [delete: cascade]
 Ref: push_settings.user_id - users.user_id [delete: cascade]
 Ref: challenge_cycles.program_id > challenge_programs.program_id [delete: cascade]
+
+// --- v8.3 실제 DB 대조로 추가한 외래 키 ---
+Ref: survey_responses.option_id > survey_options.option_id
+Ref: user_classifications.cycle_id > challenge_cycles.cycle_id
+Ref: prediction_jobs.survey_instance_id > survey_instances.survey_instance_id
