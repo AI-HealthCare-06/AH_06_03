@@ -1,5 +1,9 @@
 // =====================================================================
-// PAEON 전수 ERD — dbdiagram.io DBML (v8.1, 2026-10-23 모델 영역 개정 · 김혜성 / v8: 요구사항 v1.9 + 모델_연결_명세 v0.1.0 반영)
+// PAEON 전수 ERD — dbdiagram.io DBML (v8.2, 2026-10-28 구현 테이블 추가 · 김이슬 / v8.1, 2026-10-23 모델 영역 개정 · 김혜성 / v8: 요구사항 v1.9 + 모델_연결_명세 v0.1.0 반영)
+//
+// [v8.2 변경] 서버에 구현됐지만 ERD에 없던 표 27개를 새 영역 9개로 추가(커뮤니티·파티·파이·캐릭터·공통 챌린지·12주 프로그램·캘린더·
+//  문의·공지·웹 푸시·접속/관리자 기록). 기준: repo-be app/models. challenge_cycles에 program_id·cycle_number 추가.
+//  DB 종류를 PostgreSQL에서 MySQL로 바로잡음(아래 공통 규칙). 기존 표의 칸 단위 차이는 이번에 맞추지 않음(담당 영역에서 정리).
 //
 // [v8.1 변경] 모델 영역만 구현(app/models/prediction.py)·모델 A v0.2.0·요구사항 v2.3 기준으로 정리. 다른 영역은 v8 그대로.
 //  - 수정: prediction_jobs(survey_instance_id·input_snapshot 추가), predictions(실제 칸으로 교체: prediction_job_id·model_code·
@@ -26,7 +30,7 @@
 //  2) Post-MVP 테이블은 Note 맨 앞에 '[POST-MVP]' 표기
 //
 // [공통 규칙]
-//  - DB: PostgreSQL. 시각은 모두 timestamptz.
+//  - DB: MySQL 8(실제 운영). 이 ERD의 uuid·timestamptz·jsonb는 dbdiagram 표기이고 실제는 CHAR(36)·DATETIME(UTC)·JSON이다.
 //  - users 행은 물리 삭제하지 않는다. 탈퇴 시 email을 'deleted+{user_id}@invalid'로
 //    익명화하고 status='deleted', deleted_at을 기록 → email UNIQUE 유지 + 재가입 가능.
 //  - 건강정보 도메인 삭제는 data_processing_tasks가 수행하며, 하위 테이블은 파일 하단
@@ -1079,6 +1083,8 @@ Table challenge_recommendation_reasons {
 Table challenge_cycles {
   cycle_id uuid [pk]
   user_id uuid [not null]
+  program_id uuid [not null, note: '12주 프로그램(challenge_programs). 서버 구현 기준']
+  cycle_number int [not null, note: '프로그램 안에서 1~3']
   recommendation_batch_id uuid
   started_on date [not null]
   ended_on date [not null, note: 'started_on + 27일']
@@ -1392,6 +1398,383 @@ MVP 테이블은 이 테이블을 FK로 참조하지 않는다(request_trace_id 
 
 
 // =====================================================================
+// ===== [MVP] 커뮤니티 (v8.2 추가, 구현 기준) =====
+// =====================================================================
+Table community_profiles {
+  user_id uuid [pk]
+  nickname varchar(20) [not null, unique, note: '중복 불가']
+  created_at timestamptz [not null]
+  Note: '커뮤니티 닉네임. 닉네임을 정해야 글·댓글·공통 챌린지를 쓸 수 있다.'
+}
+
+Table community_posts {
+  post_id uuid [pk]
+  user_id uuid [not null]
+  category varchar(20) [not null, note: 'diet / exercise / challenge / tips']
+  title varchar(100) [not null]
+  body text [not null]
+  status varchar(10) [not null, note: 'visible / hidden / deleted. 기본값 visible']
+  created_at timestamptz [not null, note: 'UTC']
+  attach_kind varchar(10) [note: 'fixed / selected / common']
+  attach_label varchar(150) [note: '올릴 때의 미션 이름을 그대로 저장']
+  attach_days int [note: '인증 일수']
+  party_id uuid [note: '파티 글이면 그 파티. 파티원에게만 보이고 전체 목록에는 나오지 않는다']
+  Indexes {
+    (category)
+    (created_at)
+  }
+  Note: '글. 카테고리 diet/exercise/challenge/tips. 글에 챌린지 카드(미션 이름·인증 일수)를 붙일 수 있고 혈압·걸음 수 같은 수치는 담지 않는다.'
+}
+
+Table community_post_photos {
+  photo_id uuid [pk]
+  post_id uuid [not null]
+  position int [not null, note: '0, 1, 2(올린 순서). (post_id, position) 유니크']
+  data blob [not null, note: '화면이 가로 640px·300KB 이하 JPEG로 줄여 올리고 서버가 다시 확인']
+  created_at timestamptz [not null]
+  Note: '글에 붙인 사진(한 글에 최대 3장). 파일이 아니라 DB에 두어 글·회원이 지워지면 함께 지워진다.'
+}
+
+Table community_comments {
+  comment_id uuid [pk]
+  post_id uuid [not null]
+  user_id uuid [not null]
+  parent_id uuid [note: '대댓글이면 원 댓글']
+  body varchar(300) [not null]
+  status varchar(10) [not null, note: '기본값 visible']
+  created_at timestamptz [not null]
+  Note: '댓글과 대댓글(한 단계만).'
+}
+
+Table community_comment_likes {
+  like_id uuid [pk]
+  comment_id uuid [not null]
+  user_id uuid [not null]
+  created_at timestamptz [not null]
+  Indexes {
+    (comment_id, user_id) [unique]
+  }
+  Note: '댓글 좋아요. 한 사람이 한 댓글에 한 번(다시 누르면 취소).'
+}
+
+Table community_likes {
+  like_id uuid [pk]
+  post_id uuid [not null]
+  user_id uuid [not null]
+  Indexes {
+    (post_id, user_id) [unique]
+  }
+  Note: '글 좋아요. 한 사람이 한 글에 한 번.'
+}
+
+Table community_fame {
+  fame_id uuid [pk]
+  giver_id uuid [not null, note: '누른 사람']
+  target_id uuid [not null, note: '받은 사람']
+  created_at timestamptz [not null]
+  Indexes {
+    (giver_id, target_id) [unique]
+  }
+  Note: '사람에게 누르는 좋아요(인기도). 같은 사람에게는 한 번만 줄 수 있다.'
+}
+
+Table community_reports {
+  report_id uuid [pk]
+  post_id uuid
+  comment_id uuid
+  user_id uuid [not null, note: '신고한 사람']
+  target_key varchar(50) [not null, note: 'post:번호 또는 comment:번호 (NULL은 UNIQUE에서 구분되지 않아 따로 둠)']
+  reason varchar(20) [not null, note: 'health_info / spam / abuse / other']
+  created_at timestamptz [not null]
+  action varchar(10) [note: 'hide / delete / dismiss. 없으면 처리 대기']
+  handled_by varchar(255) [note: '처리한 관리자 이메일']
+  handled_at timestamptz
+  Indexes {
+    (user_id, target_key) [unique]
+  }
+  Note: '신고 한 건. 같은 글·댓글을 두 번 신고할 수 없고, 처리하면 같은 대상의 신고에 처리 결과가 한꺼번에 붙는다.'
+}
+
+// =====================================================================
+// ===== [MVP] 파티 (v8.2 추가, 구현 기준) =====
+// =====================================================================
+Table parties {
+  party_id uuid [pk]
+  name varchar(12) [not null]
+  intro varchar(60)
+  invite_code varchar(10) [not null, unique, note: '예: PAEON-7K3Q']
+  challenge_code varchar(20) [not null, note: '파티가 함께 하는 미션(예: NA-1)']
+  started_on date [not null, note: '한국 날짜']
+  created_at timestamptz [not null]
+  Note: '파티. 파티장은 ’가장 먼저 들어온 파티원’이다.'
+}
+
+Table party_members {
+  party_member_id uuid [pk]
+  party_id uuid [not null]
+  user_id uuid [not null, unique, note: '한 사람에 한 파티']
+  joined_at timestamptz [not null]
+  joined_on date [not null, note: '들어온 날(한국 날짜). ’N일 중 M일’의 시작']
+  Note: '파티원. 한 사람에 한 파티.'
+}
+
+Table party_checkins {
+  party_checkin_id uuid [pk]
+  party_id uuid [not null]
+  user_id uuid [not null]
+  checkin_date date [not null, note: '한국 날짜']
+  created_at timestamptz [not null]
+  Indexes {
+    (party_id, user_id, checkin_date) [unique]
+  }
+  Note: '파티 챌린지 인증 한 번(한 사람이 하루에 한 번).'
+}
+
+// =====================================================================
+// ===== [MVP] 파이 · 캐릭터 (v8.2 추가, 구현 기준) =====
+// =====================================================================
+Table pie_ledger {
+  entry_id uuid [pk]
+  user_id uuid [not null]
+  delta int [not null, note: '적립 +, 사용 -']
+  reason varchar(40) [not null, note: 'welcome, post_write, common_challenge_rank 등']
+  ref_key varchar(80) [not null, note: '글·챌린지 번호처럼 ’무엇 때문에’를 가리키는 값']
+  created_at timestamptz [not null, note: 'UTC']
+  Indexes {
+    (user_id, reason, ref_key) [unique]
+    (created_at)
+  }
+  Note: '파이 장부. 같은 일로 두 번 적립되지 않게 (user_id, reason, ref_key)를 묶는다.'
+}
+
+Table character_items {
+  character_item_id uuid [pk]
+  user_id uuid [not null]
+  item_key varchar(40) [not null, note: 'body:bear, color:#E8C14A']
+  acquired_at timestamptz [not null]
+  Indexes {
+    (user_id, item_key) [unique]
+  }
+  Note: '산 아이템 한 개. 무료 아이템은 줄을 만들지 않는다.'
+}
+
+Table user_characters {
+  user_id uuid [pk]
+  body varchar(20) [not null]
+  color varchar(20) [not null]
+  eye varchar(20) [not null, note: '기본값 #243749']
+  expr varchar(20) [not null]
+  face varchar(20) [not null]
+  head varchar(20) [not null]
+  updated_at timestamptz [not null]
+  Note: '지금 입은 조합(한 사람에 한 줄).'
+}
+
+// =====================================================================
+// ===== [MVP] 공통 챌린지 (v8.2 추가, 구현 기준) =====
+// =====================================================================
+Table common_challenges {
+  challenge_id uuid [pk]
+  title varchar(60) [not null]
+  proof_type varchar(10) [not null, note: 'steps(걸음 수) / self(직접 인증)']
+  target_steps int [note: 'steps일 때 하루 목표 걸음 수']
+  starts_on date [not null, note: '한국 날짜']
+  ends_on date [not null]
+  complete_min_days int [not null, note: '이 일수 이상 인증하면 완주']
+  reward_first int [not null, note: '기본값 300']
+  reward_second int [not null, note: '기본값 200']
+  reward_third int [not null, note: '기본값 100']
+  reward_complete int [not null, note: '기본값 20']
+  finalized_at timestamptz [note: '순위를 확정하고 보상을 준 시각']
+  created_by varchar(255) [not null, note: '만든 관리자 이메일']
+  created_at timestamptz [not null]
+  Indexes {
+    (starts_on)
+  }
+  Note: '공통 챌린지. 시작한 뒤에는 기간·인증 방식을 바꿀 수 없다.'
+}
+
+Table common_challenge_participants {
+  participant_id uuid [pk]
+  challenge_id uuid [not null]
+  user_id uuid [not null]
+  joined_at timestamptz [not null]
+  Indexes {
+    (challenge_id, user_id) [unique]
+  }
+  Note: '참여자. 한 사람이 한 챌린지에 한 번.'
+}
+
+Table common_challenge_certs {
+  cert_id uuid [pk]
+  challenge_id uuid [not null]
+  user_id uuid [not null]
+  cert_date date [not null, note: '한국 날짜']
+  Indexes {
+    (challenge_id, user_id, cert_date) [unique]
+  }
+  Note: '하루 한 번의 인증. 한국 날짜 기준으로 같은 날 두 번은 안 된다.'
+}
+
+// =====================================================================
+// ===== [MVP] 12주 프로그램 (v8.2 추가, 구현 기준) =====
+// =====================================================================
+Table challenge_programs {
+  program_id uuid [pk]
+  user_id uuid [not null]
+  program_number int [not null, note: '1, 2, 3 …']
+  model_a_version varchar(20) [note: '이 12주에 고정한 모델 A 버전']
+  model_b_version varchar(20) [note: '이 12주에 고정한 모델 B 버전']
+  model_updated_on date
+  change_note text [note: '새 12주에 적용되는 변경 한 줄']
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  Indexes {
+    (user_id, program_number) [unique]
+  }
+  Note: '12주 프로그램. 새 12주를 시작하면 program_number가 1 오르고 이전 12주는 그대로 남는다. 서버의 challenge_cycles는 이 표를 가리키는 program_id와 cycle_number(1~3)를 가진다.'
+}
+
+// =====================================================================
+// ===== [MVP] 캘린더 (v8.2 추가, 구현 기준) =====
+// =====================================================================
+Table calendar_entries {
+  entry_id uuid [pk]
+  user_id uuid [not null]
+  entry_date date [not null]
+  diary text
+  photo_data longtext [note: '화면이 줄여서 보내는 이미지(data URL)']
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  Indexes {
+    (user_id, entry_date) [unique]
+  }
+  Note: '하루치 일기와 사진(사용자·날짜당 1건).'
+}
+
+Table health_todos {
+  todo_id uuid [pk]
+  user_id uuid [not null]
+  todo_date date [not null]
+  text varchar(200) [not null]
+  done boolean [not null, note: '기본값 false']
+  created_at timestamptz [not null]
+  Indexes {
+    (user_id, todo_date)
+  }
+  Note: '날짜별 건강 할 일(예: 스쿼트 20개 3세트).'
+}
+
+// =====================================================================
+// ===== [MVP] 문의 · 공지 (v8.2 추가, 구현 기준) =====
+// =====================================================================
+Table inquiries {
+  inquiry_id uuid [pk]
+  user_id uuid [not null]
+  title varchar(100) [not null]
+  body text [not null]
+  created_at timestamptz [not null, note: 'UTC']
+  answer text
+  answered_by varchar(255) [note: '답한 관리자 이메일']
+  answered_at timestamptz
+  user_read_at timestamptz [note: '이용자가 답변을 열어 본 시각']
+  Indexes {
+    (created_at)
+  }
+  Note: '1:1 문의. 회원 탈퇴 때 함께 지워지고, 건강정보 동의 철회로는 지우지 않는다.'
+}
+
+Table guest_inquiries {
+  guest_inquiry_id uuid [pk]
+  code_hash char(64) [not null, unique, note: '조회 번호의 해시']
+  ip_hash char(64) [not null, note: '횟수 제한용 IP 해시']
+  title varchar(100) [not null]
+  body text [not null]
+  created_at timestamptz [not null, note: 'UTC']
+  answer text
+  answered_by varchar(255)
+  answered_at timestamptz
+  Indexes {
+    (ip_hash)
+    (created_at)
+  }
+  Note: '비회원 문의. 이메일을 받지 않고 조회 번호로 답변을 본다. 조회 번호와 IP는 해시로만 저장하고 접수 30일이 지나면 새 문의가 들어올 때 함께 삭제한다.'
+}
+
+Table notices {
+  notice_id uuid [pk]
+  title varchar(100) [not null]
+  body text [not null]
+  starts_at timestamptz [not null, note: '보이기 시작하는 시각(UTC)']
+  ends_at timestamptz [note: '없으면 계속']
+  created_by varchar(255) [not null, note: '쓴 관리자 이메일']
+  created_at timestamptz [not null]
+  updated_at timestamptz
+  Indexes {
+    (starts_at)
+  }
+  Note: '서비스 안 공지(약관 변경, 점검, 서비스 종료 안내). 모두에게 공개되는 내용이라 사용자 정보를 담지 않는다.'
+}
+
+// =====================================================================
+// ===== [MVP] 웹 푸시 (v8.2 추가, 구현 기준) =====
+// =====================================================================
+Table push_subscriptions {
+  push_subscription_id uuid [pk]
+  user_id uuid [not null]
+  endpoint varchar(500) [not null, unique]
+  p256dh varchar(255) [not null]
+  auth varchar(255) [not null]
+  created_at timestamptz [not null]
+  Note: '기기 하나의 구독. 같은 기기(endpoint)가 다시 등록하면 새 줄 대신 갱신한다.'
+}
+
+Table push_settings {
+  user_id uuid [pk]
+  comment boolean [not null, note: '댓글·답글. 기본값 true']
+  inquiry boolean [not null, note: '문의 답변']
+  party boolean [not null, note: '파티 참여']
+  challenge boolean [not null, note: '챌린지 리마인드(저녁 8시)']
+  breakfast boolean [not null, note: '아침 식사 리마인드(아침 8시)']
+  last_challenge_id int [note: '저녁 리마인드 직전 문구 번호']
+  last_breakfast_id int [note: '아침 리마인드 직전 문구 번호']
+  challenge_sent_on date [note: '저녁 리마인드를 마지막으로 보낸 날(하루 한 번)']
+  breakfast_sent_on date [note: '아침 리마인드를 마지막으로 보낸 날']
+  updated_at timestamptz [not null]
+  Note: '종류별 알림 켜기·끄기와 리마인드 직전 문구 번호·보낸 날. 줄이 없으면 모두 켜짐으로 본다.'
+}
+
+// =====================================================================
+// ===== [MVP] 접속 · 관리자 기록 (v8.2 추가, 구현 기준) =====
+// =====================================================================
+Table access_logs {
+  access_id uuid [pk]
+  account_id uuid [not null, note: 'users를 가리키지만 FK를 걸지 않는다(탈퇴 후에도 보관)']
+  event varchar(20) [not null, note: 'login']
+  ip varchar(45)
+  created_at timestamptz [not null, note: 'UTC']
+  Indexes {
+    (account_id)
+    (created_at)
+  }
+  Note: '누가 언제 어느 IP에서 로그인했는지. 칸 이름을 user_id가 아닌 account_id로 두어 탈퇴 삭제 대상에서 빠진다.'
+}
+
+Table admin_audit_logs {
+  audit_id uuid [pk]
+  actor_email varchar(255) [not null]
+  action varchar(40) [not null, note: 'catalog_view, category_update …']
+  target varchar(100) [note: '카테고리·미션 코드']
+  detail varchar(500) [note: '무엇이 어떻게 바뀌었는지']
+  created_at timestamptz [not null, note: 'UTC']
+  Indexes {
+    (actor_email, action, created_at)
+    (created_at)
+  }
+  Note: '관리자가 무엇을 보거나 바꿨는지. 사용자 개인정보는 담지 않고 관리자 이메일만 남긴다.'
+}
+
+// =====================================================================
 // FK 삭제 정책 (long-form Ref)
 //  - users는 물리 삭제하지 않으므로 users 참조는 RESTRICT(기본값).
 //  - 건강정보 도메인 삭제 시 하위 데이터는 CASCADE, 다른 도메인에서의 참조는 SET NULL.
@@ -1482,3 +1865,39 @@ Ref: feedbacks.prediction_id > predictions.prediction_id [delete: set null]
 Ref: feedbacks.recommendation_batch_id > challenge_recommendation_batches.recommendation_batch_id [delete: set null]
 Ref: feedbacks.cycle_challenge_id > cycle_challenges.cycle_challenge_id [delete: set null]
 Ref: feedbacks.recommendation_candidate_id > challenge_recommendation_candidates.recommendation_candidate_id [delete: set null]
+
+// --- v8.2 추가 표 (구현 기준) ---
+Ref: community_profiles.user_id - users.user_id [delete: cascade]
+Ref: community_posts.user_id > users.user_id [delete: cascade]
+Ref: community_posts.party_id > parties.party_id [delete: cascade]
+Ref: community_post_photos.post_id > community_posts.post_id [delete: cascade]
+Ref: community_comments.post_id > community_posts.post_id [delete: cascade]
+Ref: community_comments.user_id > users.user_id [delete: cascade]
+Ref: community_comments.parent_id > community_comments.comment_id [delete: cascade]
+Ref: community_comment_likes.comment_id > community_comments.comment_id [delete: cascade]
+Ref: community_comment_likes.user_id > users.user_id [delete: cascade]
+Ref: community_likes.post_id > community_posts.post_id [delete: cascade]
+Ref: community_likes.user_id > users.user_id [delete: cascade]
+Ref: community_fame.giver_id > users.user_id [delete: cascade]
+Ref: community_fame.target_id > users.user_id [delete: cascade]
+Ref: community_reports.post_id > community_posts.post_id [delete: cascade]
+Ref: community_reports.comment_id > community_comments.comment_id [delete: cascade]
+Ref: community_reports.user_id > users.user_id [delete: cascade]
+Ref: party_members.party_id > parties.party_id [delete: cascade]
+Ref: party_members.user_id > users.user_id [delete: cascade]
+Ref: party_checkins.party_id > parties.party_id [delete: cascade]
+Ref: party_checkins.user_id > users.user_id [delete: cascade]
+Ref: pie_ledger.user_id > users.user_id [delete: cascade]
+Ref: character_items.user_id > users.user_id [delete: cascade]
+Ref: user_characters.user_id - users.user_id [delete: cascade]
+Ref: common_challenge_participants.challenge_id > common_challenges.challenge_id [delete: cascade]
+Ref: common_challenge_participants.user_id > users.user_id [delete: cascade]
+Ref: common_challenge_certs.challenge_id > common_challenges.challenge_id [delete: cascade]
+Ref: common_challenge_certs.user_id > users.user_id [delete: cascade]
+Ref: challenge_programs.user_id > users.user_id [delete: cascade]
+Ref: calendar_entries.user_id > users.user_id [delete: cascade]
+Ref: health_todos.user_id > users.user_id [delete: cascade]
+Ref: inquiries.user_id > users.user_id [delete: cascade]
+Ref: push_subscriptions.user_id > users.user_id [delete: cascade]
+Ref: push_settings.user_id - users.user_id [delete: cascade]
+Ref: challenge_cycles.program_id > challenge_programs.program_id [delete: cascade]
