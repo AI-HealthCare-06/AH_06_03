@@ -49,8 +49,22 @@
         <form id="signup-form">
           <div class="fields">
             <div class="field">
-              <label for="email">이메일</label>
-              <input id="email" type="email" placeholder="example@email.com" required>
+              <label for="email-id">이메일</label>
+              <div style="display:flex; align-items:center; gap:8px">
+                <input id="email-id" type="text" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="아이디" required style="flex:1; min-width:0">
+                <span aria-hidden="true">@</span>
+                <select id="email-domain" aria-label="이메일 주소 뒷부분" style="flex:1; min-width:0">
+                  <option value="gmail.com">gmail.com</option>
+                  <option value="naver.com">naver.com</option>
+                  <option value="daum.net">daum.net</option>
+                  <option value="hanmail.net">hanmail.net</option>
+                  <option value="kakao.com">kakao.com</option>
+                  <option value="nate.com">nate.com</option>
+                  <option value="outlook.com">outlook.com</option>
+                  <option value="icloud.com">icloud.com</option>
+                </select>
+              </div>
+              <input id="email" type="hidden">
             </div>
             <div class="field">
               <label for="pw">비밀번호</label>
@@ -196,11 +210,25 @@ function clearError() {
   errEl.style.display = 'none';
 }
 
+// 이메일: 아이디는 직접 쓰고 뒷부분은 목록에서 고른다(도메인 오타로 인한 중복 가입 방지)
+const emailId = document.getElementById('email-id'), emailDomain = document.getElementById('email-domain');
+function buildEmail() {
+  const id = emailId.value.trim().replace(/@.*$/, '');   // 실수로 @까지 붙여 넣어도 앞부분만
+  return id ? id + '@' + emailDomain.value : '';
+}
+emailId.addEventListener('input', () => {   // 전체 주소를 붙여 넣으면 목록에 있는 도메인은 자동 선택
+  if (!emailId.value.includes('@')) return;
+  const [i, d] = emailId.value.split('@'); emailId.value = i;
+  const opt = [...emailDomain.options].find(o => o.value === d.toLowerCase());
+  if (opt) emailDomain.value = opt.value;
+});
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   clearError();
 
-  const email = document.getElementById('email').value;
+  const email = buildEmail();
+  if (!email) return showError('이메일 아이디와 주소를 확인해 주세요');
   const pw = document.getElementById('pw').value;
   const pw2 = document.getElementById('pw2').value;
   const birth = birthInput.value;

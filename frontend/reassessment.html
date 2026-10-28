@@ -83,10 +83,10 @@ function formHtml() {
     <div class="note">대한고혈압학회 가정혈압포럼 2022</div>
   </div>
   <div class="grid2">
-    <div class="field"><label for="sbp1">첫 번째 수축기</label><input id="sbp1" type="number" min="60" max="260"></div>
-    <div class="field"><label for="dbp1">첫 번째 이완기</label><input id="dbp1" type="number" min="30" max="160"></div>
-    <div class="field"><label for="sbp2">두 번째 수축기 (선택)</label><input id="sbp2" type="number" min="60" max="260"></div>
-    <div class="field"><label for="dbp2">두 번째 이완기 (선택)</label><input id="dbp2" type="number" min="30" max="160"></div>
+    <div class="field"><label for="sbp1">첫 번째 높은 쪽 혈압(수축기)</label><input id="sbp1" type="number" min="60" max="260"></div>
+    <div class="field"><label for="dbp1">첫 번째 낮은 쪽 혈압(이완기)</label><input id="dbp1" type="number" min="30" max="160"></div>
+    <div class="field"><label for="sbp2">두 번째 높은 쪽 혈압(수축기) (선택)</label><input id="sbp2" type="number" min="60" max="260"></div>
+    <div class="field"><label for="dbp2">두 번째 낮은 쪽 혈압(이완기) (선택)</label><input id="dbp2" type="number" min="30" max="160"></div>
   </div>
   <p class="sect">몸</p>
   <div class="grid2">
@@ -137,7 +137,7 @@ function collect() {
   const sbp1 = n('sbp1'), dbp1 = n('dbp1'), weight = n('weight'), smoking = s('smoking'), dfreq = s('dfreq');
   if (!sbp1 || !dbp1) throw new Error('첫 번째 혈압을 입력해 주세요.');
   if (!weight) throw new Error('몸무게를 입력해 주세요.');
-  if (sbp1 <= dbp1) throw new Error('수축기 혈압은 이완기 혈압보다 높아야 해요.');
+  if (sbp1 <= dbp1) throw new Error('높은 쪽 혈압은 낮은 쪽 혈압보다 커야 해요. 두 칸이 바뀌지 않았는지 확인해 주세요.');
   // 칸에 정해 둔 범위(min·max)를 벗어난 값은 막는다(이 화면은 form이 아니라 브라우저가 대신 막아 주지 않는다)
   for (const id of ['sbp1', 'dbp1', 'sbp2', 'dbp2', 'weight', 'waist']) {
     const el = document.getElementById(id);

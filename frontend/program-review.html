@@ -116,7 +116,7 @@ function lineChart({ points, W, H, ref, refLabel, color, labelFont, big }) {
   const Y = v => padT + (hi - v) / (hi - lo) * (H - padT - padB);
   const fill = big ? '#FFFFFF' : '#F8F1E7';
   const r = big ? 6 : 5, sw = 2.5;
-  const s = [`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="수축기 혈압 ${vals.join(', ')}">`,
+  const s = [`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="높은 쪽 혈압 ${vals.join(', ')}">`,
     `<line x1="0" y1="${Y(ref).toFixed(1)}" x2="${W}" y2="${Y(ref).toFixed(1)}" stroke="#5A6B7A" stroke-width="1" stroke-dasharray="4 4"/>`,
     `<text x="${W}" y="${(Y(ref) - 6).toFixed(1)}" text-anchor="end" font-size="${big ? 12 : 11}" fill="#5A6B7A">${refLabel}</text>`];
   if (points.length > 1) s.push(`<polyline fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" points="${points.map((p, i) => X(i).toFixed(1) + ',' + Y(p.v).toFixed(1)).join(' ')}"/>`);
@@ -149,7 +149,7 @@ function render(rv) {
   const pn = rv.program_number > 1 ? rv.program_number + '번째 ' : '';   // 12주를 여러 번 했을 때만 몇 번째인지 표시
   $('app').innerHTML = back(done ? pn + '12주 변화' : `${pn}지금까지 ${wk}주`) + `
     <div class="cmphd"><span class="s">${done ? '12주' : `지금까지 ${wk}주`} · 처음 입력한 때부터</span><div class="big">${done ? '12주 동안' : `${wk}주 동안`}<br>이렇게 달라졌어요</div></div>
-    ${pts.length > 1 ? `<div class="cbox"><div class="hd"><span style="font-size:15px;font-weight:800;color:var(--ink)">수축기 혈압</span><span>mmHg</span></div>${lineChart({ points: pts, W: 310, H: 170, ref: 140, refLabel: '기준 140', color: '#243749', labelFont: 13, big: true })}</div>` : ''}
+    ${pts.length > 1 ? `<div class="cbox"><div class="hd"><span style="font-size:15px;font-weight:800;color:var(--ink)">높은 쪽 혈압(수축기)</span><span>mmHg</span></div>${lineChart({ points: pts, W: 310, H: 170, ref: 140, refLabel: '기준 140', color: '#243749', labelFont: 13, big: true })}</div>` : ''}
     <div class="tb"><div class="th"><span>항목</span><span>0주</span><span>${wk}주</span></div>
       ${[['혈압', bpText(b), bpText(a)], ['체중', unit(b.weight_kg, 'kg'), unit(a.weight_kg, 'kg')], ['허리둘레', unit(b.waist_cm, 'cm'), unit(a.waist_cm, 'cm')]]
         .concat([['챌린지 달성률', '—', avgRate]])
