@@ -30,6 +30,7 @@ h1,h2,h3{margin:0}
 .sect p{color:var(--muted); font-size:13.5px; margin:8px 0 0}
 .row{max-width:1180px; margin:28px auto; padding:0 24px; display:grid; grid-template-columns:420px 1fr; gap:36px; align-items:start; scroll-margin-top:70px}
 .row.wide{grid-template-columns:760px 1fr}
+.row:has(> .phone + .phone){max-width:1560px; grid-template-columns:420px 420px minmax(320px,1fr)}
 .side .tag{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
 .side .id{background:var(--blue); color:#fff; font-weight:800; font-size:13px; padding:3px 12px; border-radius:999px}
 .side .name{font-size:19px; font-weight:800}
@@ -99,7 +100,7 @@ h1,h2,h3{margin:0}
 .stat{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
 .stat .bx{text-align:center}
 .stat b{font-size:20px; display:block}
-@media (max-width:1100px){.row,.row.wide{grid-template-columns:1fr}}
+@media (max-width:1100px){.row,.row.wide,.row:has(> .phone + .phone){grid-template-columns:1fr}}
 """
 
 
