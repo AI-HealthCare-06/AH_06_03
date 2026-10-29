@@ -23,7 +23,6 @@ from app.apis.common_challenge import admin_router as common_challenge_admin_rou
 from app.apis.home import router as home_router
 from app.apis.community_admin import admin_router as community_admin_router, posts_router as community_posts_admin_router
 
-from app.apis.prediction import router as prediction_router
 from app.apis.auth import router as auth_router
 from app.apis.challenge import router as challenge_router
 from app.core.db.databases import AsyncSessionLocal
@@ -66,7 +65,6 @@ app.add_middleware(
 )
 
 
-app.include_router(prediction_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.include_router(auth_router,prefix="/v1")
 app.include_router(health_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
 app.include_router(survey_router, prefix="/v1", dependencies=[Depends(require_health_consent)])
