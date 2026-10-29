@@ -104,10 +104,6 @@ class PredictResponse(BaseModel):
     disclaimer: str = DISCLAIMER
 
 
-class PredictEnvelope(BaseModel):
-    """API 명세서 공통 규칙: 성공 응답은 {"data": ...}로 감싼다."""
-    data: PredictResponse
-
 class PredictionJobResult(BaseModel):
     """🎫 번호표 결과지: 번호표 정보 + 모델별 결과."""
     prediction_job_id: str

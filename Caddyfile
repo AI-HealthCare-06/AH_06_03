@@ -22,7 +22,9 @@
         -Server
     }
 
-    @api path /v1/* /docs /docs/* /openapi.json /healthcheck /static/* /media/*
+    # API 문서(/docs, /openapi.json)는 밖으로 열지 않음: 경로와 요청 모양 전체가 공격 지도가 됨 (10/29 API 보안 검사)
+    # 이 경로들은 아래 화면 파일 쪽으로 떨어져 404. 문서가 필요하면 SSH 터널로 서버 안쪽(127.0.0.1:8000)에서 봄 (배포 노트)
+    @api path /v1/* /healthcheck /static/* /media/*
     handle @api {
         reverse_proxy fastapi:8000
     }

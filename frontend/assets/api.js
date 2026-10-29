@@ -687,11 +687,26 @@ function cacheCycle(cycle) {
   } catch (e) { /* 저장 공간을 못 쓰면 화면은 서버 값으로만 그린다 */ }
 }
 
+// 이 기기의 푸시 구독을 지운다. 로그아웃 뒤에도 같은 기기(가족 폰, 공용 PC)에 이전 사람의 알림이 오지 않게.
+// 로그인이 살아 있을 때 서버 구독을 지우고(DELETE /push/subscription), 브라우저 구독도 해제한다.
+// 서버 삭제가 실패해도 브라우저 구독을 해제하면 푸시 서버가 다음 발송을 거절(404·410)해 서버가 스스로 지운다.
+async function dropPushSubscription() {
+  try {
+    if (!('serviceWorker' in navigator)) return;
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg && reg.pushManager ? await reg.pushManager.getSubscription() : null;
+    if (!sub) return;
+    await apiCall('DELETE', '/push/subscription', { endpoint: sub.endpoint }, '').catch(() => {});
+    await sub.unsubscribe().catch(() => {});
+  } catch (e) { /* 알림을 지원하지 않는 브라우저 */ }
+}
+
 // 로그아웃: 서버 쿠폰을 폐기하고, 이 계정의 기록은 계정별로 보관해 둔 뒤 로그인 화면으로 간다.
 async function apiLogout() {
   let uid = localStorage.getItem('paeon-user-id');
   if (!uid) { try { uid = (await apiGetMe()).user_id; } catch (e) {} }
   stashLocalData(uid);                                 // 서버 호출이 실패해도 기록은 먼저 보관
+  await dropPushSubscription();                        // 로그아웃한 뒤에는 이 기기에 내 알림이 오지 않게
   const refresh_token = PaeonTokens.refresh();
   try { await apiCall('POST', '/auth/logout', { refresh_token }, '로그아웃에 실패했습니다'); } catch (e) { /* 서버 실패여도 이 기기에서는 로그아웃 */ }
   PaeonTokens.clear();
