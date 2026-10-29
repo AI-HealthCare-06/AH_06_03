@@ -386,7 +386,7 @@ async function main() {
            <a class="ghost" style="display:block; text-align:center; text-decoration:none; margin-top:8px" href="reassessment.html?cycle=${encodeURIComponent(last.cycle_id)}">4주 변화 다시 보기</a>`
         : `<a class="cta" style="display:block; text-align:center; text-decoration:none" href="reassessment.html?cycle=${encodeURIComponent(last.cycle_id)}">4주 재입력하고 변화 보기</a>`;
       document.getElementById('day-detail').innerHTML =
-        `<div class="callout"><b>${last.cycle_number}차 4주가 끝났어요 · 달성률 ${Math.round(last.cycle_rate * 100)}%</b><br>${msg}</div>${next}`;
+        `<div class="callout" style="margin-bottom:12px"><b>${last.cycle_number}차 4주가 끝났어요 · 달성률 ${Math.round(last.cycle_rate * 100)}%</b><br>${msg}</div>${next}`;
       return;
     }
     location.replace('challenges.html');
