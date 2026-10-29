@@ -69,6 +69,7 @@ ssh -i ~/Downloads/paeon-new ubuntu@54.116.113.17
 - 아래 경로만 fastapi로 전달: `/v1/*`, `/docs`, `/docs/*`, `/openapi.json`, `/healthcheck`, `/static/*`, `/media/*`
 - 나머지는 `frontend/` 폴더의 정적 파일을 그대로 서빙 (compose에서 `./frontend:/srv/frontend:ro`로 연결).
 - **새 API 경로를 `/v1` 밖에 만들면 Caddyfile의 `@api` 목록에 추가해야 함.** 안 하면 화면 파일로 처리돼 404가 남.
+- **운영 API 문서는 밖에서 막혀 있음(2026-10-29)**: `/docs`, `/openapi.json`은 `@api` 목록에서 빼서 바깥에서는 404(경로와 요청 모양 전체가 공격 지도가 되지 않게, API 보안 검사). 운영 서버의 문서가 필요하면 맥북에서 SSH 터널을 열고 `http://localhost:8000/docs`로 봄: `ssh -N -L 8000:127.0.0.1:8000 paeon`(끝낼 때 Ctrl+C). 앱 포트는 서버 안쪽(127.0.0.1:8000)에만 열려 있어 터널로만 닿음. 로컬 개발 서버의 문서는 그대로.
 - 화면과 API가 같은 주소(같은 출처)라서 CORS 설정이 필요 없음.
 - `frontend/`의 변경은 main에 머지되면 화면에 자동 반영됨. 안 바뀌어 보이면 강력 새로고침(Cmd+Shift+R).
 - **`Caddyfile`이 바뀐 PR은 머지 뒤 Caddy를 직접 다시 시작해야 반영됨.** 배포는 서버의 파일만 바꾸고, 떠 있는 Caddy 컨테이너는 처음 시작할 때 읽은 파일을 계속 붙잡고 있음(2026-10-21: #151 머지 뒤에도 3MB 요청이 422로 앱까지 가서 발견). 순서(서버):
