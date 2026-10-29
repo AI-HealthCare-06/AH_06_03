@@ -1,5 +1,6 @@
 -- 체험(10/22~10/25) 집계. 읽기만 한다. 운영 DB에서 삭제 전에 한 번 돌려 숫자를 확정한다.
--- 실행: docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' < docs/사용자테스트/체험_집계.sql
+-- 실행(한글 비교가 있어서 반드시 utf8mb4로): docker compose exec -T mysql sh -c 'mysql --default-character-set=utf8mb4 -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' < docs/사용자테스트/체험_집계.sql
+-- 주의: 서버 MySQL이 한글을 latin1로 받으면 '[체험 자동 채움]%' 비교가 0건으로 세진다(10/26에 겪음).
 -- 이메일은 암호화돼 있어 SQL로 팀원을 가릴 수 없다. 팀원 계정은 user_id 끝 8자리로 뺀다(체험_설문_중간정리_1026.md 기준).
 -- 가입 시각은 UTC라 한국 10/22 00:00 = UTC 10/21 15:00.
 
@@ -24,7 +25,7 @@ FROM cohort k
 JOIN challenge_cycles c ON c.user_id = k.user_id
 JOIN cycle_challenges x ON x.cycle_id = c.cycle_id
 JOIN challenge_logs l ON l.cycle_challenge_id = x.cycle_challenge_id
-WHERE l.note IS NULL OR l.note NOT LIKE '[체험 자동 채움]%'
+WHERE l.note IS NULL OR l.note NOT LIKE _utf8mb4'[체험 자동 채움]%'
 GROUP BY c.user_id;
 
 -- 2. 챌린지 시작자 중 직접 기록한 날 수 분포 (기대: 시작 19명, 3일 이상 8명, 첫 3일 못 넘김 11명)
