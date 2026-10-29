@@ -7,7 +7,7 @@
 import logging # 무슨 일이 있었는지, 특히 오류 발생 시 기록
 
 from app.ml import predictor
-from app.schemas.prediction import PredictResponse, ModelResult, PredictRequest
+from app.schemas.prediction import PredictResponse, ModelResult
 
 logger = logging.getLogger(__name__)
 
@@ -77,8 +77,3 @@ def predict_dict(
             versions["MODEL_B"],
         ),
     )
-
-def predict(req: PredictRequest) -> PredictResponse:
-    """임시 창구(/v1/predict)용. 신청서를 사전으로 바꿔서 predict_dict에 넘긴다."""
-    return predict_dict(req.model_dump())
-

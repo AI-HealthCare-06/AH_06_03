@@ -7,7 +7,7 @@ from app.schemas.auth import (
     LoginRequest, MeResult, ProfileUpdateRequest, RefreshRequest, SignupRequest, SignupResult, TokenResult,
 )
 from app.schemas.common import DataResponse
-from app.services import access_log_service, auth_service
+from app.services import access_log_service, auth_service, login_guard
 
 from app.apis.deps import get_current_user_id
 from app.schemas.auth import LoginRequest, MeResult, SignupRequest, SignupResult, TokenResult
@@ -15,7 +15,8 @@ from app.schemas.auth import LoginRequest, MeResult, SignupRequest, SignupResult
 router = APIRouter(tags=["auth"])
 
 @router.post("/auth/signup", status_code=status.HTTP_201_CREATED, response_model=DataResponse[SignupResult])
-async def signup(req: SignupRequest, db: AsyncSession = Depends(async_get_db)):
+async def signup(request: Request, req: SignupRequest, db: AsyncSession = Depends(async_get_db)):
+    login_guard.check_signup(access_log_service.client_ip(request))
     return DataResponse(
         data=await auth_service.signup(
             db, 
